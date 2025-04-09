@@ -2,12 +2,12 @@ package memory;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 import work.slhaf.memory.MemoryGraph;
 import work.slhaf.memory.content.MemorySlice;
 import work.slhaf.memory.node.MemoryNode;
 import work.slhaf.memory.node.TopicNode;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
 
 public class InsertTest {
     private MemoryGraph memoryGraph;
-    private final String testId = "test";
+    private final String testId = "test_insert";
 
     @Before
     public void setUp() {
@@ -48,7 +48,7 @@ public class InsertTest {
 
         assertEquals(1, collectionsNode.getMemoryNodes().size());
         MemoryNode memoryNode = collectionsNode.getMemoryNodes().get(0);
-        assertEquals(LocalDateTime.now().toLocalDate(), memoryNode.getLocalDateTime().toLocalDate());
+        assertEquals(LocalDate.now(), memoryNode.getLocalDate());
         assertEquals(1, memoryNode.getMemorySliceList().size());
         assertEquals(slice, memoryNode.getMemorySliceList().get(0));
     }
@@ -88,7 +88,7 @@ public class InsertTest {
         MemoryNode firstNode = memoryGraph.getTopicNodes().get("Math")
                 .getTopicNodes().get("Algebra")
                 .getMemoryNodes().get(0);
-        firstNode.setLocalDateTime(LocalDateTime.now().minusDays(1));
+        firstNode.setLocalDate(LocalDate.now().minusDays(1));
 
         // 第二次插入
         memoryGraph.insertMemory(topicPath, slice2);
@@ -127,6 +127,43 @@ public class InsertTest {
         slice.setMemoryRank(1);
         // 可以设置其他必要属性
         return slice;
+    }
+
+    @Test
+    public void testSerializationConsistency() {
+        // 构造 MemorySlice
+        MemorySlice slice = new MemorySlice();
+        slice.setMemoryId("001");
+        slice.setMemoryRank(5);
+        slice.setSlicePath("/demo/path");
+
+        List<String> topicPath = Arrays.asList("生活", "学习", "Java");
+
+        // 插入 memory
+        memoryGraph.insertMemory(topicPath, slice);
+        memoryGraph.serialize();
+
+        // 反序列化
+        MemoryGraph loadedGraph = MemoryGraph.initialize(testId);
+
+        // 校验：topic 是否存在
+        assertNotNull(loadedGraph.getTopicNodes().get("生活"));
+        TopicNode lifeNode = loadedGraph.getTopicNodes().get("生活");
+
+        assertNotNull(lifeNode.getTopicNodes().get("学习"));
+        TopicNode studyNode = lifeNode.getTopicNodes().get("学习");
+
+        assertNotNull(studyNode.getTopicNodes().get("Java"));
+        TopicNode javaNode = studyNode.getTopicNodes().get("Java");
+
+        // 校验：是否存在 MemoryNode
+        assertFalse(javaNode.getMemoryNodes().isEmpty());
+
+        // 校验：MemorySlice 内容一致
+        MemorySlice deserializedSlice = javaNode.getMemoryNodes().get(0).getMemorySliceList().get(0);
+        assertEquals("001", deserializedSlice.getMemoryId());
+        assertEquals(Integer.valueOf(5), deserializedSlice.getMemoryRank());
+        assertEquals("/demo/path", deserializedSlice.getSlicePath());
     }
 
 }

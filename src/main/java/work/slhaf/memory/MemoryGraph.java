@@ -2,6 +2,7 @@ package work.slhaf.memory;
 
 import lombok.Data;
 import work.slhaf.memory.content.MemorySlice;
+import work.slhaf.memory.exception.UnExistedTopicException;
 import work.slhaf.memory.node.MemoryNode;
 import work.slhaf.memory.node.TopicNode;
 
@@ -9,7 +10,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.*;
 
 @Data
@@ -20,9 +21,9 @@ public class MemoryGraph implements Serializable {
     private static final String STORAGE_DIR = "./data/memory/";
 
     private String id;
-    private HashMap<String,TopicNode> topicNodes;
+    private HashMap<String, TopicNode> topicNodes;
     public static MemoryGraph memoryGraph;
-    private HashMap<String,Set<String>> existedTopics;
+    private HashMap<String, Set<String>> existedTopics;
 
     public MemoryGraph(String id) {
         this.id = id;
@@ -85,10 +86,9 @@ public class MemoryGraph implements Serializable {
         }
     }
 
-
     public void insertMemory(List<String> topicPath, MemorySlice slice) {
         topicPath = new ArrayList<>(topicPath);
-        if (topicNodes == null){
+        if (topicNodes == null) {
             topicNodes = new HashMap<>();
         }
         //查看是否存在根主题节点
@@ -98,17 +98,16 @@ public class MemoryGraph implements Serializable {
             TopicNode rootNode = new TopicNode();
             rootNode.setMemoryNodes(new ArrayList<>());
             rootNode.setTopicNodes(new HashMap<>());
-            topicNodes.put(rootTopic,rootNode);
-            existedTopics.put(rootTopic,new HashSet<>());
+            topicNodes.put(rootTopic, rootNode);
+            existedTopics.put(rootTopic, new HashSet<>());
         }
 
         TopicNode lastTopicNode = topicNodes.get(rootTopic);
         Set<String> existedTopicNodes = existedTopics.get(rootTopic);
-        for (int i = 0; i < topicPath.size(); i++) {
-            String topic = topicPath.get(i);
+        for (String topic : topicPath) {
             if (existedTopicNodes.contains(topic)) {
                 lastTopicNode = lastTopicNode.getTopicNodes().get(topic);
-            }else {
+            } else {
                 TopicNode newNode = new TopicNode();
                 lastTopicNode.getTopicNodes().put(topic, newNode);
                 lastTopicNode = newNode;
@@ -123,11 +122,11 @@ public class MemoryGraph implements Serializable {
             }
         }
         //检查是否存在当天对应的memoryData
-        LocalDateTime now = LocalDateTime.now();
+        LocalDate now = LocalDate.now();
         boolean hasSlice = false;
         MemoryNode node = null;
         for (MemoryNode memoryNode : lastTopicNode.getMemoryNodes()) {
-            if (now.toLocalDate().equals(memoryNode.getLocalDateTime().toLocalDate())){
+            if (now.equals(memoryNode.getLocalDate())) {
                 hasSlice = true;
                 node = memoryNode;
                 break;
@@ -135,12 +134,69 @@ public class MemoryGraph implements Serializable {
         }
         if (!hasSlice) {
             node = new MemoryNode();
-            node.setLocalDateTime(now);
+            node.setLocalDate(now);
             node.setMemorySliceList(new ArrayList<>());
             lastTopicNode.getMemoryNodes().add(node);
+            lastTopicNode.getMemoryNodes().sort(null);
         }
         node.getMemorySliceList().add(slice);
     }
 
+    public List<MemorySlice> selectMemory(List<String> topicPath) {
+        List<MemorySlice> targetSliceList = new ArrayList<>();
+        topicPath = new ArrayList<>(topicPath);
+        String targetTopic = topicPath.getLast();
+        TopicNode targetParentNode = getTargetParentNode(topicPath, targetTopic);
+        List<List<String>> relatedTopics = new ArrayList<>();
+        //终点记忆节点
+        for (MemoryNode memoryNode : targetParentNode.getTopicNodes().get(targetTopic).getMemoryNodes()) {
+            List<MemorySlice> endpointMemorySliceList = memoryNode.getMemorySliceList();
+            targetSliceList.addAll(endpointMemorySliceList);
+            for (MemorySlice memorySlice : endpointMemorySliceList) {
+                if (memorySlice.getRelatedTopics() != null) {
+                    relatedTopics.addAll(memorySlice.getRelatedTopics());
+                }
+            }
+        }
+        //邻近记忆节点 联系
+        for (List<String> relatedTopic : relatedTopics) {
+            List<String> tempTopicPath = new ArrayList<>(relatedTopic);
+            String tempTargetTopic = tempTopicPath.getLast();
+            TopicNode tempTargetParentNode = getTargetParentNode(tempTopicPath, tempTargetTopic);
+            //获取终点节点及其最新记忆节点
+            TopicNode tempTargetNode = tempTargetParentNode.getTopicNodes().get(tempTopicPath.getLast());
+            List<MemoryNode> tempMemoryNodes = tempTargetNode.getMemoryNodes();
+            if (!tempMemoryNodes.isEmpty()) {
+                targetSliceList.addAll(tempMemoryNodes.getFirst().getMemorySliceList());
+            }
+        }
+        //邻近记忆节点 父级
+        List<MemoryNode> targetParentMemoryNodes = targetParentNode.getMemoryNodes();
+        if (!targetParentMemoryNodes.isEmpty()) {
+            targetSliceList.addAll(targetParentMemoryNodes.getFirst().getMemorySliceList());
+        }
+        return targetSliceList;
+    }
+
+    private TopicNode getTargetParentNode(List<String> topicPath, String targetTopic) {
+        String topTopic = topicPath.getFirst();
+        if (!existedTopics.containsKey(topTopic)){
+            throw new UnExistedTopicException("不存在的主题: " + topTopic);
+        }
+        TopicNode targetParentNode = topicNodes.get(topTopic);
+        topicPath.removeFirst();
+        for (String topic : topicPath) {
+            if (!existedTopics.get(topTopic).contains(topic)){
+                throw new UnExistedTopicException("不存在的主题: " + topTopic);
+            }
+        }
+
+        //逐层查找目标主题，可选取终点主题节点相邻位置的主题节点。终点记忆节点选取全部memoryNode, 邻近记忆节点选取最新日期的memoryNode
+        while (!targetParentNode.getTopicNodes().containsKey(targetTopic)) {
+            targetParentNode = targetParentNode.getTopicNodes().get(topicPath.getFirst());
+            topicPath.removeFirst();
+        }
+        return targetParentNode;
+    }
 }
 
