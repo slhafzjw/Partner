@@ -124,7 +124,6 @@ public class InsertTest {
     private MemorySlice createTestMemorySlice(String id) {
         MemorySlice slice = new MemorySlice();
         slice.setMemoryId(id);
-        slice.setMemoryRank(1);
         // 可以设置其他必要属性
         return slice;
     }
@@ -134,7 +133,6 @@ public class InsertTest {
         // 构造 MemorySlice
         MemorySlice slice = new MemorySlice();
         slice.setMemoryId("001");
-        slice.setMemoryRank(5);
         slice.setSlicePath("/demo/path");
 
         List<String> topicPath = Arrays.asList("生活", "学习", "Java");
@@ -162,7 +160,6 @@ public class InsertTest {
         // 校验：MemorySlice 内容一致
         MemorySlice deserializedSlice = javaNode.getMemoryNodes().get(0).getMemorySliceList().get(0);
         assertEquals("001", deserializedSlice.getMemoryId());
-        assertEquals(Integer.valueOf(5), deserializedSlice.getMemoryRank());
         assertEquals("/demo/path", deserializedSlice.getSlicePath());
     }
 

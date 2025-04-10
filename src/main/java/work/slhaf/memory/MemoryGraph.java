@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Data
@@ -19,16 +20,44 @@ public class MemoryGraph implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
     private static final String STORAGE_DIR = "./data/memory/";
-
+    //todo: 实现记忆的短期缓存机制
     private String id;
+    /**
+     * key: 根主题名称  value: 根主题节点
+     */
     private HashMap<String, TopicNode> topicNodes;
     public static MemoryGraph memoryGraph;
-    private HashMap<String, Set<String>> existedTopics;
+
+    /**
+     * 用于存储已存在的主题列表，便于记忆查找, 使用根主题名称作为键, 子主题名称集合为值
+     * 该部分在'主题提取LLM'的system prompt中常驻
+     */
+    private HashMap<String, LinkedHashSet<String>> existedTopics;
+
+    /**
+     * 记忆节点的日期索引, 同一日期内按照对话id区分
+     * 同时作为临时的同一对话切片容器, 用于为同一对话内的不同切片提供更新上下文的场所
+     */
+    private HashMap<LocalDate, HashMap<String, List<MemorySlice>>> dateIndex;
+
+    /**
+     * 近两日的对话总结缓存, 用于为大模型提供必要的记忆补充, hashmap以切片的存储时间为键，总结为值
+     * 该部分作为'主LLM'system prompt常驻
+     */
+    private HashMap<LocalDateTime, String> dialogMap;
+
+    /**
+     * 存储确定性记忆, 如'用户爱好'等确定性信息
+     * 该部分作为'主LLM'system prompt常驻
+     */
+    private HashMap<String, LinkedHashMap<LocalDate, String>> staticMemory;
 
     public MemoryGraph(String id) {
         this.id = id;
         this.topicNodes = new HashMap<>();
         this.existedTopics = new HashMap<>();
+        this.dateIndex = new HashMap<>();
+        this.staticMemory = new HashMap<>();
     }
 
     public static MemoryGraph initialize(String id) {
@@ -88,9 +117,6 @@ public class MemoryGraph implements Serializable {
 
     public void insertMemory(List<String> topicPath, MemorySlice slice) {
         topicPath = new ArrayList<>(topicPath);
-        if (topicNodes == null) {
-            topicNodes = new HashMap<>();
-        }
         //查看是否存在根主题节点
         String rootTopic = topicPath.getFirst();
         topicPath.removeFirst();
@@ -99,7 +125,7 @@ public class MemoryGraph implements Serializable {
             rootNode.setMemoryNodes(new ArrayList<>());
             rootNode.setTopicNodes(new HashMap<>());
             topicNodes.put(rootTopic, rootNode);
-            existedTopics.put(rootTopic, new HashSet<>());
+            existedTopics.put(rootTopic, new LinkedHashSet<>());
         }
 
         TopicNode lastTopicNode = topicNodes.get(rootTopic);
@@ -115,13 +141,9 @@ public class MemoryGraph implements Serializable {
                 lastTopicNode.setMemoryNodes(nodeList);
                 lastTopicNode.setTopicNodes(new HashMap<>());
                 existedTopicNodes.add(topic);
-                /*if (i == topicPath.size() - 1) {
-                    lastTopicNode.setMemoryNodes(new ArrayList<>());
-                    lastTopicNode.setTopicNodes(new HashMap<>());
-                }*/
             }
         }
-        //检查是否存在当天对应的memoryData
+        //检查是否存在当天对应的memorySlice
         LocalDate now = LocalDate.now();
         boolean hasSlice = false;
         MemoryNode node = null;
@@ -140,9 +162,56 @@ public class MemoryGraph implements Serializable {
             lastTopicNode.getMemoryNodes().sort(null);
         }
         node.getMemorySliceList().add(slice);
+
+        updateDateIndex(now, slice);
+        updateDialogMap(slice);
     }
 
-    public List<MemorySlice> selectMemory(List<String> topicPath) {
+    private void updateDialogMap(MemorySlice slice) {
+        String summary = slice.getSliceData().getSummary();
+        LocalDateTime now = LocalDateTime.now();
+        //移除两天前的上下文补充(切片总结)
+        List<LocalDateTime> keysToRemove = new ArrayList<>();
+        dialogMap.forEach((k, v) -> {
+            if (now.minusDays(2).isAfter(k)){
+                keysToRemove.add(k);
+            }
+        });
+        for (LocalDateTime dateTime : keysToRemove) {
+            dialogMap.remove(dateTime);
+        }
+        dialogMap.put(now,summary);
+    }
+
+    private void updateDateIndex(LocalDate now, MemorySlice slice) {
+        String memoryId = slice.getMemoryId();
+        //查看是否存在当前日期的对话切片索引
+        if (!dateIndex.containsKey(now)) {
+            dateIndex.put(now, new HashMap<>());
+        }
+        //查看当前日期的索引中是否存在该对话的索引
+        HashMap<String, List<MemorySlice>> currentDateDialogSlices = dateIndex.get(now);
+        if (!currentDateDialogSlices.containsKey(memoryId)) {
+            List<MemorySlice> memorySliceList = new ArrayList<>();
+            currentDateDialogSlices.put(memoryId, memorySliceList);
+        }
+        //处理上下文关系
+        List<MemorySlice> memorySliceList = currentDateDialogSlices.get(memoryId);
+        if (memorySliceList.isEmpty()) {
+            memorySliceList.add(slice);
+        } else {
+            //排序
+            memorySliceList.sort(null);
+            MemorySlice tempSlice = memorySliceList.getLast();
+            //末尾切片添加当前切片的引用
+            tempSlice.setSliceAfter(slice);
+            //当前切片添加前序切片的引用
+            slice.setSliceBefore(tempSlice);
+        }
+
+    }
+
+    public List<MemorySlice> selectMemoryByPath(List<String> topicPath) {
         List<MemorySlice> targetSliceList = new ArrayList<>();
         topicPath = new ArrayList<>(topicPath);
         String targetTopic = topicPath.getLast();
@@ -178,15 +247,19 @@ public class MemoryGraph implements Serializable {
         return targetSliceList;
     }
 
+    public HashMap<String,List<MemorySlice>> selectMemoryByDate(LocalDate date){
+        return dateIndex.get(date);
+    }
+
     private TopicNode getTargetParentNode(List<String> topicPath, String targetTopic) {
         String topTopic = topicPath.getFirst();
-        if (!existedTopics.containsKey(topTopic)){
+        if (!existedTopics.containsKey(topTopic)) {
             throw new UnExistedTopicException("不存在的主题: " + topTopic);
         }
         TopicNode targetParentNode = topicNodes.get(topTopic);
         topicPath.removeFirst();
         for (String topic : topicPath) {
-            if (!existedTopics.get(topTopic).contains(topic)){
+            if (!existedTopics.get(topTopic).contains(topic)) {
                 throw new UnExistedTopicException("不存在的主题: " + topTopic);
             }
         }

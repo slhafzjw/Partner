@@ -9,6 +9,5 @@ import java.util.List;
 @Data
 public class TopicNode implements Serializable {
     private HashMap<String,TopicNode> topicNodes;
-//    private Integer weight = 0;
     private List<MemoryNode> memoryNodes;
 }
