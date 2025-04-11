@@ -7,8 +7,8 @@ import work.slhaf.memory.content.MemorySlice;
 import work.slhaf.memory.node.MemoryNode;
 import work.slhaf.memory.node.TopicNode;
 
+import java.io.IOException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -28,7 +28,7 @@ public class InsertTest {
     }
 
     @Test
-    public void testInsertMemory_NewRootTopic() {
+    public void testInsertMemory_NewRootTopic() throws IOException, ClassNotFoundException {
         // 准备测试数据
         List<String> topicPath = new LinkedList<>(Arrays.asList("Programming", "Java", "Collections"));
         MemorySlice slice = createTestMemorySlice("slice1");
@@ -54,7 +54,7 @@ public class InsertTest {
     }
 
     @Test
-    public void testInsertMemory_ExistingTopicPath() {
+    public void testInsertMemory_ExistingTopicPath() throws IOException, ClassNotFoundException {
         // 准备初始数据
         List<String> topicPath1 = new LinkedList<>(Arrays.asList("Programming", "Java", "Collections"));
         MemorySlice slice1 = createTestMemorySlice("slice1");
@@ -75,7 +75,7 @@ public class InsertTest {
     }
 
     @Test
-    public void testInsertMemory_DifferentDays() {
+    public void testInsertMemory_DifferentDays() throws IOException, ClassNotFoundException {
         // 准备测试数据
         List<String> topicPath = new LinkedList<>(Arrays.asList("Math", "Algebra"));
         MemorySlice slice1 = createTestMemorySlice("slice1");
@@ -101,7 +101,7 @@ public class InsertTest {
     }
 
     @Test
-    public void testInsertMemory_PartialExistingPath() {
+    public void testInsertMemory_PartialExistingPath() throws IOException, ClassNotFoundException {
         // 准备初始数据 - 创建部分路径
         List<String> topicPath1 = new LinkedList<>(Arrays.asList("Science", "Physics"));
         MemorySlice slice1 = createTestMemorySlice("slice1");
@@ -129,11 +129,10 @@ public class InsertTest {
     }
 
     @Test
-    public void testSerializationConsistency() {
+    public void testSerializationConsistency() throws IOException, ClassNotFoundException {
         // 构造 MemorySlice
         MemorySlice slice = new MemorySlice();
         slice.setMemoryId("001");
-        slice.setSlicePath("/demo/path");
 
         List<String> topicPath = Arrays.asList("生活", "学习", "Java");
 
@@ -160,7 +159,6 @@ public class InsertTest {
         // 校验：MemorySlice 内容一致
         MemorySlice deserializedSlice = javaNode.getMemoryNodes().get(0).getMemorySliceList().get(0);
         assertEquals("001", deserializedSlice.getMemoryId());
-        assertEquals("/demo/path", deserializedSlice.getSlicePath());
     }
 
 }

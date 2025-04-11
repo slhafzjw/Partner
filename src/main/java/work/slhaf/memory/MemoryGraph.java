@@ -1,6 +1,7 @@
 package work.slhaf.memory;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import work.slhaf.memory.content.MemorySlice;
 import work.slhaf.memory.exception.UnExistedTopicException;
 import work.slhaf.memory.node.MemoryNode;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Data
+@Slf4j
 public class MemoryGraph implements Serializable {
 
     @Serial
@@ -43,14 +45,25 @@ public class MemoryGraph implements Serializable {
     /**
      * 近两日的对话总结缓存, 用于为大模型提供必要的记忆补充, hashmap以切片的存储时间为键，总结为值
      * 该部分作为'主LLM'system prompt常驻
+     * 该部分作为近两日的整体对话缓存, 不区分用户
      */
     private HashMap<LocalDateTime, String> dialogMap;
+
+    /**
+     * 近两日的区分用户的对话总结缓存，在prompt结构上比dialogMap层级深一层, dialogMap更具近两日整体对话的摘要性质
+     */
+    private HashMap<LocalDateTime,HashMap<String/*userId*/,String>> userDialogMap;
+
+    /**
+     * 当前对话的活动性总结, 拥有比dialogMap更丰富的全文细节, 作为当前对话token超限时的必要上下文压缩存储
+     */
+    private List<String> currentCompressedSessionContext;
 
     /**
      * 存储确定性记忆, 如'用户爱好'等确定性信息
      * 该部分作为'主LLM'system prompt常驻
      */
-    private HashMap<String, LinkedHashMap<LocalDate, String>> staticMemory;
+    private HashMap<String /*userId*/, HashMap<String /*memoryKey*/,String /*memoryValue*/>> staticMemory;
 
     public MemoryGraph(String id) {
         this.id = id;
@@ -98,7 +111,7 @@ public class MemoryGraph implements Serializable {
         try (ObjectInputStream ois = new ObjectInputStream(
                 new FileInputStream(filePath.toFile()))) {
             MemoryGraph graph = (MemoryGraph) ois.readObject();
-            System.out.println("MemoryGraph 已从文件加载: " + filePath);
+            log.info("MemoryGraph 已从文件加载: " + filePath);
             return graph;
         }
     }
@@ -115,7 +128,7 @@ public class MemoryGraph implements Serializable {
         }
     }
 
-    public void insertMemory(List<String> topicPath, MemorySlice slice) {
+    public void insertMemory(List<String> topicPath, MemorySlice slice) throws IOException, ClassNotFoundException {
         topicPath = new ArrayList<>(topicPath);
         //查看是否存在根主题节点
         String rootTopic = topicPath.getFirst();
@@ -165,12 +178,14 @@ public class MemoryGraph implements Serializable {
 
         updateDateIndex(now, slice);
         updateDialogMap(slice);
+        node.saveMemorySliceList();
     }
 
     private void updateDialogMap(MemorySlice slice) {
-        String summary = slice.getSliceData().getSummary();
+        String summary = slice.getSummary();
         LocalDateTime now = LocalDateTime.now();
-        //移除两天前的上下文补充(切片总结)
+        //更新dialogMap
+        //移除两天前的上下文缓存(切片总结)
         List<LocalDateTime> keysToRemove = new ArrayList<>();
         dialogMap.forEach((k, v) -> {
             if (now.minusDays(2).isAfter(k)){
@@ -180,7 +195,21 @@ public class MemoryGraph implements Serializable {
         for (LocalDateTime dateTime : keysToRemove) {
             dialogMap.remove(dateTime);
         }
+        keysToRemove.clear();
+        //放入新缓存
         dialogMap.put(now,summary);
+        //更新userDialogMap
+        //移除两天前上下文缓存(切片总结)
+        userDialogMap.forEach((k,v) -> {
+            if (now.minusDays(2).isAfter(k)){
+                keysToRemove.add(k);
+            }
+        });
+        for (LocalDateTime dateTime : keysToRemove) {
+            userDialogMap.remove(dateTime);
+        }
+        //放入新缓存
+        userDialogMap.get(now).put(slice.getStartUser(),slice.getSummary());
     }
 
     private void updateDateIndex(LocalDate now, MemorySlice slice) {
@@ -211,7 +240,7 @@ public class MemoryGraph implements Serializable {
 
     }
 
-    public List<MemorySlice> selectMemoryByPath(List<String> topicPath) {
+    public List<MemorySlice> selectMemoryByPath(List<String> topicPath) throws IOException, ClassNotFoundException {
         List<MemorySlice> targetSliceList = new ArrayList<>();
         topicPath = new ArrayList<>(topicPath);
         String targetTopic = topicPath.getLast();

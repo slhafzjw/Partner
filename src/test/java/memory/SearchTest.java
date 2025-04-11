@@ -8,6 +8,7 @@ import work.slhaf.memory.exception.UnExistedTopicException;
 import work.slhaf.memory.node.MemoryNode;
 import work.slhaf.memory.node.TopicNode;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +22,7 @@ class SearchTest {
 
     // 初始化测试环境，模拟插入基础数据
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException, ClassNotFoundException {
         memoryGraph = new MemoryGraph("testGraph");
 
         // 构建基础主题路径：根主题 -> 编程 -> Java
@@ -42,7 +43,7 @@ class SearchTest {
 
     // 场景1：查询存在的完整主题路径（含相关主题）
     @Test
-    void selectMemory_shouldReturnTargetAndRelatedAndParentMemories() {
+    void selectMemory_shouldReturnTargetAndRelatedAndParentMemories() throws IOException, ClassNotFoundException {
         // 准备相关主题数据：根主题 -> 算法 -> 排序
         List<String> sortPath = new ArrayList<>();
         sortPath.add("算法");
@@ -81,7 +82,7 @@ class SearchTest {
 
     // 场景3：无相关主题时仅返回目标节点和父节点记忆
     @Test
-    void selectMemory_withoutRelatedTopics_shouldReturnTargetAndParent() {
+    void selectMemory_withoutRelatedTopics_shouldReturnTargetAndParent() throws IOException, ClassNotFoundException {
         // 插入父级记忆：根主题 -> 编程
         List<String> parentPath = new ArrayList<>();
         parentPath.add("编程");
@@ -102,7 +103,7 @@ class SearchTest {
 
     // 场景4：验证日期排序，应优先取最新日期的邻近记忆
     @Test
-    void selectMemory_shouldGetLatestRelatedMemory() {
+    void selectMemory_shouldGetLatestRelatedMemory() throws IOException, ClassNotFoundException {
         // 准备相关主题路径：根主题 -> 数据库
         List<String> dbPath = new ArrayList<>();
         dbPath.add("数据库");
