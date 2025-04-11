@@ -1,11 +1,13 @@
 package work.slhaf.memory;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.memory.content.MemorySlice;
 import work.slhaf.memory.exception.UnExistedTopicException;
 import work.slhaf.memory.node.MemoryNode;
 import work.slhaf.memory.node.TopicNode;
+import work.slhaf.memory.pojo.PersistableObject;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -15,12 +17,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemoryGraph implements Serializable {
+public class MemoryGraph extends PersistableObject {
 
     @Serial
     private static final long serialVersionUID = 1L;
+
     private static final String STORAGE_DIR = "./data/memory/";
     //todo: 实现记忆的短期缓存机制
     private String id;

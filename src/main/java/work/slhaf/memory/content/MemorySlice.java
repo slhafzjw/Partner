@@ -1,13 +1,19 @@
 package work.slhaf.memory.content;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import work.slhaf.chat.pojo.Message;
+import work.slhaf.memory.pojo.PersistableObject;
 
-import java.io.Serializable;
+import java.io.Serial;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class MemorySlice implements Serializable, Comparable<MemorySlice> {
+public class MemorySlice extends PersistableObject implements Comparable<MemorySlice> {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     /**
      * 关联的完整对话的id

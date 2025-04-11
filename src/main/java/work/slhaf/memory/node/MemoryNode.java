@@ -1,18 +1,24 @@
 package work.slhaf.memory.node;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.memory.content.MemorySlice;
 import work.slhaf.memory.exception.NullSliceListException;
+import work.slhaf.memory.pojo.PersistableObject;
 
 import java.io.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemoryNode implements Serializable, Comparable<MemoryNode> {
+public class MemoryNode extends PersistableObject implements Comparable<MemoryNode> {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private static String SLICE_DATA_DIR = "./data/slice/";
 
