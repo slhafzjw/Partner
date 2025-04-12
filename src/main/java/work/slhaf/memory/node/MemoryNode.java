@@ -23,7 +23,12 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
     private static String SLICE_DATA_DIR = "./data/slice/";
 
     /**
-     * 记忆节点所属日期, 以日期为文件名在硬盘存储记忆数据(如 2025-04-11.slice)
+     * 记忆节点唯一标识, 用于作为实际文件名, 如(xxxx-xxxxx-xxxxx.slice)
+     */
+    private String memoryNodeId;
+
+    /**
+     * 记忆节点所属日期
      */
     private LocalDate localDate;
 
@@ -44,10 +49,11 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
 
     public List<MemorySlice> getMemorySliceList() throws IOException, ClassNotFoundException {
         //检查是否存在对应文件
-        File file = new File(SLICE_DATA_DIR+this.getLocalDate()+".slice");
+        File file = new File(SLICE_DATA_DIR+this.getMemoryNodeId()+".slice");
         if (file.exists()){
             this.memorySliceList = deserialize(file);
         }else {
+            //逻辑正常的话，这部分应该不会出现，除非在insertMemory中进行save操作之前出现异常，中断了方法，但程序却没有结束
             this.memorySliceList = new ArrayList<>();
         }
         return this.memorySliceList;
@@ -57,7 +63,7 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
         if (memorySliceList == null){
             throw new NullSliceListException("memorySliceList为NULL! 检查实现逻辑!");
         }
-        File file = new File(SLICE_DATA_DIR+this.getLocalDate()+".slice");
+        File file = new File(SLICE_DATA_DIR+this.getMemoryNodeId()+".slice");
         try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))){
             oos.writeObject(this.memorySliceList);
         }
