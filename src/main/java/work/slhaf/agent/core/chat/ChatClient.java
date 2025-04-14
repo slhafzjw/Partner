@@ -1,15 +1,15 @@
-package work.slhaf.chat;
+package work.slhaf.agent.core.chat;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import work.slhaf.chat.constant.Constant;
-import work.slhaf.chat.pojo.ChatBody;
-import work.slhaf.chat.pojo.ChatResponse;
-import work.slhaf.chat.pojo.Message;
-import work.slhaf.chat.pojo.PrimaryChatResponse;
+import work.slhaf.agent.core.chat.constant.Constant;
+import work.slhaf.agent.core.chat.pojo.ChatBody;
+import work.slhaf.agent.core.chat.pojo.ChatResponse;
+import work.slhaf.agent.core.chat.pojo.Message;
+import work.slhaf.agent.core.chat.pojo.PrimaryChatResponse;
 
 import java.util.List;
 

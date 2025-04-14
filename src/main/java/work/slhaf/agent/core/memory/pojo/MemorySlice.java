@@ -1,9 +1,8 @@
-package work.slhaf.agent.core.memory.content;
+package work.slhaf.agent.core.memory.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.chat.pojo.Message;
-import work.slhaf.agent.core.memory.pojo.PersistableObject;
+import work.slhaf.agent.core.chat.pojo.Message;
 
 import java.io.Serial;
 import java.util.List;

@@ -3,11 +3,12 @@ package work.slhaf.agent.core.memory;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.core.memory.content.MemorySlice;
+import work.slhaf.agent.core.chat.pojo.Message;
 import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.memory.node.MemoryNode;
 import work.slhaf.agent.core.memory.node.TopicNode;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
+import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
 import work.slhaf.agent.core.memory.pojo.PersistableObject;
 
@@ -88,6 +89,16 @@ public class MemoryGraph extends PersistableObject {
      */
     private LocalDate cacheDate;
 
+    /**
+     * 智能体涉及到的各个模块中模型的prompt
+     */
+    private HashMap<String, String> modelPrompt;
+
+    /**
+     * 主模型的聊天记录
+     */
+    private List<Message> chatMessages;
+
     public MemoryGraph(String id) {
         this.id = id;
         this.topicNodes = new HashMap<>();
@@ -96,6 +107,7 @@ public class MemoryGraph extends PersistableObject {
         this.staticMemory = new HashMap<>();
         this.memoryNodeCacheCounter = new ConcurrentHashMap<>();
         this.memorySliceCache = new ConcurrentHashMap<>();
+        this.modelPrompt = new HashMap<>();
     }
 
     public static MemoryGraph initialize(String id) {
@@ -104,18 +116,20 @@ public class MemoryGraph extends PersistableObject {
 
         Path filePath = getFilePath(id);
 
-        if (Files.exists(filePath)) {
+        if (memoryGraph == null && Files.exists(filePath)) {
             try {
                 // 从文件加载
-                return deserialize(id);
+                memoryGraph = deserialize(id);
             } catch (Exception e) {
-                System.err.println("加载序列化文件失败，创建新实例: " + e.getMessage());
-                return new MemoryGraph(id);
+                log.error("加载序列化文件失败，创建新实例");
+                System.exit(1);
             }
         } else {
             // 创建新实例
-            return new MemoryGraph(id);
+            memoryGraph = new MemoryGraph(id);
         }
+
+        return memoryGraph;
     }
 
     public void serialize() {

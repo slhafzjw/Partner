@@ -1,7 +1,6 @@
 package work.slhaf.agent.core.memory.pojo;
 
 import lombok.Data;
-import work.slhaf.agent.core.memory.content.MemorySlice;
 
 import java.util.List;
 

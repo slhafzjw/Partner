@@ -1,4 +1,4 @@
-package work.slhaf.chat.pojo;
+package work.slhaf.agent.core.chat.pojo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

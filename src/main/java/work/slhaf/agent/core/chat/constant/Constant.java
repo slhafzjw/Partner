@@ -1,4 +1,4 @@
-package work.slhaf.chat.constant;
+package work.slhaf.agent.core.chat.constant;
 
 public class Constant {
     
