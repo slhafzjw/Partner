@@ -1,13 +1,15 @@
-package work.slhaf.memory;
+package work.slhaf.agent.core.memory;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.memory.content.MemorySlice;
-import work.slhaf.memory.exception.UnExistedTopicException;
-import work.slhaf.memory.node.MemoryNode;
-import work.slhaf.memory.node.TopicNode;
-import work.slhaf.memory.pojo.PersistableObject;
+import work.slhaf.agent.core.memory.content.MemorySlice;
+import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
+import work.slhaf.agent.core.memory.node.MemoryNode;
+import work.slhaf.agent.core.memory.node.TopicNode;
+import work.slhaf.agent.core.memory.pojo.MemoryResult;
+import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
+import work.slhaf.agent.core.memory.pojo.PersistableObject;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -28,7 +30,6 @@ public class MemoryGraph extends PersistableObject {
     private static final long serialVersionUID = 1L;
 
     private static final String STORAGE_DIR = "./data/memory/";
-    //todo: 实现记忆的短期缓存机制
     private String id;
     /**
      * key: 根主题名称  value: 根主题节点
@@ -80,7 +81,7 @@ public class MemoryGraph extends PersistableObject {
      * 记忆切片缓存，每日清空
      * 用于记录作为终点节点调用次数最多的记忆节点的切片数据
      */
-    private ConcurrentHashMap<List<String> /*主题路径*/, List<MemorySlice> /*切片列表*/> memorySliceCache;
+    private ConcurrentHashMap<List<String> /*主题路径*/, MemoryResult /*切片列表*/> memorySliceCache;
 
     /**
      * 缓存日期
@@ -123,9 +124,9 @@ public class MemoryGraph extends PersistableObject {
         try (ObjectOutputStream oos = new ObjectOutputStream(
                 new FileOutputStream(filePath.toFile()))) {
             oos.writeObject(this);
-            System.out.println("MemoryGraph 已保存到: " + filePath);
+            log.info("MemoryGraph 已保存到: {}", filePath);
         } catch (IOException e) {
-            System.err.println("序列化保存失败: " + e.getMessage());
+            log.error("序列化保存失败: {}", e.getMessage());
         }
     }
 
@@ -135,7 +136,7 @@ public class MemoryGraph extends PersistableObject {
         try (ObjectInputStream ois = new ObjectInputStream(
                 new FileInputStream(filePath.toFile()))) {
             MemoryGraph graph = (MemoryGraph) ois.readObject();
-            log.info("MemoryGraph 已从文件加载: " + filePath);
+            log.info("MemoryGraph 已从文件加载: {}", filePath);
             return graph;
         }
     }
@@ -275,7 +276,9 @@ public class MemoryGraph extends PersistableObject {
 
     }
 
-    public List<MemorySlice> selectMemoryByPath(List<String> topicPath) throws IOException, ClassNotFoundException {
+    public MemoryResult selectMemory(List<String> topicPath) throws IOException, ClassNotFoundException {
+        MemoryResult memoryResult = new MemoryResult();
+
         //每日刷新缓存
         checkCacheDate();
         //检测缓存并更新计数, 查看是否需要放入缓存
@@ -284,21 +287,33 @@ public class MemoryGraph extends PersistableObject {
         if (memorySliceCache.containsKey(topicPath)) {
             return memorySliceCache.get(topicPath);
         }
-        List<MemorySlice> targetSliceList = new ArrayList<>();
+        List<MemorySliceResult> targetSliceList = new ArrayList<>();
         topicPath = new ArrayList<>(topicPath);
         String targetTopic = topicPath.getLast();
         TopicNode targetParentNode = getTargetParentNode(topicPath, targetTopic);
         List<List<String>> relatedTopics = new ArrayList<>();
+
         //终点记忆节点
+        MemorySliceResult sliceResult = new MemorySliceResult();
         for (MemoryNode memoryNode : targetParentNode.getTopicNodes().get(targetTopic).getMemoryNodes()) {
             List<MemorySlice> endpointMemorySliceList = memoryNode.getMemorySliceList();
-            targetSliceList.addAll(endpointMemorySliceList);
+//            targetSliceList.addAll(endpointMemorySliceList);
+            for (MemorySlice memorySlice : endpointMemorySliceList) {
+                sliceResult.setSliceBefore(memorySlice.getSliceBefore());
+                sliceResult.setMemorySlice(memorySlice);
+                sliceResult.setSliceAfter(memorySlice.getSliceAfter());
+                targetSliceList.add(sliceResult);
+            }
             for (MemorySlice memorySlice : endpointMemorySliceList) {
                 if (memorySlice.getRelatedTopics() != null) {
                     relatedTopics.addAll(memorySlice.getRelatedTopics());
                 }
             }
         }
+        memoryResult.setMemorySliceResult(targetSliceList);
+
+        //邻近节点
+        List<MemorySlice> relatedMemorySlice = new ArrayList<>();
         //邻近记忆节点 联系
         for (List<String> relatedTopic : relatedTopics) {
             List<String> tempTopicPath = new ArrayList<>(relatedTopic);
@@ -308,23 +323,28 @@ public class MemoryGraph extends PersistableObject {
             TopicNode tempTargetNode = tempTargetParentNode.getTopicNodes().get(tempTopicPath.getLast());
             List<MemoryNode> tempMemoryNodes = tempTargetNode.getMemoryNodes();
             if (!tempMemoryNodes.isEmpty()) {
-                targetSliceList.addAll(tempMemoryNodes.getFirst().getMemorySliceList());
+                relatedMemorySlice.addAll(tempMemoryNodes.getFirst().getMemorySliceList());
             }
         }
+
         //邻近记忆节点 父级
         List<MemoryNode> targetParentMemoryNodes = targetParentNode.getMemoryNodes();
         if (!targetParentMemoryNodes.isEmpty()) {
-            targetSliceList.addAll(targetParentMemoryNodes.getFirst().getMemorySliceList());
+            relatedMemorySlice.addAll(targetParentMemoryNodes.getFirst().getMemorySliceList());
         }
-        //放入缓存
-        updateCache(topicPath, targetSliceList);
-        return targetSliceList;
+
+        //将上述结果包装为MemoryResult
+        memoryResult.setRelatedMemorySliceResult(relatedMemorySlice);
+
+        //尝试更新缓存
+        updateCache(topicPath, memoryResult);
+        return memoryResult;
     }
 
-    private void updateCache(List<String> topicPath, List<MemorySlice> targetSliceList) {
+    private void updateCache(List<String> topicPath, MemoryResult memoryResult) {
         Integer tempCount = memoryNodeCacheCounter.get(topicPath);
         if (tempCount >= 5) {
-            memorySliceCache.put(topicPath, targetSliceList);
+            memorySliceCache.put(topicPath, memoryResult);
         }
     }
 
@@ -344,8 +364,18 @@ public class MemoryGraph extends PersistableObject {
         }
     }
 
-    public HashMap<String, List<MemorySlice>> selectMemoryByDate(LocalDate date) {
-        return dateIndex.get(date);
+    public MemoryResult selectMemory(LocalDate date) {
+        MemoryResult memoryResult = new MemoryResult();
+        List<MemorySliceResult> targetSliceList = new ArrayList<>();
+        for (List<MemorySlice> value : dateIndex.get(date).values()) {
+            for (MemorySlice memorySlice : value) {
+                MemorySliceResult memorySliceResult = new MemorySliceResult();
+                memorySliceResult.setMemorySlice(memorySlice);
+                targetSliceList.add(memorySliceResult);
+            }
+        }
+        memoryResult.setMemorySliceResult(targetSliceList);
+        return memoryResult;
     }
 
     private TopicNode getTargetParentNode(List<String> topicPath, String targetTopic) {

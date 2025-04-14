@@ -1,11 +1,11 @@
-package work.slhaf.memory.node;
+package work.slhaf.agent.core.memory.node;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.memory.content.MemorySlice;
-import work.slhaf.memory.exception.NullSliceListException;
-import work.slhaf.memory.pojo.PersistableObject;
+import work.slhaf.agent.core.memory.content.MemorySlice;
+import work.slhaf.agent.core.memory.exception.NullSliceListException;
+import work.slhaf.agent.core.memory.pojo.PersistableObject;
 
 import java.io.*;
 import java.time.LocalDate;

@@ -1,6 +1,6 @@
 package work.slhaf;
 
-import work.slhaf.memory.MemoryGraph;
+import work.slhaf.agent.core.memory.MemoryGraph;
 
 public class Main {
     public static void main(String[] args) {

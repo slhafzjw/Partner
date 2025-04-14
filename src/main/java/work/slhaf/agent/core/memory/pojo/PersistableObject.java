@@ -1,6 +1,5 @@
-package work.slhaf.memory.pojo;
+package work.slhaf.agent.core.memory.pojo;
 
-import java.io.Serial;
 import java.io.Serializable;
 
 public abstract class PersistableObject implements Serializable {

@@ -1,12 +1,10 @@
-package work.slhaf.memory.node;
+package work.slhaf.agent.core.memory.node;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.memory.pojo.PersistableObject;
+import work.slhaf.agent.core.memory.pojo.PersistableObject;
 
 import java.io.Serial;
-import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
