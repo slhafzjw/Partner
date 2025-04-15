@@ -1,10 +1,12 @@
 package work.slhaf;
 
-import work.slhaf.agent.core.memory.MemoryGraph;
+import work.slhaf.agent.Agent;
+import work.slhaf.agent.modules.memory.MemoryGraph;
+
+import java.io.IOException;
 
 public class Main {
-    public static void main(String[] args) {
-        MemoryGraph graph = MemoryGraph.initialize("test");
-
+    public static void main(String[] args) throws IOException {
+        Agent agent = Agent.initialize();
     }
 }

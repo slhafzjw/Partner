@@ -1,0 +1,13 @@
+package work.slhaf.agent.core.interation.data;
+
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+public class InteractionInputData {
+    private String userInfo;
+    private String userNickName;
+    private String content;
+    private LocalDateTime localDateTime;
+}
