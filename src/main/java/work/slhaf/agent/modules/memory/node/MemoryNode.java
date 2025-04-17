@@ -8,6 +8,8 @@ import work.slhaf.agent.modules.memory.pojo.MemorySlice;
 import work.slhaf.agent.modules.memory.pojo.PersistableObject;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +22,7 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private static String SLICE_DATA_DIR = "./data/slice/";
+    private static String SLICE_DATA_DIR = "./data/memory/slice/";
 
     /**
      * 记忆节点唯一标识, 用于作为实际文件名, 如(xxxx-xxxxx-xxxxx.slice)
@@ -47,7 +49,7 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
         return 0;
     }
 
-    public List<MemorySlice> getMemorySliceList() throws IOException, ClassNotFoundException {
+    public List<MemorySlice> loadMemorySliceList() throws IOException, ClassNotFoundException {
         //检查是否存在对应文件
         File file = new File(SLICE_DATA_DIR+this.getMemoryNodeId()+".slice");
         if (file.exists()){
@@ -64,6 +66,7 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
             throw new NullSliceListException("memorySliceList为NULL! 检查实现逻辑!");
         }
         File file = new File(SLICE_DATA_DIR+this.getMemoryNodeId()+".slice");
+        Files.createDirectories(Path.of(SLICE_DATA_DIR));
         try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))){
             oos.writeObject(this.memorySliceList);
         }

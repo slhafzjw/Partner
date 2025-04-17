@@ -8,6 +8,7 @@ import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.config.ModelConfig;
 import work.slhaf.agent.modules.memory.MemoryGraph;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,9 +18,9 @@ public class Model {
     protected String prompt;
     protected List<Message> messages;
 
-    protected static void setModel(Config config, Model model, String model_key, String prompt) {
-        MemoryGraph memoryGraph = MemoryGraph.initialize(config.getAgentId());
-        ModelConfig modelConfig = config.getModelConfig().get(model_key);
+    protected static void setModel(Config config, Model model, String model_key, String prompt) throws IOException, ClassNotFoundException {
+        MemoryGraph memoryGraph = MemoryGraph.getInstance(config.getAgentId());
+        ModelConfig modelConfig = ModelConfig.load(model_key);
         if (memoryGraph.getModelPrompt().containsKey(model_key)) {
             model.setPrompt(memoryGraph.getModelPrompt().get(model_key));
         } else {

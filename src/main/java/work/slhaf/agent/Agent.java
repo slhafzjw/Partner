@@ -23,9 +23,9 @@ public class Agent implements TaskCallback {
     public static Agent initialize() throws IOException {
         if (agent == null) {
             //加载配置
-            Config config = Config.load();
+            Config config = Config.getConfig();
             agent = new Agent();
-            agent.setInteractionHub(InteractionHub.initialize(config));
+            agent.setInteractionHub(InteractionHub.initialize());
             agent.registerTaskCallback();
             agent.setMessageSender(new AgentWebSocketServer(config.getWebSocketConfig().getPort(),agent));
             log.info("Agent 加载完毕..");
@@ -37,7 +37,7 @@ public class Agent implements TaskCallback {
      * 接收用户输入，包装为标准输入数据类
      * @param input
      */
-    public void receiveUserInput(String userNickName,String userInfo,String input){
+    public void receiveUserInput(String userNickName,String userInfo,String input) throws IOException {
         InteractionInputData inputData = new InteractionInputData();
         inputData.setContent(input);
         inputData.setUserInfo(userInfo);
@@ -53,7 +53,7 @@ public class Agent implements TaskCallback {
      */
     public void sendToUser(String userInfo,String output){
         System.out.println(output);
-        messageSender.sendMessage(userInfo,output);
+//        messageSender.sendMessage(userInfo,output);
     }
 
     @Override

@@ -3,6 +3,7 @@ package work.slhaf.agent.modules.memory;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.modules.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.modules.memory.node.MemoryNode;
@@ -36,7 +37,7 @@ public class MemoryGraph extends PersistableObject {
      * key: 根主题名称  value: 根主题节点
      */
     private HashMap<String, TopicNode> topicNodes;
-    public static MemoryGraph memoryGraph;
+    private static MemoryGraph memoryGraph;
 
     /**
      * 用于存储已存在的主题列表，便于记忆查找, 使用根主题名称作为键, 子主题名称集合为值
@@ -110,31 +111,27 @@ public class MemoryGraph extends PersistableObject {
         this.modelPrompt = new HashMap<>();
     }
 
-    public static MemoryGraph initialize(String id) {
+    public static MemoryGraph getInstance(String id) throws IOException, ClassNotFoundException {
         // 检查存储目录是否存在，不存在则创建
         createStorageDirectory();
-
-        Path filePath = getFilePath(id);
-        if (memoryGraph == null && Files.exists(filePath)) {
-            try {
-                // 从文件加载
+        if (memoryGraph == null) {
+            Path filePath = getFilePath(id);
+            if (Files.exists(filePath)) {
                 memoryGraph = deserialize(id);
-            } catch (Exception e) {
-                log.error("加载序列化文件失败，创建新实例");
-                System.exit(1);
+            }else {
+                FileUtils.createParentDirectories(filePath.toFile().getParentFile());
+                memoryGraph = new MemoryGraph(id);
+                memoryGraph.serialize();
             }
-        } else {
-            // 创建新实例
-            memoryGraph = new MemoryGraph(id);
+            log.info("MemoryGraph注册完毕...");
         }
-        log.info("MemoryGraph注册完毕...");
 
         return memoryGraph;
     }
 
-    public void serialize() {
+    public void serialize() throws IOException {
         Path filePath = getFilePath(this.id);
-
+        Files.createDirectories(Path.of(STORAGE_DIR));
         try (ObjectOutputStream oos = new ObjectOutputStream(
                 new FileOutputStream(filePath.toFile()))) {
             oos.writeObject(this);
@@ -193,7 +190,7 @@ public class MemoryGraph extends PersistableObject {
             lastTopicNode.getMemoryNodes().add(node);
             lastTopicNode.getMemoryNodes().sort(null);
         }
-        node.getMemorySliceList().add(slice);
+        node.loadMemorySliceList().add(slice);
 
         //生成relatedTopicPath
         for (List<String> relatedTopic : slice.getRelatedTopics()) {
@@ -321,7 +318,7 @@ public class MemoryGraph extends PersistableObject {
         //终点记忆节点
         MemorySliceResult sliceResult = new MemorySliceResult();
         for (MemoryNode memoryNode : targetParentNode.getTopicNodes().get(targetTopic).getMemoryNodes()) {
-            List<MemorySlice> endpointMemorySliceList = memoryNode.getMemorySliceList();
+            List<MemorySlice> endpointMemorySliceList = memoryNode.loadMemorySliceList();
 //            targetSliceList.addAll(endpointMemorySliceList);
             for (MemorySlice memorySlice : endpointMemorySliceList) {
                 sliceResult.setSliceBefore(memorySlice.getSliceBefore());
@@ -348,14 +345,14 @@ public class MemoryGraph extends PersistableObject {
             TopicNode tempTargetNode = tempTargetParentNode.getTopicNodes().get(tempTopicPath.getLast());
             List<MemoryNode> tempMemoryNodes = tempTargetNode.getMemoryNodes();
             if (!tempMemoryNodes.isEmpty()) {
-                relatedMemorySlice.addAll(tempMemoryNodes.getFirst().getMemorySliceList());
+                relatedMemorySlice.addAll(tempMemoryNodes.getFirst().loadMemorySliceList());
             }
         }
 
         //邻近记忆节点 父级
         List<MemoryNode> targetParentMemoryNodes = targetParentNode.getMemoryNodes();
         if (!targetParentMemoryNodes.isEmpty()) {
-            relatedMemorySlice.addAll(targetParentMemoryNodes.getFirst().getMemorySliceList());
+            relatedMemorySlice.addAll(targetParentMemoryNodes.getFirst().loadMemorySliceList());
         }
 
         //将上述结果包装为MemoryResult

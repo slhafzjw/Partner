@@ -49,8 +49,8 @@ public class InsertTest {
         assertEquals(1, collectionsNode.getMemoryNodes().size());
         MemoryNode memoryNode = collectionsNode.getMemoryNodes().get(0);
         assertEquals(LocalDate.now(), memoryNode.getLocalDate());
-        assertEquals(1, memoryNode.getMemorySliceList().size());
-        assertEquals(slice, memoryNode.getMemorySliceList().get(0));
+        assertEquals(1, memoryNode.loadMemorySliceList().size());
+        assertEquals(slice, memoryNode.loadMemorySliceList().get(0));
     }
 
     @Test
@@ -71,7 +71,7 @@ public class InsertTest {
                 .getTopicNodes().get("Collections");
 
         assertEquals(1, collectionsNode.getMemoryNodes().size()); // 同一天应该只有一个MemoryNode
-        assertEquals(2, collectionsNode.getMemoryNodes().get(0).getMemorySliceList().size()); // 但有两个MemorySlice
+        assertEquals(2, collectionsNode.getMemoryNodes().get(0).loadMemorySliceList().size()); // 但有两个MemorySlice
     }
 
     @Test
@@ -141,7 +141,7 @@ public class InsertTest {
         memoryGraph.serialize();
 
         // 反序列化
-        MemoryGraph loadedGraph = MemoryGraph.initialize(testId);
+        MemoryGraph loadedGraph = MemoryGraph.getInstance(testId);
 
         // 校验：topic 是否存在
         assertNotNull(loadedGraph.getTopicNodes().get("生活"));
@@ -157,7 +157,7 @@ public class InsertTest {
         assertFalse(javaNode.getMemoryNodes().isEmpty());
 
         // 校验：MemorySlice 内容一致
-        MemorySlice deserializedSlice = javaNode.getMemoryNodes().get(0).getMemorySliceList().get(0);
+        MemorySlice deserializedSlice = javaNode.getMemoryNodes().get(0).loadMemorySliceList().get(0);
         assertEquals("001", deserializedSlice.getMemoryId());
     }
 

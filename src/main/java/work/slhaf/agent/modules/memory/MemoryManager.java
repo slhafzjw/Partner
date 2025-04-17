@@ -3,20 +3,32 @@ package work.slhaf.agent.modules.memory;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.config.Config;
+import work.slhaf.module.InteractionContext;
+import work.slhaf.module.InteractionModule;
+
+import java.io.IOException;
 
 @Data
 @Slf4j
-public class MemoryManager {
+public class MemoryManager implements InteractionModule {
 
     private static MemoryManager memoryManager;
 
     private MemoryGraph memoryGraph;
     private SliceEvaluator sliceEvaluator;
 
-    public static MemoryManager initialize(Config config){
+    private MemoryManager(){}
+
+    @Override
+    public void execute(InteractionContext interactionContext) {
+
+    }
+
+    public static MemoryManager getInstance() throws IOException, ClassNotFoundException {
         if (memoryManager == null) {
+            Config config = Config.getConfig();
             memoryManager = new MemoryManager();
-            memoryManager.setMemoryGraph(MemoryGraph.initialize(config.getAgentId()));
+            memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId()));
             memoryManager.setSliceEvaluator(SliceEvaluator.initialize(config));
             log.info("MemoryManager注册完毕...");
         }

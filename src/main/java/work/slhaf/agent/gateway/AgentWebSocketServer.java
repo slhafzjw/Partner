@@ -10,6 +10,7 @@ import work.slhaf.agent.Agent;
 import work.slhaf.agent.core.interation.data.InteractionInputData;
 import work.slhaf.agent.core.interation.data.InteractionOutputData;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -39,7 +40,11 @@ public class AgentWebSocketServer extends WebSocketServer implements MessageSend
     public void onMessage(WebSocket webSocket, String s) {
         InteractionInputData inputData = JSONObject.parseObject(s, InteractionInputData.class);
         userSessions.put(inputData.getUserInfo(), webSocket); // 注册连接
-        agent.receiveUserInput(inputData.getUserNickName(), inputData.getUserInfo(), inputData.getContent());
+        try {
+            agent.receiveUserInput(inputData.getUserNickName(), inputData.getUserInfo(), inputData.getContent());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

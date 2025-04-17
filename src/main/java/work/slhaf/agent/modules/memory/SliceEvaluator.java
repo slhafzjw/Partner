@@ -7,6 +7,8 @@ import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 
+import java.io.IOException;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
@@ -15,7 +17,9 @@ public class SliceEvaluator extends Model {
 
     private static SliceEvaluator sliceEvaluator;
 
-    public static SliceEvaluator initialize(Config config) {
+    private SliceEvaluator(){}
+
+    public static SliceEvaluator initialize(Config config) throws IOException, ClassNotFoundException {
 
         if (sliceEvaluator == null) {
             sliceEvaluator = new SliceEvaluator();
