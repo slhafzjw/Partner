@@ -7,8 +7,8 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import work.slhaf.agent.Agent;
-import work.slhaf.agent.core.interation.data.InteractionInputData;
-import work.slhaf.agent.core.interation.data.InteractionOutputData;
+import work.slhaf.agent.core.interaction.data.InteractionInputData;
+import work.slhaf.agent.core.interaction.data.InteractionOutputData;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -58,12 +58,12 @@ public class AgentWebSocketServer extends WebSocketServer implements MessageSend
     }
 
     @Override
-    public void sendMessage(String userInfo,String message) {
-        WebSocket webSocket = userSessions.get(userInfo);
+    public void sendMessage(InteractionOutputData outputData) {
+        WebSocket webSocket = userSessions.get(outputData.getUserInfo());
         if (webSocket != null && webSocket.isOpen()) {
-            webSocket.send(JSONUtil.toJsonStr(new InteractionOutputData(message)));
+            webSocket.send(JSONUtil.toJsonStr(outputData));
         }else {
-            log.warn("用户不在线: {}",userInfo);
+            log.warn("用户不在线: {}",outputData.getUserInfo());
         }
     }
 }

@@ -2,11 +2,12 @@ package work.slhaf.agent.common.model;
 
 import lombok.Data;
 import work.slhaf.agent.common.chat.ChatClient;
-import work.slhaf.agent.common.chat.constant.Constant;
+import work.slhaf.agent.common.chat.constant.ChatConstant;
+import work.slhaf.agent.common.chat.pojo.ChatResponse;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.config.ModelConfig;
-import work.slhaf.agent.modules.memory.MemoryGraph;
+import work.slhaf.agent.core.memory.MemoryGraph;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -29,12 +30,24 @@ public class Model {
         }
         if (memoryGraph.getChatMessages() == null) {
             List<Message> tempMessages = new ArrayList<>();
-            tempMessages.add(new Message(Constant.Character.SYSTEM, model.getPrompt()));
+            tempMessages.add(new Message(ChatConstant.Character.SYSTEM, model.getPrompt()));
             model.setMessages(tempMessages);
             memoryGraph.setChatMessages(tempMessages);
         } else {
             model.setMessages(memoryGraph.getChatMessages());
         }
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
+    }
+
+    public ChatResponse runChat(String input) {
+        this.messages.add(new Message(ChatConstant.Character.USER, input));
+        return this.chatClient.runChat(this.messages);
+    }
+
+    public ChatResponse singleChat(String input) {
+        return this.chatClient.runChat(List.of(
+                new Message(ChatConstant.Character.SYSTEM, this.prompt),
+                new Message(ChatConstant.Character.USER, input)
+        ));
     }
 }

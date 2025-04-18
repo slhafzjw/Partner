@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.interation.data;
+package work.slhaf.agent.core.interaction.data;
 
 import lombok.Data;
 

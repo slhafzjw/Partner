@@ -4,8 +4,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.core.InteractionHub;
-import work.slhaf.agent.core.interation.TaskCallback;
-import work.slhaf.agent.core.interation.data.InteractionInputData;
+import work.slhaf.agent.core.interaction.TaskCallback;
+import work.slhaf.agent.core.interaction.data.InteractionInputData;
+import work.slhaf.agent.core.interaction.data.InteractionOutputData;
 import work.slhaf.agent.gateway.AgentWebSocketServer;
 import work.slhaf.agent.gateway.MessageSender;
 
@@ -53,7 +54,7 @@ public class Agent implements TaskCallback {
      */
     public void sendToUser(String userInfo,String output){
         System.out.println(output);
-//        messageSender.sendMessage(userInfo,output);
+        messageSender.sendMessage(new InteractionOutputData(userInfo,output));
     }
 
     @Override

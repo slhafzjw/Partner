@@ -1,17 +1,17 @@
-package work.slhaf.agent.modules.memory;
+package work.slhaf.agent.core.memory;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.common.chat.pojo.Message;
-import work.slhaf.agent.modules.memory.exception.UnExistedTopicException;
-import work.slhaf.agent.modules.memory.node.MemoryNode;
-import work.slhaf.agent.modules.memory.node.TopicNode;
-import work.slhaf.agent.modules.memory.pojo.MemoryResult;
-import work.slhaf.agent.modules.memory.pojo.MemorySlice;
-import work.slhaf.agent.modules.memory.pojo.MemorySliceResult;
-import work.slhaf.agent.modules.memory.pojo.PersistableObject;
+import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
+import work.slhaf.agent.core.memory.node.MemoryNode;
+import work.slhaf.agent.core.memory.node.TopicNode;
+import work.slhaf.agent.core.memory.pojo.MemoryResult;
+import work.slhaf.agent.core.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
+import work.slhaf.agent.core.memory.pojo.PersistableObject;
 
 import java.io.*;
 import java.nio.file.Files;

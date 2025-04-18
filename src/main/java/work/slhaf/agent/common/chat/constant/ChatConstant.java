@@ -1,6 +1,6 @@
 package work.slhaf.agent.common.chat.constant;
 
-public class Constant {
+public class ChatConstant {
     
     public static class Character {
         public static final String USER = "user";

@@ -5,7 +5,7 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import work.slhaf.agent.common.chat.constant.Constant;
+import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.ChatBody;
 import work.slhaf.agent.common.chat.pojo.ChatResponse;
 import work.slhaf.agent.common.chat.pojo.Message;
@@ -58,7 +58,7 @@ public class ChatClient {
 
         PrimaryChatResponse primaryChatResponse = JSONUtil.toBean(response.body(), PrimaryChatResponse.class);
         finalResponse = ChatResponse.builder()
-                .type(Constant.Response.SUCCESS)
+                .type(ChatConstant.Response.SUCCESS)
                 .message(primaryChatResponse.getChoices().get(0).getMessage().getContent())
                 .usageBean(primaryChatResponse.getUsage())
                 .build();

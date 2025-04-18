@@ -2,12 +2,12 @@ package memory;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import work.slhaf.agent.modules.memory.MemoryGraph;
-import work.slhaf.agent.modules.memory.pojo.MemorySlice;
-import work.slhaf.agent.modules.memory.exception.UnExistedTopicException;
-import work.slhaf.agent.modules.memory.node.MemoryNode;
-import work.slhaf.agent.modules.memory.node.TopicNode;
-import work.slhaf.agent.modules.memory.pojo.MemoryResult;
+import work.slhaf.agent.core.memory.MemoryGraph;
+import work.slhaf.agent.core.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
+import work.slhaf.agent.core.memory.node.MemoryNode;
+import work.slhaf.agent.core.memory.node.TopicNode;
+import work.slhaf.agent.core.memory.pojo.MemoryResult;
 
 import java.io.IOException;
 import java.time.LocalDate;

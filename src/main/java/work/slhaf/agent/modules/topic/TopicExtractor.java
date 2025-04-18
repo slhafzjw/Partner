@@ -2,11 +2,14 @@ package work.slhaf.agent.modules.topic;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import work.slhaf.agent.common.chat.constant.ChatConstant;
+import work.slhaf.agent.common.chat.pojo.ChatResponse;
+import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
-import work.slhaf.module.InteractionContext;
-import work.slhaf.module.InteractionModule;
+import work.slhaf.agent.core.interaction.InteractionModule;
+import work.slhaf.agent.core.interaction.data.InteractionContext;
 
 import java.io.IOException;
 
@@ -23,8 +26,7 @@ public class TopicExtractor extends Model implements InteractionModule {
         if (topicExtractor == null) {
             Config config = Config.getConfig();
             topicExtractor = new TopicExtractor();
-            topicExtractor.setPrompt(ModelConstant.SLICE_EVALUATOR_PROMPT);
-            setModel(config, topicExtractor, MODEL_KEY, topicExtractor.getPrompt());
+            setModel(config, topicExtractor, MODEL_KEY, ModelConstant.TOPIC_EXTRACTOR_PROMPT);
         }
 
         return topicExtractor;
@@ -32,6 +34,8 @@ public class TopicExtractor extends Model implements InteractionModule {
 
     @Override
     public void execute(InteractionContext interactionContext) {
+        String primaryMessageResponse = singleChat(interactionContext.getInput()).getMessage();
 
     }
+
 }

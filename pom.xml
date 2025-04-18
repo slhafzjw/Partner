@@ -74,11 +74,6 @@
             <artifactId>hutool-all</artifactId>
             <version>5.8.36</version>
         </dependency>
-        <dependency>
-            <groupId>work.slhaf</groupId>
-            <artifactId>Partner-Modules-Api</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
     </dependencies>
 
 </project>

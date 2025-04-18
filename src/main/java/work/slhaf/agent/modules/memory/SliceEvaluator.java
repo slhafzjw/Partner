@@ -19,12 +19,11 @@ public class SliceEvaluator extends Model {
 
     private SliceEvaluator(){}
 
-    public static SliceEvaluator initialize(Config config) throws IOException, ClassNotFoundException {
-
+    public static SliceEvaluator getInstance() throws IOException, ClassNotFoundException {
         if (sliceEvaluator == null) {
+            Config config = Config.getConfig();
             sliceEvaluator = new SliceEvaluator();
-            sliceEvaluator.setPrompt(ModelConstant.SLICE_EVALUATOR_PROMPT);
-            setModel(config,sliceEvaluator, MODEL_KEY, sliceEvaluator.getPrompt());
+            setModel(config,sliceEvaluator, MODEL_KEY, ModelConstant.SLICE_EVALUATOR_PROMPT);
             log.info("SliceEvaluator注册完毕...");
         }
 

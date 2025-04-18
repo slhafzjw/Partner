@@ -1,4 +1,4 @@
-package work.slhaf.agent.modules.memory.pojo;
+package work.slhaf.agent.core.memory.pojo;
 
 import java.io.Serializable;
 

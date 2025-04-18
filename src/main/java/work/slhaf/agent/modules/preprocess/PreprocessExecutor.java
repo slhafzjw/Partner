@@ -1,7 +1,7 @@
 package work.slhaf.agent.modules.preprocess;
 
-import work.slhaf.agent.core.interation.data.InteractionInputData;
-import work.slhaf.module.InteractionContext;
+import work.slhaf.agent.core.interaction.data.InteractionContext;
+import work.slhaf.agent.core.interaction.data.InteractionInputData;
 
 public class PreprocessExecutor {
 
@@ -18,11 +18,13 @@ public class PreprocessExecutor {
 
     public InteractionContext execute(InteractionInputData inputData) {
         InteractionContext context = new InteractionContext();
-        context.setDateTime(inputData.getLocalDateTime());
-        context.setFinished(false);
-        context.setInput(inputData.getContent());
+
         context.setUserInfo(inputData.getUserInfo());
         context.setUserNickname(inputData.getUserNickName());
+        context.setDateTime(inputData.getLocalDateTime());
+
+        context.setFinished(false);
+        context.setInput(inputData.getContent());
 
         return context;
     }

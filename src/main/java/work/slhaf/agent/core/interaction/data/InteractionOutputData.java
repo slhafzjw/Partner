@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.interation.data;
+package work.slhaf.agent.core.interaction.data;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,4 +7,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class InteractionOutputData {
     private String content;
+    private String userInfo;
 }
