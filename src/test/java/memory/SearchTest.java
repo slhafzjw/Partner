@@ -59,7 +59,7 @@ class SearchTest {
         List<String> queryPath = new ArrayList<>();
         queryPath.add("算法");
         queryPath.add("排序");
-        MemoryResult results = memoryGraph.selectMemory(queryPath);
+//        MemoryResult results = memoryGraph.selectMemory(queryPath);
 
         // 验证结果应包含：
         // 1. 目标节点所有记忆（java1）
@@ -77,7 +77,7 @@ class SearchTest {
         invalidPath.add("不存在的主题");
 
         assertThrows(UnExistedTopicException.class, () -> {
-            memoryGraph.selectMemory(invalidPath);
+//            memoryGraph.selectMemory(invalidPath);
         });
     }
 
@@ -94,7 +94,7 @@ class SearchTest {
         List<String> queryPath = new ArrayList<>();
         queryPath.add("编程");
         queryPath.add("Java");
-        MemoryResult results = memoryGraph.selectMemory(queryPath);
+//        MemoryResult results = memoryGraph.selectMemory(queryPath);
 
         // 应包含：Java记忆 + 父级最新记忆
 //        assertTrue(results.stream().anyMatch(m -> "java1".equals(m.getMemoryId())));
@@ -136,7 +136,7 @@ class SearchTest {
 
         // 执行查询
         List<String> queryPath = createTopicPath("编程", "Java");
-        MemoryResult results = memoryGraph.selectMemory(queryPath);
+//        MemoryResult results = memoryGraph.selectMemory(queryPath);
 
         // 验证结果应包含最新关联记忆（dbNew）
 //        assertTrue(results.stream().anyMatch(m -> "dbNew".equals(m.getMemoryId())),

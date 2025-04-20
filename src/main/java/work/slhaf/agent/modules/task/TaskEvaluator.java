@@ -3,7 +3,6 @@ package work.slhaf.agent.modules.task;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.config.Config;
-import work.slhaf.agent.common.config.ModelConfig;
 import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 

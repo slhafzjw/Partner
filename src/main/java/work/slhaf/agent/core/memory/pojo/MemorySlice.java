@@ -45,12 +45,12 @@ public class MemorySlice extends PersistableObject implements Comparable<MemoryS
      * 多用户设定
      * 发起该切片对话的用户
      */
-    private String startUser;
+    private String startUserId;
 
     /**
      * 该切片涉及到的用户uuid
      */
-    private List<String> involvedUsers;
+    private List<String> involvedUserIds;
 
     /**
      * 是否仅供发起用户作为记忆参考

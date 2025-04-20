@@ -41,8 +41,8 @@ public class AgentWebSocketServer extends WebSocketServer implements MessageSend
         InteractionInputData inputData = JSONObject.parseObject(s, InteractionInputData.class);
         userSessions.put(inputData.getUserInfo(), webSocket); // 注册连接
         try {
-            agent.receiveUserInput(inputData.getUserNickName(), inputData.getUserInfo(), inputData.getContent());
-        } catch (IOException e) {
+            agent.receiveUserInput(inputData);
+        } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }

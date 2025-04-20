@@ -15,6 +15,7 @@ public class MemoryUpdater implements InteractionModule {
 
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
+    private MemorySelectExtractor memorySelectExtractor;
 
     private MemoryUpdater(){}
 
@@ -22,6 +23,7 @@ public class MemoryUpdater implements InteractionModule {
         if (memoryUpdater == null) {
             memoryUpdater = new MemoryUpdater();
             memoryUpdater.setMemoryManager(MemoryManager.getInstance());
+            memoryUpdater.setMemorySelectExtractor(MemorySelectExtractor.getInstance());
         }
         return memoryUpdater;
     }

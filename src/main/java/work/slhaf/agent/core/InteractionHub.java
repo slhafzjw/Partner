@@ -7,8 +7,8 @@ import work.slhaf.agent.core.interaction.InteractionModulesLoader;
 import work.slhaf.agent.core.interaction.TaskCallback;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
-import work.slhaf.agent.core.model.CoreModel;
 import work.slhaf.agent.core.memory.MemoryManager;
+import work.slhaf.agent.core.model.CoreModel;
 import work.slhaf.agent.modules.preprocess.PreprocessExecutor;
 import work.slhaf.agent.modules.task.TaskScheduler;
 
@@ -35,7 +35,7 @@ public class InteractionHub {
         return interactionHub;
     }
 
-    public void call(InteractionInputData inputData) throws IOException {
+    public void call(InteractionInputData inputData) throws IOException, ClassNotFoundException {
         //预处理
         InteractionContext interactionContext = PreprocessExecutor.getInstance().execute(inputData);
         //加载模块
@@ -43,6 +43,6 @@ public class InteractionHub {
         for (InteractionModule interactionModule : interactionModules) {
             interactionModule.execute(interactionContext);
         }
-        callback.onTaskFinished(interactionContext.getUserInfo(), interactionContext.getCoreResponse().getMessage());
+        callback.onTaskFinished(interactionContext.getUserInfo(), interactionContext.getCoreResponse().getString("message"));
     }
 }

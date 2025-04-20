@@ -10,4 +10,5 @@ public class InteractionInputData {
     private String userNickName;
     private String content;
     private LocalDateTime localDateTime;
+    private String platform;
 }

@@ -5,13 +5,12 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.core.model.CoreModel;
-import work.slhaf.agent.core.memory.MemoryManager;
+import work.slhaf.agent.modules.memory.MemorySelectExtractor;
 import work.slhaf.agent.modules.memory.MemorySelector;
 import work.slhaf.agent.modules.memory.MemoryUpdater;
 import work.slhaf.agent.modules.memory.SliceEvaluator;
 import work.slhaf.agent.modules.task.TaskEvaluator;
 import work.slhaf.agent.modules.task.TaskScheduler;
-import work.slhaf.agent.modules.topic.TopicExtractor;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,7 +66,7 @@ public class Config {
 
     private static void generatePipelineConfig() {
         List<ModuleConfig> moduleConfigList = List.of(
-                new ModuleConfig(TopicExtractor.class.getName(), ModuleConfig.Constant.INTERNAL, null),
+                new ModuleConfig(MemorySelectExtractor.class.getName(), ModuleConfig.Constant.INTERNAL, null),
                 new ModuleConfig(MemorySelector.class.getName(), ModuleConfig.Constant.INTERNAL, null),
                 new ModuleConfig(CoreModel.class.getName(),ModuleConfig.Constant.INTERNAL,null),
                 new ModuleConfig(MemoryUpdater.class.getName(),ModuleConfig.Constant.INTERNAL,null),
@@ -100,7 +99,7 @@ public class Config {
                 }
                 case 3 -> {
                     System.out.println("TopicExtractor:");
-                    yield TopicExtractor.MODEL_KEY;
+                    yield MemorySelectExtractor.MODEL_KEY;
                 }
                 default -> throw new RuntimeException();
             };

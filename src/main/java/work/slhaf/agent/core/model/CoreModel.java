@@ -38,6 +38,6 @@ public class CoreModel extends Model implements InteractionModule {
         //TODO 需要拼接上下文之后再发送给主模型
 
         ChatResponse res = runChat(interactionContext.getInput());
-        interactionContext.setCoreResponse(res);
+//        interactionContext.setCoreResponse();
     }
 }

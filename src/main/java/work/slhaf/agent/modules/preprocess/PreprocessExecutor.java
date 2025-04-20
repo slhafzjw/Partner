@@ -1,5 +1,6 @@
 package work.slhaf.agent.modules.preprocess;
 
+import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
 
@@ -25,6 +26,8 @@ public class PreprocessExecutor {
 
         context.setFinished(false);
         context.setInput(inputData.getContent());
+
+        context.setModuleContext(new JSONObject());
 
         return context;
     }

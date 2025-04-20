@@ -8,10 +8,7 @@ import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.memory.node.MemoryNode;
 import work.slhaf.agent.core.memory.node.TopicNode;
-import work.slhaf.agent.core.memory.pojo.MemoryResult;
-import work.slhaf.agent.core.memory.pojo.MemorySlice;
-import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
-import work.slhaf.agent.core.memory.pojo.PersistableObject;
+import work.slhaf.agent.core.memory.pojo.*;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -99,6 +96,11 @@ public class MemoryGraph extends PersistableObject {
      * 主模型的聊天记录
      */
     private List<Message> chatMessages;
+
+    /**
+     * 用户列表
+     */
+    private List<User> users;
 
     public MemoryGraph(String id) {
         this.id = id;
@@ -266,7 +268,7 @@ public class MemoryGraph extends PersistableObject {
         //放入新缓存
         userDialogMap
                 .computeIfAbsent(now, k -> new ConcurrentHashMap<>())
-                .merge(slice.getStartUser(), slice.getSummary(), (oldVal, newVal) -> oldVal + " " + newVal);
+                .merge(slice.getStartUserId(), slice.getSummary(), (oldVal, newVal) -> oldVal + " " + newVal);
 
     }
 
@@ -298,7 +300,8 @@ public class MemoryGraph extends PersistableObject {
 
     }
 
-    public MemoryResult selectMemory(List<String> topicPath) throws IOException, ClassNotFoundException {
+    public MemoryResult selectMemory(String topicPathStr) throws IOException, ClassNotFoundException {
+        List<String> topicPath = List.of(topicPathStr.split("->"));
         MemoryResult memoryResult = new MemoryResult();
 
         //每日刷新缓存
@@ -319,7 +322,6 @@ public class MemoryGraph extends PersistableObject {
         MemorySliceResult sliceResult = new MemorySliceResult();
         for (MemoryNode memoryNode : targetParentNode.getTopicNodes().get(targetTopic).getMemoryNodes()) {
             List<MemorySlice> endpointMemorySliceList = memoryNode.loadMemorySliceList();
-//            targetSliceList.addAll(endpointMemorySliceList);
             for (MemorySlice memorySlice : endpointMemorySliceList) {
                 sliceResult.setSliceBefore(memorySlice.getSliceBefore());
                 sliceResult.setMemorySlice(memorySlice);
@@ -420,5 +422,28 @@ public class MemoryGraph extends PersistableObject {
         }
         return targetParentNode;
     }
+
+    public void printTopicTree() {
+        for (Map.Entry<String, TopicNode> entry : topicNodes.entrySet()) {
+            String rootName = entry.getKey();
+            TopicNode rootNode = entry.getValue();
+            System.out.println(rootName+"[root]");
+            printSubTopicsTreeFormat(rootNode, "", true);
+        }
+    }
+
+    private void printSubTopicsTreeFormat(TopicNode node, String prefix, boolean isLast) {
+        if (node.getTopicNodes() == null || node.getTopicNodes().isEmpty()) return;
+
+        List<Map.Entry<String, TopicNode>> entries = new ArrayList<>(node.getTopicNodes().entrySet());
+        for (int i = 0; i < entries.size(); i++) {
+            boolean last = (i == entries.size() - 1);
+            Map.Entry<String, TopicNode> entry = entries.get(i);
+            System.out.println(prefix + (last ? "└── " : "├── ") + entry.getKey());
+            printSubTopicsTreeFormat(entry.getValue(), prefix + (last ? "    " : "│   "), last);
+        }
+    }
+
+
 }
 
