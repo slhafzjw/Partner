@@ -42,7 +42,7 @@ public class AgentWebSocketServer extends WebSocketServer implements MessageSend
         userSessions.put(inputData.getUserInfo(), webSocket); // 注册连接
         try {
             agent.receiveUserInput(inputData);
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException | InterruptedException e) {
             throw new RuntimeException(e);
         }
     }

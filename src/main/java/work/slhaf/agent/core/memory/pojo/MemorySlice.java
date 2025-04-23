@@ -57,6 +57,16 @@ public class MemorySlice extends PersistableObject implements Comparable<MemoryS
      */
     private boolean isPrivate;
 
+    /**
+     * 摘要向量化结果
+     */
+    private float[] summaryEmbedding;
+
+    /**
+     * 是否向量化
+     */
+    private boolean embedded;
+
     @Override
     public int compareTo(MemorySlice memorySlice) {
         if (memorySlice.getTimestamp() > this.getTimestamp()) {

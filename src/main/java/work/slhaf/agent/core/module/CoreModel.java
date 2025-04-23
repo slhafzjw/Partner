@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.model;
+package work.slhaf.agent.core.module;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

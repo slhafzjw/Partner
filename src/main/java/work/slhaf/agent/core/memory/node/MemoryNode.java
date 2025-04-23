@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -37,7 +38,7 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
     /**
      * 该日期对应的全部记忆切片
      */
-    private List<MemorySlice> memorySliceList;
+    private CopyOnWriteArrayList<MemorySlice> memorySliceList;
 
     @Override
     public int compareTo(MemoryNode memoryNode) {
@@ -56,7 +57,7 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
             this.memorySliceList = deserialize(file);
         }else {
             //逻辑正常的话，这部分应该不会出现，除非在insertMemory中进行save操作之前出现异常，中断了方法，但程序却没有结束
-            this.memorySliceList = new ArrayList<>();
+            this.memorySliceList = new CopyOnWriteArrayList<>();
         }
         return this.memorySliceList;
     }
@@ -74,9 +75,9 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
         this.memorySliceList = null;
     }
 
-    private List<MemorySlice> deserialize(File file) throws IOException, ClassNotFoundException {
+    private CopyOnWriteArrayList<MemorySlice> deserialize(File file) throws IOException, ClassNotFoundException {
         try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-            List<MemorySlice> sliceList = (List<MemorySlice>) ois.readObject();
+            CopyOnWriteArrayList<MemorySlice> sliceList = (CopyOnWriteArrayList<MemorySlice>) ois.readObject();
             log.info("读取记忆切片成功");
             return sliceList;
         }

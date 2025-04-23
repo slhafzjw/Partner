@@ -4,7 +4,7 @@ import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import work.slhaf.agent.core.model.CoreModel;
+import work.slhaf.agent.core.module.CoreModel;
 import work.slhaf.agent.modules.memory.MemorySelectExtractor;
 import work.slhaf.agent.modules.memory.MemorySelector;
 import work.slhaf.agent.modules.memory.MemoryUpdater;

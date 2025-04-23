@@ -2,6 +2,7 @@ package work.slhaf.agent.core.memory;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
@@ -50,6 +51,10 @@ public class MemoryManager implements InteractionModule {
         return memoryGraph.selectMemory(date);
     }
 
+    public void cleanSelectedSliceFilter(){
+        memoryGraph.getSelectedSlices().clear();
+    }
+
     public String getUserId(String userInfo,String nickName) {
         String userId = null;
         for (User user : memoryGraph.getUsers()) {
@@ -65,6 +70,10 @@ public class MemoryManager implements InteractionModule {
         return userId;
     }
 
+    public List<Message> getChatMessages(){
+        return memoryGraph.getChatMessages();
+    }
+
     private static User setNewUser(String userInfo, String nickName) {
         User newUser = new User();
         newUser.setUuid(UUID.randomUUID().toString());
@@ -75,4 +84,7 @@ public class MemoryManager implements InteractionModule {
         return newUser;
     }
 
+    public String getTopicTree() {
+        return memoryManager.getTopicTree();
+    }
 }

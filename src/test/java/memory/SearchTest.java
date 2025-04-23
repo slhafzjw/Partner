@@ -39,7 +39,7 @@ class SearchTest {
         MemorySlice oldJavaMemory = createMemorySlice("javaOld");
         MemoryNode oldNode = new MemoryNode();
         oldNode.setLocalDate(yesterday);
-        oldNode.setMemorySliceList(List.of(oldJavaMemory));
+//        oldNode.setMemorySliceList(List.of(oldJavaMemory));
     }
 
     // 场景1：查询存在的完整主题路径（含相关主题）
@@ -121,7 +121,7 @@ class SearchTest {
         // 创建昨日记忆节点并添加到主题节点
         MemoryNode oldMemoryNode = new MemoryNode();
         oldMemoryNode.setLocalDate(yesterday);
-        oldMemoryNode.setMemorySliceList(new ArrayList<>(List.of(oldDbMemory)));
+//        oldMemoryNode.setMemorySliceList(new ArrayList<>(List.of(oldDbMemory)));
         dbTopicNode.getMemoryNodes().add(oldMemoryNode);
 
         // 对记忆节点进行日期排序（根据compareTo方法）
