@@ -30,6 +30,18 @@ public class MemoryUpdater implements InteractionModule {
 
     @Override
     public void execute(InteractionContext interactionContext) {
+        if (interactionContext.isFinished()){
+            return;
+        }
+        //如果token 大于阈值，则更新记忆
+        if (interactionContext.getModuleContext().getIntValue("total_token") > 24000) {
+            executor.execute(() -> {
+
+            });
+        }
+
+        //更新确定性记忆
+
 
     }
 }

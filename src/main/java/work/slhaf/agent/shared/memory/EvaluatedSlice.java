@@ -1,4 +1,4 @@
-package work.slhaf.agent.modules.memory.data.evaluator;
+package work.slhaf.agent.shared.memory;
 
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 @Builder
 public class EvaluatedSlice {
-//    private List<Message> chatMessages;
+    private List<Message> chatMessages;
     private LocalDate date;
     private String summary;
 }

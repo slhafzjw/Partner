@@ -1,12 +1,10 @@
 package memory;
 
-import cn.hutool.core.date.LocalDateTimeUtil;
 import org.junit.jupiter.api.Test;
 import work.slhaf.agent.core.memory.MemoryGraph;
 import work.slhaf.agent.core.memory.node.TopicNode;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,7 +48,7 @@ public void test1() {
 
     // 输出
     graph.setTopicNodes(topicMap);
-    graph.printTopicTree();
+    System.out.println(graph.getTopicTree());
 }
 
 

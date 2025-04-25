@@ -3,9 +3,9 @@ package memory;
 import org.junit.Before;
 import org.junit.Test;
 import work.slhaf.agent.core.memory.MemoryGraph;
-import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.memory.node.MemoryNode;
 import work.slhaf.agent.core.memory.node.TopicNode;
+import work.slhaf.agent.core.memory.pojo.MemorySlice;
 
 import java.io.IOException;
 import java.time.LocalDate;

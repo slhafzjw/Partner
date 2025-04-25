@@ -2,8 +2,10 @@ package work.slhaf.agent;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.java_websocket.WebSocket;
 import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.core.InteractionHub;
+import work.slhaf.agent.core.interaction.InputReceiver;
 import work.slhaf.agent.core.interaction.TaskCallback;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
 import work.slhaf.agent.core.interaction.data.InteractionOutputData;
@@ -15,7 +17,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Slf4j
-public class Agent implements TaskCallback {
+public class Agent implements TaskCallback, InputReceiver {
 
     private static Agent agent;
     private InteractionHub interactionHub;
@@ -28,7 +30,22 @@ public class Agent implements TaskCallback {
             agent = new Agent();
             agent.setInteractionHub(InteractionHub.initialize());
             agent.registerTaskCallback();
-            agent.setMessageSender(new AgentWebSocketServer(config.getWebSocketConfig().getPort(),agent));
+            AgentWebSocketServer server = new AgentWebSocketServer(config.getWebSocketConfig().getPort(),agent);
+            server.start();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    for (WebSocket conn : server.getConnections()) {
+                        conn.close();
+                    }
+                    server.stop();
+                    log.info("WebSocketServer 已优雅关闭");
+                } catch (Exception e) {
+                    log.error("关闭失败", e);
+                }
+            }));
+
+            agent.setMessageSender(server);
+
             log.info("Agent 加载完毕..");
         }
         return agent;
@@ -36,9 +53,8 @@ public class Agent implements TaskCallback {
 
     /**
      * 接收用户输入，包装为标准输入数据类
-     * @param inputData
      */
-    public void receiveUserInput(InteractionInputData inputData) throws IOException, ClassNotFoundException, InterruptedException {
+    public void receiveInput(InteractionInputData inputData) throws IOException, ClassNotFoundException, InterruptedException {
         inputData.setLocalDateTime(LocalDateTime.now());
         interactionHub.call(inputData);
     }
@@ -46,11 +62,10 @@ public class Agent implements TaskCallback {
 
     /**
      * 向用户返回输出内容
-     * @param output
      */
     public void sendToUser(String userInfo,String output){
         System.out.println(output);
-        messageSender.sendMessage(new InteractionOutputData(userInfo,output));
+        messageSender.sendMessage(new InteractionOutputData(output,userInfo));
     }
 
     @Override

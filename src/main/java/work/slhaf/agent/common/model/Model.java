@@ -39,8 +39,7 @@ public class Model {
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
     }
 
-    public ChatResponse runChat(String input) {
-        this.messages.add(new Message(ChatConstant.Character.USER, input));
+    public ChatResponse chat() {
         return this.chatClient.runChat(this.messages);
     }
 

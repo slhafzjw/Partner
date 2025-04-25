@@ -1,10 +1,8 @@
 package work.slhaf.agent.common.chat.pojo;
 
-import com.alibaba.fastjson2.JSONObject;
 import lombok.*;
 
 import java.util.List;
-import java.util.Map;
 
 @Builder
 @Data

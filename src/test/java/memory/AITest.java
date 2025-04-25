@@ -1,12 +1,16 @@
 package memory;
 
+import cn.hutool.json.JSONUtil;
 import org.junit.jupiter.api.Test;
 import work.slhaf.agent.common.chat.ChatClient;
 import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.model.ModelConstant;
+import work.slhaf.agent.modules.memory.MemorySelector;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class AITest {
@@ -92,6 +96,44 @@ public class AITest {
                 }
                 """;
         run(input,ModelConstant.SLICE_EVALUATOR_PROMPT);
+    }
+
+    @Test
+    public void coreModelTest(){
+        String input = """
+                {
+                  "text": "在",
+                  "datetime": "2024-03-22T09:00",
+                  "character": "你是一个智能助手，专注于科技领域",
+                  "memory_slices": [
+                    {
+                      "chatMessages": [
+                        {"role": "user", "content": "量子计算近期的进展怎么样？"},
+                        {"role": "assistant", "content": "量子计算在硬件和算法上都取得了突破，IBM发布了433量子位处理器，Google也在量子优越性上取得了进展。"}
+                      ],
+                      "date": "2024-03-20",
+                      "summary": "量子计算最新突破：IBM发布433量子位处理器，Google在量子优越性上取得进展。"
+                    }
+                  ],
+                  "static_memory": "用户对量子计算技术非常感兴趣。",
+                  "dialog_map": {
+                    "2024-03-20T10:30": "与用户讨论了量子计算的最新进展"
+                  },
+                  "user_dialog_map": {
+                    "2024-03-20T10:30": "与用户讨论了量子计算的最新进展"
+                  }
+                }
+                
+                """;
+        run(input,ModelConstant.CORE_MODEL_PROMPT + "\r\n" + MemorySelector.modulePrompt);
+    }
+
+    @Test
+    public void map2jsonTest(){
+        HashMap<LocalDate,String> map = new HashMap<>();
+        map.put(LocalDate.now(),"hello");
+        map.put(LocalDate.now().plusDays(1),"world");
+        System.out.println(JSONUtil.toJsonPrettyStr(map));
     }
 
     private void run(String input, String prompt) {

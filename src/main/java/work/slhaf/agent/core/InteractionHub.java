@@ -1,6 +1,7 @@
 package work.slhaf.agent.core;
 
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.InteractionModulesLoader;
@@ -21,15 +22,18 @@ public class InteractionHub {
 
     private static InteractionHub interactionHub;
 
+    @ToString.Exclude
     private TaskCallback callback;
-
     private CoreModel coreModel;
     private MemoryManager memoryManager;
     private TaskScheduler taskScheduler;
+    private List<InteractionModule> interactionModules;
 
     public static InteractionHub initialize() throws IOException {
         if (interactionHub == null) {
             interactionHub = new InteractionHub();
+            //加载模块
+            interactionHub.setInteractionModules(InteractionModulesLoader.getInstance().registerInteractionModules());
             log.info("InteractionHub注册完毕...");
         }
         return interactionHub;
@@ -38,11 +42,10 @@ public class InteractionHub {
     public void call(InteractionInputData inputData) throws IOException, ClassNotFoundException, InterruptedException {
         //预处理
         InteractionContext interactionContext = PreprocessExecutor.getInstance().execute(inputData);
-        //加载模块
-        List<InteractionModule> interactionModules = InteractionModulesLoader.getInstance().registerInteractionModules();
+
         for (InteractionModule interactionModule : interactionModules) {
             interactionModule.execute(interactionContext);
         }
-        callback.onTaskFinished(interactionContext.getUserInfo(), interactionContext.getCoreResponse().getString("message"));
+        callback.onTaskFinished(interactionContext.getUserInfo(), interactionContext.getCoreResponse().getString("text"));
     }
 }

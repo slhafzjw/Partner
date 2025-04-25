@@ -8,13 +8,16 @@ import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.User;
-import work.slhaf.agent.modules.memory.SliceEvaluator;
+import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 @Slf4j
@@ -23,7 +26,7 @@ public class MemoryManager implements InteractionModule {
     private static MemoryManager memoryManager;
 
     private MemoryGraph memoryGraph;
-    private SliceEvaluator sliceEvaluator;
+    private HashMap<String,List<EvaluatedSlice>> activatedSlices;
 
     private MemoryManager(){}
 
@@ -37,7 +40,7 @@ public class MemoryManager implements InteractionModule {
             Config config = Config.getConfig();
             memoryManager = new MemoryManager();
             memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId()));
-            memoryManager.setSliceEvaluator(SliceEvaluator.getInstance());
+            memoryManager.setActivatedSlices(new HashMap<>());
             log.info("MemoryManager注册完毕...");
         }
         return memoryManager;
@@ -85,6 +88,22 @@ public class MemoryManager implements InteractionModule {
     }
 
     public String getTopicTree() {
-        return memoryManager.getTopicTree();
+        return memoryGraph.getTopicTree();
+    }
+
+    public ConcurrentHashMap<String,String> getStaticMemory(String userId) {
+        return memoryGraph.getStaticMemory().get(userId);
+    }
+
+    public HashMap<LocalDateTime, String> getDialogMap() {
+        return memoryGraph.getDialogMap();
+    }
+
+    public ConcurrentHashMap<LocalDateTime, String> getUserDialogMap(String userId) {
+        return memoryGraph.getUserDialogMap().get(userId);
+    }
+
+    public String getCharacter() {
+        return memoryGraph.getCharacter();
     }
 }

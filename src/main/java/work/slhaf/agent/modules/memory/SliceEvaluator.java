@@ -14,13 +14,19 @@ import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
-import work.slhaf.agent.modules.memory.data.evaluator.*;
+import work.slhaf.agent.modules.memory.data.evaluator.EvaluatorBatchInput;
+import work.slhaf.agent.modules.memory.data.evaluator.EvaluatorInput;
+import work.slhaf.agent.modules.memory.data.evaluator.EvaluatorResult;
+import work.slhaf.agent.modules.memory.data.evaluator.SliceSummary;
+import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+
+import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -63,7 +69,7 @@ public class SliceEvaluator extends Model {
                             .memory_slices(sliceSummaryList)
                             .history(evaluatorInput.getMessages())
                             .build();
-                    EvaluatorResult evaluatorResult = JSONObject.parseObject(singleChat(JSONUtil.toJsonStr(batchInput)).getMessage(), EvaluatorResult.class);
+                    EvaluatorResult evaluatorResult = JSONObject.parseObject(extractJson(singleChat(JSONUtil.toJsonStr(batchInput)).getMessage()), EvaluatorResult.class);
                     for (Long result : evaluatorResult.getResults()) {
                         SliceSummary sliceSummary = map.get(result);
                         EvaluatedSlice evaluatedSlice = EvaluatedSlice.builder()
@@ -73,7 +79,7 @@ public class SliceEvaluator extends Model {
                         queue.offer(evaluatedSlice);
                     }
                 } catch (Exception e) {
-                    log.error("切片评估: {}", e.getLocalizedMessage());
+                    log.error("切片评估出现错误: {}", e.getLocalizedMessage());
                 }
                 return null;
             });

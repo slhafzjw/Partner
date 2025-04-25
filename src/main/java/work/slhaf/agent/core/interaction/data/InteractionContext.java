@@ -15,5 +15,6 @@ public class InteractionContext {
     protected String input;
 
     protected JSONObject moduleContext;
+    protected JSONObject modulePrompt;
     protected JSONObject coreResponse;
 }

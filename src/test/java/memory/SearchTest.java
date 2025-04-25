@@ -3,18 +3,17 @@ package memory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import work.slhaf.agent.core.memory.MemoryGraph;
-import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.memory.node.MemoryNode;
 import work.slhaf.agent.core.memory.node.TopicNode;
-import work.slhaf.agent.core.memory.pojo.MemoryResult;
+import work.slhaf.agent.core.memory.pojo.MemorySlice;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SearchTest {
     private MemoryGraph memoryGraph;

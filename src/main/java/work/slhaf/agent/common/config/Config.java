@@ -66,7 +66,6 @@ public class Config {
 
     private static void generatePipelineConfig() {
         List<ModuleConfig> moduleConfigList = List.of(
-                new ModuleConfig(MemorySelectExtractor.class.getName(), ModuleConfig.Constant.INTERNAL, null),
                 new ModuleConfig(MemorySelector.class.getName(), ModuleConfig.Constant.INTERNAL, null),
                 new ModuleConfig(CoreModel.class.getName(),ModuleConfig.Constant.INTERNAL,null),
                 new ModuleConfig(MemoryUpdater.class.getName(),ModuleConfig.Constant.INTERNAL,null),

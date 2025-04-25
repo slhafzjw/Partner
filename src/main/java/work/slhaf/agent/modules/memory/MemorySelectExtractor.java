@@ -16,6 +16,8 @@ import work.slhaf.agent.modules.memory.data.extractor.ExtractorResult;
 import java.io.IOException;
 import java.util.List;
 
+import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
@@ -47,7 +49,7 @@ public class MemorySelectExtractor extends Model {
                 .history(memoryManager.getChatMessages())
                 .topic_tree(memoryManager.getTopicTree())
                 .build();
-        String responseStr = singleChat(JSONUtil.toJsonPrettyStr(extractorInput)).getMessage();
+        String responseStr = extractJson(singleChat(JSONUtil.toJsonPrettyStr(extractorInput)).getMessage());
 
         ExtractorResult extractorResult;
         try {

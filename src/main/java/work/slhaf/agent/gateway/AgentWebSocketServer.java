@@ -2,11 +2,12 @@ package work.slhaf.agent.gateway;
 
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
-import work.slhaf.agent.Agent;
+import work.slhaf.agent.core.interaction.InputReceiver;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
 import work.slhaf.agent.core.interaction.data.InteractionOutputData;
 
@@ -17,12 +18,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class AgentWebSocketServer extends WebSocketServer implements MessageSender {
 
-    private final Agent agent;
+    @ToString.Exclude
+    private final InputReceiver receiver;
     private final ConcurrentHashMap<String, WebSocket> userSessions = new ConcurrentHashMap<>();
 
-    public AgentWebSocketServer(int port, Agent agent) {
+    public AgentWebSocketServer(int port, InputReceiver receiver) {
         super(new InetSocketAddress(port));
-        this.agent = agent;
+        this.receiver = receiver;
     }
 
     @Override
@@ -41,7 +43,7 @@ public class AgentWebSocketServer extends WebSocketServer implements MessageSend
         InteractionInputData inputData = JSONObject.parseObject(s, InteractionInputData.class);
         userSessions.put(inputData.getUserInfo(), webSocket); // 注册连接
         try {
-            agent.receiveUserInput(inputData);
+            receiver.receiveInput(inputData);
         } catch (IOException | ClassNotFoundException | InterruptedException e) {
             throw new RuntimeException(e);
         }
