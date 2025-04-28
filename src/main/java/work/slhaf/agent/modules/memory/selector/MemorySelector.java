@@ -1,4 +1,4 @@
-package work.slhaf.agent.modules.memory;
+package work.slhaf.agent.modules.memory.selector;
 
 import lombok.Data;
 import work.slhaf.agent.core.interaction.InteractionModule;
@@ -6,9 +6,11 @@ import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
-import work.slhaf.agent.modules.memory.data.evaluator.EvaluatorInput;
-import work.slhaf.agent.modules.memory.data.extractor.ExtractorMatchData;
-import work.slhaf.agent.modules.memory.data.extractor.ExtractorResult;
+import work.slhaf.agent.modules.memory.selector.evaluator.data.EvaluatorInput;
+import work.slhaf.agent.modules.memory.selector.evaluator.SliceSelectEvaluator;
+import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorMatchData;
+import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorResult;
+import work.slhaf.agent.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
@@ -45,7 +47,7 @@ public class MemorySelector implements InteractionModule {
             """;
 
     private MemoryManager memoryManager;
-    private SliceEvaluator sliceEvaluator;
+    private SliceSelectEvaluator sliceSelectEvaluator;
     private MemorySelectExtractor memorySelectExtractor;
 
     private MemorySelector() {
@@ -55,7 +57,7 @@ public class MemorySelector implements InteractionModule {
         if (memorySelector == null) {
             memorySelector = new MemorySelector();
             memorySelector.setMemoryManager(MemoryManager.getInstance());
-            memorySelector.setSliceEvaluator(SliceEvaluator.getInstance());
+            memorySelector.setSliceSelectEvaluator(SliceSelectEvaluator.getInstance());
             memorySelector.setMemorySelectExtractor(MemorySelectExtractor.getInstance());
         }
         return memorySelector;
@@ -76,15 +78,23 @@ public class MemorySelector implements InteractionModule {
                     .memoryResults(memoryResultList)
                     .messages(memoryManager.getChatMessages())
                     .build();
-            List<EvaluatedSlice> memorySlices = sliceEvaluator.execute(evaluatorInput);
+            List<EvaluatedSlice> memorySlices = sliceSelectEvaluator.execute(evaluatorInput);
             memoryManager.getActivatedSlices().put(userId,memorySlices);
+
+            //向上下文设置切片存入标志，条件：对话历史列表不为空;触发了记忆查询
+            if (!memoryManager.getChatMessages().isEmpty()) {
+                interactionContext.getModuleContext().put("new_topic", true);
+                interactionContext.getModuleContext().put("messages_to_store", List.of(memoryManager.getChatMessages()));
+            }
+
         }
 
+
         //设置上下文
-        interactionContext.getModuleContext().put("memory_slices",memoryManager.getActivatedSlices().get(userId));
-        interactionContext.getModuleContext().put("static_memory",memoryManager.getStaticMemory(userId));
-        interactionContext.getModuleContext().put("dialog_map",memoryManager.getDialogMap());
-        interactionContext.getModuleContext().put("user_dialog_map",memoryManager.getUserDialogMap(userId));
+        interactionContext.getCoreContext().put("memory_slices",memoryManager.getActivatedSlices().get(userId));
+        interactionContext.getCoreContext().put("static_memory",memoryManager.getStaticMemory(userId));
+        interactionContext.getCoreContext().put("dialog_map",memoryManager.getDialogMap());
+        interactionContext.getCoreContext().put("user_dialog_map",memoryManager.getUserDialogMap(userId));
 
         interactionContext.getModulePrompt().put("memory", modulePrompt);
     }

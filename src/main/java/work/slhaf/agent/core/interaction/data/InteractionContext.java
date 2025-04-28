@@ -14,6 +14,7 @@ public class InteractionContext {
     protected boolean finished;
     protected String input;
 
+    protected JSONObject coreContext;
     protected JSONObject moduleContext;
     protected JSONObject modulePrompt;
     protected JSONObject coreResponse;

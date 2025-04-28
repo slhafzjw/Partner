@@ -1,4 +1,4 @@
-package work.slhaf.agent.modules.memory.data.extractor;
+package work.slhaf.agent.modules.memory.selector.extractor.data;
 
 import lombok.Builder;
 import lombok.Data;

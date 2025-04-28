@@ -1,4 +1,4 @@
-package work.slhaf.agent.modules.memory;
+package work.slhaf.agent.modules.memory.selector.evaluator;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONUtil;
@@ -14,10 +14,10 @@ import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
-import work.slhaf.agent.modules.memory.data.evaluator.EvaluatorBatchInput;
-import work.slhaf.agent.modules.memory.data.evaluator.EvaluatorInput;
-import work.slhaf.agent.modules.memory.data.evaluator.EvaluatorResult;
-import work.slhaf.agent.modules.memory.data.evaluator.SliceSummary;
+import work.slhaf.agent.modules.memory.selector.evaluator.data.EvaluatorBatchInput;
+import work.slhaf.agent.modules.memory.selector.evaluator.data.EvaluatorInput;
+import work.slhaf.agent.modules.memory.selector.evaluator.data.EvaluatorResult;
+import work.slhaf.agent.modules.memory.selector.evaluator.data.SliceSummary;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
@@ -31,26 +31,26 @@ import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class SliceEvaluator extends Model {
+public class SliceSelectEvaluator extends Model {
     public static final String MODEL_KEY = "slice_evaluator";
 
-    private static SliceEvaluator sliceEvaluator;
+    private static SliceSelectEvaluator sliceSelectEvaluator;
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
 
-    private SliceEvaluator() {
+    private SliceSelectEvaluator() {
     }
 
-    public static SliceEvaluator getInstance() throws IOException, ClassNotFoundException {
-        if (sliceEvaluator == null) {
+    public static SliceSelectEvaluator getInstance() throws IOException, ClassNotFoundException {
+        if (sliceSelectEvaluator == null) {
             Config config = Config.getConfig();
-            sliceEvaluator = new SliceEvaluator();
-            sliceEvaluator.setMemoryManager(MemoryManager.getInstance());
-            setModel(config, sliceEvaluator, MODEL_KEY, ModelConstant.SLICE_EVALUATOR_PROMPT);
+            sliceSelectEvaluator = new SliceSelectEvaluator();
+            sliceSelectEvaluator.setMemoryManager(MemoryManager.getInstance());
+            setModel(config, sliceSelectEvaluator, MODEL_KEY, ModelConstant.SLICE_EVALUATOR_PROMPT);
             log.info("SliceEvaluator注册完毕...");
         }
 
-        return sliceEvaluator;
+        return sliceSelectEvaluator;
     }
 
     public List<EvaluatedSlice> execute(EvaluatorInput evaluatorInput) throws InterruptedException {

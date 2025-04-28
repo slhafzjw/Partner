@@ -141,7 +141,7 @@ public class ModelConstant {
                • 完全匹配优先于部分匹配
             3. 直接输出JSON字符串
             """;
-    public static final String TOPIC_EXTRACTOR_PROMPT = """
+    public static final String SELECT_EXTRACTOR_PROMPT = """
             MemorySelectExtractor 提示词
             
             功能说明
@@ -300,5 +300,7 @@ public class ModelConstant {
             }
             """;
     public static final String TASK_EVALUATOR_PROMPT = """
+            """;
+    public static final String BASE_SUMMARIZER_PROMPT = """
             """;
 }

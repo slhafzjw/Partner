@@ -1,4 +1,4 @@
-package work.slhaf.agent.modules.memory.data.evaluator;
+package work.slhaf.agent.modules.memory.selector.evaluator.data;
 
 import lombok.Data;
 

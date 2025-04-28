@@ -6,7 +6,7 @@ import work.slhaf.agent.common.chat.ChatClient;
 import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.model.ModelConstant;
-import work.slhaf.agent.modules.memory.MemorySelector;
+import work.slhaf.agent.modules.memory.selector.MemorySelector;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class AITest {
                   ]
                 }
                 """;
-        run(input, ModelConstant.TOPIC_EXTRACTOR_PROMPT);
+        run(input, ModelConstant.SELECT_EXTRACTOR_PROMPT);
     }
 
     @Test

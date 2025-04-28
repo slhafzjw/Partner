@@ -5,10 +5,11 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.core.module.CoreModel;
-import work.slhaf.agent.modules.memory.MemorySelectExtractor;
-import work.slhaf.agent.modules.memory.MemorySelector;
-import work.slhaf.agent.modules.memory.MemoryUpdater;
-import work.slhaf.agent.modules.memory.SliceEvaluator;
+import work.slhaf.agent.modules.memory.selector.MemorySelector;
+import work.slhaf.agent.modules.memory.selector.evaluator.SliceSelectEvaluator;
+import work.slhaf.agent.modules.memory.selector.extractor.MemorySelectExtractor;
+import work.slhaf.agent.modules.memory.updater.MemoryUpdater;
+import work.slhaf.agent.modules.memory.updater.summarizer.MemorySummarizer;
 import work.slhaf.agent.modules.task.TaskEvaluator;
 import work.slhaf.agent.modules.task.TaskScheduler;
 
@@ -82,7 +83,29 @@ public class Config {
     }
 
     private static void generateModelConfig(Scanner scanner) throws IOException {
-        for (int i = 0; i < 4; i++) {
+        System.out.print("single model? y/n");
+        String input;
+        while (true) {
+            input = scanner.nextLine();
+            if (input.equals("y") || input.equals("n")){
+                break;
+            }
+            System.out.println("请输入y或n");
+        }
+        boolean singleModel = input.equals("y");
+
+        ModelConfig modelConfig = new ModelConfig();
+        if (singleModel) {
+            System.out.println("输入模型配置: ");
+            System.out.print("apikey: ");
+            modelConfig.setApikey(scanner.nextLine());
+            System.out.print("baseUrl: ");
+            modelConfig.setBaseUrl(scanner.nextLine());
+            System.out.print("model: ");
+            modelConfig.setModel(scanner.nextLine());
+
+        }
+        for (int i = 0; i < 5; i++) {
             String modelKey = switch (i) {
                 case 0 -> {
                     System.out.println("CoreModel:");
@@ -90,7 +113,7 @@ public class Config {
                 }
                 case 1 -> {
                     System.out.println("SliceEvaluator:");
-                    yield SliceEvaluator.MODEL_KEY;
+                    yield SliceSelectEvaluator.MODEL_KEY;
                 }
                 case 2 -> {
                     System.out.println("TaskEvaluator:");
@@ -100,16 +123,23 @@ public class Config {
                     System.out.println("TopicExtractor:");
                     yield MemorySelectExtractor.MODEL_KEY;
                 }
+                case 4 -> {
+                    System.out.println("MemorySummarizer:");
+                    yield MemorySummarizer.MODEL_KEY;
+                }
                 default -> throw new RuntimeException();
             };
-            ModelConfig modelConfig = new ModelConfig();
-            System.out.print("apikey: ");
-            modelConfig.setApikey(scanner.nextLine());
-            System.out.print("baseUrl: ");
-            modelConfig.setBaseUrl(scanner.nextLine());
-            System.out.print("model: ");
-            modelConfig.setModel(scanner.nextLine());
+            if (!singleModel) {
+                modelConfig = new ModelConfig();
+                System.out.print("apikey: ");
+                modelConfig.setApikey(scanner.nextLine());
+                System.out.print("baseUrl: ");
+                modelConfig.setBaseUrl(scanner.nextLine());
+                System.out.print("model: ");
+                modelConfig.setModel(scanner.nextLine());
+            }
             modelConfig.generateConfig(modelKey);
         }
     }
+
 }

@@ -38,11 +38,13 @@ public class PreprocessExecutor {
         context.setFinished(false);
         context.setInput(inputData.getContent());
 
+        context.setCoreContext(new JSONObject());
+        context.getCoreContext().put("text", inputData.getContent());
+        context.getCoreContext().put("datetime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        context.getCoreContext().put("character",memoryManager.getCharacter());
+        context.getCoreContext().put("user_nick", inputData.getUserNickName());
+
         context.setModuleContext(new JSONObject());
-        context.getModuleContext().put("text", inputData.getContent());
-        context.getModuleContext().put("datetime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        context.getModuleContext().put("character",memoryManager.getCharacter());
-        context.getModuleContext().put("user_nick", inputData.getUserNickName());
 
         context.setModulePrompt(new JSONObject());
 

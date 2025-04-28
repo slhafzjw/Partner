@@ -51,7 +51,7 @@ public class CoreModel extends Model implements InteractionModule {
             coreModel.getMessages().set(0, new Message(ChatConstant.Character.SYSTEM, ModelConstant.CORE_MODEL_PROMPT + "\r\n" + tempPrompt));
             promptCache = tempPrompt;
         }
-        this.messages.add(new Message(ChatConstant.Character.USER, interactionContext.getModuleContext().getString("text")));
+        this.messages.add(new Message(ChatConstant.Character.USER, interactionContext.getCoreContext().getString("text")));
         ChatResponse chatResponse = this.chat();
         JSONObject response = null;
         int count = 0;

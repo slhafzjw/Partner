@@ -1,4 +1,4 @@
-package work.slhaf.agent.modules.memory;
+package work.slhaf.agent.modules.memory.selector.extractor;
 
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
@@ -10,8 +10,8 @@ import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
-import work.slhaf.agent.modules.memory.data.extractor.ExtractorInput;
-import work.slhaf.agent.modules.memory.data.extractor.ExtractorResult;
+import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorInput;
+import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorResult;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,7 +35,7 @@ public class MemorySelectExtractor extends Model {
             Config config = Config.getConfig();
             memorySelectExtractor = new MemorySelectExtractor();
             memorySelectExtractor.setMemoryManager(MemoryManager.getInstance());
-            setModel(config, memorySelectExtractor, MODEL_KEY, ModelConstant.TOPIC_EXTRACTOR_PROMPT);
+            setModel(config, memorySelectExtractor, MODEL_KEY, ModelConstant.SELECT_EXTRACTOR_PROMPT);
         }
 
         return memorySelectExtractor;
