@@ -65,7 +65,7 @@ public class MemorySelector implements InteractionModule {
 
     @Override
     public void execute(InteractionContext interactionContext) throws IOException, ClassNotFoundException, InterruptedException {
-        String userId = memoryManager.getUserId(interactionContext.getUserInfo(), interactionContext.getUserNickname());
+        String userId =interactionContext.getUserId();
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(interactionContext);
         if (extractorResult.isRecall()) {
@@ -82,13 +82,12 @@ public class MemorySelector implements InteractionModule {
             memoryManager.getActivatedSlices().put(userId,memorySlices);
 
             //向上下文设置切片存入标志，条件：对话历史列表不为空;触发了记忆查询
-            if (!memoryManager.getChatMessages().isEmpty()) {
+            /*if (!memoryManager.getChatMessages().isEmpty()) {
                 interactionContext.getModuleContext().put("new_topic", true);
                 interactionContext.getModuleContext().put("messages_to_store", List.of(memoryManager.getChatMessages()));
-            }
+            }*/
 
         }
-
 
         //设置上下文
         interactionContext.getCoreContext().put("memory_slices",memoryManager.getActivatedSlices().get(userId));

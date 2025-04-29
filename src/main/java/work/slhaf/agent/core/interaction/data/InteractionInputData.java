@@ -11,4 +11,5 @@ public class InteractionInputData {
     private String content;
     private LocalDateTime localDateTime;
     private String platform;
+    private boolean single;
 }

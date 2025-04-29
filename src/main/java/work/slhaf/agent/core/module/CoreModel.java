@@ -7,12 +7,14 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.ChatResponse;
 import work.slhaf.agent.common.chat.pojo.Message;
+import work.slhaf.agent.common.chat.pojo.MetaMessage;
 import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
+import work.slhaf.agent.core.session.SessionManager;
 
 import java.io.IOException;
 
@@ -27,6 +29,7 @@ public class CoreModel extends Model implements InteractionModule {
     private static CoreModel coreModel;
 
     private MemoryManager memoryManager;
+    private SessionManager sessionManager;
     private String promptCache;
 
     private CoreModel() {
@@ -46,22 +49,32 @@ public class CoreModel extends Model implements InteractionModule {
 
     @Override
     public void execute(InteractionContext interactionContext) {
+        //TODO 添加新的system prompt 引导主模型专注于最新的用户输入
+        //TODO 需要更新主模型prompt
         String tempPrompt = interactionContext.getModulePrompt().toString();
         if (!tempPrompt.equals(promptCache)) {
             coreModel.getMessages().set(0, new Message(ChatConstant.Character.SYSTEM, ModelConstant.CORE_MODEL_PROMPT + "\r\n" + tempPrompt));
             promptCache = tempPrompt;
         }
-        this.messages.add(new Message(ChatConstant.Character.USER, interactionContext.getCoreContext().getString("text")));
-        ChatResponse chatResponse = this.chat();
+        String user = "[" + interactionContext.getUserNickname() + "(" + interactionContext.getUserId() + ")]";
+        Message userMessage = new Message(ChatConstant.Character.USER, user + interactionContext.getCoreContext().getString("text"));
+        this.messages.add(userMessage);
         JSONObject response = null;
         int count = 0;
         while (true) {
             try {
+                ChatResponse chatResponse = this.chat();
                 response = JSONObject.parse(extractJson(chatResponse.getMessage()));
-                this.messages.add(new Message(ChatConstant.Character.ASSISTANT, response.getString("text")));
+                Message assistantMessage = new Message(ChatConstant.Character.ASSISTANT, response.getString("text"));
+                this.messages.add(assistantMessage);
 
                 //设置上下文
                 interactionContext.getModuleContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
+                //区分单人聊天场景
+                if (interactionContext.isSingle()){
+                    MetaMessage metaMessage = new MetaMessage(userMessage, assistantMessage);
+                    sessionManager.addMetaMessage(interactionContext.getUserId(), metaMessage);
+                }
                 break;
             } catch (Exception e) {
                 count++;

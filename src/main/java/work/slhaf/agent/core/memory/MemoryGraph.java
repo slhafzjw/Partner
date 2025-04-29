@@ -109,6 +109,8 @@ public class MemoryGraph extends PersistableObject {
      */
     private Set<Long> selectedSlices;
 
+    private String memoryId;
+
     public MemoryGraph(String id) {
         this.id = id;
         this.topicNodes = new HashMap<>();

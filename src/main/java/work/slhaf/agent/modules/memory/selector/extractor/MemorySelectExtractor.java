@@ -43,6 +43,7 @@ public class MemorySelectExtractor extends Model {
 
     public ExtractorResult execute(InteractionContext context) {
         //结构化为指定格式
+        //TODO 将历史消息替换为sessionManager中的用户对应信息列表
         ExtractorInput extractorInput = ExtractorInput.builder()
                 .text(context.getInput())
                 .date(context.getDateTime().toLocalDate())

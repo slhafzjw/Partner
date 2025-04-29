@@ -1,0 +1,14 @@
+package work.slhaf.agent.modules.memory.updater.summarizer.data;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import work.slhaf.agent.common.chat.pojo.Message;
+
+import java.util.List;
+
+@AllArgsConstructor
+@Data
+public class TotalSummarizeInput {
+    private List<Message> chatMessages;
+    private String topicTree;
+}

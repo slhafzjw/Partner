@@ -7,28 +7,31 @@ import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
+import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.memory.pojo.User;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Data
 @Slf4j
 public class MemoryManager implements InteractionModule {
 
     private static MemoryManager memoryManager;
+    private final Lock sliceInsertLock = new ReentrantLock();
+    private final Lock messageCleanLock = new ReentrantLock();
 
     private MemoryGraph memoryGraph;
-    private HashMap<String,List<EvaluatedSlice>> activatedSlices;
+    private HashMap<String, List<EvaluatedSlice>> activatedSlices;
 
-    private MemoryManager(){}
+    private MemoryManager() {
+    }
 
     @Override
     public void execute(InteractionContext interactionContext) {
@@ -54,14 +57,14 @@ public class MemoryManager implements InteractionModule {
         return memoryGraph.selectMemory(date);
     }
 
-    public void cleanSelectedSliceFilter(){
+    public void cleanSelectedSliceFilter() {
         memoryGraph.getSelectedSlices().clear();
     }
 
-    public String getUserId(String userInfo,String nickName) {
+    public String getUserId(String userInfo, String nickName) {
         String userId = null;
         for (User user : memoryGraph.getUsers()) {
-            if (user.getInfo().contains(userInfo)){
+            if (user.getInfo().contains(userInfo)) {
                 userId = user.getUuid();
             }
         }
@@ -73,7 +76,7 @@ public class MemoryManager implements InteractionModule {
         return userId;
     }
 
-    public List<Message> getChatMessages(){
+    public List<Message> getChatMessages() {
         return memoryGraph.getChatMessages();
     }
 
@@ -91,7 +94,7 @@ public class MemoryManager implements InteractionModule {
         return memoryGraph.getTopicTree();
     }
 
-    public ConcurrentHashMap<String,String> getStaticMemory(String userId) {
+    public ConcurrentHashMap<String, String> getStaticMemory(String userId) {
         return memoryGraph.getStaticMemory().get(userId);
     }
 
@@ -105,5 +108,26 @@ public class MemoryManager implements InteractionModule {
 
     public String getCharacter() {
         return memoryGraph.getCharacter();
+    }
+
+    public void resetMemoryId() {
+        memoryGraph.setMemoryId(UUID.randomUUID().toString());
+    }
+
+    public String getMemoryId() {
+        return memoryGraph.getMemoryId();
+    }
+
+    public void insertSlice(MemorySlice memorySlice, String topicPath) throws IOException, ClassNotFoundException {
+        sliceInsertLock.lock();
+        List<String> topicPathList = Arrays.stream(topicPath.split("->")).toList();
+        memoryGraph.insertMemory(topicPathList, memorySlice);
+        sliceInsertLock.unlock();
+    }
+
+    public void cleanMessage(List<Message> messages) {
+        messageCleanLock.lock();
+        memoryGraph.getChatMessages().removeAll(messages);
+        messageCleanLock.unlock();
     }
 }

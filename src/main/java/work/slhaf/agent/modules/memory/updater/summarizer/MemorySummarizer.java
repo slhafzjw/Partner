@@ -14,6 +14,7 @@ import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 import work.slhaf.agent.core.interaction.InteractionThreadPoolExecutor;
 import work.slhaf.agent.modules.memory.updater.summarizer.data.SummarizeResult;
+import work.slhaf.agent.modules.memory.updater.summarizer.data.TotalSummarizeInput;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,15 +42,15 @@ public class MemorySummarizer extends Model {
         return memorySummarizer;
     }
 
-    public SummarizeResult execute(List<Message> chatMessages) throws InterruptedException {
+    public SummarizeResult execute(TotalSummarizeInput input) throws InterruptedException {
             //进行长文本批量摘要
-            singleMessageSummarize(chatMessages);
+            singleMessageSummarize(input.getChatMessages());
             //进行整体摘要并返回结果
-            return multiMessageSummarize(chatMessages);
+            return multiMessageSummarize(input);
     }
 
-    private SummarizeResult multiMessageSummarize(List<Message> chatMessages) {
-        String messageStr = JSONUtil.toJsonPrettyStr(chatMessages);
+    private SummarizeResult multiMessageSummarize(TotalSummarizeInput input) {
+        String messageStr = JSONUtil.toJsonPrettyStr(input);
         return multiSummarizeExecute(prompts.get(1),messageStr);
     }
 

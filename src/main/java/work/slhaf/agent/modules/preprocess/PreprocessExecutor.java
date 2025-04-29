@@ -30,9 +30,11 @@ public class PreprocessExecutor {
 
     public InteractionContext execute(InteractionInputData inputData) {
         InteractionContext context = new InteractionContext();
+        String userId = memoryManager.getUserId(inputData.getUserInfo(), inputData.getUserNickName());
 
-        context.setUserInfo(inputData.getUserInfo());
+        context.setUserId(userId);
         context.setUserNickname(inputData.getUserNickName());
+        context.setUserInfo(inputData.getUserInfo());
         context.setDateTime(inputData.getLocalDateTime());
 
         context.setFinished(false);
@@ -41,8 +43,9 @@ public class PreprocessExecutor {
         context.setCoreContext(new JSONObject());
         context.getCoreContext().put("text", inputData.getContent());
         context.getCoreContext().put("datetime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        context.getCoreContext().put("character",memoryManager.getCharacter());
+        context.getCoreContext().put("character", memoryManager.getCharacter());
         context.getCoreContext().put("user_nick", inputData.getUserNickName());
+        context.getCoreContext().put("user_id", userId);
 
         context.setModuleContext(new JSONObject());
 

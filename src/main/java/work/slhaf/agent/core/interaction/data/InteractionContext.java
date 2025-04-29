@@ -7,9 +7,11 @@ import java.time.LocalDateTime;
 
 @Data
 public class InteractionContext {
-    protected String userInfo;
+    protected String userId;
     protected String userNickname;
+    protected String userInfo;
     protected LocalDateTime dateTime;
+    protected boolean single;
 
     protected boolean finished;
     protected String input;

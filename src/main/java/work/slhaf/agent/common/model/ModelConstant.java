@@ -9,6 +9,7 @@ public class ModelConstant {
             - datetime：当text包含时间相关语义时使用
             - character：当需要根据角色设定调整语气时使用
             - user_nick：当text中包含对用户的称呼或个性化需求时使用
+            - user_id：用户的唯一标识，该字段真正具有区分用户的作用
             其他所有字段仅在明确与text内容相关时才予以考虑，否则应完全忽略。
             
             输入字段优先级

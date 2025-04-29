@@ -52,8 +52,6 @@ public class InteractionModulesLoader {
     private static InteractionModule loadInternalModule(String className) {
         try {
             Class<?> clazz = Class.forName(className);
-
-            //TODO 后续需要规范`getInstance`方法的实现
             return (InteractionModule) clazz.getMethod("getInstance").invoke(null);
         } catch (ClassNotFoundException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             throw new RuntimeException("Fail to load internal module: " + className,e);
