@@ -304,4 +304,6 @@ public class ModelConstant {
             """;
     public static final String BASE_SUMMARIZER_PROMPT = """
             """;
+    public static final String STATIC_MEMORY_EXTRACTOR_PROMPT = """
+            """;
 }

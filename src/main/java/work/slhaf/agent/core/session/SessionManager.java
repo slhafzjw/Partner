@@ -14,7 +14,6 @@ public class SessionManager {
     private static SessionManager sessionManager;
 
     private HashMap<String /*startUserId*/, List<MetaMessage>> singleMetaMessageMap;
-    private HashMap<String /*startUserId*/, List<MetaMessage>> multiMetaMessageMap;
 
     public static SessionManager getInstance() {
         if (sessionManager == null) {

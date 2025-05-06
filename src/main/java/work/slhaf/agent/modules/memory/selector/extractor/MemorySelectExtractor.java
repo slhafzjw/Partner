@@ -5,15 +5,19 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.agent.common.chat.pojo.Message;
+import work.slhaf.agent.common.chat.pojo.MetaMessage;
 import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
+import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorInput;
 import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorResult;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
@@ -26,6 +30,7 @@ public class MemorySelectExtractor extends Model {
     private static MemorySelectExtractor memorySelectExtractor;
 
     private MemoryManager memoryManager;
+    private SessionManager sessionManager;
 
     private MemorySelectExtractor() {
     }
@@ -35,6 +40,7 @@ public class MemorySelectExtractor extends Model {
             Config config = Config.getConfig();
             memorySelectExtractor = new MemorySelectExtractor();
             memorySelectExtractor.setMemoryManager(MemoryManager.getInstance());
+            memorySelectExtractor.setSessionManager(SessionManager.getInstance());
             setModel(config, memorySelectExtractor, MODEL_KEY, ModelConstant.SELECT_EXTRACTOR_PROMPT);
         }
 
@@ -43,11 +49,16 @@ public class MemorySelectExtractor extends Model {
 
     public ExtractorResult execute(InteractionContext context) {
         //结构化为指定格式
-        //TODO 将历史消息替换为sessionManager中的用户对应信息列表
+        List<Message> chatMessages = new ArrayList<>();
+        for (MetaMessage metaMessage : sessionManager.getSingleMetaMessageMap().get(context.getUserId())) {
+            chatMessages.add(metaMessage.getUserMessage());
+            chatMessages.add(metaMessage.getAssistantMessage());
+        }
+
         ExtractorInput extractorInput = ExtractorInput.builder()
                 .text(context.getInput())
                 .date(context.getDateTime().toLocalDate())
-                .history(memoryManager.getChatMessages())
+                .history(chatMessages)
                 .topic_tree(memoryManager.getTopicTree())
                 .build();
         String responseStr = extractJson(singleChat(JSONUtil.toJsonPrettyStr(extractorInput)).getMessage());

@@ -130,4 +130,12 @@ public class MemoryManager implements InteractionModule {
         memoryGraph.getChatMessages().removeAll(messages);
         messageCleanLock.unlock();
     }
+
+    public void insertStaticMemory(String userId, Map<String, String> newStaticMemory) {
+        memoryGraph.getStaticMemory().get(userId).putAll(newStaticMemory);
+    }
+
+    public void updateDialogMap(LocalDateTime dateTime,String newDialogCache) {
+        memoryGraph.updateDialogMap(dateTime, newDialogCache);
+    }
 }

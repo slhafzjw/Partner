@@ -63,7 +63,7 @@ public class MemoryGraph extends PersistableObject {
     /**
      * 当前对话的活动性总结, 拥有比dialogMap更丰富的全文细节, 作为当前对话token超限时的必要上下文压缩存储
      */
-    private List<String> currentCompressedSessionContext;
+//    private List<String> currentCompressedSessionContext;
 
     /**
      * 存储确定性记忆, 如'用户爱好'等确定性信息
@@ -123,7 +123,7 @@ public class MemoryGraph extends PersistableObject {
         this.selectedSlices = new HashSet<>();
         this.users = new ArrayList<>();
         this.userDialogMap = new ConcurrentHashMap<>();
-        this.currentCompressedSessionContext = new ArrayList<>();
+//        this.currentCompressedSessionContext = new ArrayList<>();
         this.dialogMap = new HashMap<>();
     }
 
@@ -255,24 +255,9 @@ public class MemoryGraph extends PersistableObject {
         String summary = slice.getSummary();
         LocalDateTime now = LocalDateTime.now();
 
-        //更新dialogMap -------------------------
-        //移除两天前的上下文缓存(切片总结)
-        List<LocalDateTime> keysToRemove = new ArrayList<>();
-        dialogMap.forEach((k, v) -> {
-            if (now.minusDays(2).isAfter(k)) {
-                keysToRemove.add(k);
-            }
-        });
-        for (LocalDateTime dateTime : keysToRemove) {
-            dialogMap.remove(dateTime);
-        }
-        keysToRemove.clear();
-        //放入新缓存
-        dialogMap.put(now, summary);
-        //---------------------------------------
-
         //更新userDialogMap
         //移除两天前上下文缓存(切片总结)
+        List<LocalDateTime> keysToRemove = new ArrayList<>();
         userDialogMap.forEach((k, v) -> {
             v.forEach((i, j) -> {
                 if (now.minusDays(2).isAfter(i)) {
@@ -288,7 +273,7 @@ public class MemoryGraph extends PersistableObject {
         //放入新缓存
         userDialogMap
                 .computeIfAbsent(slice.getStartUserId(), k -> new ConcurrentHashMap<>())
-                .merge(now, slice.getSummary(), (oldVal, newVal) -> oldVal + " " + newVal);
+                .merge(now, summary, (oldVal, newVal) -> oldVal + " " + newVal);
 
     }
 
@@ -484,5 +469,21 @@ public class MemoryGraph extends PersistableObject {
     }
 
 
+    public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
+        List<LocalDateTime> keysToRemove = new ArrayList<>();
+
+        dialogMap.forEach((k, v) -> {
+            if (dateTime.minusDays(2).isAfter(k)) {
+                keysToRemove.add(k);
+            }
+        });
+        for (LocalDateTime temp : keysToRemove) {
+            dialogMap.remove(temp);
+        }
+        keysToRemove.clear();
+        //放入新缓存
+        dialogMap.put(dateTime, newDialogCache);
+
+    }
 }
 

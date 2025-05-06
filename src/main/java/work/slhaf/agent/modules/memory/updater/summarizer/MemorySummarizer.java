@@ -14,13 +14,16 @@ import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 import work.slhaf.agent.core.interaction.InteractionThreadPoolExecutor;
 import work.slhaf.agent.modules.memory.updater.summarizer.data.SummarizeResult;
-import work.slhaf.agent.modules.memory.updater.summarizer.data.TotalSummarizeInput;
+import work.slhaf.agent.modules.memory.updater.summarizer.data.SummarizeInput;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+
+import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -42,16 +45,16 @@ public class MemorySummarizer extends Model {
         return memorySummarizer;
     }
 
-    public SummarizeResult execute(TotalSummarizeInput input) throws InterruptedException {
-            //进行长文本批量摘要
-            singleMessageSummarize(input.getChatMessages());
-            //进行整体摘要并返回结果
-            return multiMessageSummarize(input);
+    public SummarizeResult execute(SummarizeInput input) throws InterruptedException {
+        //进行长文本批量摘要
+        singleMessageSummarize(input.getChatMessages());
+        //进行整体摘要并返回结果
+        return multiMessageSummarize(input);
     }
 
-    private SummarizeResult multiMessageSummarize(TotalSummarizeInput input) {
+    private SummarizeResult multiMessageSummarize(SummarizeInput input) {
         String messageStr = JSONUtil.toJsonPrettyStr(input);
-        return multiSummarizeExecute(prompts.get(1),messageStr);
+        return multiSummarizeExecute(prompts.get(1), messageStr);
     }
 
     private SummarizeResult multiSummarizeExecute(String prompt, String messageStr) {
@@ -73,7 +76,7 @@ public class MemorySummarizer extends Model {
                 }
             }
         }
-        executor.invokeAll(tasks,30, TimeUnit.SECONDS);
+        executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
     }
 
     private @NonNull String singleSummarizeExecute(String prompt, String content) {
@@ -88,4 +91,9 @@ public class MemorySummarizer extends Model {
     }
 
 
+    public String executeTotalSummary(HashMap<String, String> singleMemorySummary) {
+        ChatResponse response = chatClient.runChat(List.of(new Message(ChatConstant.Character.SYSTEM, prompts.get(2)),
+                new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(singleMemorySummary))));
+        return JSONObject.parseObject(extractJson(response.getMessage())).getString("value");
+    }
 }

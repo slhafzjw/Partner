@@ -8,7 +8,7 @@ import java.util.List;
 
 @AllArgsConstructor
 @Data
-public class TotalSummarizeInput {
+public class SummarizeInput {
     private List<Message> chatMessages;
     private String topicTree;
 }
