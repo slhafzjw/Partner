@@ -14,15 +14,13 @@ import work.slhaf.agent.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.modules.memory.updater.static_extractor.StaticMemoryExtractor;
 import work.slhaf.agent.modules.memory.updater.static_extractor.data.StaticMemoryExtractInput;
 import work.slhaf.agent.modules.memory.updater.summarizer.MemorySummarizer;
-import work.slhaf.agent.modules.memory.updater.summarizer.data.SummarizeResult;
 import work.slhaf.agent.modules.memory.updater.summarizer.data.SummarizeInput;
+import work.slhaf.agent.modules.memory.updater.summarizer.data.SummarizeResult;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Data
 @Slf4j
@@ -30,7 +28,6 @@ public class MemoryUpdater implements InteractionModule {
 
     private static MemoryUpdater memoryUpdater;
 
-    private ExecutorService updateExecutor;
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
     private MemorySelectExtractor memorySelectExtractor;
@@ -48,7 +45,6 @@ public class MemoryUpdater implements InteractionModule {
             memoryUpdater.setMemorySelectExtractor(MemorySelectExtractor.getInstance());
             memoryUpdater.setMemorySummarizer(MemorySummarizer.getInstance());
             memoryUpdater.setSessionManager(SessionManager.getInstance());
-            memoryUpdater.setUpdateExecutor(Executors.newSingleThreadExecutor());
             memoryUpdater.setStaticMemoryExtractor(StaticMemoryExtractor.getInstance());
         }
         return memoryUpdater;
@@ -59,7 +55,7 @@ public class MemoryUpdater implements InteractionModule {
         if (interactionContext.isFinished()) {
             return;
         }
-        updateExecutor.execute(() -> {
+        executor.execute(() -> {
             //如果token 大于阈值，则更新记忆
             JSONObject moduleContext = interactionContext.getModuleContext();
             if (moduleContext.getIntValue("total_token") > 24000) {
@@ -73,9 +69,7 @@ public class MemoryUpdater implements InteractionModule {
                 } catch (InterruptedException | IOException | ClassNotFoundException e) {
                     log.error("记忆更新线程出错: {}", e.getLocalizedMessage());
                 }
-
             }
-
         });
 
     }

@@ -6,11 +6,11 @@ import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
-import work.slhaf.agent.modules.memory.selector.evaluator.data.EvaluatorInput;
 import work.slhaf.agent.modules.memory.selector.evaluator.SliceSelectEvaluator;
+import work.slhaf.agent.modules.memory.selector.evaluator.data.EvaluatorInput;
+import work.slhaf.agent.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorMatchData;
 import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorResult;
-import work.slhaf.agent.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;

@@ -39,3 +39,8 @@ build/
 /data/
 /config/
 /src/test/java/memory/test.json
+/src/test/java/memory/result/input1.json
+/src/test/java/memory/result/input2.json
+/src/test/java/memory/result/output1.json
+/src/test/java/memory/result/output2.json
+/src/test/java/memory/result/total_input.json

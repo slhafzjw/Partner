@@ -38,7 +38,7 @@ public class Agent implements TaskCallback, InputReceiver {
                         conn.close();
                     }
                     server.stop();
-                    log.info("WebSocketServer 已优雅关闭");
+                    log.info("WebSocketServer 已关闭");
                 } catch (Exception e) {
                     log.error("关闭失败", e);
                 }
