@@ -44,3 +44,5 @@ build/
 /src/test/java/memory/result/output1.json
 /src/test/java/memory/result/output2.json
 /src/test/java/memory/result/total_input.json
+/src/test/java/memory/result/input3.json
+/src/test/java/memory/result/input4.json

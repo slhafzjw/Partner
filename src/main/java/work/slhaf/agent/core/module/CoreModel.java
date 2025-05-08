@@ -49,15 +49,13 @@ public class CoreModel extends Model implements InteractionModule {
 
     @Override
     public void execute(InteractionContext interactionContext) {
-        //TODO 添加新的system prompt 引导主模型专注于最新的用户输入
-        //TODO 需要更新主模型prompt
         String tempPrompt = interactionContext.getModulePrompt().toString();
         if (!tempPrompt.equals(promptCache)) {
             coreModel.getMessages().set(0, new Message(ChatConstant.Character.SYSTEM, ModelConstant.CORE_MODEL_PROMPT + "\r\n" + tempPrompt));
             promptCache = tempPrompt;
         }
         String user = "[" + interactionContext.getUserNickname() + "(" + interactionContext.getUserId() + ")]";
-        Message userMessage = new Message(ChatConstant.Character.USER, user + interactionContext.getCoreContext().getString("text"));
+        Message userMessage = new Message(ChatConstant.Character.USER, user + " " + interactionContext.getCoreContext());
         this.messages.add(userMessage);
         JSONObject response = null;
         int count = 0;
@@ -65,13 +63,15 @@ public class CoreModel extends Model implements InteractionModule {
             try {
                 ChatResponse chatResponse = this.chat();
                 response = JSONObject.parse(extractJson(chatResponse.getMessage()));
+                this.messages.removeLast();
+                this.messages.add(new Message(ChatConstant.Character.USER, interactionContext.getCoreContext().getString("text")));
                 Message assistantMessage = new Message(ChatConstant.Character.ASSISTANT, response.getString("text"));
                 this.messages.add(assistantMessage);
 
                 //设置上下文
                 interactionContext.getModuleContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
                 //区分单人聊天场景
-                if (interactionContext.isSingle()){
+                if (interactionContext.isSingle()) {
                     MetaMessage metaMessage = new MetaMessage(userMessage, assistantMessage);
                     sessionManager.addMetaMessage(interactionContext.getUserId(), metaMessage);
                 }

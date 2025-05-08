@@ -20,7 +20,7 @@ public class StaticMemoryExtractor extends Model {
 
     private static StaticMemoryExtractor staticMemoryExtractor;
 
-    private static final String MODEL_KEY = "static_memory_extractor";
+    public static final String MODEL_KEY = "static_memory_extractor";
 
 
     public static StaticMemoryExtractor getInstance() throws IOException, ClassNotFoundException {

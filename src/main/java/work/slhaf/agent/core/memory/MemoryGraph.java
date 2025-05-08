@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.common.chat.pojo.Message;
+import work.slhaf.agent.common.pojo.PersistableObject;
 import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.memory.node.MemoryNode;
 import work.slhaf.agent.core.memory.node.TopicNode;

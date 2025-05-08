@@ -3,6 +3,7 @@ package work.slhaf.agent.modules.memory.updater;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.InteractionThreadPoolExecutor;
@@ -21,6 +22,8 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Data
 @Slf4j
@@ -46,6 +49,7 @@ public class MemoryUpdater implements InteractionModule {
             memoryUpdater.setMemorySummarizer(MemorySummarizer.getInstance());
             memoryUpdater.setSessionManager(SessionManager.getInstance());
             memoryUpdater.setStaticMemoryExtractor(StaticMemoryExtractor.getInstance());
+            memoryUpdater.setExecutor(InteractionThreadPoolExecutor.getInstance());
         }
         return memoryUpdater;
     }
@@ -81,6 +85,8 @@ public class MemoryUpdater implements InteractionModule {
             try {
                 SummarizeResult summarizeResult = memorySummarizer.execute(new SummarizeInput(memoryManager.getChatMessages(), memoryManager.getTopicTree()));
                 MemorySlice memorySlice = getMemorySlice(userId, summarizeResult, memoryManager.getChatMessages());
+                //设置involvedUserId
+                setInvolvedUserId(userId,memorySlice,memoryManager.getChatMessages());
                 memoryManager.insertSlice(memorySlice, summarizeResult.getTopicPath());
                 //更新总dialogMap
                 singleMemorySummary.put("total", summarizeResult.getSummary());
@@ -90,6 +96,27 @@ public class MemoryUpdater implements InteractionModule {
             }
         });
     }
+
+private void setInvolvedUserId(String startUserId, MemorySlice memorySlice, List<Message> chatMessages) {
+    for (Message chatMessage : chatMessages) {
+        if (chatMessage.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+            continue;
+        }
+        //匹配userId
+        String content = chatMessage.getContent();
+        Pattern pattern = Pattern.compile("\\[.*\\(([^)]+)\\)\\]");
+        Matcher matcher = pattern.matcher(content);
+        if (!matcher.find()) {
+            continue;
+        }
+        String userId = matcher.group(1);
+        if (userId.equals(startUserId)){
+            continue;
+        }
+        memorySlice.getInvolvedUserIds().add(userId);
+    }
+}
+
 
     private void updateSingleChatSlices(String interactionContext, HashMap<String, String> singleMemorySummary) throws InterruptedException {
         //更新单聊记忆，同时从chatMessages中去掉单聊记忆

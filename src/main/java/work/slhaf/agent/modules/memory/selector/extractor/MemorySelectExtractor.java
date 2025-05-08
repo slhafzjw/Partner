@@ -50,9 +50,14 @@ public class MemorySelectExtractor extends Model {
     public ExtractorResult execute(InteractionContext context) {
         //结构化为指定格式
         List<Message> chatMessages = new ArrayList<>();
-        for (MetaMessage metaMessage : sessionManager.getSingleMetaMessageMap().get(context.getUserId())) {
-            chatMessages.add(metaMessage.getUserMessage());
-            chatMessages.add(metaMessage.getAssistantMessage());
+        List<MetaMessage> metaMessages = sessionManager.getSingleMetaMessageMap().get(context.getUserId());
+        if (metaMessages == null) {
+            sessionManager.getSingleMetaMessageMap().put(context.getUserId(), new ArrayList<>());
+        } else {
+            for (MetaMessage metaMessage : metaMessages) {
+                chatMessages.add(metaMessage.getUserMessage());
+                chatMessages.add(metaMessage.getAssistantMessage());
+            }
         }
 
         ExtractorInput extractorInput = ExtractorInput.builder()

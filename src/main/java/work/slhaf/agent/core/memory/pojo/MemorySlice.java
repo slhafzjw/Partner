@@ -3,6 +3,7 @@ package work.slhaf.agent.core.memory.pojo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.chat.pojo.Message;
+import work.slhaf.agent.common.pojo.PersistableObject;
 
 import java.io.Serial;
 import java.util.List;

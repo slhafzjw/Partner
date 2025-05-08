@@ -9,6 +9,7 @@ import work.slhaf.agent.modules.memory.selector.MemorySelector;
 import work.slhaf.agent.modules.memory.selector.evaluator.SliceSelectEvaluator;
 import work.slhaf.agent.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.modules.memory.updater.MemoryUpdater;
+import work.slhaf.agent.modules.memory.updater.static_extractor.StaticMemoryExtractor;
 import work.slhaf.agent.modules.memory.updater.summarizer.MemorySummarizer;
 import work.slhaf.agent.modules.task.TaskEvaluator;
 import work.slhaf.agent.modules.task.TaskScheduler;
@@ -69,8 +70,8 @@ public class Config {
         List<ModuleConfig> moduleConfigList = List.of(
                 new ModuleConfig(MemorySelector.class.getName(), ModuleConfig.Constant.INTERNAL, null),
                 new ModuleConfig(CoreModel.class.getName(),ModuleConfig.Constant.INTERNAL,null),
-                new ModuleConfig(MemoryUpdater.class.getName(),ModuleConfig.Constant.INTERNAL,null),
-                new ModuleConfig(TaskScheduler.class.getName(), ModuleConfig.Constant.INTERNAL, null)
+                new ModuleConfig(MemoryUpdater.class.getName(),ModuleConfig.Constant.INTERNAL,null)
+//                new ModuleConfig(TaskScheduler.class.getName(), ModuleConfig.Constant.INTERNAL, null)
         );
         config.setModuleConfigList(moduleConfigList);
     }
@@ -105,7 +106,7 @@ public class Config {
             modelConfig.setModel(scanner.nextLine());
 
         }
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             String modelKey = switch (i) {
                 case 0 -> {
                     System.out.println("CoreModel:");
@@ -126,6 +127,10 @@ public class Config {
                 case 4 -> {
                     System.out.println("MemorySummarizer:");
                     yield MemorySummarizer.MODEL_KEY;
+                }
+                case 5 -> {
+                    System.out.println("StaticMemoryExtractor:");
+                    yield StaticMemoryExtractor.MODEL_KEY;
                 }
                 default -> throw new RuntimeException();
             };

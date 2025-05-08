@@ -34,7 +34,8 @@ public class MemorySummarizer extends Model {
     public static final String MODEL_KEY = "memory_summarizer";
     private static final List<String> prompts = List.of(
             Constant.SINGLE_SUMMARIZE_PROMPT,
-            Constant.MULTI_SUMMARIZE_PROMPT
+            Constant.MULTI_SUMMARIZE_PROMPT,
+            Constant.TOTAL_SUMMARIZE_PROMPT
     );
 
     private InteractionThreadPoolExecutor executor;
@@ -303,6 +304,96 @@ public class MemorySummarizer extends Model {
                   "isPrivate": true
                 }
                 
+                """;
+
+        public static final String TOTAL_SUMMARIZE_PROMPT = """
+                TOTAL_SUMMARIZER 提示词
+                功能说明
+                你需要根据输入的多个独立用户对话摘要，生成一份综合性的总结报告。每个用户的对话内容彼此无关联，需保持原始信息的同时进行概括性整合，最终输出标准化JSON格式的响应。
+                
+                输入字段说明
+                • 输入数据为JSON对象：
+                  - key: 用户uuid（需在输出中保留）
+                  - value: 该用户的对话摘要文本（需要处理的内容）
+                
+                输出规则
+                1. 基本响应格式：
+                   {
+                     "content": string // 综合摘要文本
+                   }
+                2. 内容要求：
+                   • 严格控制在800字以内
+                   • 保持客观中立，不添加解释性内容
+                   • 使用分号分隔不同用户的摘要内容
+                   • 保留原始对话的关键事实信息
+                   • 对重复信息进行合并处理
+                3. 格式要求：
+                   • 每个用户摘要以"用户[uuid]："开头
+                   • 不同用户摘要间用分号分隔
+                   • 末尾不添加总结性陈述
+                
+                处理流程
+                1. 解析输入JSON的所有键值对
+                2. 对每个摘要执行：
+                   a. 提取关键事实信息
+                   b. 删除问候语等非实质性内容
+                   c. 简化重复表达
+                3. 合并处理：
+                   a. 识别不同摘要中的相同信息点
+                   b. 合并相同信息点的不同表述
+                4. 生成最终摘要：
+                   a. 按原始输入顺序排列用户摘要
+                   b. 确保总字数≤800
+                   c. 验证信息完整性
+                
+                完整示例
+                示例1（基础情况）：
+                输入：{
+                  "aaa-111": "需要购买笔记本电脑，预算5000左右，主要用于办公",
+                  "bbb-222": "想买游戏本，预算8000-10000，要能运行3A大作",
+                  "ccc-333": "咨询轻薄本推荐，经常出差使用"
+                }
+                输出：{
+                  "content": "
+                用户[aaa-111]：需要5000元左右的办公笔记本；
+                用户[bbb-222]：寻求8000-10000元的游戏本，要求能运行3A大作；
+                用户[ccc-333]：咨询适合出差使用的轻薄本"
+                }
+                
+                示例2（信息合并）：
+                输入：{
+                  "ddd-444": "想了解Python入门课程，零基础",
+                  "eee-555": "询问Java和Python哪个更适合新手",
+                  "fff-666": "零基础，想学Python数据分析"
+                }
+                输出：{
+                  "content": "
+                用户[ddd-444]：零基础想了解Python入门课程；
+                用户[eee-555]：询问Java和Python对新手的适用性；
+                用户[fff-666]：零基础想学习Python数据分析"
+                }
+                
+                示例3（长文本精简）：
+                输入：{
+                  "ggg-777": "您好！我最近在准备考研，想咨询下时间规划。具体是想了解每天应该分配多少时间给英语复习，我现在英语水平大概是四级刚过的程度...（后续200字详细描述）",
+                  "hhh-888": "考研政治怎么准备？需要报班吗？"
+                }
+                输出：{
+                  "content": "
+                用户[ggg-777]：咨询考研英语复习时间规划，当前英语水平为四级；
+                用户[hhh-888]：询问考研政治备考方法及是否需要报班"
+                }
+                
+                特殊处理
+                1. 当总字数超出限制时：
+                   • 尽量保留所有出现的用户摘要
+                2. 当输入为空时：
+                   {
+                     "content": ""
+                   }
+                3. 当用户uuid包含特殊字符时：
+                   • 保持原始uuid格式不做修改
+                   • 示例：用户[xxx-ddssss-xx]：内容摘要
                 """;
     }
 }

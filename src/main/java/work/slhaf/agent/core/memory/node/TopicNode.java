@@ -2,7 +2,7 @@ package work.slhaf.agent.core.memory.node;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.agent.core.memory.pojo.PersistableObject;
+import work.slhaf.agent.common.pojo.PersistableObject;
 
 import java.io.Serial;
 import java.util.concurrent.ConcurrentHashMap;

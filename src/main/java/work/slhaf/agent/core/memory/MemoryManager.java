@@ -45,6 +45,14 @@ public class MemoryManager implements InteractionModule {
             memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId()));
             memoryManager.setActivatedSlices(new HashMap<>());
             log.info("MemoryManager注册完毕...");
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    memoryManager.save();
+                    log.info("MemoryGraph已保存");
+                } catch (IOException e) {
+                    log.error("保存MemoryGraph失败: ", e);
+                }
+            }));
         }
         return memoryManager;
     }
@@ -135,7 +143,11 @@ public class MemoryManager implements InteractionModule {
         memoryGraph.getStaticMemory().get(userId).putAll(newStaticMemory);
     }
 
-    public void updateDialogMap(LocalDateTime dateTime,String newDialogCache) {
+    public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
         memoryGraph.updateDialogMap(dateTime, newDialogCache);
+    }
+
+    public void save() throws IOException {
+        memoryGraph.serialize();
     }
 }

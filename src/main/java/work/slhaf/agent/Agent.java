@@ -23,7 +23,7 @@ public class Agent implements TaskCallback, InputReceiver {
     private InteractionHub interactionHub;
     private MessageSender messageSender;
 
-    public static Agent initialize() throws IOException {
+    public static void initialize() throws IOException {
         if (agent == null) {
             //加载配置
             Config config = Config.getConfig();
@@ -31,23 +31,14 @@ public class Agent implements TaskCallback, InputReceiver {
             agent.setInteractionHub(InteractionHub.initialize());
             agent.registerTaskCallback();
             AgentWebSocketServer server = new AgentWebSocketServer(config.getWebSocketConfig().getPort(),agent);
-            server.start();
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                try {
-                    for (WebSocket conn : server.getConnections()) {
-                        conn.close();
-                    }
-                    server.stop();
-                    log.info("WebSocketServer 已关闭");
-                } catch (Exception e) {
-                    log.error("关闭失败", e);
-                }
-            }));
-
+            server.launch();
             agent.setMessageSender(server);
-
             log.info("Agent 加载完毕..");
         }
+    }
+
+    public static Agent getInstance() throws IOException {
+        initialize();
         return agent;
     }
 
