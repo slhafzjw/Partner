@@ -31,12 +31,17 @@ public class MemoryUpdater implements InteractionModule {
 
     private static MemoryUpdater memoryUpdater;
 
+    private static final String USERID_REGEX = "\\[.*\\(([^)]+)\\)\\]";
+    private static final long SCHEDULED_UPDATE_INTERVAL = 10 * 1000;
+    private static final long UPDATE_TRIGGER_INTERVAL = 30 * 60 * 1000;
+
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
     private MemorySelectExtractor memorySelectExtractor;
     private MemorySummarizer memorySummarizer;
     private SessionManager sessionManager;
     private StaticMemoryExtractor staticMemoryExtractor;
+    private long lastUpdatedTime = 0;
 
     private MemoryUpdater() {
     }
@@ -50,8 +55,28 @@ public class MemoryUpdater implements InteractionModule {
             memoryUpdater.setSessionManager(SessionManager.getInstance());
             memoryUpdater.setStaticMemoryExtractor(StaticMemoryExtractor.getInstance());
             memoryUpdater.setExecutor(InteractionThreadPoolExecutor.getInstance());
+
+            memoryUpdater.setScheduledUpdater();
         }
         return memoryUpdater;
+    }
+
+    private void setScheduledUpdater() {
+        executor.execute(() -> {
+            log.info("记忆自动更新线程启动");
+            while (!Thread.interrupted()) {
+                try {
+                    long currentTime = System.currentTimeMillis();
+                    if (lastUpdatedTime != 0 && currentTime - lastUpdatedTime > UPDATE_TRIGGER_INTERVAL) {
+                        updateMemory();
+                    }
+                    Thread.sleep(SCHEDULED_UPDATE_INTERVAL);
+                } catch (Exception e) {
+                    log.error("记忆自动更新线程出错: {}", e.getLocalizedMessage());
+                }
+            }
+            log.info("记忆自动更新线程结束");
+        });
     }
 
     @Override
@@ -63,14 +88,9 @@ public class MemoryUpdater implements InteractionModule {
             //如果token 大于阈值，则更新记忆
             JSONObject moduleContext = interactionContext.getModuleContext();
             if (moduleContext.getIntValue("total_token") > 24000) {
-                String userId = interactionContext.getUserId();
-                HashMap<String, String> singleMemorySummary = new HashMap<>();
                 try {
-                    //更新单聊记忆以及该场景中对应的确定性记忆，同时从chatMessages中去掉单聊记忆
-                    updateSingleChatSlices(userId, singleMemorySummary);
-                    //更新多人场景下的记忆及相关的确定性记忆
-                    updateMultiChatSlices(userId, singleMemorySummary);
-                } catch (InterruptedException | IOException | ClassNotFoundException e) {
+                    updateMemory();
+                } catch (Exception e) {
                     log.error("记忆更新线程出错: {}", e.getLocalizedMessage());
                 }
             }
@@ -78,15 +98,29 @@ public class MemoryUpdater implements InteractionModule {
 
     }
 
-    private void updateMultiChatSlices(String userId, HashMap<String, String> singleMemorySummary) throws InterruptedException, IOException, ClassNotFoundException {
+    private void updateMemory() throws InterruptedException, IOException, ClassNotFoundException {
+        HashMap<String, String> singleMemorySummary = new HashMap<>();
+        //更新单聊记忆以及该场景中对应的确定性记忆，同时从chatMessages中去掉单聊记忆
+        updateSingleChatSlices(singleMemorySummary);
+        //更新多人场景下的记忆及相关的确定性记忆
+        updateMultiChatSlices(singleMemorySummary);
+        //更新最近更新时间
+        lastUpdatedTime = System.currentTimeMillis();
+    }
+
+    private void updateMultiChatSlices(HashMap<String, String> singleMemorySummary) throws InterruptedException, IOException, ClassNotFoundException {
         //此时chatMessages中不再包含单聊记录，直接执行摘要以及切片插入
         //对剩下的多人聊天记录进行进行摘要
         executor.execute(() -> {
             try {
+                //以第一条user对应的id为发起用户
+                Pattern pattern = Pattern.compile(USERID_REGEX);
+                Matcher matcher = pattern.matcher(memoryManager.getChatMessages().getFirst().getContent());
+                String userId = matcher.group(1);
                 SummarizeResult summarizeResult = memorySummarizer.execute(new SummarizeInput(memoryManager.getChatMessages(), memoryManager.getTopicTree()));
                 MemorySlice memorySlice = getMemorySlice(userId, summarizeResult, memoryManager.getChatMessages());
                 //设置involvedUserId
-                setInvolvedUserId(userId,memorySlice,memoryManager.getChatMessages());
+                setInvolvedUserId(userId, memorySlice, memoryManager.getChatMessages());
                 memoryManager.insertSlice(memorySlice, summarizeResult.getTopicPath());
                 //更新总dialogMap
                 singleMemorySummary.put("total", summarizeResult.getSummary());
@@ -97,28 +131,28 @@ public class MemoryUpdater implements InteractionModule {
         });
     }
 
-private void setInvolvedUserId(String startUserId, MemorySlice memorySlice, List<Message> chatMessages) {
-    for (Message chatMessage : chatMessages) {
-        if (chatMessage.getRole().equals(ChatConstant.Character.ASSISTANT)) {
-            continue;
+    private void setInvolvedUserId(String startUserId, MemorySlice memorySlice, List<Message> chatMessages) {
+        for (Message chatMessage : chatMessages) {
+            if (chatMessage.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+                continue;
+            }
+            //匹配userId
+            String content = chatMessage.getContent();
+            Pattern pattern = Pattern.compile(USERID_REGEX);
+            Matcher matcher = pattern.matcher(content);
+            if (!matcher.find()) {
+                continue;
+            }
+            String userId = matcher.group(1);
+            if (userId.equals(startUserId)) {
+                continue;
+            }
+            memorySlice.getInvolvedUserIds().add(userId);
         }
-        //匹配userId
-        String content = chatMessage.getContent();
-        Pattern pattern = Pattern.compile("\\[.*\\(([^)]+)\\)\\]");
-        Matcher matcher = pattern.matcher(content);
-        if (!matcher.find()) {
-            continue;
-        }
-        String userId = matcher.group(1);
-        if (userId.equals(startUserId)){
-            continue;
-        }
-        memorySlice.getInvolvedUserIds().add(userId);
     }
-}
 
 
-    private void updateSingleChatSlices(String interactionContext, HashMap<String, String> singleMemorySummary) throws InterruptedException {
+    private void updateSingleChatSlices(HashMap<String, String> singleMemorySummary) throws InterruptedException {
         //更新单聊记忆，同时从chatMessages中去掉单聊记忆
         Set<String> userIdSet = new HashSet<>(sessionManager.getSingleMetaMessageMap().keySet());
         List<Callable<Void>> tasks = new ArrayList<>();
@@ -129,7 +163,7 @@ private void setInvolvedUserId(String startUserId, MemorySlice memorySlice, List
                 try {
                     //单聊记忆更新
                     SummarizeResult summarizeResult = memorySummarizer.execute(new SummarizeInput(messages, memoryManager.getTopicTree()));
-                    MemorySlice memorySlice = getMemorySlice(interactionContext, summarizeResult, messages);
+                    MemorySlice memorySlice = getMemorySlice(id, summarizeResult, messages);
                     //插入时userDialogMap已经进行更新
                     memoryManager.insertSlice(memorySlice, summarizeResult.getTopicPath());
                     //从chatMessages中移除单聊记录

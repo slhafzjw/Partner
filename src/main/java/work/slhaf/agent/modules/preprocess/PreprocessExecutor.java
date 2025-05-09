@@ -38,10 +38,12 @@ public class PreprocessExecutor {
         context.setDateTime(inputData.getLocalDateTime());
 
         context.setFinished(false);
-        context.setInput(inputData.getContent());
+        String user = "[" + inputData.getUserNickName() + "(" + userId + ")]";
+        String input = user + " " + inputData.getContent();
+        context.setInput(input);
 
         context.setCoreContext(new JSONObject());
-        context.getCoreContext().put("text", inputData.getContent());
+        context.getCoreContext().put("text", input);
         context.getCoreContext().put("datetime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         context.getCoreContext().put("character", memoryManager.getCharacter());
         context.getCoreContext().put("user_nick", inputData.getUserNickName());
