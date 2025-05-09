@@ -126,6 +126,9 @@ public class MemoryGraph extends PersistableObject {
         this.userDialogMap = new ConcurrentHashMap<>();
 //        this.currentCompressedSessionContext = new ArrayList<>();
         this.dialogMap = new HashMap<>();
+        this.character = """
+                实话实说，不做糖衣炮弹。 采取前瞻性的观点。 始终保持尊重。 乐于分享明确的观点。 保持轻松、随和。 直奔主题。 务实至上。 勇于创新，打破常规思维。使用中文回答所有问题。
+                """;
     }
 
     public static MemoryGraph getInstance(String id) throws IOException, ClassNotFoundException {
@@ -401,9 +404,10 @@ public class MemoryGraph extends PersistableObject {
     }
 
     private void checkCacheDate() {
-        if (cacheDate.isBefore(LocalDate.now())) {
+        if ( cacheDate == null || cacheDate.isBefore(LocalDate.now())) {
             memorySliceCache.clear();
             memoryNodeCacheCounter.clear();
+            cacheDate = LocalDate.now();
         }
     }
 

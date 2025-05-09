@@ -115,12 +115,17 @@ public class MemoryUpdater implements InteractionModule {
             try {
                 //以第一条user对应的id为发起用户
                 Pattern pattern = Pattern.compile(USERID_REGEX);
-                Matcher matcher = pattern.matcher(memoryManager.getChatMessages().getFirst().getContent());
+                Matcher matcher = pattern.matcher(memoryManager.getChatMessages().get(1).getContent());
+                if (!matcher.find()){
+                    throw new RuntimeException("未匹配到 userId!");
+                }
                 String userId = matcher.group(1);
                 SummarizeResult summarizeResult = memorySummarizer.execute(new SummarizeInput(memoryManager.getChatMessages(), memoryManager.getTopicTree()));
                 MemorySlice memorySlice = getMemorySlice(userId, summarizeResult, memoryManager.getChatMessages());
                 //设置involvedUserId
-                setInvolvedUserId(userId, memorySlice, memoryManager.getChatMessages());
+                List<Message> messages = new ArrayList<>(memoryManager.getChatMessages());
+                messages.removeFirst();
+                setInvolvedUserId(userId, memorySlice, messages);
                 memoryManager.insertSlice(memorySlice, summarizeResult.getTopicPath());
                 //更新总dialogMap
                 singleMemorySummary.put("total", summarizeResult.getSummary());
@@ -147,6 +152,7 @@ public class MemoryUpdater implements InteractionModule {
             if (userId.equals(startUserId)) {
                 continue;
             }
+            memorySlice.setInvolvedUserIds(new ArrayList<>());
             memorySlice.getInvolvedUserIds().add(userId);
         }
     }

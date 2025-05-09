@@ -41,6 +41,7 @@ public class CoreModel extends Model implements InteractionModule {
             coreModel = new CoreModel();
             coreModel.memoryManager = MemoryManager.getInstance();
             coreModel.messages = coreModel.memoryManager.getChatMessages();
+            coreModel.sessionManager = SessionManager.getInstance();
             setModel(config, coreModel, MODEL_KEY, ModelConstant.CORE_MODEL_PROMPT);
             log.info("CoreModel注册完毕...");
         }
@@ -62,6 +63,7 @@ public class CoreModel extends Model implements InteractionModule {
             try {
                 ChatResponse chatResponse = this.chat();
                 response = JSONObject.parse(extractJson(chatResponse.getMessage()));
+                log.debug("CoreModel 响应内容: {}",response.toString());
                 this.messages.removeLast();
                 this.messages.add(new Message(ChatConstant.Character.USER, interactionContext.getCoreContext().getString("text")));
                 Message assistantMessage = new Message(ChatConstant.Character.ASSISTANT, response.getString("text"));

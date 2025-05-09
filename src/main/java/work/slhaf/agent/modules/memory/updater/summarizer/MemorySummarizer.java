@@ -64,7 +64,7 @@ public class MemorySummarizer extends Model {
     private SummarizeResult multiSummarizeExecute(String prompt, String messageStr) {
         ChatResponse response = chatClient.runChat(List.of(new Message(ChatConstant.Character.SYSTEM, prompt),
                 new Message(ChatConstant.Character.USER, messageStr)));
-        return JSONObject.parseObject(response.getMessage(), SummarizeResult.class);
+        return JSONObject.parseObject(extractJson(response.getMessage()), SummarizeResult.class);
     }
 
     private void singleMessageSummarize(List<Message> chatMessages) {

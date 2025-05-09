@@ -53,6 +53,9 @@ public class PreprocessExecutor {
 
         context.setModulePrompt(new JSONObject());
 
+        context.setSingle(inputData.isSingle());
+        context.setFinished(false);
+
         return context;
     }
 }

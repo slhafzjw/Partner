@@ -55,7 +55,6 @@ public class Agent implements TaskCallback, InputReceiver {
      * 向用户返回输出内容
      */
     public void sendToUser(String userInfo,String output){
-        System.out.println(output);
         messageSender.sendMessage(new InteractionOutputData(output,userInfo));
     }
 

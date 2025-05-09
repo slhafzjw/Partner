@@ -1,6 +1,7 @@
 package work.slhaf.agent.modules.memory.selector;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@Slf4j
 public class MemorySelector implements InteractionModule {
 
     private static MemorySelector memorySelector;
@@ -68,7 +70,8 @@ public class MemorySelector implements InteractionModule {
         String userId =interactionContext.getUserId();
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(interactionContext);
-        if (extractorResult.isRecall()) {
+        log.debug("主题路径: {}",extractorResult);
+        if (extractorResult.isRecall() || extractorResult.getMatches().isEmpty()) {
             //查找切片
             List<MemoryResult> memoryResultList = new ArrayList<>();
             setMemoryResultList(memoryResultList, extractorResult.getMatches(),userId);

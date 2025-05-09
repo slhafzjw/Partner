@@ -10,7 +10,7 @@ public class RegexTest {
     @Test
     public void regexTest(){
         String[] examples = {
-                "[小明(userId)] 我在开会] (te[]st)",
+                "[小明(abc)] 我在开会] (te[]st)",
                 "[用户(昵)称(userId)] 你好[呀]",
                 "[测试账号(userId)] 这是一个(test(123))消息"
         };

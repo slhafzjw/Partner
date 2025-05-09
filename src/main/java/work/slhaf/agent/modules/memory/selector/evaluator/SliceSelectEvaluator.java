@@ -46,6 +46,7 @@ public class SliceSelectEvaluator extends Model {
             Config config = Config.getConfig();
             sliceSelectEvaluator = new SliceSelectEvaluator();
             sliceSelectEvaluator.setMemoryManager(MemoryManager.getInstance());
+            sliceSelectEvaluator.setExecutor(InteractionThreadPoolExecutor.getInstance());
             setModel(config, sliceSelectEvaluator, MODEL_KEY, ModelConstant.SLICE_EVALUATOR_PROMPT);
             log.info("SliceEvaluator注册完毕...");
         }
