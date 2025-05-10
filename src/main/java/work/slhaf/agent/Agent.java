@@ -2,8 +2,8 @@ package work.slhaf.agent;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.java_websocket.WebSocket;
 import work.slhaf.agent.common.config.Config;
+import work.slhaf.agent.common.monitor.DebugMonitor;
 import work.slhaf.agent.core.InteractionHub;
 import work.slhaf.agent.core.interaction.InputReceiver;
 import work.slhaf.agent.core.interaction.TaskCallback;
@@ -34,6 +34,9 @@ public class Agent implements TaskCallback, InputReceiver {
             server.launch();
             agent.setMessageSender(server);
             log.info("Agent 加载完毕..");
+
+            //启动监测线程
+            DebugMonitor.initialize();
         }
     }
 

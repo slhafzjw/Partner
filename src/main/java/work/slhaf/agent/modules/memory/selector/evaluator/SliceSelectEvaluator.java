@@ -59,7 +59,11 @@ public class SliceSelectEvaluator extends Model {
         List<Callable<Void>> tasks = new ArrayList<>();
         Queue<EvaluatedSlice> queue = new ConcurrentLinkedDeque<>();
         for (MemoryResult memoryResult : memoryResultList) {
+            if (memoryResult.getMemorySliceResult().isEmpty() && memoryResult.getRelatedMemorySliceResult().isEmpty()){
+                continue;
+            }
             tasks.add(() -> {
+                log.debug("切片评估...");
                 List<SliceSummary> sliceSummaryList = new ArrayList<>();
                 //映射查找键值
                 Map<Long, SliceSummary> map = new HashMap<>();
@@ -71,6 +75,7 @@ public class SliceSelectEvaluator extends Model {
                             .history(evaluatorInput.getMessages())
                             .build();
                     EvaluatorResult evaluatorResult = JSONObject.parseObject(extractJson(singleChat(JSONUtil.toJsonStr(batchInput)).getMessage()), EvaluatorResult.class);
+                    log.debug("评估结果: {}", evaluatorResult);
                     for (Long result : evaluatorResult.getResults()) {
                         SliceSummary sliceSummary = map.get(result);
                         EvaluatedSlice evaluatedSlice = EvaluatedSlice.builder()

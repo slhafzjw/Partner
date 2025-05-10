@@ -15,6 +15,7 @@ import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorInput;
 import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorResult;
+import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -60,11 +61,14 @@ public class MemorySelectExtractor extends Model {
             }
         }
 
+        List<EvaluatedSlice> activatedMemorySlices = memoryManager.getActivatedSlices().get(context.getUserId());
+
         ExtractorInput extractorInput = ExtractorInput.builder()
                 .text(context.getInput())
                 .date(context.getDateTime().toLocalDate())
                 .history(chatMessages)
                 .topic_tree(memoryManager.getTopicTree())
+                .activatedMemorySlices(activatedMemorySlices)
                 .build();
         String responseStr = extractJson(singleChat(JSONUtil.toJsonPrettyStr(extractorInput)).getMessage());
 

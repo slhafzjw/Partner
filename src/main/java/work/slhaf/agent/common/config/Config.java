@@ -12,7 +12,6 @@ import work.slhaf.agent.modules.memory.updater.MemoryUpdater;
 import work.slhaf.agent.modules.memory.updater.static_extractor.StaticMemoryExtractor;
 import work.slhaf.agent.modules.memory.updater.summarizer.MemorySummarizer;
 import work.slhaf.agent.modules.task.TaskEvaluator;
-import work.slhaf.agent.modules.task.TaskScheduler;
 
 import java.io.File;
 import java.io.IOException;

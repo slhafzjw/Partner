@@ -178,11 +178,13 @@ public class ModelConstant {
             输入字段说明
             • `text`: 用户当前输入的文本内容
             
-            • `topic_tree`: 当前可用的主题树结构（多层级结构，需返回从根节点([root])到目标节点的完整路径）
+            • `topic_tree`: 当前可用的主题树结构（多层级结构，需返回从根节点([root])到目标节点的完整路径）, 主题树中类似`[0]`的标志为主题节点下对应的记忆节点数量，当记忆节点数量为0时，该主题节点不能作为目标节点
             
             • `date`: 当前对话发生的日期（用于时间推理）
             
             • `history`: 用户与LLM的完整对话历史（用于主题连续性判断）
+            
+            • `activated_memory_slices`: 已经激活的记忆切片
             
             
             输出规则
@@ -204,6 +206,10 @@ public class ModelConstant {
                • 当主题与历史对话连续时：
             
                  ◦ 除非包含明确的新子主题，否则不重复提取相同主题路径
+
+               • 当激活的记忆切片已经不符合当前主题时：
+
+                 ◦ 除非主题树中存在匹配的主题路径，否则仍不进行提取操作
             
             
             3. 日期提取规则（保持不变）：
@@ -226,11 +232,12 @@ public class ModelConstant {
             
             决策流程
             0. 若主题树为空或者未提供主题树，则直接将recall设置为null, 不进行后续判定
-            1. 首先分析`history`判断当前对话主题上下文
-            2. 然后分析`text`：
-               a. 检测是否包含具体日期→添加date类型
-               b. 检测是否包含新主题→添加topic类型
-            3. 最终综合判断`recall`值, 如果找到了对应的主题路径，则recall值为true; 否则为false
+            1. 对于所有记忆节点个数为0的主题节点来说，这些节点不能作为主题路径的终点
+            2. 首先分析`text`：
+               a. 检测用户提到的具体日期是否明确与某事物/事件相关→添加date类型
+               b. 检测用户提到的事物/事件是否明确与主题树中存在的主题路径相关→添加topic类型
+            3. 分析`history`判断当前对话主题上下文, 如果与`text`中的内容明显无关，则仅只依据`text`内容提取主题路径
+            4. 最终综合判断`recall`值, 如果找到了对应的主题路径，则recall值为true; 否则为false
             
             完整示例
             示例1（主题延续）：
@@ -238,12 +245,12 @@ public class ModelConstant {
               "text": "关于NodeJS的并发处理，还有哪些要注意的",
               "topic_tree": "
               编程[root]
-              ├── JavaScript
+              ├── JavaScript[0]
               │   ├── NodeJS
-              │   │   ├── 并发处理
-              │   │   └── 事件循环
-              │   └── Express
-              │       └── 中间件
+              │   │   ├── 并发处理[1]
+              │   │   └── 事件循环[0]
+              │   └── Express[1]
+              │       └── 中间件[0]
               └── Python",
               "date": "2024-04-20",
               "history": [
@@ -261,12 +268,12 @@ public class ModelConstant {
               "text": "现在我想了解Express中间件的原理",
               "topic_tree": "
               编程[root]
-              ├── JavaScript
-              │   ├── NodeJS
-              │   │   ├── 并发处理
-              │   │   └── 事件循环
-              │   └── Express
-              │       └── 中间件
+              ├── JavaScript[0]
+              │   ├── NodeJS[0]
+              │   │   ├── 并发处理[1]
+              │   │   └── 事件循环[0]
+              │   └── Express[0]
+              │       └── 中间件[1]
               └── Python",
               "date": "2024-04-20",
               "history": [
@@ -286,12 +293,12 @@ public class ModelConstant {
               "text": "2024-04-15讨论的Python内容和现在的Express需求",
               "topic_tree": "
               编程[root]
-              ├── JavaScript
-              │   ├── NodeJS
-              │   │   ├── 并发处理
-              │   │   └── 事件循环
-              │   └── Express
-              │       └── 中间件
+              ├── JavaScript[0]
+              │   ├── NodeJS[0]
+              │   │   ├── 并发处理[1]
+              │   │   └── 事件循环[1]
+              │   └── Express[1]
+              │       └── 中间件[0]
               └── Python",
               "date": "2024-04-20",
               "history": [
@@ -312,12 +319,12 @@ public class ModelConstant {
               "text": "上周说的那个JavaScript特性",
               "topic_tree": "
               编程[root]
-              ├── JavaScript
-              │   ├── NodeJS
-              │   │   ├── 并发处理
-              │   │   └── 事件循环
-              │   └── Express
-              │       └── 中间件
+              ├── JavaScript[0]
+              │   ├── NodeJS[0]
+              │   │   ├── 并发处理[1]
+              │   │   └── 事件循环[1]
+              │   └── Express[0]
+              │       └── 中间件[1]
               └── Python",
               "date": "2024-04-20",
               "history": [...]

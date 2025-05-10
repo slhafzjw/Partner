@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
+import work.slhaf.agent.core.memory.exception.UnExistedDateIndexException;
+import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.modules.memory.selector.evaluator.SliceSelectEvaluator;
@@ -84,12 +86,6 @@ public class MemorySelector implements InteractionModule {
             List<EvaluatedSlice> memorySlices = sliceSelectEvaluator.execute(evaluatorInput);
             memoryManager.getActivatedSlices().put(userId,memorySlices);
 
-            //向上下文设置切片存入标志，条件：对话历史列表不为空;触发了记忆查询
-            /*if (!memoryManager.getChatMessages().isEmpty()) {
-                interactionContext.getModuleContext().put("new_topic", true);
-                interactionContext.getModuleContext().put("messages_to_store", List.of(memoryManager.getChatMessages()));
-            }*/
-
         }
 
         //设置上下文
@@ -103,13 +99,18 @@ public class MemorySelector implements InteractionModule {
 
     private void setMemoryResultList(List<MemoryResult> memoryResultList, List<ExtractorMatchData> matches, String userId) throws IOException, ClassNotFoundException {
         for (ExtractorMatchData match : matches) {
-            MemoryResult memoryResult = switch (match.getType()) {
-                case ExtractorMatchData.Constant.DATE -> memoryManager.selectMemory(match.getText());
-                case ExtractorMatchData.Constant.TOPIC -> memoryManager.selectMemory(LocalDate.parse(match.getText()));
-                default -> null;
-            };
-            if (memoryResult == null) continue;
-            memoryResultList.add(memoryResult);
+            try {
+                MemoryResult memoryResult = switch (match.getType()) {
+                    case ExtractorMatchData.Constant.TOPIC -> memoryManager.selectMemory(match.getText());
+                    case ExtractorMatchData.Constant.DATE ->
+                            memoryManager.selectMemory(LocalDate.parse(match.getText()));
+                    default -> null;
+                };
+                if (memoryResult == null) continue;
+                memoryResultList.add(memoryResult);
+            }catch (UnExistedDateIndexException | UnExistedTopicException e) {
+                log.error("不存在的记忆索引! 请尝试更换更合适的主题提取LLM!");
+            }
         }
         //清理切片记录
         memoryManager.cleanSelectedSliceFilter();
@@ -127,6 +128,6 @@ public class MemorySelector implements InteractionModule {
         if (memorySlice.isPrivate()) {
             return memorySlice.getStartUserId().equals(userId);
         }
-        return true;
+        return false;
     }
 }

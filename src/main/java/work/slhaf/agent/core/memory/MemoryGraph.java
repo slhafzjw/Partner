@@ -1,15 +1,20 @@
 package work.slhaf.agent.core.memory;
 
+import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.pojo.PersistableObject;
+import work.slhaf.agent.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.memory.node.MemoryNode;
 import work.slhaf.agent.core.memory.node.TopicNode;
-import work.slhaf.agent.core.memory.pojo.*;
+import work.slhaf.agent.core.memory.pojo.MemoryResult;
+import work.slhaf.agent.core.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
+import work.slhaf.agent.core.memory.pojo.User;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -44,10 +49,14 @@ public class MemoryGraph extends PersistableObject {
     private HashMap<String /*根主题名*/, LinkedHashSet<String> /*子主题列表*/> existedTopics;
 
     /**
-     * 记忆节点的日期索引, 同一日期内按照对话id区分
-     * 同时作为临时的同一对话切片容器, 用于为同一对话内的不同切片提供更新上下文的场所
+     * 临时的同一对话切片容器, 用于为同一对话内的不同切片提供更新上下文的场所
      */
-    private HashMap<LocalDate, HashMap<String /*对话id, 即slice中的字段'memoryId'*/, List<MemorySlice>>> dateIndex;
+    private HashMap<String /*对话id, 即slice中的字段'memoryId'*/, List<MemorySlice>> currentDateDialogSlices;
+
+    /**
+     * 记忆节点的日期索引, 同一日期内按照对话id区分
+     */
+    private HashMap<LocalDate, Set<String>> dateIndex;
 
     /**
      * 近两日的对话总结缓存, 用于为大模型提供必要的记忆补充, hashmap以切片的存储时间为键，总结为值
@@ -110,13 +119,11 @@ public class MemoryGraph extends PersistableObject {
      */
     private Set<Long> selectedSlices;
 
-    private String memoryId;
-
     public MemoryGraph(String id) {
         this.id = id;
         this.topicNodes = new HashMap<>();
         this.existedTopics = new HashMap<>();
-        this.dateIndex = new HashMap<>();
+        this.currentDateDialogSlices = new HashMap<>();
         this.staticMemory = new HashMap<>();
         this.memoryNodeCacheCounter = new ConcurrentHashMap<>();
         this.memorySliceCache = new ConcurrentHashMap<>();
@@ -129,6 +136,7 @@ public class MemoryGraph extends PersistableObject {
         this.character = """
                 实话实说，不做糖衣炮弹。 采取前瞻性的观点。 始终保持尊重。 乐于分享明确的观点。 保持轻松、随和。 直奔主题。 务实至上。 勇于创新，打破常规思维。使用中文回答所有问题。
                 """;
+        this.dateIndex = new HashMap<>();
     }
 
     public static MemoryGraph getInstance(String id) throws IOException, ClassNotFoundException {
@@ -195,12 +203,18 @@ public class MemoryGraph extends PersistableObject {
         LocalDate now = LocalDate.now();
         boolean hasSlice = false;
         MemoryNode node = null;
-        for (MemoryNode memoryNode : lastTopicNode.getMemoryNodes()) {
-            if (now.equals(memoryNode.getLocalDate())) {
-                hasSlice = true;
-                node = memoryNode;
-                break;
+        try {
+            for (MemoryNode memoryNode : lastTopicNode.getMemoryNodes()) {
+                if (now.equals(memoryNode.getLocalDate())) {
+                    hasSlice = true;
+                    node = memoryNode;
+                    break;
+                }
             }
+        } catch (Exception e) {
+            log.error("插入记忆时出错: ", e);
+            log.error("主题路径: {}; 切片内容: {}", topicPath, slice);
+            log.error("主题树状态: {}", JSONUtil.toJsonPrettyStr(topicNodes));
         }
         if (!hasSlice) {
             node = new MemoryNode();
@@ -217,11 +231,25 @@ public class MemoryGraph extends PersistableObject {
             generateTopicPath(relatedTopic);
         }
 
-        updateDateIndex(now, slice);
+        updateSlicePrecedent(slice);
+        updateDateIndex(slice);
+
         if (!slice.isPrivate()) {
             updateUserDialogMap(slice);
         }
         node.saveMemorySliceList();
+    }
+
+    private void updateDateIndex(MemorySlice slice) {
+        String memoryId = slice.getMemoryId();
+        LocalDate date = LocalDate.now();
+        if (!dateIndex.containsKey(date)) {
+            HashSet<String> memoryIdSet = new HashSet<>();
+            memoryIdSet.add(memoryId);
+            dateIndex.put(date, memoryIdSet);
+        } else {
+            dateIndex.get(date).add(memoryId);
+        }
     }
 
     private TopicNode generateTopicPath(List<String> topicPath) {
@@ -240,11 +268,17 @@ public class MemoryGraph extends PersistableObject {
         TopicNode lastTopicNode = topicNodes.get(rootTopic);
         Set<String> existedTopicNodes = existedTopics.get(rootTopic);
         for (String topic : topicPath) {
-            if (existedTopicNodes.contains(topic)) {
+            if (existedTopicNodes.contains(topic) && lastTopicNode.getTopicNodes().containsKey(topic)) {
                 lastTopicNode = lastTopicNode.getTopicNodes().get(topic);
+
             } else {
                 TopicNode newNode = new TopicNode();
-                lastTopicNode.getTopicNodes().put(topic, newNode);
+                try {
+                    lastTopicNode.getTopicNodes().put(topic, newNode);
+                } catch (Exception e) {
+                    log.error("主题路径: {}; ", topicPath);
+                    log.error("主题树状态: {}", JSONUtil.toJsonPrettyStr(topicNodes));
+                }
                 lastTopicNode = newNode;
                 CopyOnWriteArrayList<MemoryNode> nodeList = new CopyOnWriteArrayList<>();
                 lastTopicNode.setMemoryNodes(nodeList);
@@ -281,16 +315,12 @@ public class MemoryGraph extends PersistableObject {
 
     }
 
-    private void updateDateIndex(LocalDate now, MemorySlice slice) {
+    private void updateSlicePrecedent(MemorySlice slice) {
         String memoryId = slice.getMemoryId();
-        //查看是否存在当前日期的对话切片索引
-        if (!dateIndex.containsKey(now)) {
-            dateIndex.put(now, new HashMap<>());
-        }
-        //查看当前日期的索引中是否存在该对话的索引
-        HashMap<String, List<MemorySlice>> currentDateDialogSlices = dateIndex.get(now);
+        //查看是否切换了memoryId
         if (!currentDateDialogSlices.containsKey(memoryId)) {
             List<MemorySlice> memorySliceList = new ArrayList<>();
+            currentDateDialogSlices.clear();
             currentDateDialogSlices.put(memoryId, memorySliceList);
         }
         //处理上下文关系
@@ -313,20 +343,20 @@ public class MemoryGraph extends PersistableObject {
 
     public MemoryResult selectMemory(String topicPathStr) throws IOException, ClassNotFoundException {
         List<String> topicPath = List.of(topicPathStr.split("->"));
+        List<String> path = new ArrayList<>(topicPath);
         MemoryResult memoryResult = new MemoryResult();
 
         //每日刷新缓存
         checkCacheDate();
         //检测缓存并更新计数, 查看是否需要放入缓存
-        updateCacheCounter(topicPath);
+        updateCacheCounter(path);
         //查看是否存在缓存，如果存在，则直接返回
-        if (memorySliceCache.containsKey(topicPath)) {
-            return memorySliceCache.get(topicPath);
+        if (memorySliceCache.containsKey(path)) {
+            return memorySliceCache.get(path);
         }
         CopyOnWriteArrayList<MemorySliceResult> targetSliceList = new CopyOnWriteArrayList<>();
-        topicPath = new ArrayList<>(topicPath);
-        String targetTopic = topicPath.getLast();
-        TopicNode targetParentNode = getTargetParentNode(topicPath, targetTopic);
+        String targetTopic = path.getLast();
+        TopicNode targetParentNode = getTargetParentNode(path, targetTopic);
         List<List<String>> relatedTopics = new ArrayList<>();
 
         //终点记忆节点
@@ -389,6 +419,10 @@ public class MemoryGraph extends PersistableObject {
 
     private void updateCache(List<String> topicPath, MemoryResult memoryResult) {
         Integer tempCount = memoryNodeCacheCounter.get(topicPath);
+        if (tempCount == null) {
+            log.error("tempCount为null? memoryNodeCacheCounter: {}; topicPath: {}", memoryNodeCacheCounter, topicPath);
+            return;
+        }
         if (tempCount >= 5) {
             memorySliceCache.put(topicPath, memoryResult);
         }
@@ -404,17 +438,19 @@ public class MemoryGraph extends PersistableObject {
     }
 
     private void checkCacheDate() {
-        if ( cacheDate == null || cacheDate.isBefore(LocalDate.now())) {
+        if (cacheDate == null || cacheDate.isBefore(LocalDate.now())) {
             memorySliceCache.clear();
             memoryNodeCacheCounter.clear();
             cacheDate = LocalDate.now();
         }
     }
 
-    public MemoryResult selectMemory(LocalDate date) {
+    public MemoryResult selectMemory(LocalDate date) throws IOException, ClassNotFoundException {
         MemoryResult memoryResult = new MemoryResult();
         CopyOnWriteArrayList<MemorySliceResult> targetSliceList = new CopyOnWriteArrayList<>();
-        for (List<MemorySlice> value : dateIndex.get(date).values()) {
+        //加载节点并获取记忆切片列表
+        List<List<MemorySlice>> currentDateDialogSlices = loadSlicesByDate(date);
+        for (List<MemorySlice> value : currentDateDialogSlices) {
             for (MemorySlice memorySlice : value) {
                 if (selectedSlices.contains(memorySlice.getTimestamp())) {
                     continue;
@@ -427,6 +463,19 @@ public class MemoryGraph extends PersistableObject {
         }
         memoryResult.setMemorySliceResult(targetSliceList);
         return memoryResult;
+    }
+
+    private List<List<MemorySlice>> loadSlicesByDate(LocalDate date) throws IOException, ClassNotFoundException {
+        if (!dateIndex.containsKey(date)) {
+            throw new UnExistedDateIndexException("不存在的日期索引: " + date);
+        }
+        List<List<MemorySlice>> list = new ArrayList<>();
+        for (String memoryId : dateIndex.get(date)) {
+            MemoryNode memoryNode = new MemoryNode();
+            memoryNode.setMemoryNodeId(memoryId);
+            list.add(memoryNode.loadMemorySliceList());
+        }
+        return list;
     }
 
     private TopicNode getTargetParentNode(List<String> topicPath, String targetTopic) {
@@ -468,7 +517,7 @@ public class MemoryGraph extends PersistableObject {
         for (int i = 0; i < entries.size(); i++) {
             boolean last = (i == entries.size() - 1);
             Map.Entry<String, TopicNode> entry = entries.get(i);
-            stringBuilder.append(prefix).append(last ? "└── " : "├── ").append(entry.getKey()).append("\r\n");
+            stringBuilder.append(prefix).append(last ? "└── " : "├── ").append(entry.getKey()).append("[").append(entry.getValue().getMemoryNodes().size()).append("]").append("\r\n");
             printSubTopicsTreeFormat(entry.getValue(), prefix + (last ? "    " : "│   "), stringBuilder);
         }
     }

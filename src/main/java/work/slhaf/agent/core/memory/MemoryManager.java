@@ -4,8 +4,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.Config;
-import work.slhaf.agent.core.interaction.InteractionModule;
-import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.memory.pojo.User;
@@ -21,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @Data
 @Slf4j
-public class MemoryManager implements InteractionModule {
+public class MemoryManager {
 
     private static MemoryManager memoryManager;
     private final Lock sliceInsertLock = new ReentrantLock();
@@ -33,10 +31,6 @@ public class MemoryManager implements InteractionModule {
     private MemoryManager() {
     }
 
-    @Override
-    public void execute(InteractionContext interactionContext) {
-
-    }
 
     public static MemoryManager getInstance() throws IOException, ClassNotFoundException {
         if (memoryManager == null) {
@@ -44,24 +38,28 @@ public class MemoryManager implements InteractionModule {
             memoryManager = new MemoryManager();
             memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId()));
             memoryManager.setActivatedSlices(new HashMap<>());
+            memoryManager.setShutdownHook();
             log.info("MemoryManager注册完毕...");
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                try {
-                    memoryManager.save();
-                    log.info("MemoryGraph已保存");
-                } catch (IOException e) {
-                    log.error("保存MemoryGraph失败: ", e);
-                }
-            }));
         }
         return memoryManager;
+    }
+
+    private void setShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                memoryManager.save();
+                log.info("MemoryGraph已保存");
+            } catch (IOException e) {
+                log.error("保存MemoryGraph失败: ", e);
+            }
+        }));
     }
 
     public MemoryResult selectMemory(String path) throws IOException, ClassNotFoundException {
         return memoryGraph.selectMemory(path);
     }
 
-    public MemoryResult selectMemory(LocalDate date) {
+    public MemoryResult selectMemory(LocalDate date) throws IOException, ClassNotFoundException {
         return memoryGraph.selectMemory(date);
     }
 
@@ -116,14 +114,6 @@ public class MemoryManager implements InteractionModule {
 
     public String getCharacter() {
         return memoryGraph.getCharacter();
-    }
-
-    public void resetMemoryId() {
-        memoryGraph.setMemoryId(UUID.randomUUID().toString());
-    }
-
-    public String getMemoryId() {
-        return memoryGraph.getMemoryId();
     }
 
     public void insertSlice(MemorySlice memorySlice, String topicPath) throws IOException, ClassNotFoundException {

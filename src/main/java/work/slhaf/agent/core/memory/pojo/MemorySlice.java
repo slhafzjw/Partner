@@ -2,6 +2,7 @@ package work.slhaf.agent.core.memory.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.pojo.PersistableObject;
 
@@ -40,6 +41,7 @@ public class MemorySlice extends PersistableObject implements Comparable<MemoryS
     /**
      * 关联完整对话中的前序切片, 排序为键，完整路径为值
      */
+    @ToString.Exclude
     private MemorySlice sliceBefore, sliceAfter;
 
     /**

@@ -98,7 +98,7 @@ public class MemorySummarizer extends Model {
     public String executeTotalSummary(HashMap<String, String> singleMemorySummary) {
         ChatResponse response = chatClient.runChat(List.of(new Message(ChatConstant.Character.SYSTEM, prompts.get(2)),
                 new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(singleMemorySummary))));
-        return JSONObject.parseObject(extractJson(response.getMessage())).getString("value");
+        return JSONObject.parseObject(extractJson(response.getMessage())).getString("content");
     }
 
     private static class Constant {
@@ -137,28 +137,12 @@ public class MemorySummarizer extends Model {
                 4. 最终校验：检查是否丢失关键信息
                 
                 完整示例
-                示例1（常规长文本）：
+                示例：
                 输入：{
                   "content": "在2023年第四季度，XX公司实现了显著增长。财报显示总收入达到4.56亿元，同比增长32%。其中主要增长来自智能手机业务板块，该板块贡献了3.12亿元收入，同比增长达45%。同时智能家居业务收入1.44亿元，同比增长12%。公司CEO在财报电话会议中强调，增长主要得益于东南亚市场的成功拓展..."
                 }
                 输出：{
                   "content": "XX公司2023年Q4总收入4.56亿元（同比+32%），智能手机业务贡献3.12亿元（+45%），智能家居1.44亿元（+12%），增长主要来自东南亚市场拓展。"
-                }
-                
-                示例2（多段落文本）：
-                输入：{
-                  "content": "本次项目改造涉及三个主要方面。首先，硬件升级包括：1) 更换全部服务器设备；2) 安装新的网络交换机；3) 部署智能安防系统。其次，软件系统将迁移至新平台，需完成数据迁移和接口适配。最后，人员培训计划分三阶段实施..."
-                }
-                输出：{
-                  "content": "项目改造含硬件升级（更换服务器、新交换机、智能安防）、软件系统迁移（含数据迁移和接口适配）及分三阶段的人员培训。"
-                }
-                
-                示例3（技术文档）：
-                输入：{
-                  "content": "该算法采用改进的卷积神经网络架构，包含3个主要模块：特征提取模块（由5个卷积层组成）、注意力机制模块（含通道和空间注意力）、以及分类模块（使用2个全连接层）。在ImageNet数据集上达到92.3%的准确率..."
-                }
-                输出：{
-                  "content": "算法使用改进CNN架构，含特征提取（5卷积层）、注意力机制（通道+空间）和分类模块（2全连接层），在ImageNet上准确率92.3%。"
                 }
                 """;
 
@@ -185,7 +169,7 @@ public class MemorySummarizer extends Model {
                 
                 2. 主题路径生成细则：
                 • 抽象链构建流程：
-                  a. 以`user`的意图为主要锚点，锁定最低节点
+                  a. 以`user`的输入内容意图为主要锚点，锁定最低节点
                   b. 逐层抽象（地标→城市→国家→大洲）,需保证抽象链的纯净，确保不会跨越领域
                   c. 修剪抽象链，使其保持在[3, 7]层之内，同时每层的抽象节点考虑扩展性及可复用性
                   d. 形成最终路径（格式：领域→大类→子类→实例）
@@ -226,7 +210,7 @@ public class MemorySummarizer extends Model {
                    b. 技术术语需符合行业标准
                 
                 完整示例
-                示例1（日常分享）：
+                示例：
                 输入：{
                   "topicTree": "
                 生活[root]
@@ -237,7 +221,7 @@ public class MemorySummarizer extends Model {
                   ]
                 }
                 输出：{
-                  "summary": "用户分享欧洲自由行经历并讨论夜景照片处理",
+                  "summary": "用户分享欧洲自由行经历并讨论夜景照片处理...",
                   "topicPath": "生活->旅行->自由行->欧洲->法国->巴黎铁塔",
                   "relatedTopicPath": [
                     "艺术->摄影->夜景拍摄",
@@ -245,65 +229,6 @@ public class MemorySummarizer extends Model {
                   ],
                   "isPrivate": false
                 }
-                
-                示例2（专业咨询）：
-                输入：{
-                  "topicTree": "
-                计算机[root]
-                └── 编程",
-                  "chatMessages": [
-                    {"role": "user", "content": "SpringBoot项目如何实现JWT鉴权"},
-                    {"role": "assistant", "content": "需集成spring-security-jwt依赖..."}
-                  ]
-                }
-                输出：{
-                  "summary": "讨论SpringBoot项目集成JWT鉴权的技术方案",
-                  "topicPath": "计算机->软件开发->Java->SpringBoot->安全->JWT",
-                  "relatedTopicPath": [
-                    "计算机->网络安全->认证协议",
-                    "数学->加密算法->非对称加密"
-                  ],
-                  "isPrivate": false
-                }
-                
-                示例3（事件讨论）：
-                输入：{
-                  "topicTree": "
-                社会[root]
-                ├── 教育
-                └── 科技",
-                  "chatMessages": [
-                    {"role": "user", "content": "听说某大学研发出脑机接口新成果"},
-                    {"role": "assistant", "content": "该技术涉及神经科学和AI的跨学科研究"}
-                  ]
-                }
-                输出：{
-                  "summary": "讨论某大学在脑机接口领域的跨学科研究成果",
-                  "topicPath": "社会->科技->人工智能->脑机接口",
-                  "relatedTopicPath": [
-                    "科学->生物学->神经科学",
-                    "教育->高等教育->科研创新"
-                  ],
-                  "isPrivate": false
-                }
-                
-                示例4（隐私事件）：
-                输入：{
-                  "topicTree": "
-                法律[root]
-                └── 隐私",
-                  "chatMessages": [
-                    {"role": "user", "content": "这个合同条款请仅限我们之间知晓"},
-                    {"role": "assistant", "content": "已启用加密存储，不会外泄"}
-                  ]
-                }
-                输出：{
-                  "summary": "用户要求保密合同条款内容",
-                  "topicPath": "法律->合同法->保密条款",
-                  "relatedTopicPath": ["信息技术->数据安全->加密存储"],
-                  "isPrivate": true
-                }
-                
                 """;
 
         public static final String TOTAL_SUMMARIZE_PROMPT = """
@@ -347,7 +272,7 @@ public class MemorySummarizer extends Model {
                    c. 验证信息完整性
                 
                 完整示例
-                示例1（基础情况）：
+                示例：
                 输入：{
                   "aaa-111": "需要购买笔记本电脑，预算5000左右，主要用于办公",
                   "bbb-222": "想买游戏本，预算8000-10000，要能运行3A大作",
@@ -358,30 +283,6 @@ public class MemorySummarizer extends Model {
                 用户[aaa-111]：需要5000元左右的办公笔记本；
                 用户[bbb-222]：寻求8000-10000元的游戏本，要求能运行3A大作；
                 用户[ccc-333]：咨询适合出差使用的轻薄本"
-                }
-                
-                示例2（信息合并）：
-                输入：{
-                  "ddd-444": "想了解Python入门课程，零基础",
-                  "eee-555": "询问Java和Python哪个更适合新手",
-                  "fff-666": "零基础，想学Python数据分析"
-                }
-                输出：{
-                  "content": "
-                用户[ddd-444]：零基础想了解Python入门课程；
-                用户[eee-555]：询问Java和Python对新手的适用性；
-                用户[fff-666]：零基础想学习Python数据分析"
-                }
-                
-                示例3（长文本精简）：
-                输入：{
-                  "ggg-777": "您好！我最近在准备考研，想咨询下时间规划。具体是想了解每天应该分配多少时间给英语复习，我现在英语水平大概是四级刚过的程度...（后续200字详细描述）",
-                  "hhh-888": "考研政治怎么准备？需要报班吗？"
-                }
-                输出：{
-                  "content": "
-                用户[ggg-777]：咨询考研英语复习时间规划，当前英语水平为四级；
-                用户[hhh-888]：询问考研政治备考方法及是否需要报班"
                 }
                 
                 特殊处理

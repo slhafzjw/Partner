@@ -5,6 +5,7 @@ import lombok.Data;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
 import work.slhaf.agent.core.memory.MemoryManager;
+import work.slhaf.agent.core.session.SessionManager;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ public class PreprocessExecutor {
     private static PreprocessExecutor preprocessExecutor;
 
     private MemoryManager memoryManager;
+    private SessionManager sessionManager;
 
     private PreprocessExecutor() {
     }
@@ -24,14 +26,27 @@ public class PreprocessExecutor {
         if (preprocessExecutor == null) {
             preprocessExecutor = new PreprocessExecutor();
             preprocessExecutor.setMemoryManager(MemoryManager.getInstance());
+            preprocessExecutor.setSessionManager(SessionManager.getInstance());
         }
         return preprocessExecutor;
     }
 
     public InteractionContext execute(InteractionInputData inputData) {
-        InteractionContext context = new InteractionContext();
-        String userId = memoryManager.getUserId(inputData.getUserInfo(), inputData.getUserNickName());
+        checkAndSetMemoryId();
+        return getInteractionContext(inputData);
+    }
 
+    private void checkAndSetMemoryId() {
+        String currentMemoryId = sessionManager.getCurrentMemoryId();
+        if (currentMemoryId == null || memoryManager.getChatMessages().isEmpty()) {
+            sessionManager.refreshMemoryId();
+        }
+    }
+
+    private InteractionContext getInteractionContext(InteractionInputData inputData) {
+        InteractionContext context = new InteractionContext();
+
+        String userId = memoryManager.getUserId(inputData.getUserInfo(), inputData.getUserNickName());
         context.setUserId(userId);
         context.setUserNickname(inputData.getUserNickName());
         context.setUserInfo(inputData.getUserInfo());
@@ -55,7 +70,6 @@ public class PreprocessExecutor {
 
         context.setSingle(inputData.isSingle());
         context.setFinished(false);
-
         return context;
     }
 }
