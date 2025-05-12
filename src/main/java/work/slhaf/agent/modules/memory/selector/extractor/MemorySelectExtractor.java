@@ -49,6 +49,7 @@ public class MemorySelectExtractor extends Model {
     }
 
     public ExtractorResult execute(InteractionContext context) {
+        log.debug("[MemorySelectExtractor] 主题提取模块开始...");
         //结构化为指定格式
         List<Message> chatMessages = new ArrayList<>();
         List<MetaMessage> metaMessages = sessionManager.getSingleMetaMessageMap().get(context.getUserId());
@@ -61,22 +62,22 @@ public class MemorySelectExtractor extends Model {
             }
         }
 
-        List<EvaluatedSlice> activatedMemorySlices = memoryManager.getActivatedSlices().get(context.getUserId());
-
-        ExtractorInput extractorInput = ExtractorInput.builder()
-                .text(context.getInput())
-                .date(context.getDateTime().toLocalDate())
-                .history(chatMessages)
-                .topic_tree(memoryManager.getTopicTree())
-                .activatedMemorySlices(activatedMemorySlices)
-                .build();
-        String responseStr = extractJson(singleChat(JSONUtil.toJsonPrettyStr(extractorInput)).getMessage());
-
         ExtractorResult extractorResult;
         try {
+            List<EvaluatedSlice> activatedMemorySlices = memoryManager.getActivatedSlices().get(context.getUserId());
+            ExtractorInput extractorInput = ExtractorInput.builder()
+                    .text(context.getInput())
+                    .date(context.getDateTime().toLocalDate())
+                    .history(chatMessages)
+                    .topic_tree(memoryManager.getTopicTree())
+                    .activatedMemorySlices(activatedMemorySlices)
+                    .build();
+            log.debug("[MemorySelectExtractor] 主题提取输入: {}", extractorInput);
+            String responseStr = extractJson(singleChat(JSONUtil.toJsonPrettyStr(extractorInput)).getMessage());
             extractorResult = JSONObject.parseObject(responseStr, ExtractorResult.class);
+            log.debug("[MemorySelectExtractor] 主题提取结果: {}",extractorResult);
         } catch (Exception e) {
-            log.error("主题提取出错: {}", e.getLocalizedMessage());
+            log.error("[MemorySelectExtractor] 主题提取出错: {}", e.getLocalizedMessage());
             extractorResult = new ExtractorResult();
             extractorResult.setRecall(false);
             extractorResult.setMatches(List.of());

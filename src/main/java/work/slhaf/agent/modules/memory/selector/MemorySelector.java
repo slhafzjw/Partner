@@ -39,8 +39,8 @@ public class MemorySelector implements InteractionModule {
             }],
             "static_memory": "对于该用户的常识性记忆，如爱好、住处、生日",
             "dialog_map": { //近两日的与所有用户的对话缓存
-                "2023-01-01T11:30": "发生了...与用户A...、用户B谈到...",
-                "2023-01-02T11:30": "发生了...与用户A...、用户B谈到..."
+                "2023-01-01T11:30": "用户a[dawgbi-dwa-ccc] 尝试分享生活点滴并营造氛围感",
+                "2023-01-02T11:30": "用户b[dawgbi-dwa-ccc] 尝试分享生活点滴并营造氛围感"
             }
             "user_dialog_map": { //与当前用户的近两日对话缓存
                 "2023-01-01T11:30": "与用户讨论了...",
@@ -48,6 +48,11 @@ public class MemorySelector implements InteractionModule {
             }
             
             无新增输出字段
+            
+            ##注意
+              a. 这些字段中可能出现的第一人称描述都是指"你"，即当前用户正在对话的对象
+              b. `dialog_map`和`user_dialog_map`中，值都将以`用户昵称[用户uuid]`开头，你需要正确区分不同用户
+            
             """;
 
     private MemoryManager memoryManager;
@@ -69,11 +74,12 @@ public class MemorySelector implements InteractionModule {
 
     @Override
     public void execute(InteractionContext interactionContext) throws IOException, ClassNotFoundException, InterruptedException {
+        log.debug("[MemorySelector] 记忆回溯流程开始...");
         String userId =interactionContext.getUserId();
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(interactionContext);
-        log.debug("主题路径: {}",extractorResult);
-        if (extractorResult.isRecall() || extractorResult.getMatches().isEmpty()) {
+        if (extractorResult.isRecall() || !extractorResult.getMatches().isEmpty()) {
+            log.debug("[MemorySelector] 触发记忆回溯...");
             //查找切片
             List<MemoryResult> memoryResultList = new ArrayList<>();
             setMemoryResultList(memoryResultList, extractorResult.getMatches(),userId);
@@ -83,9 +89,10 @@ public class MemorySelector implements InteractionModule {
                     .memoryResults(memoryResultList)
                     .messages(memoryManager.getChatMessages())
                     .build();
+            log.debug("[MemorySelector] 切片评估输入: {}",evaluatorInput);
             List<EvaluatedSlice> memorySlices = sliceSelectEvaluator.execute(evaluatorInput);
-            memoryManager.getActivatedSlices().put(userId,memorySlices);
-
+            log.debug("[MemorySelector] 切片评估结果: {}",memorySlices);
+            memoryManager.updateActivatedSlices(userId,memorySlices);
         }
 
         //设置上下文
@@ -95,6 +102,7 @@ public class MemorySelector implements InteractionModule {
         interactionContext.getCoreContext().put("user_dialog_map",memoryManager.getUserDialogMap(userId));
 
         interactionContext.getModulePrompt().put("memory", modulePrompt);
+        log.debug("[MemorySelector] 记忆回溯结果: {}",interactionContext);
     }
 
     private void setMemoryResultList(List<MemoryResult> memoryResultList, List<ExtractorMatchData> matches, String userId) throws IOException, ClassNotFoundException {
@@ -109,7 +117,7 @@ public class MemorySelector implements InteractionModule {
                 if (memoryResult == null) continue;
                 memoryResultList.add(memoryResult);
             }catch (UnExistedDateIndexException | UnExistedTopicException e) {
-                log.error("不存在的记忆索引! 请尝试更换更合适的主题提取LLM!");
+                log.error("[MemorySelector] 不存在的记忆索引! 请尝试更换更合适的主题提取LLM!");
             }
         }
         //清理切片记录

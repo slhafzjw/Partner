@@ -20,6 +20,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -119,7 +120,7 @@ public class MemoryGraph extends PersistableObject {
      */
     private Set<Long> selectedSlices;
 
-    public MemoryGraph(String id) {
+    public MemoryGraph(String id, String basicCharacter) {
         this.id = id;
         this.topicNodes = new HashMap<>();
         this.existedTopics = new HashMap<>();
@@ -133,13 +134,11 @@ public class MemoryGraph extends PersistableObject {
         this.userDialogMap = new ConcurrentHashMap<>();
 //        this.currentCompressedSessionContext = new ArrayList<>();
         this.dialogMap = new HashMap<>();
-        this.character = """
-                实话实说，不做糖衣炮弹。 采取前瞻性的观点。 始终保持尊重。 乐于分享明确的观点。 保持轻松、随和。 直奔主题。 务实至上。 勇于创新，打破常规思维。使用中文回答所有问题。
-                """;
+        this.character = basicCharacter;
         this.dateIndex = new HashMap<>();
     }
 
-    public static MemoryGraph getInstance(String id) throws IOException, ClassNotFoundException {
+    public static MemoryGraph getInstance(String id, String basicCharacter) throws IOException, ClassNotFoundException {
         // 检查存储目录是否存在，不存在则创建
         createStorageDirectory();
         if (memoryGraph == null) {
@@ -148,7 +147,7 @@ public class MemoryGraph extends PersistableObject {
                 memoryGraph = deserialize(id);
             } else {
                 FileUtils.createParentDirectories(filePath.toFile().getParentFile());
-                memoryGraph = new MemoryGraph(id);
+                memoryGraph = new MemoryGraph(id,basicCharacter);
                 memoryGraph.serialize();
             }
             log.info("MemoryGraph注册完毕...");
@@ -158,13 +157,18 @@ public class MemoryGraph extends PersistableObject {
     }
 
     public void serialize() throws IOException {
-        Path filePath = getFilePath(this.id);
+        //先写入到临时文件，如果正常写入则覆盖原文件
+        Path filePath = getFilePath(this.id + "-temp");
         Files.createDirectories(Path.of(STORAGE_DIR));
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                new FileOutputStream(filePath.toFile()))) {
+        try  {
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath.toFile()));
             oos.writeObject(this);
-            log.info("MemoryGraph 已保存到: {}", filePath);
+            oos.close();
+            Path path = getFilePath(this.id);
+            Files.move(filePath, path, StandardCopyOption.REPLACE_EXISTING);
+            log.info("MemoryGraph 已保存到: {}", path);
         } catch (IOException e) {
+            Files.delete(filePath);
             log.error("序列化保存失败: {}", e.getMessage());
         }
     }

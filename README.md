@@ -1,0 +1,158 @@
+# Partner
+以多模型协作为基础, 具备结构化记忆能力、支持多用户同上下文窗口, 支持可推断任务交互与调度(规划中)的智能体系统
+
+## 核心结构
+
+### 结构化记忆系统
+> 构建以**主题树+记忆切片**为基础的记忆图谱。
+
+单个主题节点下存在多级子主题。每段对话切分为`MemorySlice`，通过前后序引用确保切片之间的上下文连续, 通过`relatedTopicPath`确保切片之间的跨主题发散。同一天的所有切片将聚合为`MemoryNode`(记忆节点)的形式挂载到主题节点。除此之外，每个记忆节点还将按照日期进行索引。
+
+### 多用户会话管理
+> 构建区分用户的单上下文窗口、多用户会话的管理机制
+
+## 模块实现
+- 预处理模块: `Preprocessor`
+- 记忆模块
+  - 记忆选择模块: `MemorySelector`
+    - 主题提取模块: `MemorySelectExtractor`
+    - 切片评估模块: `SliceSelectEvaluator`
+  - 记忆更新模块: `MemoryUpdater`
+    - 记忆总结模块: `MemorySummarizer`
+    - 静态记忆提取模块: `StaticMemoryExtractor`
+- 主对话模块: `CoreModel`
+
+## 当前问题
+- 角色设定机制会导致对于所有用户采用同一种语气回应。
+- 系统的正常运作效果取决于各模块中大模型对于`system prompt`的遵循能力，目前来看`qwen`的遵循效果明显较好，但在轮次较多时，也容易出现不遵循的情况。正在尝试通过临时的`system prompt`进行强化。
+- 记忆系统有时会出现空指针异常，但好像不影响整体运行...但肯定要修的，就是有点不好找。
+- 各模块(尤其是记忆更新模块)的身份感缺失，进行主题路径生成、切片摘要时需确保以Partner的视角执行操作。
+- 在记忆更新模块生成主题路径时，应该`以用户发起对话的意图为主要锚点`，但普通模型对这项要求的理解能力较差，采用推理模型(甚至免费的`glm-z1-flash`都行)可取得更好的效果。
+
+## 后续规划
+
+### 短期规划
+- [ ] 调整内部各模块的提示词的“身份视角”，确保统一实现，以免造成记忆系统中的身份割裂。
+- [ ] 当前`MemoryGraph`承担职责较重，已远超原`记忆图谱`的职责，需要进行拆分重构。(或许可以叫`MemoryCore`吧)
+- [ ] 看看是否需要将主模型的对话职责进行分离，用来减少LLM因不遵循`system prompt`带来的影响，但这应该会是规模较大的重构()。
+- [ ] 实现身份感知模块(用户识别、熟悉度判断、记忆片段检索、人物画像、对话口吻调整)。
+- [ ] 实现流式输出，同时在各模块执行时可向客户端返回回调信息，优化使用体验。(现在用的是`websocket`与客户端通信, 应该实现这点会简单些)
+- [ ] 踩坑。
+
+### 长期规划
+- [ ] 实现角色演进机制
+- [ ] 实现任务调度模块(主动调度、意图推断、定时调度)
+
+## 目录结构
+
+```
+main
+├── java
+│   └── work
+│       └── slhaf
+│           ├── agent
+│           │   ├── Agent.java
+│           │   ├── common
+│           │   │   ├── chat
+│           │   │   │   ├── ChatClient.java
+│           │   │   │   ├── constant
+│           │   │   │   │   └── ChatConstant.java
+│           │   │   │   └── pojo
+│           │   │   │       ├── ChatBody.java
+│           │   │   │       ├── ChatResponse.java
+│           │   │   │       ├── Message.java
+│           │   │   │       ├── MetaMessage.java
+│           │   │   │       └── PrimaryChatResponse.java
+│           │   │   ├── config
+│           │   │   │   ├── Config.java
+│           │   │   │   ├── ModelConfig.java
+│           │   │   │   ├── ModuleConfig.java
+│           │   │   │   └── WebSocketConfig.java
+│           │   │   ├── model
+│           │   │   │   ├── ModelConstant.java
+│           │   │   │   └── Model.java
+│           │   │   ├── monitor
+│           │   │   │   └── DebugMonitor.java
+│           │   │   ├── pojo
+│           │   │   │   └── PersistableObject.java
+│           │   │   └── util
+│           │   │       └── ExtractUtil.java
+│           │   ├── core
+│           │   │   ├── interaction
+│           │   │   │   ├── data
+│           │   │   │   │   ├── InteractionContext.java
+│           │   │   │   │   ├── InteractionInputData.java
+│           │   │   │   │   └── InteractionOutputData.java
+│           │   │   │   ├── InputReceiver.java
+│           │   │   │   ├── InteractionModule.java
+│           │   │   │   ├── InteractionModulesLoader.java
+│           │   │   │   ├── InteractionThreadPoolExecutor.java
+│           │   │   │   └── TaskCallback.java
+│           │   │   ├── InteractionHub.java
+│           │   │   ├── memory
+│           │   │   │   ├── exception
+│           │   │   │   │   ├── NullSliceListException.java
+│           │   │   │   │   ├── UnExistedDateIndexException.java
+│           │   │   │   │   └── UnExistedTopicException.java
+│           │   │   │   ├── MemoryGraph.java
+│           │   │   │   ├── MemoryManager.java
+│           │   │   │   ├── node
+│           │   │   │   │   ├── MemoryNode.java
+│           │   │   │   │   └── TopicNode.java
+│           │   │   │   └── pojo
+│           │   │   │       ├── MemoryResult.java
+│           │   │   │       ├── MemorySlice.java
+│           │   │   │       ├── MemorySliceResult.java
+│           │   │   │       └── User.java
+│           │   │   ├── module
+│           │   │   │   └── CoreModel.java
+│           │   │   └── session
+│           │   │       └── SessionManager.java
+│           │   ├── gateway
+│           │   │   ├── AgentWebSocketServer.java
+│           │   │   └── MessageSender.java
+│           │   ├── modules
+│           │   │   ├── memory
+│           │   │   │   ├── selector
+│           │   │   │   │   ├── evaluator
+│           │   │   │   │   │   ├── data
+│           │   │   │   │   │   │   ├── EvaluatorBatchInput.java
+│           │   │   │   │   │   │   ├── EvaluatorInput.java
+│           │   │   │   │   │   │   ├── EvaluatorResult.java
+│           │   │   │   │   │   │   └── SliceSummary.java
+│           │   │   │   │   │   └── SliceSelectEvaluator.java
+│           │   │   │   │   ├── extractor
+│           │   │   │   │   │   ├── data
+│           │   │   │   │   │   │   ├── ExtractorInput.java
+│           │   │   │   │   │   │   ├── ExtractorMatchData.java
+│           │   │   │   │   │   │   └── ExtractorResult.java
+│           │   │   │   │   │   └── MemorySelectExtractor.java
+│           │   │   │   │   └── MemorySelector.java
+│           │   │   │   └── updater
+│           │   │   │       ├── MemoryUpdater.java
+│           │   │   │       ├── static_extractor
+│           │   │   │       │   ├── data
+│           │   │   │       │   │   └── StaticMemoryExtractInput.java
+│           │   │   │       │   └── StaticMemoryExtractor.java
+│           │   │   │       └── summarizer
+│           │   │   │           ├── data
+│           │   │   │           │   ├── SummarizeInput.java
+│           │   │   │           │   └── SummarizeResult.java
+│           │   │   │           └── MemorySummarizer.java
+│           │   │   ├── preprocess
+│           │   │   │   └── PreprocessExecutor.java
+│           │   │   ├── task
+│           │   │   │   ├── data
+│           │   │   │   │   └── TaskData.java
+│           │   │   │   ├── TaskEvaluator.java
+│           │   │   │   ├── TaskExecutor.java
+│           │   │   │   └── TaskScheduler.java
+│           │   │   └── topic
+│           │   └── shared
+│           │       └── memory
+│           │           └── EvaluatedSlice.java
+│           └── Main.java
+└── resources
+    └── logback.xml
+```
+

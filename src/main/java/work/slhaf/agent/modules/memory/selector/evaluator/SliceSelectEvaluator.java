@@ -25,6 +25,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 
@@ -55,15 +56,18 @@ public class SliceSelectEvaluator extends Model {
     }
 
     public List<EvaluatedSlice> execute(EvaluatorInput evaluatorInput) throws InterruptedException {
+        log.debug("[SliceSelectEvaluator] 切片评估模块开始...");
         List<MemoryResult> memoryResultList = evaluatorInput.getMemoryResults();
         List<Callable<Void>> tasks = new ArrayList<>();
         Queue<EvaluatedSlice> queue = new ConcurrentLinkedDeque<>();
+        AtomicInteger count = new AtomicInteger(0);
         for (MemoryResult memoryResult : memoryResultList) {
-            if (memoryResult.getMemorySliceResult().isEmpty() && memoryResult.getRelatedMemorySliceResult().isEmpty()){
+            if (memoryResult.getMemorySliceResult().isEmpty() && memoryResult.getRelatedMemorySliceResult().isEmpty()) {
                 continue;
             }
             tasks.add(() -> {
-                log.debug("切片评估...");
+                int thisCount = count.incrementAndGet();
+                log.debug("[SliceSelectEvaluator] 评估[{}]开始", thisCount);
                 List<SliceSummary> sliceSummaryList = new ArrayList<>();
                 //映射查找键值
                 Map<Long, SliceSummary> map = new HashMap<>();
@@ -74,8 +78,9 @@ public class SliceSelectEvaluator extends Model {
                             .memory_slices(sliceSummaryList)
                             .history(evaluatorInput.getMessages())
                             .build();
+                    log.debug("[SliceSelectEvaluator] 评估[{}]输入: {}", thisCount, batchInput);
                     EvaluatorResult evaluatorResult = JSONObject.parseObject(extractJson(singleChat(JSONUtil.toJsonStr(batchInput)).getMessage()), EvaluatorResult.class);
-                    log.debug("评估结果: {}", evaluatorResult);
+                    log.debug("[SliceSelectEvaluator] 评估[{}]结果: {}", thisCount, evaluatorResult);
                     for (Long result : evaluatorResult.getResults()) {
                         SliceSummary sliceSummary = map.get(result);
                         EvaluatedSlice evaluatedSlice = EvaluatedSlice.builder()
@@ -85,14 +90,14 @@ public class SliceSelectEvaluator extends Model {
                         queue.offer(evaluatedSlice);
                     }
                 } catch (Exception e) {
-                    log.error("切片评估出现错误: {}", e.getLocalizedMessage());
+                    log.error("[SliceSelectEvaluator] 评估[{}]出现错误: {}", thisCount, e.getLocalizedMessage());
                 }
                 return null;
             });
         }
 
         executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
-
+        log.debug("[SliceSelectEvaluator] 评估模块结束, 输出队列: {}", queue);
         return queue.stream().toList();
     }
 

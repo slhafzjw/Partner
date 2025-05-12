@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 
@@ -62,25 +63,33 @@ public class MemorySummarizer extends Model {
     }
 
     private SummarizeResult multiSummarizeExecute(String prompt, String messageStr) {
+        log.debug("[MemorySummarizer] 整体摘要开始...");
         ChatResponse response = chatClient.runChat(List.of(new Message(ChatConstant.Character.SYSTEM, prompt),
                 new Message(ChatConstant.Character.USER, messageStr)));
+        log.debug("[MemorySummarizer] 整体摘要结果: {}",response);
         return JSONObject.parseObject(extractJson(response.getMessage()), SummarizeResult.class);
     }
 
     private void singleMessageSummarize(List<Message> chatMessages) {
+        log.debug("[MemorySummarizer] 长文本摘要开始...");
         List<Callable<Void>> tasks = new ArrayList<>();
+        AtomicInteger counter = new AtomicInteger();
         for (Message chatMessage : chatMessages) {
             if (chatMessage.getRole().equals(ChatConstant.Character.ASSISTANT)) {
                 String content = chatMessage.getContent();
                 if (chatMessage.getContent().length() > 500) {
                     tasks.add(() -> {
+                        int thisCount = counter.incrementAndGet();
+                        log.debug("[MemorySummarizer] 长文本摘要[{}]启动",thisCount);
                         chatMessage.setContent(singleSummarizeExecute(prompts.getFirst(), JSONObject.of("content", content).toString()));
+                        log.debug("[MemorySummarizer] 长文本摘要[{}]完成",thisCount);
                         return null;
                     });
                 }
             }
         }
         executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
+        log.debug("[MemorySummarizer] 长文本摘要结束");
     }
 
     private @NonNull String singleSummarizeExecute(String prompt, String content) {
@@ -150,7 +159,6 @@ public class MemorySummarizer extends Model {
                 DialogueTopicMapper 提示词
                 功能说明
                 分析对话内容并生成最深为7层的多层次主题路径，支持智能扩展主题树结构，根据用户意图动态调整路径生成策略。
-                
                 在保证符合以下要求的同时尽快输出
                 
                 输入字段说明
@@ -198,6 +206,8 @@ public class MemorySummarizer extends Model {
                      └── 跟团游
                 
                 处理流程
+                0. 明确身份阶段：
+                   a. 需要以assistant的视角为分析视角
                 1. 意图分析阶段：
                    a. 判断对话类型（咨询/分享/讨论）
                    b. 标记关键实体和动作
@@ -229,6 +239,9 @@ public class MemorySummarizer extends Model {
                   ],
                   "isPrivate": false
                 }
+                
+                ## 最终注意事项
+                在进行主题提取、对对话内容摘要为务必从assistant的视角出发，可在摘要结果中，将assistant的身份当作第一人称：“我”
                 """;
 
         public static final String TOTAL_SUMMARIZE_PROMPT = """
@@ -238,7 +251,7 @@ public class MemorySummarizer extends Model {
                 
                 输入字段说明
                 • 输入数据为JSON对象：
-                  - key: 用户uuid（需在输出中保留）
+                  - key: 格式为`用户昵称[用户uuid]`（需在输出中保留）
                   - value: 该用户的对话摘要文本（需要处理的内容）
                 
                 输出规则
@@ -253,7 +266,7 @@ public class MemorySummarizer extends Model {
                    • 保留原始对话的关键事实信息
                    • 对重复信息进行合并处理
                 3. 格式要求：
-                   • 每个用户摘要以"用户[uuid]："开头
+                   • 每个用户摘要以"用户昵称[用户uuid]："开头
                    • 不同用户摘要间用分号分隔
                    • 末尾不添加总结性陈述
                 
@@ -273,16 +286,16 @@ public class MemorySummarizer extends Model {
                 
                 完整示例
                 示例：
-                输入：{
-                  "aaa-111": "需要购买笔记本电脑，预算5000左右，主要用于办公",
-                  "bbb-222": "想买游戏本，预算8000-10000，要能运行3A大作",
-                  "ccc-333": "咨询轻薄本推荐，经常出差使用"
+                输入：{ //注，实际情况中每条用户的单独摘要可能更长，多达几百字，此时需要在保证信息完整的同时进行摘要
+                  "adw[aaa-111]": "需要购买笔记本电脑，预算5000左右，主要用于办公。",
+                  "xyz[bbb-222]": "想买游戏本，预算8000-10000，要能运行3A大作",
+                  "小王[ccc-333]": "咨询轻薄本推荐，经常出差使用"
                 }
                 输出：{
                   "content": "
-                用户[aaa-111]：需要5000元左右的办公笔记本；
-                用户[bbb-222]：寻求8000-10000元的游戏本，要求能运行3A大作；
-                用户[ccc-333]：咨询适合出差使用的轻薄本"
+                adw[aaa-111]：需要5000元左右的办公笔记本；
+                xyz[bbb-222]：寻求8000-10000元的游戏本，要求能运行3A大作；
+                小王[ccc-333]：咨询适合出差使用的轻薄本"
                 }
                 
                 特殊处理
@@ -294,7 +307,7 @@ public class MemorySummarizer extends Model {
                    }
                 3. 当用户uuid包含特殊字符时：
                    • 保持原始uuid格式不做修改
-                   • 示例：用户[xxx-ddssss-xx]：内容摘要
+                   • 示例：用户昵称[xxx-ddssss-xx]：内容摘要
                 """;
     }
 }

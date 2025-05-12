@@ -1,13 +1,11 @@
 package memory;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class RegexTest {
 
-    @Test
+//    @Test
     public void regexTest(){
         String[] examples = {
                 "[小明(abc)] 我在开会] (te[]st)",

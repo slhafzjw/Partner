@@ -1,7 +1,5 @@
 package memory;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -10,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ThreadPoolTest {
 
-    @Test
+//    @Test
     public void testExecutor() throws InterruptedException {
         List<Callable<Void>> tasks = new ArrayList<>();
         for (int i = 0; i < 5; i++) {

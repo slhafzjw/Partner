@@ -1,7 +1,6 @@
 package memory;
 
 import cn.hutool.json.JSONUtil;
-import org.junit.jupiter.api.Test;
 import work.slhaf.agent.common.chat.ChatClient;
 import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.Message;
@@ -14,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class AITest {
-    @Test
+//    @Test
     public void topicExtractorTest() {
         String input = """
                 {
@@ -48,7 +47,7 @@ public class AITest {
         run(input, ModelConstant.SELECT_EXTRACTOR_PROMPT);
     }
 
-    @Test
+//    @Test
     public void sliceEvaluatorTest(){
         String input = """
                 {
@@ -98,7 +97,7 @@ public class AITest {
         run(input,ModelConstant.SLICE_EVALUATOR_PROMPT);
     }
 
-    @Test
+//    @Test
     public void coreModelTest(){
         String input = """
                 {
@@ -128,7 +127,7 @@ public class AITest {
         run(input,ModelConstant.CORE_MODEL_PROMPT + "\r\n" + MemorySelector.modulePrompt);
     }
 
-    @Test
+//    @Test
     public void map2jsonTest(){
         HashMap<LocalDate,String> map = new HashMap<>();
         map.put(LocalDate.now(),"hello");

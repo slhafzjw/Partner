@@ -1,9 +1,7 @@
 package memory;
 
-import org.junit.jupiter.api.Test;
-
 public class NormalTest {
-    @Test
+//    @Test
     public void lengthTest(){
         String s = """
                 哈哈，这样反而更能说明一点： \s

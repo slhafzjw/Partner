@@ -12,6 +12,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,20 +55,22 @@ public class SessionManager extends PersistableObject {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 sessionManager.serialize();
-                log.info("SessionManager 已保存");
+                log.info("[SessionManager] SessionManager 已保存");
             } catch (IOException e) {
-                log.error("保存 SessionManager 失败: ", e);
+                log.error("[SessionManager] 保存 SessionManager 失败: ", e);
             }
         }));
     }
 
     public void addMetaMessage(String userId, MetaMessage metaMessage) {
+        log.debug("[SessionManager] 当前会话历史: {}", singleMetaMessageMap);
         if (singleMetaMessageMap.containsKey(userId)) {
             singleMetaMessageMap.get(userId).add(metaMessage);
         } else {
             singleMetaMessageMap.put(userId, new java.util.ArrayList<>());
             singleMetaMessageMap.get(userId).add(metaMessage);
         }
+        log.debug("[SessionManager] 会话历史更新: {}", singleMetaMessageMap);
     }
 
     public List<Message> unpackAndClear(String userId) {
@@ -85,28 +88,37 @@ public class SessionManager extends PersistableObject {
     }
 
     public void serialize() throws IOException {
-        Path filePath = Paths.get(STORAGE_DIR, this.id + ".session");
+        //先写入到临时文件，如果正常写入，则覆盖正式文件；否则删除临时文件
+        Path filePath = getFilePath(this.id + "-temp");
         Files.createDirectories(Path.of(STORAGE_DIR));
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                new FileOutputStream(filePath.toFile()))) {
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath.toFile()));
             oos.writeObject(this);
-            log.info("SessionManager 已保存到: {}", filePath);
+            oos.close();
+            Path path = getFilePath(this.id);
+            Files.move(filePath, path, StandardCopyOption.REPLACE_EXISTING);
+            log.info("[SessionManager] SessionManager 已保存到: {}", path);
         } catch (IOException e) {
-            log.error("序列化保存失败: {}", e.getMessage());
+            Files.delete(filePath);
+            log.error("[SessionManager] 序列化保存失败: {}", e.getMessage());
         }
     }
 
     private static SessionManager deserialize(String id) throws IOException, ClassNotFoundException {
-        Path filePath = Paths.get(STORAGE_DIR, id + ".session");
+        Path filePath = getFilePath(id);
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath.toFile()))) {
             SessionManager sessionManager = (SessionManager) ois.readObject();
-            log.info("SessionManager 已从文件加载: {}", filePath);
+            log.info("[SessionManager] SessionManager 已从文件加载: {}", filePath);
             return sessionManager;
         }
     }
 
     public void resetLastUpdatedTime() {
         lastUpdatedTime = System.currentTimeMillis();
+    }
+
+    private static Path getFilePath(String id) {
+        return Paths.get(STORAGE_DIR, id + ".session");
     }
 }
 

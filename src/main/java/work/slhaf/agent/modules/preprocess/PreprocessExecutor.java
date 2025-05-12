@@ -2,6 +2,7 @@ package work.slhaf.agent.modules.preprocess;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
 import work.slhaf.agent.core.memory.MemoryManager;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Data
+@Slf4j
 public class PreprocessExecutor {
 
     private static PreprocessExecutor preprocessExecutor;
@@ -44,6 +46,7 @@ public class PreprocessExecutor {
     }
 
     private InteractionContext getInteractionContext(InteractionInputData inputData) {
+        log.debug("[PreprocessExecutor] 预处理原始输入: {}",inputData);
         InteractionContext context = new InteractionContext();
 
         String userId = memoryManager.getUserId(inputData.getUserInfo(), inputData.getUserNickName());
@@ -70,6 +73,8 @@ public class PreprocessExecutor {
 
         context.setSingle(inputData.isSingle());
         context.setFinished(false);
+
+        log.debug("[PreprocessExecutor] 预处理结果: {}",context);
         return context;
     }
 }

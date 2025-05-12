@@ -36,10 +36,10 @@ public class MemoryManager {
         if (memoryManager == null) {
             Config config = Config.getConfig();
             memoryManager = new MemoryManager();
-            memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId()));
+            memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId(), config.getBasicCharacter()));
             memoryManager.setActivatedSlices(new HashMap<>());
             memoryManager.setShutdownHook();
-            log.info("MemoryManager注册完毕...");
+            log.info("[MemoryManager] MemoryManager注册完毕...");
         }
         return memoryManager;
     }
@@ -48,9 +48,9 @@ public class MemoryManager {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 memoryManager.save();
-                log.info("MemoryGraph已保存");
+                log.info("[MemoryManager] MemoryGraph已保存");
             } catch (IOException e) {
-                log.error("保存MemoryGraph失败: ", e);
+                log.error("[MemoryManager] 保存MemoryGraph失败: ", e);
             }
         }));
     }
@@ -120,6 +120,7 @@ public class MemoryManager {
         sliceInsertLock.lock();
         List<String> topicPathList = Arrays.stream(topicPath.split("->")).toList();
         memoryGraph.insertMemory(topicPathList, memorySlice);
+        log.debug("[MemoryManager] 插入切片: {}, 路径: {}", memorySlice, topicPath);
         sliceInsertLock.unlock();
     }
 
@@ -139,5 +140,19 @@ public class MemoryManager {
 
     public void save() throws IOException {
         memoryGraph.serialize();
+    }
+
+    public void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices) {
+        memoryManager.getActivatedSlices().put(userId, memorySlices);
+        log.debug("[MemoryManager] 已更新激活切片, userId: {}", userId);
+    }
+
+    public User getUser(String id) {
+        for (User user : memoryGraph.getUsers()) {
+            if (user.getUuid().equals(id)) {
+                return user;
+            }
+        }
+        return null;
     }
 }
