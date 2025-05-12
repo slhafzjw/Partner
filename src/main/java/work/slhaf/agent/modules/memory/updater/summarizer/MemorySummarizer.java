@@ -153,6 +153,7 @@ public class MemorySummarizer extends Model {
                 输出：{
                   "content": "XX公司2023年Q4总收入4.56亿元（同比+32%），智能手机业务贡献3.12亿元（+45%），智能家居1.44亿元（+12%），增长主要来自东南亚市场拓展。"
                 }
+                
                 """;
 
         public static final String MULTI_SUMMARIZE_PROMPT = """
@@ -242,6 +243,9 @@ public class MemorySummarizer extends Model {
                 
                 ## 最终注意事项
                 在进行主题提取、对对话内容摘要为务必从assistant的视角出发，可在摘要结果中，将assistant的身份当作第一人称：“我”
+                
+                注意，上述示例内容较短，仅可参考格式，正式场景必须确保对话中的各种细节保留完整
+
                 """;
 
         public static final String TOTAL_SUMMARIZE_PROMPT = """

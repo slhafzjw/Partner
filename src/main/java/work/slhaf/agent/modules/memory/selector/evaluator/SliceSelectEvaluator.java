@@ -87,7 +87,7 @@ public class SliceSelectEvaluator extends Model {
                                 .summary(sliceSummary.getSummary())
                                 .date(sliceSummary.getDate())
                                 .build();
-                        setEvaluatedSliceMessages(evaluatedSlice, memoryResult, sliceSummary.getId());
+//                        setEvaluatedSliceMessages(evaluatedSlice, memoryResult, sliceSummary.getId());
                         queue.offer(evaluatedSlice);
                     }
                 } catch (Exception e) {

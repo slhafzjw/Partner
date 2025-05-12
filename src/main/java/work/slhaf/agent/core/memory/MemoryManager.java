@@ -131,6 +131,9 @@ public class MemoryManager {
     }
 
     public void insertStaticMemory(String userId, Map<String, String> newStaticMemory) {
+        if (!memoryGraph.getStaticMemory().containsKey(userId)) {
+            memoryGraph.getStaticMemory().put(userId, new ConcurrentHashMap<>());
+        }
         memoryGraph.getStaticMemory().get(userId).putAll(newStaticMemory);
     }
 

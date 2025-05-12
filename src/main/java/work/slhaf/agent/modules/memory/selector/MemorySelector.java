@@ -52,6 +52,7 @@ public class MemorySelector implements InteractionModule {
             ##注意
               a. 这些字段中可能出现的第一人称描述都是指"你"，即当前用户正在对话的对象
               b. `dialog_map`和`user_dialog_map`中，值都将以`用户昵称[用户uuid]`开头，你需要正确区分不同用户
+              c. 若`text`字段，即用户的真正输入内容未涉及`dialog_map`, `user_dialog_map`等字段中的内容，你需要仅根据用户的输入来确定如何回复
             
             """;
 

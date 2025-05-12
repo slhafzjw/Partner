@@ -35,6 +35,7 @@ public class MemoryUpdater implements InteractionModule {
     private static final String USERID_REGEX = "\\[.*\\(([^)]+)\\)\\]";
     private static final long SCHEDULED_UPDATE_INTERVAL = 10 * 1000;
     private static final long UPDATE_TRIGGER_INTERVAL = 30 * 60 * 1000;
+    private static final int TRIGGER_TOKEN_LIMIT = 5 * 1000;
 
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
@@ -93,7 +94,7 @@ public class MemoryUpdater implements InteractionModule {
         executor.execute(() -> {
             //如果token 大于阈值，则更新记忆
             JSONObject moduleContext = interactionContext.getModuleContext();
-            if (moduleContext.getIntValue("total_token") > 24000) {
+            if (moduleContext.getIntValue("total_token") > TRIGGER_TOKEN_LIMIT) {
                 try {
                     log.debug("[MemoryUpdater] 记忆更新: token超限");
                     updateMemory();
