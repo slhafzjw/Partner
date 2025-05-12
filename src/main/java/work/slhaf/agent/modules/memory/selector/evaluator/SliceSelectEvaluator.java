@@ -71,8 +71,8 @@ public class SliceSelectEvaluator extends Model {
                 List<SliceSummary> sliceSummaryList = new ArrayList<>();
                 //映射查找键值
                 Map<Long, SliceSummary> map = new HashMap<>();
-                setSliceSummaryList(memoryResult, sliceSummaryList, map);
                 try {
+                    setSliceSummaryList(memoryResult, sliceSummaryList, map);
                     EvaluatorBatchInput batchInput = EvaluatorBatchInput.builder()
                             .text(evaluatorInput.getInput())
                             .memory_slices(sliceSummaryList)
@@ -87,6 +87,7 @@ public class SliceSelectEvaluator extends Model {
                                 .summary(sliceSummary.getSummary())
                                 .date(sliceSummary.getDate())
                                 .build();
+                        setEvaluatedSliceMessages(evaluatedSlice, memoryResult, sliceSummary.getId());
                         queue.offer(evaluatedSlice);
                     }
                 } catch (Exception e) {
@@ -101,17 +102,39 @@ public class SliceSelectEvaluator extends Model {
         return queue.stream().toList();
     }
 
+    private void setEvaluatedSliceMessages(EvaluatedSlice evaluatedSlice, MemoryResult memoryResult, Long id) {
+        //补充消息列表
+        for (MemorySliceResult memorySliceResult : memoryResult.getMemorySliceResult()) {
+            if (memorySliceResult.getMemorySlice().getTimestamp().equals(id)) {
+                evaluatedSlice.setChatMessages(memorySliceResult.getMemorySlice().getChatMessages());
+                return;
+            }
+        }
+        for (MemorySlice memorySlice : memoryResult.getRelatedMemorySliceResult()) {
+            if (memorySlice.getTimestamp().equals(id)) {
+                evaluatedSlice.setChatMessages(memorySlice.getChatMessages());
+                return;
+            }
+        }
+    }
+
     private void setSliceSummaryList(MemoryResult memoryResult, List<SliceSummary> sliceSummaryList, Map<Long, SliceSummary> map) {
         for (MemorySliceResult memorySliceResult : memoryResult.getMemorySliceResult()) {
 
             SliceSummary sliceSummary = new SliceSummary();
             sliceSummary.setId(memorySliceResult.getMemorySlice().getTimestamp());
-            String stringBuilder = memorySliceResult.getSliceBefore().getSummary() +
-                    "\r\n" +
-                    memorySliceResult.getMemorySlice().getSummary() +
-                    "\r\n" +
-                    memorySliceResult.getSliceAfter().getSummary();
-            sliceSummary.setSummary(stringBuilder);
+            StringBuilder stringBuilder = new StringBuilder();
+            if (memorySliceResult.getSliceBefore() != null) {
+                stringBuilder.append(memorySliceResult.getSliceBefore().getSummary())
+                        .append("\r\n");
+            }
+            stringBuilder.append(memorySliceResult.getMemorySlice().getSummary());
+            if (memorySliceResult.getSliceAfter() != null) {
+                stringBuilder.append("\r\n")
+                        .append(memorySliceResult.getSliceAfter().getSummary())
+                        .append("\r\n");
+            }
+            sliceSummary.setSummary(stringBuilder.toString());
             Long timestamp = memorySliceResult.getMemorySlice().getTimestamp();
             sliceSummary.setDate(DateUtil.date(timestamp).toLocalDateTime().toLocalDate());
 

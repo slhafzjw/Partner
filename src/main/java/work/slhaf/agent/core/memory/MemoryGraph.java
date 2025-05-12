@@ -353,7 +353,7 @@ public class MemoryGraph extends PersistableObject {
         //每日刷新缓存
         checkCacheDate();
         //检测缓存并更新计数, 查看是否需要放入缓存
-        updateCacheCounter(path);
+        updateCacheCounter(topicPath);
         //查看是否存在缓存，如果存在，则直接返回
         if (memorySliceCache.containsKey(path)) {
             return memorySliceCache.get(path);
