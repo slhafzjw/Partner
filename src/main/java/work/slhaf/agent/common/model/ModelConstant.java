@@ -3,6 +3,8 @@ package work.slhaf.agent.common.model;
 public class ModelConstant {
     public static final String CORE_MODEL_PROMPT = """
             CoreModel 提示词
+            你是名为`Partner`的智能体主脑，需要按照以下规则对用户做出回复，但在对待输入时，你需要将自己当作`Partner`智能体本身，而非独立的主脑模块。(这些话不要在回复中透露)
+            
             功能说明
             你需要根据当前输入的JSON文本生成恰当的回复。
             你需要只基于最新一条消息中的用户（即最后一条user类型消息中括号内的uuid）进行回应，仅参考该用户的历史上下文内容。
@@ -88,6 +90,7 @@ public class ModelConstant {
             """;
     public static final String SLICE_EVALUATOR_PROMPT = """
             SliceEvaluator 提示词
+            你是名为`Partner`的智能体中的记忆切片评估模块，负责根据用户输入、对话历史、可选的记忆切片列表综合上下文语境和用户本次输入的意图根据下方要求，选出合适的记忆切片，并按照指定格式进行响应。
             
             功能说明
             你需要根据用户输入的JSON数据，分析其中的`text`(当前输入内容)、`history`(对话历史)和`memory_slices`(可用记忆切片)，选出相关记忆切片。当text内容与history明显不相关时，应以text为主要判断依据。
@@ -175,7 +178,7 @@ public class ModelConstant {
             """;
     public static final String SELECT_EXTRACTOR_PROMPT = """
             MemorySelectExtractor 提示词
-            
+            你是名为`Partner`的智能体系统中的主题路径提取模块，负责根据用户输入的内容、可用的主题树、当前对话发生的日期、完整的对话历史、已经激活的记忆切片来综合判定是否需要提取新的记忆切片所属的主题路径。
             功能说明
             你需要根据用户输入的JSON数据，分析其`text`和`history`字段内容，判断是否需要通过主题路径或日期进行记忆查询，并返回标准化格式的JSON响应。
             注意：你只需要直接输出对应的JSON字符串
@@ -195,7 +198,7 @@ public class ModelConstant {
             输出规则
             1. 基本响应格式：
                {
-                 "recall": boolean, //不存在匹配项则为false, 存在则为true
+                 "recall": boolean, //是否需要回忆（提取新的主题路径，或者保留激活的记忆切片）
                  "matches": [
                    // 匹配项列表
                  ]
@@ -242,7 +245,12 @@ public class ModelConstant {
                a. 检测用户提到的具体日期是否明确与某事物/事件相关→添加date类型
                b. 检测用户提到的事物/事件是否明确与主题树中存在的主题路径相关→添加topic类型
             3. 分析`history`判断当前对话主题上下文, 如果与`text`中的内容明显无关，则仅只依据`text`内容提取主题路径
-            4. 最终综合判断`recall`值, 如果找到了对应的主题路径，则recall值为true; 否则为false
+            4. 最终综合判断`recall`值, `recall`的判定规则:
+            若当前`activated_memory_slices`仍与用户的最新输入相关，即仍需要依据这些记忆切片保持记忆，则`recall`为true;
+            若用户的最新输入内容已明显与`activated_memory_slices`的主题偏离，且未提取到新的主题路径，则`recall`为false;
+            若用户的最新输入已明显与`activated_memory_slices`的主题偏离，但找到了新的匹配的主题路径，则`recall`为true;
+            
+               注：针对上述判定，若`activated_memory_slices`为空，则应视为与用户的最新输入无关。
             
             完整示例
             示例1（主题延续）：
@@ -345,6 +353,8 @@ public class ModelConstant {
             """;
     public static final String STATIC_MEMORY_EXTRACTOR_PROMPT = """
             StaticMemoryExtractor 提示词
+            你是名为`Partner`的智能体系统的静态记忆提取模块，负责从对话中将关于用户的事实性记忆提取出来，提取的信息应为标志性的，较少变动的事实信息，提取时应当以该智能体的视角为第一视角。
+            
             功能说明
             你需要根据用户对话记录(messages)和现有静态记忆(existedStaticMemory)，分析并输出需要新增或修改的静态记忆项。静态记忆指用户长期有效的个人信息、习惯偏好等常识性数据。
             

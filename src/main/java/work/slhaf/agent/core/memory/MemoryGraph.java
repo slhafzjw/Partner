@@ -147,7 +147,7 @@ public class MemoryGraph extends PersistableObject {
                 memoryGraph = deserialize(id);
             } else {
                 FileUtils.createParentDirectories(filePath.toFile().getParentFile());
-                memoryGraph = new MemoryGraph(id,basicCharacter);
+                memoryGraph = new MemoryGraph(id, basicCharacter);
                 memoryGraph.serialize();
             }
             log.info("MemoryGraph注册完毕...");
@@ -160,7 +160,7 @@ public class MemoryGraph extends PersistableObject {
         //先写入到临时文件，如果正常写入则覆盖原文件
         Path filePath = getFilePath(this.id + "-temp");
         Files.createDirectories(Path.of(STORAGE_DIR));
-        try  {
+        try {
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath.toFile()));
             oos.writeObject(this);
             oos.close();
@@ -346,65 +346,73 @@ public class MemoryGraph extends PersistableObject {
     }
 
     public MemoryResult selectMemory(String topicPathStr) throws IOException, ClassNotFoundException {
-        List<String> topicPath = List.of(topicPathStr.split("->"));
-        List<String> path = new ArrayList<>(topicPath);
         MemoryResult memoryResult = new MemoryResult();
-
-        //每日刷新缓存
-        checkCacheDate();
-        //检测缓存并更新计数, 查看是否需要放入缓存
-        updateCacheCounter(topicPath);
-        //查看是否存在缓存，如果存在，则直接返回
-        if (memorySliceCache.containsKey(path)) {
-            return memorySliceCache.get(path);
-        }
-        CopyOnWriteArrayList<MemorySliceResult> targetSliceList = new CopyOnWriteArrayList<>();
-        String targetTopic = path.getLast();
-        TopicNode targetParentNode = getTargetParentNode(path, targetTopic);
-        List<List<String>> relatedTopics = new ArrayList<>();
-
-        //终点记忆节点
-        MemorySliceResult sliceResult = new MemorySliceResult();
-        for (MemoryNode memoryNode : targetParentNode.getTopicNodes().get(targetTopic).getMemoryNodes()) {
-            List<MemorySlice> endpointMemorySliceList = memoryNode.loadMemorySliceList();
-            for (MemorySlice memorySlice : endpointMemorySliceList) {
-                if (selectedSlices.contains(memorySlice.getTimestamp())) {
-                    continue;
-                }
-                sliceResult.setSliceBefore(memorySlice.getSliceBefore());
-                sliceResult.setMemorySlice(memorySlice);
-                sliceResult.setSliceAfter(memorySlice.getSliceAfter());
-                targetSliceList.add(sliceResult);
-                selectedSlices.add(memorySlice.getTimestamp());
+        List<String> topicPath = List.of(topicPathStr.split("->"));
+        try {
+            List<String> path = new ArrayList<>(topicPath);
+            //每日刷新缓存
+            checkCacheDate();
+            //检测缓存并更新计数, 查看是否需要放入缓存
+            updateCacheCounter(topicPath);
+            //查看是否存在缓存，如果存在，则直接返回
+            if (memorySliceCache.containsKey(path)) {
+                return memorySliceCache.get(path);
             }
-            for (MemorySlice memorySlice : endpointMemorySliceList) {
-                if (memorySlice.getRelatedTopics() != null) {
-                    relatedTopics.addAll(memorySlice.getRelatedTopics());
+            CopyOnWriteArrayList<MemorySliceResult> targetSliceList = new CopyOnWriteArrayList<>();
+            String targetTopic = path.getLast();
+            TopicNode targetParentNode = getTargetParentNode(path, targetTopic);
+            List<List<String>> relatedTopics = new ArrayList<>();
+
+            //终点记忆节点
+            MemorySliceResult sliceResult = new MemorySliceResult();
+            for (MemoryNode memoryNode : targetParentNode.getTopicNodes().get(targetTopic).getMemoryNodes()) {
+                List<MemorySlice> endpointMemorySliceList = memoryNode.loadMemorySliceList();
+                for (MemorySlice memorySlice : endpointMemorySliceList) {
+                    if (selectedSlices.contains(memorySlice.getTimestamp())) {
+                        continue;
+                    }
+                    sliceResult.setSliceBefore(memorySlice.getSliceBefore());
+                    sliceResult.setMemorySlice(memorySlice);
+                    sliceResult.setSliceAfter(memorySlice.getSliceAfter());
+                    targetSliceList.add(sliceResult);
+                    selectedSlices.add(memorySlice.getTimestamp());
+                }
+                for (MemorySlice memorySlice : endpointMemorySliceList) {
+                    if (memorySlice.getRelatedTopics() != null) {
+                        relatedTopics.addAll(memorySlice.getRelatedTopics());
+                    }
                 }
             }
+            memoryResult.setMemorySliceResult(targetSliceList);
+
+            //邻近节点
+            List<MemorySlice> relatedMemorySlice = new ArrayList<>();
+            //邻近记忆节点 联系
+            for (List<String> relatedTopic : relatedTopics) {
+                List<String> tempTopicPath = new ArrayList<>(relatedTopic);
+                String tempTargetTopic = tempTopicPath.getLast();
+                TopicNode tempTargetParentNode = getTargetParentNode(tempTopicPath, tempTargetTopic);
+                //获取终点节点及其最新记忆节点
+                TopicNode tempTargetNode = tempTargetParentNode.getTopicNodes().get(tempTopicPath.getLast());
+                setRelatedMemorySlices(tempTargetNode, relatedMemorySlice);
+            }
+
+            //邻近记忆节点 父级
+            setRelatedMemorySlices(targetParentNode, relatedMemorySlice);
+
+            //将上述结果包装为MemoryResult
+            memoryResult.setRelatedMemorySliceResult(relatedMemorySlice);
+
+            //尝试更新缓存
+            updateCache(topicPath, memoryResult);
+        } catch (Exception e) {
+            log.error("[MemoryGraph] selectMemory error: ", e);
+            log.error("[MemoryGraph] 路径: {}", topicPathStr);
+            log.error("[MemoryGraph] 主题树: {}", getTopicTree());
+            memoryResult = new MemoryResult();
+            memoryResult.setRelatedMemorySliceResult(new ArrayList<>());
+            memoryResult.setMemorySliceResult(new CopyOnWriteArrayList<>());
         }
-        memoryResult.setMemorySliceResult(targetSliceList);
-
-        //邻近节点
-        List<MemorySlice> relatedMemorySlice = new ArrayList<>();
-        //邻近记忆节点 联系
-        for (List<String> relatedTopic : relatedTopics) {
-            List<String> tempTopicPath = new ArrayList<>(relatedTopic);
-            String tempTargetTopic = tempTopicPath.getLast();
-            TopicNode tempTargetParentNode = getTargetParentNode(tempTopicPath, tempTargetTopic);
-            //获取终点节点及其最新记忆节点
-            TopicNode tempTargetNode = tempTargetParentNode.getTopicNodes().get(tempTopicPath.getLast());
-            setRelatedMemorySlices(tempTargetNode, relatedMemorySlice);
-        }
-
-        //邻近记忆节点 父级
-        setRelatedMemorySlices(targetParentNode, relatedMemorySlice);
-
-        //将上述结果包装为MemoryResult
-        memoryResult.setRelatedMemorySliceResult(relatedMemorySlice);
-
-        //尝试更新缓存
-        updateCache(topicPath, memoryResult);
         return memoryResult;
     }
 

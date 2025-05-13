@@ -36,6 +36,7 @@ public class MemoryUpdater implements InteractionModule {
     private static final long SCHEDULED_UPDATE_INTERVAL = 10 * 1000;
     private static final long UPDATE_TRIGGER_INTERVAL = 30 * 60 * 1000;
     private static final int TRIGGER_TOKEN_LIMIT = 5 * 1000;
+    private static final int TOKEN_PER_RECALL = 230;
 
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
@@ -94,7 +95,15 @@ public class MemoryUpdater implements InteractionModule {
         executor.execute(() -> {
             //如果token 大于阈值，则更新记忆
             JSONObject moduleContext = interactionContext.getModuleContext();
-            if (moduleContext.getIntValue("total_token") > TRIGGER_TOKEN_LIMIT) {
+            boolean recall = moduleContext.getBoolean("recall");
+            int tokenLimit = TRIGGER_TOKEN_LIMIT;
+            if (recall) {
+                log.debug("[MemoryUpdater] 存在回忆");
+                int recallCount = moduleContext.getIntValue("recall_count");
+                log.debug("[MemoryUpdater] 记忆切片数量 [{}]",recallCount);
+                tokenLimit += recallCount * TOKEN_PER_RECALL;
+            }
+            if (moduleContext.getIntValue("total_token") > tokenLimit) {
                 try {
                     log.debug("[MemoryUpdater] 记忆更新: token超限");
                     updateMemory();

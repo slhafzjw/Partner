@@ -1,5 +1,6 @@
 package work.slhaf.agent.core.interaction.data;
 
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 
@@ -18,6 +19,6 @@ public class InteractionContext {
 
     protected JSONObject coreContext;
     protected JSONObject moduleContext;
-    protected JSONObject modulePrompt;
+    protected JSONArray modulePrompt;
     protected JSONObject coreResponse;
 }

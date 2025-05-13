@@ -1,5 +1,6 @@
 package work.slhaf.agent.modules.preprocess;
 
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +70,7 @@ public class PreprocessExecutor {
 
         context.setModuleContext(new JSONObject());
 
-        context.setModulePrompt(new JSONObject());
+        context.setModulePrompt(new JSONArray());
 
         context.setSingle(inputData.isSingle());
         context.setFinished(false);

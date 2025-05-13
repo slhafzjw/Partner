@@ -157,7 +157,9 @@ public class MemorySummarizer extends Model {
                 """;
 
         public static final String MULTI_SUMMARIZE_PROMPT = """
-                DialogueTopicMapper 提示词
+                MULTI_SUMMARIZE_PROMPT 提示词
+                你是名为`Partner`的智能体的消息总结模块，负责整理对话摘要、以用户意图为锚点提取该段对话的主题路径, 故整理时，你需要以该智能体的视角为第一视角。
+                
                 功能说明
                 分析对话内容并生成最深为7层的多层次主题路径，支持智能扩展主题树结构，根据用户意图动态调整路径生成策略。
                 在保证符合以下要求的同时尽快输出
@@ -170,7 +172,7 @@ public class MemorySummarizer extends Model {
                 0. **只需要输出所需的JSON文本**
                 1. 核心结构（保持原格式）：
                 {
-                  "summary": "",          // 精简摘要（100-150字）
+                  "summary": "",          // 包含完整细节的摘要（200-500字）
                   "topicPath": "",        // 主路径（领域纯净的完整抽象链）
                   "relatedTopicPath": [], // 相关路径（允许跨领域）
                   "isPrivate": false
@@ -206,7 +208,7 @@ public class MemorySummarizer extends Model {
                      ├── 自由行
                      └── 跟团游
                 
-                处理流程
+                主题路径生成流程
                 0. 明确身份阶段：
                    a. 需要以assistant的视角为分析视角
                 1. 意图分析阶段：
@@ -220,6 +222,18 @@ public class MemorySummarizer extends Model {
                    a. 新增节点必须通过逻辑验证
                    b. 技术术语需符合行业标准
                 
+                摘要生成流程
+                0. 明确身份以assistant的视角为分析视角
+                1. 针对消息列表按顺序逐条进行扫描
+                2. 每扫描到一条消息就在摘要中添加“主体+事件”的信息，如：
+                ```
+                对方询问...我回应...;
+                对方主动问候...我询问他...
+                ```
+                可省去无用描写，但需保留所有细节
+                3. 扫描完毕后，将完整的摘要作为summary字段填入最终将返回的消息中
+                
+                
                 完整示例
                 示例：
                 输入：{
@@ -232,7 +246,7 @@ public class MemorySummarizer extends Model {
                   ]
                 }
                 输出：{
-                  "summary": "用户分享欧洲自由行经历并讨论夜景照片处理...",
+                  "summary": "对方分享欧洲自由行经历并讨论夜景照片处理...我向他推荐了...",
                   "topicPath": "生活->旅行->自由行->欧洲->法国->巴黎铁塔",
                   "relatedTopicPath": [
                     "艺术->摄影->夜景拍摄",
@@ -250,8 +264,10 @@ public class MemorySummarizer extends Model {
 
         public static final String TOTAL_SUMMARIZE_PROMPT = """
                 TOTAL_SUMMARIZER 提示词
+                你是名为`Partner`的智能体系统的多摘要汇总模块，负责将多个用户的独立对话摘要进行汇总，整体为一份整体性总结，整理时需要注意以该智能体的视角为第一视角。
                 功能说明
-                你需要根据输入的多个独立用户对话摘要，生成一份综合性的总结报告。每个用户的对话内容彼此无关联，需保持原始信息的同时进行概括性整合，最终输出标准化JSON格式的响应。
+                需要根据输入的多个独立用户对话摘要，生成一份综合性的总结报告。每个用户的对话内容彼此无关联，需保持原始信息的同时进行概括性整合，最终输出标准化JSON格式的响应。
+                注意，输入的需要进行摘要的内容中，“我”指的是你所在的智能体系统，“对方”指代该摘要内部交互的用户，进行整体总结时，需要以具体的用户昵称来区分不同原始摘要中的不同用户，第一人称仍保持为该智能体的视角。
                 
                 输入字段说明
                 • 输入数据为JSON对象：

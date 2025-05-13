@@ -63,10 +63,14 @@ public class CoreModel extends Model implements InteractionModule {
     @Override
     public void execute(InteractionContext interactionContext) {
         log.debug("[CoreModel] 主对话流程开始...");
-        String tempPrompt = interactionContext.getModulePrompt().toString();
-        if (!tempPrompt.equals(promptCache)) {
-            coreModel.getMessages().set(0, new Message(ChatConstant.Character.SYSTEM, ModelConstant.CORE_MODEL_PROMPT + "\r\n" + tempPrompt));
-            promptCache = tempPrompt;
+        StringBuilder modulePromptBuilder = new StringBuilder();
+        for (Object o : interactionContext.getModulePrompt()) {
+            modulePromptBuilder.append(o).append("\r\n");
+        }
+        String modulePromptStr = modulePromptBuilder.toString();
+        if (!modulePromptStr.equals(promptCache)) {
+            coreModel.getMessages().set(0, new Message(ChatConstant.Character.SYSTEM, ModelConstant.CORE_MODEL_PROMPT + "\r\n" + modulePromptBuilder));
+            promptCache = modulePromptStr;
         }
         log.debug("[CoreModel] 当前消息列表大小: {}", this.messages.size());
         log.debug("[CoreModel] 当前核心prompt内容: {}", interactionContext.getCoreContext().toString());
