@@ -1,15 +1,18 @@
 package work.slhaf.agent.core.memory;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.Config;
+import work.slhaf.agent.common.pojo.PersistableObject;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.memory.pojo.User;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -17,9 +20,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemoryManager {
+public class MemoryManager extends PersistableObject {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private static MemoryManager memoryManager;
     private final Lock sliceInsertLock = new ReentrantLock();

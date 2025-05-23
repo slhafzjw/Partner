@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.common.chat.pojo.Message;
+import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.common.pojo.PersistableObject;
 import work.slhaf.agent.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
@@ -197,17 +198,18 @@ public class MemoryGraph extends PersistableObject {
     }
 
     public void insertMemory(List<String> topicPath, MemorySlice slice) throws IOException, ClassNotFoundException {
-        //每日刷新缓存
-        checkCacheDate();
-        //如果topicPath在memorySliceCache中存在对应缓存，由于进行的插入操作，则需要移除该缓存，但不清除相关计数
-        memorySliceCache.remove(topicPath);
-        TopicNode lastTopicNode = generateTopicPath(topicPath);
-
         //检查是否存在当天对应的memorySlice并确定是否插入
         LocalDate now = LocalDate.now();
         boolean hasSlice = false;
         MemoryNode node = null;
+        TopicNode lastTopicNode;
         try {
+            //每日刷新缓存
+            checkCacheDate();
+            //如果topicPath在memorySliceCache中存在对应缓存，由于进行的插入操作，则需要移除该缓存，但不清除相关计数
+            memorySliceCache.remove(topicPath);
+            lastTopicNode = generateTopicPath(topicPath);
+
             for (MemoryNode memoryNode : lastTopicNode.getMemoryNodes()) {
                 if (now.equals(memoryNode.getLocalDate())) {
                     hasSlice = true;
@@ -217,8 +219,7 @@ public class MemoryGraph extends PersistableObject {
             }
         } catch (Exception e) {
             log.error("插入记忆时出错: ", e);
-            log.error("主题路径: {}; 切片内容: {}", topicPath, slice);
-            log.error("主题树状态: {}", JSONUtil.toJsonPrettyStr(topicNodes));
+            throw new GlobalException(e.getLocalizedMessage());
         }
         if (!hasSlice) {
             node = new MemoryNode();
@@ -274,15 +275,9 @@ public class MemoryGraph extends PersistableObject {
         for (String topic : topicPath) {
             if (existedTopicNodes.contains(topic) && lastTopicNode.getTopicNodes().containsKey(topic)) {
                 lastTopicNode = lastTopicNode.getTopicNodes().get(topic);
-
             } else {
                 TopicNode newNode = new TopicNode();
-                try {
-                    lastTopicNode.getTopicNodes().put(topic, newNode);
-                } catch (Exception e) {
-                    log.error("主题路径: {}; ", topicPath);
-                    log.error("主题树状态: {}", JSONUtil.toJsonPrettyStr(topicNodes));
-                }
+                lastTopicNode.getTopicNodes().put(topic, newNode);
                 lastTopicNode = newNode;
                 CopyOnWriteArrayList<MemoryNode> nodeList = new CopyOnWriteArrayList<>();
                 lastTopicNode.setMemoryNodes(nodeList);
@@ -432,7 +427,7 @@ public class MemoryGraph extends PersistableObject {
     private void updateCache(List<String> topicPath, MemoryResult memoryResult) {
         Integer tempCount = memoryNodeCacheCounter.get(topicPath);
         if (tempCount == null) {
-            log.error("tempCount为null? memoryNodeCacheCounter: {}; topicPath: {}", memoryNodeCacheCounter, topicPath);
+            log.warn("tempCount为null? memoryNodeCacheCounter: {}; topicPath: {}", memoryNodeCacheCounter, topicPath);
             return;
         }
         if (tempCount >= 5) {

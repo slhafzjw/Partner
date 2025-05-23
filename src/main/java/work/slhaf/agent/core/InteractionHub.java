@@ -3,6 +3,8 @@ package work.slhaf.agent.core;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
+import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.InteractionModulesLoader;
 import work.slhaf.agent.core.interaction.TaskCallback;
@@ -38,12 +40,18 @@ public class InteractionHub {
     }
 
     public void call(InteractionInputData inputData) throws IOException, ClassNotFoundException, InterruptedException {
-        //预处理
         InteractionContext interactionContext = PreprocessExecutor.getInstance().execute(inputData);
-
-        for (InteractionModule interactionModule : interactionModules) {
-            interactionModule.execute(interactionContext);
+        try {
+            //预处理
+            for (InteractionModule interactionModule : interactionModules) {
+                interactionModule.execute(interactionContext);
+            }
+        } catch (GlobalException e) {
+            GlobalExceptionHandler.writeExceptionState(e.getData());
+            interactionContext.getCoreResponse().put("text", "[ERROR] " + e.getMessage());
+        } finally {
+            callback.onTaskFinished(interactionContext.getUserInfo(), interactionContext.getCoreResponse().getString("text"));
+            InteractionContext.clearUp();
         }
-        callback.onTaskFinished(interactionContext.getUserInfo(), interactionContext.getCoreResponse().getString("text"));
     }
 }

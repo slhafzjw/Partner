@@ -3,11 +3,21 @@ package work.slhaf.agent.core.interaction.data;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import work.slhaf.agent.common.pojo.PersistableObject;
 
+import java.io.Serial;
 import java.time.LocalDateTime;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class InteractionContext {
+public class InteractionContext extends PersistableObject {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    private static InteractionContext currentContext;
+
     protected String userId;
     protected String userNickname;
     protected String userInfo;
@@ -21,4 +31,16 @@ public class InteractionContext {
     protected JSONObject moduleContext;
     protected JSONArray modulePrompt;
     protected JSONObject coreResponse;
+
+    public InteractionContext() {
+        currentContext = this;
+    }
+
+    public static InteractionContext getInstance() {
+        return currentContext;
+    }
+
+    public static void clearUp(){
+        currentContext = null;
+    }
 }
