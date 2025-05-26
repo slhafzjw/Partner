@@ -103,6 +103,7 @@ public class MemoryUpdater implements InteractionModule {
                 log.debug("[MemoryUpdater] 记忆切片数量 [{}]",recallCount);
                 tokenLimit += recallCount * TOKEN_PER_RECALL;
             }
+            //TODO 调整为根据轮次触发记忆插入
             if (moduleContext.getIntValue("total_token") > tokenLimit) {
                 try {
                     log.debug("[MemoryUpdater] 记忆更新: token超限");
@@ -161,7 +162,7 @@ public class MemoryUpdater implements InteractionModule {
                 log.debug("[MemoryUpdater] 对话缓存更新完毕");
                 log.debug("[MemoryUpdater] 多人聊天记忆更新流程结束...");
             } catch (IOException | ClassNotFoundException | InterruptedException e) {
-                log.error("[MemoryUpdater] 多人场景记忆更新失败: {}", e.getLocalizedMessage());
+                log.error("[MemoryUpdater] 多人场景记忆更新失败: ", e);
             }
         });
     }

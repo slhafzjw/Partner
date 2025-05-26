@@ -8,6 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.chat.pojo.MetaMessage;
 import work.slhaf.agent.common.config.Config;
+import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
+import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
@@ -77,18 +79,13 @@ public class MemorySelectExtractor extends Model {
             extractorResult = JSONObject.parseObject(responseStr, ExtractorResult.class);
             log.debug("[MemorySelectExtractor] 主题提取结果: {}",extractorResult);
         } catch (Exception e) {
-            log.error("[MemorySelectExtractor] 主题提取出错: {}", e.getLocalizedMessage());
+            log.error("[MemorySelectExtractor] 主题提取出错: ", e);
+            GlobalExceptionHandler.writeExceptionState(new GlobalException(e.getLocalizedMessage()));
             extractorResult = new ExtractorResult();
             extractorResult.setRecall(false);
             extractorResult.setMatches(List.of());
         }
         return extractorResult;
-    }
-
-    public static class Constant {
-        public static final String NONE = "none";
-        public static final String DATE = "date";
-        public static final String TOPIC = "topic";
     }
 
 }

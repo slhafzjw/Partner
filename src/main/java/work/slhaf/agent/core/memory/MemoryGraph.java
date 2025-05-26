@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.common.chat.pojo.Message;
+import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.common.pojo.PersistableObject;
 import work.slhaf.agent.core.memory.exception.UnExistedDateIndexException;
@@ -198,18 +199,17 @@ public class MemoryGraph extends PersistableObject {
     }
 
     public void insertMemory(List<String> topicPath, MemorySlice slice) throws IOException, ClassNotFoundException {
-        //检查是否存在当天对应的memorySlice并确定是否插入
-        LocalDate now = LocalDate.now();
-        boolean hasSlice = false;
-        MemoryNode node = null;
-        TopicNode lastTopicNode;
+
         try {
+            //检查是否存在当天对应的memorySlice并确定是否插入
+            LocalDate now = LocalDate.now();
+            boolean hasSlice = false;
+            MemoryNode node = null;
             //每日刷新缓存
             checkCacheDate();
             //如果topicPath在memorySliceCache中存在对应缓存，由于进行的插入操作，则需要移除该缓存，但不清除相关计数
             memorySliceCache.remove(topicPath);
-            lastTopicNode = generateTopicPath(topicPath);
-
+            TopicNode lastTopicNode = generateTopicPath(topicPath);
             for (MemoryNode memoryNode : lastTopicNode.getMemoryNodes()) {
                 if (now.equals(memoryNode.getLocalDate())) {
                     hasSlice = true;
@@ -217,32 +217,32 @@ public class MemoryGraph extends PersistableObject {
                     break;
                 }
             }
+            if (!hasSlice) {
+                node = new MemoryNode();
+                node.setLocalDate(now);
+                node.setMemoryNodeId(UUID.randomUUID().toString());
+                node.setMemorySliceList(new CopyOnWriteArrayList<>());
+                lastTopicNode.getMemoryNodes().add(node);
+                lastTopicNode.getMemoryNodes().sort(null);
+            }
+            node.loadMemorySliceList().add(slice);
+
+            //生成relatedTopicPath
+            for (List<String> relatedTopic : slice.getRelatedTopics()) {
+                generateTopicPath(relatedTopic);
+            }
+
+            updateSlicePrecedent(slice);
+            updateDateIndex(slice);
+
+            if (!slice.isPrivate()) {
+                updateUserDialogMap(slice);
+            }
+            node.saveMemorySliceList();
         } catch (Exception e) {
             log.error("插入记忆时出错: ", e);
-            throw new GlobalException(e.getLocalizedMessage());
+            GlobalExceptionHandler.writeExceptionState(new GlobalException("插入记忆时出错: " + e.getLocalizedMessage()));
         }
-        if (!hasSlice) {
-            node = new MemoryNode();
-            node.setLocalDate(now);
-            node.setMemoryNodeId(UUID.randomUUID().toString());
-            node.setMemorySliceList(new CopyOnWriteArrayList<>());
-            lastTopicNode.getMemoryNodes().add(node);
-            lastTopicNode.getMemoryNodes().sort(null);
-        }
-        node.loadMemorySliceList().add(slice);
-
-        //生成relatedTopicPath
-        for (List<String> relatedTopic : slice.getRelatedTopics()) {
-            generateTopicPath(relatedTopic);
-        }
-
-        updateSlicePrecedent(slice);
-        updateDateIndex(slice);
-
-        if (!slice.isPrivate()) {
-            updateUserDialogMap(slice);
-        }
-        node.saveMemorySliceList();
     }
 
     private void updateDateIndex(MemorySlice slice) {
@@ -407,6 +407,7 @@ public class MemoryGraph extends PersistableObject {
             memoryResult = new MemoryResult();
             memoryResult.setRelatedMemorySliceResult(new ArrayList<>());
             memoryResult.setMemorySliceResult(new CopyOnWriteArrayList<>());
+            GlobalExceptionHandler.writeExceptionState(new GlobalException(e.getLocalizedMessage()));
         }
         return memoryResult;
     }
@@ -532,7 +533,6 @@ public class MemoryGraph extends PersistableObject {
 
     public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
         List<LocalDateTime> keysToRemove = new ArrayList<>();
-
         dialogMap.forEach((k, v) -> {
             if (dateTime.minusDays(2).isAfter(k)) {
                 keysToRemove.add(k);
@@ -544,7 +544,6 @@ public class MemoryGraph extends PersistableObject {
         keysToRemove.clear();
         //放入新缓存
         dialogMap.put(dateTime, newDialogCache);
-
     }
 }
 

@@ -2,6 +2,8 @@ package work.slhaf.agent.modules.memory.selector;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
+import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.core.interaction.InteractionModule;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
@@ -115,7 +117,7 @@ public class MemorySelector implements InteractionModule {
         if (recall) {
             interactionContext.getModuleContext().put("recall_count", memoryManager.getActivatedSlices().get(userId).size());
         }
-        interactionContext.getModulePrompt().add( modulePrompt);
+        interactionContext.getModulePrompt().add(modulePrompt);
         log.debug("[MemorySelector] 记忆回溯结果: {}", interactionContext);
     }
 
@@ -131,7 +133,8 @@ public class MemorySelector implements InteractionModule {
                 if (memoryResult == null) continue;
                 memoryResultList.add(memoryResult);
             } catch (UnExistedDateIndexException | UnExistedTopicException e) {
-                log.error("[MemorySelector] 不存在的记忆索引! 请尝试更换更合适的主题提取LLM!");
+                log.error("[MemorySelector] 不存在的记忆索引! 请尝试更换更合适的主题提取LLM!", e);
+                GlobalExceptionHandler.writeExceptionState(new GlobalException(e.getMessage()));
             }
         }
         //清理切片记录

@@ -47,7 +47,7 @@ public class InteractionHub {
                 interactionModule.execute(interactionContext);
             }
         } catch (GlobalException e) {
-            GlobalExceptionHandler.writeExceptionState(e.getData());
+            GlobalExceptionHandler.writeExceptionState(e);
             interactionContext.getCoreResponse().put("text", "[ERROR] " + e.getMessage());
         } finally {
             callback.onTaskFinished(interactionContext.getUserInfo(), interactionContext.getCoreResponse().getString("text"));
