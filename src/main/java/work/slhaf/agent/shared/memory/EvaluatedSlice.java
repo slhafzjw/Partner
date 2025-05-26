@@ -3,7 +3,6 @@ package work.slhaf.agent.shared.memory;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.pojo.PersistableObject;
 
