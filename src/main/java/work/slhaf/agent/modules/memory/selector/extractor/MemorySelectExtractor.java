@@ -44,7 +44,7 @@ public class MemorySelectExtractor extends Model {
             memorySelectExtractor = new MemorySelectExtractor();
             memorySelectExtractor.setMemoryManager(MemoryManager.getInstance());
             memorySelectExtractor.setSessionManager(SessionManager.getInstance());
-            setModel(config, memorySelectExtractor, MODEL_KEY, ModelConstant.SELECT_EXTRACTOR_PROMPT);
+            setModel(memorySelectExtractor, MODEL_KEY, ModelConstant.Prompt.MEMORY,false);
         }
 
         return memorySelectExtractor;

@@ -5,7 +5,6 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.chat.pojo.ChatResponse;
-import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 import work.slhaf.agent.modules.memory.updater.static_extractor.data.StaticMemoryExtractInput;
@@ -26,7 +25,7 @@ public class StaticMemoryExtractor extends Model {
     public static StaticMemoryExtractor getInstance() throws IOException, ClassNotFoundException {
         if (staticMemoryExtractor == null) {
             staticMemoryExtractor = new StaticMemoryExtractor();
-            setModel(Config.getConfig(), staticMemoryExtractor, MODEL_KEY, ModelConstant.STATIC_MEMORY_EXTRACTOR_PROMPT);
+            setModel(staticMemoryExtractor, MODEL_KEY, ModelConstant.Prompt.MEMORY,true);
         }
         return staticMemoryExtractor;
     }

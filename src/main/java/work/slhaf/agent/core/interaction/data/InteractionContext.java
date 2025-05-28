@@ -8,6 +8,7 @@ import work.slhaf.agent.common.pojo.PersistableObject;
 
 import java.io.Serial;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -29,7 +30,7 @@ public class InteractionContext extends PersistableObject {
 
     protected JSONObject coreContext;
     protected JSONObject moduleContext;
-    protected JSONArray modulePrompt;
+    protected List<String> appendPrompt;
     protected JSONObject coreResponse;
 
     public InteractionContext() {

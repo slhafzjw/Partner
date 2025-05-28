@@ -2,7 +2,6 @@ package work.slhaf.agent.modules.task;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.model.Model;
 import work.slhaf.agent.common.model.ModelConstant;
 
@@ -19,7 +18,7 @@ public class TaskEvaluator extends Model {
     public static TaskEvaluator getInstance() throws IOException, ClassNotFoundException {
         if (taskEvaluator == null) {
             taskEvaluator = new TaskEvaluator();
-            setModel(Config.getConfig(),taskEvaluator,MODEL_KEY,ModelConstant.TASK_EVALUATOR_PROMPT);
+            setModel(taskEvaluator,MODEL_KEY, ModelConstant.Prompt.SCHEDULE,true);
         }
         return taskEvaluator;
     }

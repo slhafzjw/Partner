@@ -93,6 +93,10 @@ public class MemoryManager extends PersistableObject {
         return memoryGraph.getChatMessages();
     }
 
+    public void setChatMessages(List<Message> chatMessages){
+        memoryGraph.setChatMessages(chatMessages);
+    }
+
     private static User setNewUser(String userInfo, String nickName) {
         User newUser = new User();
         newUser.setUuid(UUID.randomUUID().toString());

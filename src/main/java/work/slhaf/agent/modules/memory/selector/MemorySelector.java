@@ -28,8 +28,8 @@ import java.util.List;
 public class MemorySelector implements InteractionModule {
 
     private static MemorySelector memorySelector;
-    public static final String modulePrompt = """
-            新增输入字段:
+    public static final String appendPrompt = """
+            新增输入字段示例:
             
             "memory_slices": [{ //记忆切片，可能为多个
                 "chatMessages": [{
@@ -82,31 +82,43 @@ public class MemorySelector implements InteractionModule {
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(interactionContext);
         if (extractorResult.isRecall() || !extractorResult.getMatches().isEmpty()) {
-            log.debug("[MemorySelector] 触发记忆回溯...");
-            //查找切片
-            List<MemoryResult> memoryResultList = new ArrayList<>();
-            setMemoryResultList(memoryResultList, extractorResult.getMatches(), userId);
-            //评估切片
-            EvaluatorInput evaluatorInput = EvaluatorInput.builder()
-                    .input(interactionContext.getInput())
-                    .memoryResults(memoryResultList)
-                    .messages(memoryManager.getChatMessages())
-                    .build();
-            log.debug("[MemorySelector] 切片评估输入: {}", evaluatorInput);
-            List<EvaluatedSlice> memorySlices = sliceSelectEvaluator.execute(evaluatorInput);
-            log.debug("[MemorySelector] 切片评估结果: {}", memorySlices);
-            memoryManager.updateActivatedSlices(userId, memorySlices);
+            selectAndEvaluateMemory(interactionContext, extractorResult, userId);
         }
         if (extractorResult.isRecall()) {
             memoryManager.getActivatedSlices().clear();
         }
-
         //设置上下文
+        setModuleContext(interactionContext, userId);
+        log.debug("[MemorySelector] 记忆回溯结果: {}", interactionContext);
+    }
+
+    private void selectAndEvaluateMemory(InteractionContext interactionContext, ExtractorResult extractorResult, String userId) throws IOException, ClassNotFoundException, InterruptedException {
+        log.debug("[MemorySelector] 触发记忆回溯...");
+        //查找切片
+        List<MemoryResult> memoryResultList = new ArrayList<>();
+        setMemoryResultList(memoryResultList, extractorResult.getMatches(), userId);
+        //评估切片
+        EvaluatorInput evaluatorInput = EvaluatorInput.builder()
+                .input(interactionContext.getInput())
+                .memoryResults(memoryResultList)
+                .messages(memoryManager.getChatMessages())
+                .build();
+        log.debug("[MemorySelector] 切片评估输入: {}", evaluatorInput);
+        List<EvaluatedSlice> memorySlices = sliceSelectEvaluator.execute(evaluatorInput);
+        log.debug("[MemorySelector] 切片评估结果: {}", memorySlices);
+        memoryManager.updateActivatedSlices(userId, memorySlices);
+    }
+
+    private void setModuleContext(InteractionContext interactionContext, String userId) {
         interactionContext.getCoreContext().put("memory_slices", memoryManager.getActivatedSlices().get(userId));
         interactionContext.getCoreContext().put("static_memory", memoryManager.getStaticMemory(userId));
         interactionContext.getCoreContext().put("dialog_map", memoryManager.getDialogMap());
         interactionContext.getCoreContext().put("user_dialog_map", memoryManager.getUserDialogMap(userId));
+        interactionContext.getAppendPrompt().add(appendPrompt);
+        setModuleRecall(interactionContext, userId);
+    }
 
+    private void setModuleRecall(InteractionContext interactionContext, String userId) {
         boolean recall;
         if (memoryManager.getActivatedSlices().get(userId) == null) {
             recall = false;
@@ -117,9 +129,8 @@ public class MemorySelector implements InteractionModule {
         if (recall) {
             interactionContext.getModuleContext().put("recall_count", memoryManager.getActivatedSlices().get(userId).size());
         }
-        interactionContext.getModulePrompt().add(modulePrompt);
-        log.debug("[MemorySelector] 记忆回溯结果: {}", interactionContext);
     }
+
 
     private void setMemoryResultList(List<MemoryResult> memoryResultList, List<ExtractorMatchData> matches, String userId) throws IOException, ClassNotFoundException {
         for (ExtractorMatchData match : matches) {

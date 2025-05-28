@@ -12,6 +12,7 @@ import work.slhaf.agent.core.session.SessionManager;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 @Data
 @Slf4j
@@ -70,7 +71,7 @@ public class PreprocessExecutor {
 
         context.setModuleContext(new JSONObject());
 
-        context.setModulePrompt(new JSONArray());
+        context.setAppendPrompt(new ArrayList<>());
 
         context.setSingle(inputData.isSingle());
         context.setFinished(false);

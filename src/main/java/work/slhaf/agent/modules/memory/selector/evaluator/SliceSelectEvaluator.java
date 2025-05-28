@@ -34,7 +34,6 @@ import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 @Slf4j
 public class SliceSelectEvaluator extends Model {
     public static final String MODEL_KEY = "slice_evaluator";
-
     private static SliceSelectEvaluator sliceSelectEvaluator;
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
@@ -44,11 +43,10 @@ public class SliceSelectEvaluator extends Model {
 
     public static SliceSelectEvaluator getInstance() throws IOException, ClassNotFoundException {
         if (sliceSelectEvaluator == null) {
-            Config config = Config.getConfig();
             sliceSelectEvaluator = new SliceSelectEvaluator();
             sliceSelectEvaluator.setMemoryManager(MemoryManager.getInstance());
             sliceSelectEvaluator.setExecutor(InteractionThreadPoolExecutor.getInstance());
-            setModel(config, sliceSelectEvaluator, MODEL_KEY, ModelConstant.SLICE_EVALUATOR_PROMPT);
+            setModel(sliceSelectEvaluator, MODEL_KEY, ModelConstant.Prompt.MEMORY,false);
             log.info("SliceEvaluator注册完毕...");
         }
 
@@ -102,7 +100,7 @@ public class SliceSelectEvaluator extends Model {
         return queue.stream().toList();
     }
 
-    private void setEvaluatedSliceMessages(EvaluatedSlice evaluatedSlice, MemoryResult memoryResult, Long id) {
+/*    private void setEvaluatedSliceMessages(EvaluatedSlice evaluatedSlice, MemoryResult memoryResult, Long id) {
         //补充消息列表
         for (MemorySliceResult memorySliceResult : memoryResult.getMemorySliceResult()) {
             if (memorySliceResult.getMemorySlice().getTimestamp().equals(id)) {
@@ -116,7 +114,7 @@ public class SliceSelectEvaluator extends Model {
                 return;
             }
         }
-    }
+    }*/
 
     private void setSliceSummaryList(MemoryResult memoryResult, List<SliceSummary> sliceSummaryList, Map<Long, SliceSummary> map) {
         for (MemorySliceResult memorySliceResult : memoryResult.getMemorySliceResult()) {

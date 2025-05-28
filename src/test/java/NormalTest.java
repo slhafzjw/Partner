@@ -1,5 +1,3 @@
-package memory;
-
 public class NormalTest {
 //    @Test
     public void lengthTest(){

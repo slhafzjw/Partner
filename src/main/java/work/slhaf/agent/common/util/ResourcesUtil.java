@@ -17,17 +17,21 @@ public class ResourcesUtil {
         private static final String SELF_AWARENESS_PATH = "prompt/self_awareness.json";
         private static final String MODULE_PROMPT_PREFIX_PATH = "prompt/module/";
 
-        public static List<Message> loadPrompt(String modelKey) {
+        public static List<Message> loadPromptWithSelfAwareness(String modelKey, String promptType) {
             //加载人格引导
             List<Message> messages = new ArrayList<>(loadSelfAwareness());
             //加载常规提示
-            String path = MODULE_PROMPT_PREFIX_PATH + modelKey + ".json";
+            String path = MODULE_PROMPT_PREFIX_PATH + promptType + "/" + modelKey + ".json";
             messages.addAll(readPromptFromResources(path));
             return messages;
         }
 
-        private static List<Message> loadSelfAwareness() {
+        public static List<Message> loadSelfAwareness() {
             return readPromptFromResources(SELF_AWARENESS_PATH);
+        }
+
+        public static List<Message> loadPrompt(String modelKey,String promptType){
+            return new ArrayList<>(readPromptFromResources(MODULE_PROMPT_PREFIX_PATH+promptType+"/"+modelKey+".json"));
         }
 
         private static List<Message> readPromptFromResources(String filePath) {

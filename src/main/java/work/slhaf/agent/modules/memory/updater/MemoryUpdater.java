@@ -12,6 +12,7 @@ import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.modules.memory.selector.extractor.MemorySelectExtractor;
+import work.slhaf.agent.modules.memory.updater.exception.UnExpectedMessageCountException;
 import work.slhaf.agent.modules.memory.updater.static_extractor.StaticMemoryExtractor;
 import work.slhaf.agent.modules.memory.updater.static_extractor.data.StaticMemoryExtractInput;
 import work.slhaf.agent.modules.memory.updater.summarizer.MemorySummarizer;
@@ -35,8 +36,9 @@ public class MemoryUpdater implements InteractionModule {
     private static final String USERID_REGEX = "\\[.*\\(([^)]+)\\)\\]";
     private static final long SCHEDULED_UPDATE_INTERVAL = 10 * 1000;
     private static final long UPDATE_TRIGGER_INTERVAL = 30 * 60 * 1000;
-    private static final int TRIGGER_TOKEN_LIMIT = 5 * 1000;
+    //    private static final int TRIGGER_TOKEN_LIMIT = 5 * 1000;
     private static final int TOKEN_PER_RECALL = 230;
+    private static final int TRIGGER_ROLL_LIMIT = 12;
 
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
@@ -44,6 +46,7 @@ public class MemoryUpdater implements InteractionModule {
     private MemorySummarizer memorySummarizer;
     private SessionManager sessionManager;
     private StaticMemoryExtractor staticMemoryExtractor;
+    private int moduleMessageCount = 0;
 
     private MemoryUpdater() {
     }
@@ -96,15 +99,14 @@ public class MemoryUpdater implements InteractionModule {
             //如果token 大于阈值，则更新记忆
             JSONObject moduleContext = interactionContext.getModuleContext();
             boolean recall = moduleContext.getBoolean("recall");
-            int tokenLimit = TRIGGER_TOKEN_LIMIT;
             if (recall) {
                 log.debug("[MemoryUpdater] 存在回忆");
                 int recallCount = moduleContext.getIntValue("recall_count");
-                log.debug("[MemoryUpdater] 记忆切片数量 [{}]",recallCount);
-                tokenLimit += recallCount * TOKEN_PER_RECALL;
+                log.debug("[MemoryUpdater] 记忆切片数量 [{}]", recallCount);
             }
-            //TODO 调整为根据轮次触发记忆插入
-            if (moduleContext.getIntValue("total_token") > tokenLimit) {
+            int messageCount = moduleContext.getIntValue("message_count");
+            updateModuleMessageCount(messageCount);
+            if (messageCount > TRIGGER_ROLL_LIMIT) {
                 try {
                     log.debug("[MemoryUpdater] 记忆更新: token超限");
                     updateMemory();
@@ -114,6 +116,11 @@ public class MemoryUpdater implements InteractionModule {
             }
         });
         sessionManager.resetLastUpdatedTime();
+    }
+
+    private void updateModuleMessageCount(int messageCount) {
+        int totalMessageCount = memoryManager.getChatMessages().size();
+        moduleMessageCount = totalMessageCount - messageCount;
     }
 
     private void updateMemory() {
@@ -168,9 +175,10 @@ public class MemoryUpdater implements InteractionModule {
     }
 
     private void clearChatMessages() {
-        Message first = memoryManager.getChatMessages().getFirst();
-        memoryManager.getChatMessages().clear();
-        memoryManager.getChatMessages().add(first);
+        if (moduleMessageCount < 1) {
+            throw new UnExpectedMessageCountException("ModuleMessageCount 异常: " + moduleMessageCount);
+        }
+        memoryManager.setChatMessages(memoryManager.getChatMessages().subList(0, moduleMessageCount - 1));
     }
 
     private void setInvolvedUserId(String startUserId, MemorySlice memorySlice, List<Message> chatMessages) {

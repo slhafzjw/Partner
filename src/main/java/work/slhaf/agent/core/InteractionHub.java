@@ -10,7 +10,7 @@ import work.slhaf.agent.core.interaction.InteractionModulesLoader;
 import work.slhaf.agent.core.interaction.TaskCallback;
 import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
-import work.slhaf.agent.core.module.CoreModel;
+import work.slhaf.agent.modules.core.CoreModel;
 import work.slhaf.agent.modules.preprocess.PreprocessExecutor;
 import work.slhaf.agent.modules.task.TaskScheduler;
 
