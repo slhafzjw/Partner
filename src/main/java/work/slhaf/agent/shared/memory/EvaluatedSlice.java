@@ -3,12 +3,10 @@ package work.slhaf.agent.shared.memory;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.pojo.PersistableObject;
 
 import java.io.Serial;
 import java.time.LocalDate;
-import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

@@ -27,7 +27,7 @@ public class SessionManager extends PersistableObject {
     private static final long serialVersionUID = 1L;
     private static final String STORAGE_DIR = "./data/session/";
 
-    private static SessionManager sessionManager;
+    private static volatile SessionManager sessionManager;
 
     private String id;
     private HashMap<String /*startUserId*/, List<MetaMessage>> singleMetaMessageMap;
@@ -36,16 +36,20 @@ public class SessionManager extends PersistableObject {
 
     public static SessionManager getInstance() throws IOException, ClassNotFoundException {
         if (sessionManager == null) {
-            String id = Config.getConfig().getAgentId();
-            Path filePath = Paths.get(STORAGE_DIR, id + ".session");
-            if (Files.exists(filePath)) {
-                sessionManager = deserialize(id);
-            } else {
-                sessionManager = new SessionManager();
-                sessionManager.setSingleMetaMessageMap(new HashMap<>());
-                sessionManager.id = id;
-                sessionManager.setShutdownHook();
-                sessionManager.lastUpdatedTime = 0;
+            synchronized (SessionManager.class) {
+                if (sessionManager == null) {
+                    String id = Config.getConfig().getAgentId();
+                    Path filePath = Paths.get(STORAGE_DIR, id + ".session");
+                    if (Files.exists(filePath)) {
+                        sessionManager = deserialize(id);
+                    } else {
+                        sessionManager = new SessionManager();
+                        sessionManager.setSingleMetaMessageMap(new HashMap<>());
+                        sessionManager.id = id;
+                        sessionManager.setShutdownHook();
+                        sessionManager.lastUpdatedTime = 0;
+                    }
+                }
             }
         }
         return sessionManager;

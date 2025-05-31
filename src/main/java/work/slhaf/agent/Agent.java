@@ -19,24 +19,28 @@ import java.time.LocalDateTime;
 @Slf4j
 public class Agent implements TaskCallback, InputReceiver {
 
-    private static Agent agent;
+    private static volatile Agent agent;
     private InteractionHub interactionHub;
     private MessageSender messageSender;
 
     public static void initialize() throws IOException {
         if (agent == null) {
-            //加载配置
-            Config config = Config.getConfig();
-            agent = new Agent();
-            agent.setInteractionHub(InteractionHub.initialize());
-            agent.registerTaskCallback();
-            AgentWebSocketServer server = new AgentWebSocketServer(config.getWebSocketConfig().getPort(),agent);
-            server.launch();
-            agent.setMessageSender(server);
-            log.info("Agent 加载完毕..");
+            synchronized (Agent.class) {
+                if (agent == null) {
+                    //加载配置
+                    Config config = Config.getConfig();
+                    agent = new Agent();
+                    agent.setInteractionHub(InteractionHub.initialize());
+                    agent.registerTaskCallback();
+                    AgentWebSocketServer server = new AgentWebSocketServer(config.getWebSocketConfig().getPort(), agent);
+                    server.launch();
+                    agent.setMessageSender(server);
+                    log.info("Agent 加载完毕..");
 
-            //启动监测线程
-            DebugMonitor.initialize();
+                    //启动监测线程
+                    DebugMonitor.initialize();
+                }
+            }
         }
     }
 
@@ -57,16 +61,16 @@ public class Agent implements TaskCallback, InputReceiver {
     /**
      * 向用户返回输出内容
      */
-    public void sendToUser(String userInfo,String output){
-        messageSender.sendMessage(new InteractionOutputData(output,userInfo));
+    public void sendToUser(String userInfo, String output) {
+        messageSender.sendMessage(new InteractionOutputData(output, userInfo));
     }
 
     @Override
     public void onTaskFinished(String userInfo, String output) {
-        sendToUser(userInfo,output);
+        sendToUser(userInfo, output);
     }
 
-    private void registerTaskCallback(){
+    private void registerTaskCallback() {
         interactionHub.setCallback(this);
     }
 }

@@ -28,7 +28,7 @@ public class MemoryManager extends PersistableObject {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private static MemoryManager memoryManager;
+    private static volatile MemoryManager memoryManager;
     private final Lock sliceInsertLock = new ReentrantLock();
     private final Lock messageCleanLock = new ReentrantLock();
 
@@ -41,12 +41,16 @@ public class MemoryManager extends PersistableObject {
 
     public static MemoryManager getInstance() throws IOException, ClassNotFoundException {
         if (memoryManager == null) {
-            Config config = Config.getConfig();
-            memoryManager = new MemoryManager();
-            memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId(), config.getBasicCharacter()));
-            memoryManager.setActivatedSlices(new HashMap<>());
-            memoryManager.setShutdownHook();
-            log.info("[MemoryManager] MemoryManager注册完毕...");
+            synchronized (MemoryManager.class) {
+                if (memoryManager == null) {
+                    Config config = Config.getConfig();
+                    memoryManager = new MemoryManager();
+                    memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId(), config.getBasicCharacter()));
+                    memoryManager.setActivatedSlices(new HashMap<>());
+                    memoryManager.setShutdownHook();
+                    log.info("[MemoryManager] MemoryManager注册完毕...");
+                }
+            }
         }
         return memoryManager;
     }
@@ -93,7 +97,7 @@ public class MemoryManager extends PersistableObject {
         return memoryGraph.getChatMessages();
     }
 
-    public void setChatMessages(List<Message> chatMessages){
+    public void setChatMessages(List<Message> chatMessages) {
         memoryGraph.setChatMessages(chatMessages);
     }
 

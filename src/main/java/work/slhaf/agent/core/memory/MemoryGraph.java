@@ -42,7 +42,7 @@ public class MemoryGraph extends PersistableObject {
      * key: 根主题名称  value: 根主题节点
      */
     private HashMap<String, TopicNode> topicNodes;
-    private static MemoryGraph memoryGraph;
+    private static volatile MemoryGraph memoryGraph;
 
     /**
      * 用于存储已存在的主题列表，便于记忆查找, 使用根主题名称作为键, 子主题名称集合为值
@@ -140,20 +140,23 @@ public class MemoryGraph extends PersistableObject {
     }
 
     public static MemoryGraph getInstance(String id, String basicCharacter) throws IOException, ClassNotFoundException {
-        // 检查存储目录是否存在，不存在则创建
-        createStorageDirectory();
         if (memoryGraph == null) {
-            Path filePath = getFilePath(id);
-            if (Files.exists(filePath)) {
-                memoryGraph = deserialize(id);
-            } else {
-                FileUtils.createParentDirectories(filePath.toFile().getParentFile());
-                memoryGraph = new MemoryGraph(id, basicCharacter);
-                memoryGraph.serialize();
+            synchronized (MemoryGraph.class) {
+                // 检查存储目录是否存在，不存在则创建
+                if (memoryGraph == null) {
+                    createStorageDirectory();
+                    Path filePath = getFilePath(id);
+                    if (Files.exists(filePath)) {
+                        memoryGraph = deserialize(id);
+                    } else {
+                        FileUtils.createParentDirectories(filePath.toFile().getParentFile());
+                        memoryGraph = new MemoryGraph(id, basicCharacter);
+                        memoryGraph.serialize();
+                    }
+                    log.info("MemoryGraph注册完毕...");
+                }
             }
-            log.info("MemoryGraph注册完毕...");
         }
-
         return memoryGraph;
     }
 

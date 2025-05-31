@@ -22,8 +22,8 @@ public class ChatClient {
     private String apikey;
     private String model;
 
-    private int top_p;
-    private int temperature;
+    private double top_p;
+    private double temperature;
     private int max_tokens;
 
     public ChatClient(String url, String apikey, String model) {

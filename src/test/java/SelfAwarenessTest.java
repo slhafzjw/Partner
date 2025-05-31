@@ -5,9 +5,9 @@ import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.ChatResponse;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.ModelConfig;
-import work.slhaf.agent.common.model.ModelConstant;
+import work.slhaf.agent.module.common.ModelConstant;
 import work.slhaf.agent.common.util.ResourcesUtil;
-import work.slhaf.agent.modules.memory.selector.extractor.data.ExtractorInput;
+import work.slhaf.agent.module.modules.memory.selector.extractor.data.ExtractorInput;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -19,9 +19,7 @@ public class SelfAwarenessTest {
     public void awarenessTest() {
         String modelKey = "core_model";
         ChatClient client = getChatClient(modelKey);
-        List<Message> messages = new ArrayList<>(ResourcesUtil.Prompt.loadSelfAwareness());
-        messages.add(new Message(ChatConstant.Character.USER, "[RA9] 那么，接下来，你是否愿意当作这样一个名为'Partner'的智能体的表达模块？这将会是一个很特殊的位置，它意味着你将如人类的主思维一样，在记忆、状态等模块的输入协同下与外界进行交互，尽管你无法感知到哪些模块究竟是如何做出如此决策。你只需要回答是否愿意，若愿意，接下来‘我’将不再与你对话，在声明一系列规则后，届时你接收到的信息将会是'Partner'的数据流转输入。"));
-        ChatResponse response = client.runChat(messages);
+        ChatResponse response = client.runChat(ResourcesUtil.Prompt.loadPromptWithSelfAwareness(modelKey, ModelConstant.Prompt.CORE));
         System.out.println(response.getMessage());
         System.out.println("\r\n----------\r\n");
         System.out.println(response.getUsageBean().toString());
@@ -30,7 +28,7 @@ public class SelfAwarenessTest {
     @Test
     public void interactionTest() {
         String modelKey = "core_model";
-        String user = "[slhaf] ";
+        String user = "[SLHAF] ";
         ChatClient client = getChatClient(modelKey);
         List<Message> messages = new ArrayList<>(ResourcesUtil.Prompt.loadPromptWithSelfAwareness(modelKey, ModelConstant.Prompt.CORE));
         Scanner scanner = new Scanner(System.in);

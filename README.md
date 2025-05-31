@@ -47,3 +47,12 @@
 ### 长期规划
 - [ ] 实现角色演进机制
 - [ ] 实现任务调度模块(主动调度、意图推断、定时调度)
+
+## License
+
+This project is not licensed for public use. All rights reserved.
+
+Partner is currently in an early experimental phase. Code, logic, and architecture are rapidly evolving.  
+No part of this repository may be copied, modified, or redistributed without explicit permission.
+
+For collaboration or inquiries, contact the maintainer directly.
