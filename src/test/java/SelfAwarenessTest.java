@@ -56,7 +56,10 @@ public class SelfAwarenessTest {
         String model = coreModel.getModel();
         String baseUrl = coreModel.getBaseUrl();
         String apikey = coreModel.getApikey();
-        return new ChatClient(baseUrl, apikey, model);
+        ChatClient chatClient = new ChatClient(baseUrl, apikey, model);
+        chatClient.setTop_p(0.7);
+        chatClient.setTemperature(0.35);
+        return chatClient;
     }
 
     @Test

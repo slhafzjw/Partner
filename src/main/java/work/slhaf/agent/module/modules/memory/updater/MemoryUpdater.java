@@ -38,7 +38,7 @@ public class MemoryUpdater implements InteractionModule {
     private static final long UPDATE_TRIGGER_INTERVAL = 30 * 60 * 1000;
     //    private static final int TRIGGER_TOKEN_LIMIT = 5 * 1000;
     private static final int TOKEN_PER_RECALL = 230;
-    private static final int TRIGGER_ROLL_LIMIT = 20;
+    private static final int TRIGGER_ROLL_LIMIT = 32;
 
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
@@ -107,23 +107,17 @@ public class MemoryUpdater implements InteractionModule {
                 int recallCount = moduleContext.getIntValue("recall_count");
                 log.debug("[MemoryUpdater] 记忆切片数量 [{}]", recallCount);
             }
-            int messageCount = moduleContext.getIntValue("message_count");
-            updateModuleMessageCount(messageCount);
+            int messageCount = memoryManager.getChatMessages().size();
             if (messageCount > TRIGGER_ROLL_LIMIT) {
                 try {
-                    log.debug("[MemoryUpdater] 记忆更新: token超限");
+                    log.debug("[MemoryUpdater] 记忆更新: 已达{}轮", TRIGGER_ROLL_LIMIT);
                     updateMemory();
                 } catch (Exception e) {
-                    log.error("[MemoryUpdater] 记忆更新线程出错: {}", e.getLocalizedMessage());
+                    log.error("[MemoryUpdater] 记忆更新线程出错: ", e);
                 }
             }
         });
         sessionManager.resetLastUpdatedTime();
-    }
-
-    private void updateModuleMessageCount(int messageCount) {
-        int totalMessageCount = memoryManager.getChatMessages().size();
-        moduleMessageCount = totalMessageCount - messageCount;
     }
 
     private void updateMemory() {
