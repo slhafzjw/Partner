@@ -27,6 +27,7 @@ public class MultiSummarizer extends Model {
                 if (multiSummarizer == null) {
                     multiSummarizer = new MultiSummarizer();
                     setModel(multiSummarizer, MODEL_KEY, ModelConstant.Prompt.MEMORY, true);
+                    multiSummarizer.updateChatClientSettings();
                 }
             }
         }

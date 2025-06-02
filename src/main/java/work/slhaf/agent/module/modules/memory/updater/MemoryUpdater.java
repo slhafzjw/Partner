@@ -13,8 +13,6 @@ import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.module.modules.memory.updater.exception.UnExpectedMessageCountException;
-import work.slhaf.agent.module.modules.memory.updater.static_extractor.StaticMemoryExtractor;
-import work.slhaf.agent.module.modules.memory.updater.static_extractor.data.StaticMemoryExtractInput;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.MemorySummarizer;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.data.SummarizeInput;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.data.SummarizeResult;
@@ -45,7 +43,7 @@ public class MemoryUpdater implements InteractionModule {
     private MemorySelectExtractor memorySelectExtractor;
     private MemorySummarizer memorySummarizer;
     private SessionManager sessionManager;
-    private StaticMemoryExtractor staticMemoryExtractor;
+//    private StaticMemoryExtractor staticMemoryExtractor;
     private int moduleMessageCount = 0;
 
     private MemoryUpdater() {
@@ -60,7 +58,7 @@ public class MemoryUpdater implements InteractionModule {
                     memoryUpdater.setMemorySelectExtractor(MemorySelectExtractor.getInstance());
                     memoryUpdater.setMemorySummarizer(MemorySummarizer.getInstance());
                     memoryUpdater.setSessionManager(SessionManager.getInstance());
-                    memoryUpdater.setStaticMemoryExtractor(StaticMemoryExtractor.getInstance());
+//                    memoryUpdater.setStaticMemoryExtractor(StaticMemoryExtractor.getInstance());
                     memoryUpdater.setExecutor(InteractionThreadPoolExecutor.getInstance());
                     memoryUpdater.setScheduledUpdater();
                 }
@@ -233,7 +231,7 @@ public class MemoryUpdater implements InteractionModule {
                 return null;
             });
 
-            tasks.add(() -> {
+            /*tasks.add(() -> {
                 log.debug("[MemoryUpdater] 静态记忆更新开始...");
                 StaticMemoryExtractInput input = StaticMemoryExtractInput.builder()
                         .userId(id)
@@ -245,7 +243,7 @@ public class MemoryUpdater implements InteractionModule {
                 log.debug("[MemoryUpdater] 静态记忆更新结果: {}", staticMemoryResult);
                 memoryManager.insertStaticMemory(id, staticMemoryResult);
                 return null;
-            });
+            });*/
         }
         executor.invokeAll(tasks);
         log.debug("[MemoryUpdater] 单聊记忆更新结束...");

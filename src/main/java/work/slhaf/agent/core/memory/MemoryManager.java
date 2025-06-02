@@ -127,9 +127,9 @@ public class MemoryManager extends PersistableObject {
         return memoryGraph.getUserDialogMap().get(userId);
     }
 
-    public String getCharacter() {
+/*    public String getCharacter() {
         return memoryGraph.getCharacter();
-    }
+    }*/
 
     public void insertSlice(MemorySlice memorySlice, String topicPath) throws IOException, ClassNotFoundException {
         sliceInsertLock.lock();

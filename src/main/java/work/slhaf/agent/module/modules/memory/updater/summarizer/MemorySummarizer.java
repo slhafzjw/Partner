@@ -1,21 +1,17 @@
 package work.slhaf.agent.module.modules.memory.updater.summarizer;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.core.interaction.InteractionThreadPoolExecutor;
-import work.slhaf.agent.module.common.Model;
-import work.slhaf.agent.module.common.ModelConstant;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.data.SummarizeInput;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.data.SummarizeResult;
 
 import java.io.IOException;
 import java.util.HashMap;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemorySummarizer extends Model {
+public class MemorySummarizer {
 
     private static volatile MemorySummarizer memorySummarizer;
     public static final String MODEL_KEY = "memory_summarizer";
@@ -34,7 +30,6 @@ public class MemorySummarizer extends Model {
                     memorySummarizer.setSingleSummarizer(SingleSummarizer.getInstance());
                     memorySummarizer.setMultiSummarizer(MultiSummarizer.getInstance());
                     memorySummarizer.setTotalSummarizer(TotalSummarizer.getInstance());
-                    setModel(memorySummarizer, MODEL_KEY, ModelConstant.Prompt.MEMORY, true);
                 }
             }
         }

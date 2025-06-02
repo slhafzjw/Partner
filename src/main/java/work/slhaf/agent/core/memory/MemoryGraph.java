@@ -104,7 +104,7 @@ public class MemoryGraph extends PersistableObject {
      */
     private HashMap<String, String> modelPrompt;
 
-    private String character;
+//    private String character;
 
     /**
      * 主模型的聊天记录
@@ -135,7 +135,7 @@ public class MemoryGraph extends PersistableObject {
         this.userDialogMap = new ConcurrentHashMap<>();
 //        this.currentCompressedSessionContext = new ArrayList<>();
         this.dialogMap = new HashMap<>();
-        this.character = basicCharacter;
+//        this.character = basicCharacter;
         this.dateIndex = new HashMap<>();
     }
 

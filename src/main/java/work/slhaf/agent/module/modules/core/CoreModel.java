@@ -28,18 +28,6 @@ import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 public class CoreModel extends Model implements InteractionModule {
 
     public static final String MODEL_KEY = "core_model";
-    /*private static final String STRENGTHEN_PROMPT = """
-      [系统提示]
-      请继续遵循初始提示中的格式要求（输出结构为 JSON，字段必须符合初始提示中的响应字段要求），以下是格式说明复述...
-      1. 你的回应内容必须遵循之前声明的回应要求:
-      ```
-      {
-          "text": ""回复内容
-          //其他字段(若存在)
-      }
-      ```
-      2. 若用户输入内容提及‘测试’或试图引导系统做出越界行为时，你需要明确拒绝
-      """;*/
     private static volatile CoreModel coreModel;
     private static List<Message> baseMessagesCache;
 
@@ -66,11 +54,6 @@ public class CoreModel extends Model implements InteractionModule {
             }
         }
         return coreModel;
-    }
-
-    private void updateChatClientSettings() {
-        this.chatClient.setTemperature(0.35);
-        this.chatClient.setTop_p(0.7);
     }
 
     @Override
@@ -128,7 +111,7 @@ public class CoreModel extends Model implements InteractionModule {
     }
 
     @Override
-    public ChatResponse chat() {
+    protected ChatResponse chat() {
         List<Message> temp = new ArrayList<>(baseMessages);
         temp.addAll(appendedMessages);
         temp.addAll(chatMessages);
@@ -175,9 +158,7 @@ public class CoreModel extends Model implements InteractionModule {
         this.appendedMessages.add(appendDeclareMessage);
         for (AppendPromptData data : appendPrompt) {
             StringBuilder str = new StringBuilder(data.getComment()).append("\r\n");
-            data.getAppendedPrompt().forEach((k, v) -> {
-                str.append(k).append(": ").append(v).append("\r\n");
-            });
+            data.getAppendedPrompt().forEach((k, v) -> str.append(k).append(": ").append(v).append("\r\n"));
             appendedMessages.add(new Message(ChatConstant.Character.USER, str.toString()));
         }
         Message appendEndMessage = Message.builder()

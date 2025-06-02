@@ -7,10 +7,12 @@ import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
 import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.session.SessionManager;
+import work.slhaf.agent.module.common.AppendPromptData;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 
 @Data
 @Slf4j
@@ -66,7 +68,7 @@ public class PreprocessExecutor {
 
         context.setCoreContext(new JSONObject());
         setCoreContext(inputData, context, input, userId);
-
+        setAppendedPrompt(context);
         context.setModuleContext(new JSONObject());
 
         context.setSingle(inputData.isSingle());
@@ -76,10 +78,22 @@ public class PreprocessExecutor {
         return context;
     }
 
+    private void setAppendedPrompt(InteractionContext context) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("text", "用户输入内容");
+        map.put("datetime", "当前时间");
+        map.put("user_nick", "用户昵称");
+        map.put("user_id", "用户id, 与user_nick区分, 这是用户的唯一标识");
+        AppendPromptData data = new AppendPromptData();
+        data.setComment("[system] 基础字段");
+        data.setAppendedPrompt(map);
+        context.setAppendedPrompt(data);
+    }
+
     private void setCoreContext(InteractionInputData inputData, InteractionContext context, String input, String userId) {
         context.getCoreContext().put("text", input);
         context.getCoreContext().put("datetime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        context.getCoreContext().put("character", memoryManager.getCharacter());
+//        context.getCoreContext().put("character", memoryManager.getCharacter());
         context.getCoreContext().put("user_nick", inputData.getUserNickName());
         context.getCoreContext().put("user_id", userId);
     }

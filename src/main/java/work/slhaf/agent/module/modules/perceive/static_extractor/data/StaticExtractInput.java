@@ -1,4 +1,4 @@
-package work.slhaf.agent.module.modules.memory.updater.static_extractor.data;
+package work.slhaf.agent.module.modules.perceive.static_extractor.data;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,8 +9,8 @@ import java.util.Map;
 
 @Data
 @Builder
-public class StaticMemoryExtractInput {
+public class StaticExtractInput {
     private String userId;
     private List<Message> messages;
-    private Map<String,String> existedStaticMemory;
+    private Map<String,String> existedStaticMap;
 }

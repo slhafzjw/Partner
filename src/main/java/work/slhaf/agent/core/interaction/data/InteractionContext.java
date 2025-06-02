@@ -35,7 +35,8 @@ public class InteractionContext extends PersistableObject {
 
     public InteractionContext() {
         currentContext = this;
-        moduleContext.put(Constant.APPENDED_PROMPT,new JSONArray());
+        this.moduleContext = new JSONObject();
+        this.moduleContext.put(Constant.APPENDED_PROMPT,new JSONArray());
     }
 
     public void setFinished(boolean finished) {

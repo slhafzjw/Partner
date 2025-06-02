@@ -38,16 +38,21 @@ public class Model {
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
     }
 
-    public ChatResponse chat() {
+    protected ChatResponse chat() {
         List<Message> temp = new ArrayList<>();
         temp.addAll(this.baseMessages);
         temp.addAll(this.chatMessages);
         return this.chatClient.runChat(temp);
     }
 
-    public ChatResponse singleChat(String input) {
+    protected ChatResponse singleChat(String input) {
         List<Message> temp = new ArrayList<>(baseMessages);
         temp.add( new Message(ChatConstant.Character.USER, input));
         return this.chatClient.runChat(temp);
+    }
+
+    protected void updateChatClientSettings() {
+        this.chatClient.setTemperature(0.35);
+        this.chatClient.setTop_p(0.7);
     }
 }

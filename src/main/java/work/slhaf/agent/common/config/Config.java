@@ -1,20 +1,17 @@
 package work.slhaf.agent.common.config;
 
 import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson2.JSONArray;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.module.modules.core.CoreModel;
 import work.slhaf.agent.module.modules.memory.selector.MemorySelector;
-import work.slhaf.agent.module.modules.memory.selector.evaluator.SliceSelectEvaluator;
-import work.slhaf.agent.module.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.module.modules.memory.updater.MemoryUpdater;
-import work.slhaf.agent.module.modules.memory.updater.static_extractor.StaticMemoryExtractor;
-import work.slhaf.agent.module.modules.memory.updater.summarizer.MemorySummarizer;
-import work.slhaf.agent.module.modules.task.TaskEvaluator;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -92,9 +89,9 @@ public class Config {
             input = scanner.nextLine();
             if (input.equals("y")) {
                 return true;
-            }else if (input.equals("n")) {
+            } else if (input.equals("n")) {
                 return false;
-            }else {
+            } else {
                 System.out.println("请输入y或n");
             }
         }
@@ -103,8 +100,8 @@ public class Config {
     private static void generatePipelineConfig() {
         List<ModuleConfig> moduleConfigList = List.of(
                 new ModuleConfig(MemorySelector.class.getName(), ModuleConfig.Constant.INTERNAL, null),
-                new ModuleConfig(CoreModel.class.getName(),ModuleConfig.Constant.INTERNAL,null),
-                new ModuleConfig(MemoryUpdater.class.getName(),ModuleConfig.Constant.INTERNAL,null)
+                new ModuleConfig(CoreModel.class.getName(), ModuleConfig.Constant.INTERNAL, null),
+                new ModuleConfig(MemoryUpdater.class.getName(), ModuleConfig.Constant.INTERNAL, null)
 //                new ModuleConfig(TaskScheduler.class.getName(), ModuleConfig.Constant.INTERNAL, null)
         );
         config.setModuleConfigList(moduleConfigList);
@@ -118,66 +115,25 @@ public class Config {
     }
 
     private static void generateModelConfig(Scanner scanner) throws IOException {
-        System.out.print("各模块是否配置为同一个LLM? (y/n, 建议选'y'，后续自行调整单独模块的配置): ");
-        String input;
-        while (true) {
-            input = scanner.nextLine();
-            if (input.equals("y") || input.equals("n")){
-                break;
-            }
-            System.out.println("请输入y或n");
-        }
-        boolean singleModel = input.equals("y");
+        System.out.println("配置LLM APi:");
+        System.out.println("经测试, 目前只建议选择Qwen3: qwen-plus-latest或qwen-max-latest");
+        System.out.print("base_url: ");
+        String baseUrl = scanner.nextLine();
+        System.out.print("apikey: ");
+        String apikey = scanner.nextLine();
+        System.out.print("model: ");
+        String model = scanner.nextLine();
 
         ModelConfig modelConfig = new ModelConfig();
-        if (singleModel) {
-            System.out.println("输入模型配置: ");
-            System.out.print("apikey: ");
-            modelConfig.setApikey(scanner.nextLine());
-            System.out.print("baseUrl: ");
-            modelConfig.setBaseUrl(scanner.nextLine());
-            System.out.print("model: ");
-            modelConfig.setModel(scanner.nextLine());
+        modelConfig.setBaseUrl(baseUrl);
+        modelConfig.setApikey(apikey);
+        modelConfig.setModel(model);
 
-        }
-        for (int i = 0; i < 6; i++) {
-            String modelKey = switch (i) {
-                case 0 -> {
-                    System.out.println("CoreModel:");
-                    yield CoreModel.MODEL_KEY;
-                }
-                case 1 -> {
-                    System.out.println("SliceEvaluator:");
-                    yield SliceSelectEvaluator.MODEL_KEY;
-                }
-                case 2 -> {
-                    System.out.println("TaskEvaluator:");
-                    yield TaskEvaluator.MODEL_KEY;
-                }
-                case 3 -> {
-                    System.out.println("TopicExtractor:");
-                    yield MemorySelectExtractor.MODEL_KEY;
-                }
-                case 4 -> {
-                    System.out.println("MemorySummarizer:");
-                    yield MemorySummarizer.MODEL_KEY;
-                }
-                case 5 -> {
-                    System.out.println("StaticMemoryExtractor:");
-                    yield StaticMemoryExtractor.MODEL_KEY;
-                }
-                default -> throw new RuntimeException();
-            };
-            if (!singleModel) {
-                modelConfig = new ModelConfig();
-                System.out.print("apikey: ");
-                modelConfig.setApikey(scanner.nextLine());
-                System.out.print("baseUrl: ");
-                modelConfig.setBaseUrl(scanner.nextLine());
-                System.out.print("model: ");
-                modelConfig.setModel(scanner.nextLine());
-            }
-            modelConfig.generateConfig(modelKey);
+        InputStream stream = Config.class.getClassLoader().getResourceAsStream("modules/default_activated_model.json");
+        String content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+        stream.close();
+        for (String s : JSONArray.parseArray(content, String.class)) {
+            modelConfig.generateConfig(s);
         }
     }
 

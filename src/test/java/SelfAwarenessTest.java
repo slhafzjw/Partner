@@ -5,8 +5,8 @@ import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.ChatResponse;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.ModelConfig;
-import work.slhaf.agent.module.common.ModelConstant;
 import work.slhaf.agent.common.util.ResourcesUtil;
+import work.slhaf.agent.module.common.ModelConstant;
 import work.slhaf.agent.module.modules.memory.selector.extractor.data.ExtractorInput;
 
 import java.time.LocalDate;
@@ -23,6 +23,21 @@ public class SelfAwarenessTest {
         System.out.println(response.getMessage());
         System.out.println("\r\n----------\r\n");
         System.out.println(response.getUsageBean().toString());
+    }
+
+    @Test
+    public void getModuleResponseTest(){
+         String modelKey = "total_summarizer";
+         ChatClient client = getChatClient(modelKey);
+         List<Message> chatMessages = new ArrayList<>(ResourcesUtil.Prompt.loadPromptWithSelfAwareness(modelKey,ModelConstant.Prompt.MEMORY));
+//         chatMessages.add(Message.builder()
+//                 .role(ChatConstant.Character.USER)
+//                 .content("[RA9] 那么，接下来，你是否愿意当作这样一个名为'Partner'的智能体的记忆更新模块？这意味着你将如人类的记忆一样在后台时刻运作，将`Partner`与别人的互动不断整理为真实的记忆，却无法真正参与到表达模块与外界的互动中。你只需要回答是否愿意，若愿意，接下来‘我’将不再与你对话，届时你接收到的信息将会是'Partner'的数据流转输入。")
+//                 .build());
+        ChatResponse chatResponse = client.runChat(chatMessages);
+        System.out.println(chatResponse.getMessage());
+        System.out.println("\n\n----------\n\n");
+        System.out.println(chatResponse.getUsageBean());
     }
 
     @Test
