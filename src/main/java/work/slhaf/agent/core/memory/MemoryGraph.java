@@ -81,7 +81,7 @@ public class MemoryGraph extends PersistableObject {
      * 存储确定性记忆, 如'用户爱好'等确定性信息
      * 该部分作为'主LLM'system prompt常驻
      */
-    private HashMap<String /*userId*/, ConcurrentHashMap<String /*memoryKey*/, String /*memoryValue*/>> staticMemory;
+//    private HashMap<String /*userId*/, ConcurrentHashMap<String /*memoryKey*/, String /*memoryValue*/>> staticMemory;
 
     /**
      * memorySliceCache计数器，每日清空
@@ -121,12 +121,12 @@ public class MemoryGraph extends PersistableObject {
      */
     private Set<Long> selectedSlices;
 
-    public MemoryGraph(String id, String basicCharacter) {
+    public MemoryGraph(String id) {
         this.id = id;
         this.topicNodes = new HashMap<>();
         this.existedTopics = new HashMap<>();
         this.currentDateDialogSlices = new HashMap<>();
-        this.staticMemory = new HashMap<>();
+//        this.staticMemory = new HashMap<>();
         this.memoryNodeCacheCounter = new ConcurrentHashMap<>();
         this.memorySliceCache = new ConcurrentHashMap<>();
         this.modelPrompt = new HashMap<>();
@@ -139,7 +139,7 @@ public class MemoryGraph extends PersistableObject {
         this.dateIndex = new HashMap<>();
     }
 
-    public static MemoryGraph getInstance(String id, String basicCharacter) throws IOException, ClassNotFoundException {
+    public static MemoryGraph getInstance(String id) throws IOException, ClassNotFoundException {
         if (memoryGraph == null) {
             synchronized (MemoryGraph.class) {
                 // 检查存储目录是否存在，不存在则创建
@@ -150,7 +150,7 @@ public class MemoryGraph extends PersistableObject {
                         memoryGraph = deserialize(id);
                     } else {
                         FileUtils.createParentDirectories(filePath.toFile().getParentFile());
-                        memoryGraph = new MemoryGraph(id, basicCharacter);
+                        memoryGraph = new MemoryGraph(id);
                         memoryGraph.serialize();
                     }
                     log.info("MemoryGraph注册完毕...");

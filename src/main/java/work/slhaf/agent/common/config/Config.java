@@ -27,7 +27,7 @@ public class Config {
     private static Config config;
 
     private String agentId;
-    private String basicCharacter;
+//    private String basicCharacter;
 
     private WebSocketConfig webSocketConfig;
 
@@ -48,8 +48,8 @@ public class Config {
                 System.out.print("输入智能体名称: ");
                 config.setAgentId(scanner.nextLine());
 
-                System.out.print("输入智能体基础角色设定: ");
-                config.setBasicCharacter(scanner.nextLine());
+//                System.out.print("输入智能体基础角色设定: ");
+//                config.setBasicCharacter(scanner.nextLine());
 
                 System.out.println("(注意! 设定角色之后修改主配置文件将不会影响现有记忆，除非同时更换agentId)");
 

@@ -45,7 +45,7 @@ public class MemoryManager extends PersistableObject {
                 if (memoryManager == null) {
                     Config config = Config.getConfig();
                     memoryManager = new MemoryManager();
-                    memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId(), config.getBasicCharacter()));
+                    memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId()));
                     memoryManager.setActivatedSlices(new HashMap<>());
                     memoryManager.setShutdownHook();
                     log.info("[MemoryManager] MemoryManager注册完毕...");
@@ -115,9 +115,9 @@ public class MemoryManager extends PersistableObject {
         return memoryGraph.getTopicTree();
     }
 
-    public ConcurrentHashMap<String, String> getStaticMemory(String userId) {
+/*    public ConcurrentHashMap<String, String> getStaticMemory(String userId) {
         return memoryGraph.getStaticMemory().get(userId);
-    }
+    }*/
 
     public HashMap<LocalDateTime, String> getDialogMap() {
         return memoryGraph.getDialogMap();
@@ -145,12 +145,12 @@ public class MemoryManager extends PersistableObject {
         messageCleanLock.unlock();
     }
 
-    public void insertStaticMemory(String userId, Map<String, String> newStaticMemory) {
+/*    public void insertStaticMemory(String userId, Map<String, String> newStaticMemory) {
         if (!memoryGraph.getStaticMemory().containsKey(userId)) {
             memoryGraph.getStaticMemory().put(userId, new ConcurrentHashMap<>());
         }
         memoryGraph.getStaticMemory().get(userId).putAll(newStaticMemory);
-    }
+    }*/
 
     public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
         memoryGraph.updateDialogMap(dateTime, newDialogCache);
@@ -172,5 +172,38 @@ public class MemoryManager extends PersistableObject {
             }
         }
         return null;
+    }
+
+    public String getActivatedSlicesStr(String userId) {
+        StringBuilder str = new StringBuilder();
+        if (memoryManager.getActivatedSlices().containsKey(userId)) {
+            memoryManager.getActivatedSlices().get(userId).forEach(slice -> {
+                str.append("\n\n").append("[").append(slice.getDate()).append("]\n")
+                        .append(slice.getSummary());
+            });
+        }
+        return str.toString();
+    }
+
+    public String getDialogMapStr() {
+        StringBuilder str = new StringBuilder();
+        memoryGraph.getDialogMap().forEach((dateTime, dialog) -> {
+            str.append("\n\n").append("[").append(dateTime).append("]\n")
+                    .append(dialog);
+        });
+        return str.toString();
+    }
+
+    public String getUserDialogMapStr(String userId) {
+        StringBuilder str = new StringBuilder();
+        Collection<String> dialogMapValues = memoryGraph.getDialogMap().values();
+        memoryGraph.getUserDialogMap().get(userId).forEach((dateTime, dialog) -> {
+            if (dialogMapValues.contains(dialog)) {
+                return;
+            }
+            str.append("\n\n").append("[").append(dateTime).append("]\n")
+                    .append(dialog);
+        });
+        return str.toString();
     }
 }

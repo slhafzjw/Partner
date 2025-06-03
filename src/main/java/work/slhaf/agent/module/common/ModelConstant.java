@@ -9,7 +9,7 @@ public class ModelConstant {
     }
 
     public static class CharacterPrefix {
-        public static final String SYSTEM = "[system] ";
+        public static final String SYSTEM = "[SYSTEM] ";
     }
 
 }

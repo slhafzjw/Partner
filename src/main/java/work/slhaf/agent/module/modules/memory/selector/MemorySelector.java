@@ -23,6 +23,7 @@ import work.slhaf.agent.shared.memory.EvaluatedSlice;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -89,21 +90,22 @@ public class MemorySelector implements InteractionModule, AppendPrompt {
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(interactionContext);
         if (extractorResult.isRecall() || !extractorResult.getMatches().isEmpty()) {
-            selectAndEvaluateMemory(interactionContext, extractorResult, userId);
-        }
-        if (extractorResult.isRecall()) {
-            memoryManager.getActivatedSlices().clear();
+            memoryManager.getActivatedSlices().get(userId).clear();
+            List<EvaluatedSlice> evaluatedSlices = selectAndEvaluateMemory(interactionContext, extractorResult);
+            memoryManager.updateActivatedSlices(userId, evaluatedSlices);
         }
         //设置上下文
-        setModuleContext(interactionContext, userId);
+//        setCoreContext(interactionContext);
         //设置追加提示词
         setAppendedPrompt(interactionContext);
+        setModuleContextRecall(interactionContext);
         log.debug("[MemorySelector] 记忆回溯结果: {}", interactionContext);
     }
 
-    private void selectAndEvaluateMemory(InteractionContext interactionContext, ExtractorResult extractorResult, String userId) throws IOException, ClassNotFoundException, InterruptedException {
+    private List<EvaluatedSlice> selectAndEvaluateMemory(InteractionContext interactionContext, ExtractorResult extractorResult) throws IOException, ClassNotFoundException, InterruptedException {
         log.debug("[MemorySelector] 触发记忆回溯...");
         //查找切片
+        String userId = interactionContext.getUserId();
         List<MemoryResult> memoryResultList = new ArrayList<>();
         setMemoryResultList(memoryResultList, extractorResult.getMatches(), userId);
         //评估切片
@@ -115,18 +117,19 @@ public class MemorySelector implements InteractionModule, AppendPrompt {
         log.debug("[MemorySelector] 切片评估输入: {}", evaluatorInput);
         List<EvaluatedSlice> memorySlices = sliceSelectEvaluator.execute(evaluatorInput);
         log.debug("[MemorySelector] 切片评估结果: {}", memorySlices);
-        memoryManager.updateActivatedSlices(userId, memorySlices);
+        return memorySlices;
     }
 
-    private void setModuleContext(InteractionContext interactionContext, String userId) {
+    /*private void setCoreContext(InteractionContext interactionContext) {
+        String userId = interactionContext.getUserId();
         interactionContext.getCoreContext().put("memory_slices", memoryManager.getActivatedSlices().get(userId));
-        interactionContext.getCoreContext().put("static_memory", memoryManager.getStaticMemory(userId));
+//        interactionContext.getCoreContext().put("static_memory", memoryManager.getStaticMemory(userId));
         interactionContext.getCoreContext().put("dialog_map", memoryManager.getDialogMap());
         interactionContext.getCoreContext().put("user_dialog_map", memoryManager.getUserDialogMap(userId));
-        setModuleContextRecall(interactionContext, userId);
-    }
+    }*/
 
-    private void setModuleContextRecall(InteractionContext interactionContext, String userId) {
+    private void setModuleContextRecall(InteractionContext interactionContext) {
+        String userId = interactionContext.getUserId();
         boolean recall;
         if (memoryManager.getActivatedSlices().get(userId) == null) {
             recall = false;
@@ -150,6 +153,7 @@ public class MemorySelector implements InteractionModule, AppendPrompt {
                     default -> null;
                 };
                 if (memoryResult == null) continue;
+                removeDuplicateSlice(memoryResult);
                 memoryResultList.add(memoryResult);
             } catch (UnExistedDateIndexException | UnExistedTopicException e) {
                 log.error("[MemorySelector] 不存在的记忆索引! 请尝试更换更合适的主题提取LLM!", e);
@@ -168,6 +172,12 @@ public class MemorySelector implements InteractionModule, AppendPrompt {
         }
     }
 
+    private void removeDuplicateSlice(MemoryResult memoryResult) {
+        Collection<String> values = memoryManager.getDialogMap().values();
+        memoryResult.getRelatedMemorySliceResult().removeIf(m -> values.contains(m.getSummary()));
+        memoryResult.getMemorySliceResult().removeIf(m -> values.contains(m.getMemorySlice().getSummary()));
+    }
+
     private boolean removeOrNot(MemorySlice memorySlice, String userId) {
         if (memorySlice.isPrivate()) {
             return memorySlice.getStartUserId().equals(userId);
@@ -177,14 +187,30 @@ public class MemorySelector implements InteractionModule, AppendPrompt {
 
     @Override
     public void setAppendedPrompt(InteractionContext context) {
-        HashMap<String, String> map = new HashMap<>();
-        map.put("memory_slices", "本次对话可参考的记忆切片");
-        map.put("static_memory", "关于本次对话对象的稳定记忆");
-        map.put("dialog_map", "近两日的与所有用户的对话缓存");
-        map.put("user_dialog_map", "与当前用户的近两日对话缓存");
+        String userId = context.getUserId();
+        HashMap<String, String> map = getPromptDataMap(userId);
         AppendPromptData data = new AppendPromptData();
-        data.setComment("[system] 追加字段: 记忆模块");
+        data.setComment("[记忆模块]");
         data.setAppendedPrompt(map);
         context.setAppendedPrompt(data);
+    }
+
+    private HashMap<String, String> getPromptDataMap(String userId) {
+        HashMap<String, String> map = new HashMap<>();
+        String dialogMapStr = memoryManager.getDialogMapStr();
+        if (!dialogMapStr.isEmpty()) {
+            map.put("[记忆缓存] <你最近两日和所有聊天者的对话记忆印象>", dialogMapStr);
+        }
+
+        String userDialogMapStr = memoryManager.getUserDialogMapStr(userId);
+        if (!userDialogMapStr.isEmpty()) {
+            map.put("[用户记忆缓存] <与最新一条消息的发送者的近两天对话记忆印象, 可能与[记忆缓存]稍有重复>", "与当前用户的近两日对话缓存");
+        }
+
+        String sliceStr = memoryManager.getActivatedSlicesStr(userId);
+        if (!sliceStr.isEmpty()){
+            map.put("[记忆切片] <你与最新一条消息的发送者的相关回忆, 不会与[记忆缓存]重复, 如果有重复你也可以指出来()>", sliceStr);
+        }
+        return map;
     }
 }

@@ -153,18 +153,45 @@ public class CoreModel extends Model implements InteractionModule {
     private void setAppendedPromptMessage(List<AppendPromptData> appendPrompt) {
         Message appendDeclareMessage = Message.builder()
                 .role(ChatConstant.Character.USER)
-                .content(ModelConstant.CharacterPrefix.SYSTEM + "以下为追加字段声明，可能包含用户的输入字段和你需要在回应中添加的输出字段.")
+//                .content(ModelConstant.CharacterPrefix.SYSTEM + "以下为追加字段声明，可能包含用户的输入字段和你需要在回应中添加的输出字段.")
+                .content(ModelConstant.CharacterPrefix.SYSTEM + "以下为你的相关认知内容，可在对话中参考")
                 .build();
         this.appendedMessages.add(appendDeclareMessage);
         for (AppendPromptData data : appendPrompt) {
-            StringBuilder str = new StringBuilder(data.getComment()).append("\r\n");
-            data.getAppendedPrompt().forEach((k, v) -> str.append(k).append(": ").append(v).append("\r\n"));
-            appendedMessages.add(new Message(ChatConstant.Character.USER, str.toString()));
+            setStartMessage(data);
+            setContentMessage(data);
+            setEndMessage(data);
         }
         Message appendEndMessage = Message.builder()
                 .role(ChatConstant.Character.USER)
-                .content(ModelConstant.CharacterPrefix.SYSTEM + "追加字段声明结束，接下来为用户的真实输入。")
+                .content(ModelConstant.CharacterPrefix.SYSTEM + "相关认知内容结束，接下来是‘你’——‘Partner’与用户的真正交互")
                 .build();
         this.appendedMessages.add(appendEndMessage);
+    }
+
+    private void setEndMessage(AppendPromptData data) {
+        Message endMessage = Message.builder()
+                .role(ChatConstant.Character.USER)
+                .content(ModelConstant.CharacterPrefix.SYSTEM + data.getComment() + "认知补充结束.")
+                .build();
+        appendedMessages.add(endMessage);
+    }
+
+    private void setContentMessage(AppendPromptData data) {
+        data.getAppendedPrompt().forEach((k, v) -> {
+            Message contentMessage = Message.builder()
+                    .role(ChatConstant.Character.USER)
+                    .content(ModelConstant.CharacterPrefix.SYSTEM + k + v)
+                    .build();
+            appendedMessages.add(contentMessage);
+        });
+    }
+
+    private void setStartMessage(AppendPromptData data) {
+        Message startMessage = Message.builder()
+                .role(ChatConstant.Character.USER)
+                .content(ModelConstant.CharacterPrefix.SYSTEM + data.getComment() + "以下为" + data.getComment() + "相关认知.")
+                .build();
+        appendedMessages.add(startMessage);
     }
 }

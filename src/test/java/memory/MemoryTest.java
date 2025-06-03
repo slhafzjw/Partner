@@ -12,7 +12,7 @@ public class MemoryTest {
 //@Test
 public void test1() {
     String basicCharacter = "";
-    MemoryGraph graph = new MemoryGraph("test", basicCharacter);
+    MemoryGraph graph = new MemoryGraph("test");
     HashMap<String, TopicNode> topicMap = new HashMap<>();
 
     TopicNode root1 = new TopicNode();
