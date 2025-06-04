@@ -1,7 +1,7 @@
 package work.slhaf.agent.module.modules.task;
 
 import lombok.Data;
-import work.slhaf.agent.core.interaction.InteractionThreadPoolExecutor;
+import work.slhaf.agent.common.thread.InteractionThreadPoolExecutor;
 
 @Data
 public class TaskExecutor {

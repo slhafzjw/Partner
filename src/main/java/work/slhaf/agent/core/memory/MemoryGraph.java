@@ -7,7 +7,7 @@ import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
-import work.slhaf.agent.common.pojo.PersistableObject;
+import work.slhaf.agent.common.serialize.PersistableObject;
 import work.slhaf.agent.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.memory.node.MemoryNode;
@@ -73,17 +73,6 @@ public class MemoryGraph extends PersistableObject {
     private ConcurrentHashMap<String/*userId*/, ConcurrentHashMap<LocalDateTime, String>> userDialogMap;
 
     /**
-     * 当前对话的活动性总结, 拥有比dialogMap更丰富的全文细节, 作为当前对话token超限时的必要上下文压缩存储
-     */
-//    private List<String> currentCompressedSessionContext;
-
-    /**
-     * 存储确定性记忆, 如'用户爱好'等确定性信息
-     * 该部分作为'主LLM'system prompt常驻
-     */
-//    private HashMap<String /*userId*/, ConcurrentHashMap<String /*memoryKey*/, String /*memoryValue*/>> staticMemory;
-
-    /**
      * memorySliceCache计数器，每日清空
      */
     private ConcurrentHashMap<List<String> /*触发查询的主题列表*/, Integer> memoryNodeCacheCounter;
@@ -103,8 +92,6 @@ public class MemoryGraph extends PersistableObject {
      * 智能体涉及到的各个模块中模型的prompt
      */
     private HashMap<String, String> modelPrompt;
-
-//    private String character;
 
     /**
      * 主模型的聊天记录
@@ -126,17 +113,15 @@ public class MemoryGraph extends PersistableObject {
         this.topicNodes = new HashMap<>();
         this.existedTopics = new HashMap<>();
         this.currentDateDialogSlices = new HashMap<>();
-//        this.staticMemory = new HashMap<>();
         this.memoryNodeCacheCounter = new ConcurrentHashMap<>();
         this.memorySliceCache = new ConcurrentHashMap<>();
         this.modelPrompt = new HashMap<>();
         this.selectedSlices = new HashSet<>();
         this.users = new ArrayList<>();
         this.userDialogMap = new ConcurrentHashMap<>();
-//        this.currentCompressedSessionContext = new ArrayList<>();
         this.dialogMap = new HashMap<>();
-//        this.character = basicCharacter;
         this.dateIndex = new HashMap<>();
+        this.chatMessages = new ArrayList<>();
     }
 
     public static MemoryGraph getInstance(String id) throws IOException, ClassNotFoundException {
@@ -200,7 +185,7 @@ public class MemoryGraph extends PersistableObject {
         }
     }
 
-    public void insertMemory(List<String> topicPath, MemorySlice slice) throws IOException, ClassNotFoundException {
+    public void insertMemory(List<String> topicPath, MemorySlice slice) {
 
         try {
             //检查是否存在当天对应的memorySlice并确定是否插入
@@ -297,17 +282,13 @@ public class MemoryGraph extends PersistableObject {
         //更新userDialogMap
         //移除两天前上下文缓存(切片总结)
         List<LocalDateTime> keysToRemove = new ArrayList<>();
-        userDialogMap.forEach((k, v) -> {
-            v.forEach((i, j) -> {
-                if (now.minusDays(2).isAfter(i)) {
-                    keysToRemove.add(i);
-                }
-            });
-        });
+        userDialogMap.forEach((k, v) -> v.forEach((i, j) -> {
+            if (now.minusDays(2).isAfter(i)) {
+                keysToRemove.add(i);
+            }
+        }));
         for (LocalDateTime dateTime : keysToRemove) {
-            userDialogMap.forEach((k, v) -> {
-                v.remove(dateTime);
-            });
+            userDialogMap.forEach((k, v) -> v.remove(dateTime));
         }
         //放入新缓存
         userDialogMap
@@ -342,7 +323,7 @@ public class MemoryGraph extends PersistableObject {
 
     }
 
-    public MemoryResult selectMemory(String topicPathStr) throws IOException, ClassNotFoundException {
+    public MemoryResult selectMemory(String topicPathStr) {
         MemoryResult memoryResult = new MemoryResult();
         List<String> topicPath = List.of(topicPathStr.split("->"));
         try {

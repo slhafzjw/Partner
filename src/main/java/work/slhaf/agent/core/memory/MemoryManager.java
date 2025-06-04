@@ -5,9 +5,10 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.Config;
-import work.slhaf.agent.common.pojo.PersistableObject;
+import work.slhaf.agent.common.serialize.PersistableObject;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
 import work.slhaf.agent.core.memory.pojo.User;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -66,12 +68,23 @@ public class MemoryManager extends PersistableObject {
         }));
     }
 
-    public MemoryResult selectMemory(String path) throws IOException, ClassNotFoundException {
-        return memoryGraph.selectMemory(path);
+    public MemoryResult selectMemory(String path) {
+        return cacheFilter(memoryGraph.selectMemory(path));
     }
 
     public MemoryResult selectMemory(LocalDate date) throws IOException, ClassNotFoundException {
-        return memoryGraph.selectMemory(date);
+        return cacheFilter(memoryGraph.selectMemory(date));
+    }
+
+    private MemoryResult cacheFilter(MemoryResult memoryResult) {
+        //过滤掉与缓存重复的切片
+        CopyOnWriteArrayList<MemorySliceResult> memorySliceResult = memoryResult.getMemorySliceResult();
+        List<MemorySlice> relatedMemorySliceResult = memoryResult.getRelatedMemorySliceResult();
+        getDialogMap().forEach((k,v) -> {
+            memorySliceResult.removeIf(m -> m.getMemorySlice().getSummary().equals(v));
+            relatedMemorySliceResult.removeIf(m -> m.getSummary().equals(v));
+        });
+        return memoryResult;
     }
 
     public void cleanSelectedSliceFilter() {
@@ -115,10 +128,6 @@ public class MemoryManager extends PersistableObject {
         return memoryGraph.getTopicTree();
     }
 
-/*    public ConcurrentHashMap<String, String> getStaticMemory(String userId) {
-        return memoryGraph.getStaticMemory().get(userId);
-    }*/
-
     public HashMap<LocalDateTime, String> getDialogMap() {
         return memoryGraph.getDialogMap();
     }
@@ -127,11 +136,7 @@ public class MemoryManager extends PersistableObject {
         return memoryGraph.getUserDialogMap().get(userId);
     }
 
-/*    public String getCharacter() {
-        return memoryGraph.getCharacter();
-    }*/
-
-    public void insertSlice(MemorySlice memorySlice, String topicPath) throws IOException, ClassNotFoundException {
+    public void insertSlice(MemorySlice memorySlice, String topicPath) {
         sliceInsertLock.lock();
         List<String> topicPathList = Arrays.stream(topicPath.split("->")).toList();
         memoryGraph.insertMemory(topicPathList, memorySlice);
@@ -144,13 +149,6 @@ public class MemoryManager extends PersistableObject {
         memoryGraph.getChatMessages().removeAll(messages);
         messageCleanLock.unlock();
     }
-
-/*    public void insertStaticMemory(String userId, Map<String, String> newStaticMemory) {
-        if (!memoryGraph.getStaticMemory().containsKey(userId)) {
-            memoryGraph.getStaticMemory().put(userId, new ConcurrentHashMap<>());
-        }
-        memoryGraph.getStaticMemory().get(userId).putAll(newStaticMemory);
-    }*/
 
     public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
         memoryGraph.updateDialogMap(dateTime, newDialogCache);
@@ -175,35 +173,37 @@ public class MemoryManager extends PersistableObject {
     }
 
     public String getActivatedSlicesStr(String userId) {
-        StringBuilder str = new StringBuilder();
         if (memoryManager.getActivatedSlices().containsKey(userId)) {
-            memoryManager.getActivatedSlices().get(userId).forEach(slice -> {
-                str.append("\n\n").append("[").append(slice.getDate()).append("]\n")
-                        .append(slice.getSummary());
-            });
+            StringBuilder str = new StringBuilder();
+            memoryManager.getActivatedSlices().get(userId).forEach(slice -> str.append("\n\n").append("[").append(slice.getDate()).append("]\n")
+                    .append(slice.getSummary()));
+            return str.toString();
+        }else {
+            return null;
         }
-        return str.toString();
     }
 
     public String getDialogMapStr() {
         StringBuilder str = new StringBuilder();
-        memoryGraph.getDialogMap().forEach((dateTime, dialog) -> {
-            str.append("\n\n").append("[").append(dateTime).append("]\n")
-                    .append(dialog);
-        });
+        memoryGraph.getDialogMap().forEach((dateTime, dialog) -> str.append("\n\n").append("[").append(dateTime).append("]\n")
+                .append(dialog));
         return str.toString();
     }
 
     public String getUserDialogMapStr(String userId) {
-        StringBuilder str = new StringBuilder();
-        Collection<String> dialogMapValues = memoryGraph.getDialogMap().values();
-        memoryGraph.getUserDialogMap().get(userId).forEach((dateTime, dialog) -> {
-            if (dialogMapValues.contains(dialog)) {
-                return;
-            }
-            str.append("\n\n").append("[").append(dateTime).append("]\n")
-                    .append(dialog);
-        });
-        return str.toString();
+        if (memoryGraph.getUserDialogMap().containsKey(userId)) {
+            StringBuilder str = new StringBuilder();
+            Collection<String> dialogMapValues = memoryGraph.getDialogMap().values();
+            memoryGraph.getUserDialogMap().get(userId).forEach((dateTime, dialog) -> {
+                if (dialogMapValues.contains(dialog)) {
+                    return;
+                }
+                str.append("\n\n").append("[").append(dateTime).append("]\n")
+                        .append(dialog);
+            });
+            return str.toString();
+        }else {
+            return null;
+        }
     }
 }

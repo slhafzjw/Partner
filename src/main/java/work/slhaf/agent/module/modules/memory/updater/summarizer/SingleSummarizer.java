@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.ChatResponse;
 import work.slhaf.agent.common.chat.pojo.Message;
-import work.slhaf.agent.core.interaction.InteractionThreadPoolExecutor;
+import work.slhaf.agent.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.agent.module.common.Model;
 import work.slhaf.agent.module.common.ModelConstant;
 

@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.interaction;
+package work.slhaf.agent.core.interaction.module;
 
 import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.config.ModuleConfig;

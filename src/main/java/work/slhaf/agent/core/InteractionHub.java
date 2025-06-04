@@ -5,11 +5,11 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
-import work.slhaf.agent.core.interaction.InteractionModule;
-import work.slhaf.agent.core.interaction.InteractionModulesLoader;
-import work.slhaf.agent.core.interaction.TaskCallback;
-import work.slhaf.agent.core.interaction.data.InteractionContext;
+import work.slhaf.agent.core.interaction.agent_interface.TaskCallback;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
+import work.slhaf.agent.core.interaction.data.context.InteractionContext;
+import work.slhaf.agent.core.interaction.module.InteractionModule;
+import work.slhaf.agent.core.interaction.module.InteractionModulesLoader;
 import work.slhaf.agent.module.modules.core.CoreModel;
 import work.slhaf.agent.module.modules.preprocess.PreprocessExecutor;
 import work.slhaf.agent.module.modules.task.TaskScheduler;
@@ -43,7 +43,7 @@ public class InteractionHub {
         return interactionHub;
     }
 
-    public void call(InteractionInputData inputData) throws IOException, ClassNotFoundException, InterruptedException {
+    public void call(InteractionInputData inputData) throws IOException, ClassNotFoundException {
         InteractionContext interactionContext = PreprocessExecutor.getInstance().execute(inputData);
         try {
             //预处理
@@ -55,7 +55,7 @@ public class InteractionHub {
             interactionContext.getCoreResponse().put("text", "[ERROR] " + e.getMessage());
         } finally {
             callback.onTaskFinished(interactionContext.getUserInfo(), interactionContext.getCoreResponse().getString("text"));
-            InteractionContext.clearUp();
+            interactionContext.clearUp();
         }
     }
 }

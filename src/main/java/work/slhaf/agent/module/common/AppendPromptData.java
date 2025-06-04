@@ -6,6 +6,6 @@ import java.util.HashMap;
 
 @Data
 public class AppendPromptData {
-    private String comment;
+    private String moduleName;
     private HashMap<String,String> appendedPrompt;
 }

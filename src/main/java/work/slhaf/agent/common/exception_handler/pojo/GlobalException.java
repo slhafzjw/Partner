@@ -3,7 +3,7 @@ package work.slhaf.agent.common.exception_handler.pojo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.core.interaction.data.InteractionContext;
+import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.session.SessionManager;
 

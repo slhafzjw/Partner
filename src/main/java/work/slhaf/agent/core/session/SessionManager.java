@@ -1,12 +1,13 @@
 package work.slhaf.agent.core.session;
 
+import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.chat.pojo.MetaMessage;
 import work.slhaf.agent.common.config.Config;
-import work.slhaf.agent.common.pojo.PersistableObject;
+import work.slhaf.agent.common.serialize.PersistableObject;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -67,14 +68,14 @@ public class SessionManager extends PersistableObject {
     }
 
     public void addMetaMessage(String userId, MetaMessage metaMessage) {
-        log.debug("[SessionManager] 当前会话历史: {}", singleMetaMessageMap);
+        log.debug("[SessionManager] 当前会话历史: {}", JSONObject.toJSONString(singleMetaMessageMap));
         if (singleMetaMessageMap.containsKey(userId)) {
             singleMetaMessageMap.get(userId).add(metaMessage);
         } else {
             singleMetaMessageMap.put(userId, new java.util.ArrayList<>());
             singleMetaMessageMap.get(userId).add(metaMessage);
         }
-        log.debug("[SessionManager] 会话历史更新: {}", singleMetaMessageMap);
+        log.debug("[SessionManager] 会话历史更新: {}", JSONObject.toJSONString(singleMetaMessageMap));
     }
 
     public List<Message> unpackAndClear(String userId) {

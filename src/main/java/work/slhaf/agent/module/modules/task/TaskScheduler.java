@@ -2,10 +2,8 @@ package work.slhaf.agent.module.modules.task;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.core.interaction.InteractionModule;
-import work.slhaf.agent.core.interaction.data.InteractionContext;
-
-import java.io.IOException;
+import work.slhaf.agent.core.interaction.data.context.InteractionContext;
+import work.slhaf.agent.core.interaction.module.InteractionModule;
 
 @Data
 @Slf4j
@@ -14,7 +12,7 @@ public class TaskScheduler implements InteractionModule {
 
     private TaskScheduler(){}
 
-    public static TaskScheduler getInstance() throws IOException, ClassNotFoundException {
+    public static TaskScheduler getInstance() {
         if (taskScheduler == null) {
             taskScheduler = new TaskScheduler();
             log.info("TaskScheduler注册完毕...");

@@ -9,7 +9,7 @@ import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.chat.pojo.MetaMessage;
 import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
-import work.slhaf.agent.core.interaction.data.InteractionContext;
+import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.common.Model;
@@ -75,7 +75,7 @@ public class MemorySelectExtractor extends Model {
                     .topic_tree(memoryManager.getTopicTree())
                     .activatedMemorySlices(activatedMemorySlices)
                     .build();
-            log.debug("[MemorySelectExtractor] 主题提取输入: {}", extractorInput);
+            log.debug("[MemorySelectExtractor] 主题提取输入: {}", JSONObject.toJSONString(extractorInput));
             String responseStr = extractJson(singleChat(JSONUtil.toJsonPrettyStr(extractorInput)).getMessage());
             extractorResult = JSONObject.parseObject(responseStr, ExtractorResult.class);
             log.debug("[MemorySelectExtractor] 主题提取结果: {}", extractorResult);

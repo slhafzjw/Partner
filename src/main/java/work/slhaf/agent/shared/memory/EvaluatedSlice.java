@@ -3,7 +3,7 @@ package work.slhaf.agent.shared.memory;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.agent.common.pojo.PersistableObject;
+import work.slhaf.agent.common.serialize.PersistableObject;
 
 import java.io.Serial;
 import java.time.LocalDate;

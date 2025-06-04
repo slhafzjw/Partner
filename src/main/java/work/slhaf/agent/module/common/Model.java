@@ -20,20 +20,6 @@ public class Model {
     protected static void setModel(Model model, String model_key, String promptModule, boolean withAwareness) {
         ModelConfig modelConfig = ModelConfig.load(model_key);
 
-        /*if (memoryGraph.getModelPrompt().containsKey(model_key)) {
-            model.setPrompt(memoryGraph.getModelPrompt().get(model_key));
-        } else {
-            model.setPrompt(prompt);
-            memoryGraph.getModelPrompt().put(model_key, prompt);
-        }
-        if (memoryGraph.getChatMessages() == null) {
-            List<Message> tempMessages = new ArrayList<>();
-            tempMessages.add(new Message(ChatConstant.Character.SYSTEM, model.getPrompt()));
-            model.setMessages(tempMessages);
-            memoryGraph.setChatMessages(tempMessages);
-        } else {
-            model.setMessages(memoryGraph.getChatMessages());
-        }*/
         model.setBaseMessages(withAwareness ? ResourcesUtil.Prompt.loadPromptWithSelfAwareness(model_key, promptModule) : ResourcesUtil.Prompt.loadPrompt(model_key, promptModule));
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
     }

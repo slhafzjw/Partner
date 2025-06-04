@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.interaction;
+package work.slhaf.agent.common.thread;
 
 import lombok.Getter;
 

@@ -9,7 +9,6 @@ import work.slhaf.agent.module.common.Model;
 import work.slhaf.agent.module.common.ModelConstant;
 import work.slhaf.agent.module.modules.perceive.static_extractor.data.StaticExtractInput;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,7 +21,7 @@ public class StaticPerceiveExtractor extends Model {
     public static final String MODEL_KEY = "static_extractor";
 
 
-    public static StaticPerceiveExtractor getInstance() throws IOException, ClassNotFoundException {
+    public static StaticPerceiveExtractor getInstance() {
         if (staticPerceiveExtractor == null) {
             synchronized (StaticPerceiveExtractor.class) {
                 if (staticPerceiveExtractor == null) {

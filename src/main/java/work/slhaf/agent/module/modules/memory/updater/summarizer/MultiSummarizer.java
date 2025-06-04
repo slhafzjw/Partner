@@ -37,7 +37,7 @@ public class MultiSummarizer extends Model {
     public SummarizeResult execute(SummarizeInput input) {
         log.debug("[MemorySummarizer] 整体摘要开始...");
         ChatResponse response = this.singleChat(JSONUtil.toJsonPrettyStr(input));
-        log.debug("[MemorySummarizer] 整体摘要结果: {}", response);
+        log.debug("[MemorySummarizer] 整体摘要结果: {}", JSONObject.toJSONString(response));
         return JSONObject.parseObject(extractJson(response.getMessage()), SummarizeResult.class);
     }
 }

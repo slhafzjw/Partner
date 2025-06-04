@@ -1,7 +1,7 @@
 package work.slhaf.agent.common.monitor;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.core.interaction.InteractionThreadPoolExecutor;
+import work.slhaf.agent.common.thread.InteractionThreadPoolExecutor;
 
 @Slf4j
 public class DebugMonitor {

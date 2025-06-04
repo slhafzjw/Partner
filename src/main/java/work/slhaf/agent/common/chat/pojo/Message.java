@@ -1,7 +1,7 @@
 package work.slhaf.agent.common.chat.pojo;
 
 import lombok.*;
-import work.slhaf.agent.common.pojo.PersistableObject;
+import work.slhaf.agent.common.serialize.PersistableObject;
 
 import java.io.Serial;
 

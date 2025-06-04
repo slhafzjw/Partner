@@ -6,7 +6,7 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.core.interaction.InteractionThreadPoolExecutor;
+import work.slhaf.agent.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
@@ -55,7 +55,7 @@ public class SliceSelectEvaluator extends Model {
         return sliceSelectEvaluator;
     }
 
-    public List<EvaluatedSlice> execute(EvaluatorInput evaluatorInput) throws InterruptedException {
+    public List<EvaluatedSlice> execute(EvaluatorInput evaluatorInput) {
         log.debug("[SliceSelectEvaluator] 切片评估模块开始...");
         List<MemoryResult> memoryResultList = evaluatorInput.getMemoryResults();
         List<Callable<Void>> tasks = new ArrayList<>();
@@ -78,9 +78,9 @@ public class SliceSelectEvaluator extends Model {
                             .memory_slices(sliceSummaryList)
                             .history(evaluatorInput.getMessages())
                             .build();
-                    log.debug("[SliceSelectEvaluator] 评估[{}]输入: {}", thisCount, batchInput);
+                    log.debug("[SliceSelectEvaluator] 评估[{}]输入: {}", thisCount, JSONObject.toJSONString(batchInput));
                     EvaluatorResult evaluatorResult = JSONObject.parseObject(extractJson(singleChat(JSONUtil.toJsonStr(batchInput)).getMessage()), EvaluatorResult.class);
-                    log.debug("[SliceSelectEvaluator] 评估[{}]结果: {}", thisCount, evaluatorResult);
+                    log.debug("[SliceSelectEvaluator] 评估[{}]结果: {}", thisCount, JSONObject.toJSONString(evaluatorResult));
                     for (Long result : evaluatorResult.getResults()) {
                         SliceSummary sliceSummary = map.get(result);
                         EvaluatedSlice evaluatedSlice = EvaluatedSlice.builder()
@@ -99,24 +99,9 @@ public class SliceSelectEvaluator extends Model {
 
         executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
         log.debug("[SliceSelectEvaluator] 评估模块结束, 输出队列: {}", queue);
-        return queue.stream().toList();
+        List<EvaluatedSlice> temp = queue.stream().toList();
+        return new  ArrayList<>(temp);
     }
-
-/*    private void setEvaluatedSliceMessages(EvaluatedSlice evaluatedSlice, MemoryResult memoryResult, Long id) {
-        //补充消息列表
-        for (MemorySliceResult memorySliceResult : memoryResult.getMemorySliceResult()) {
-            if (memorySliceResult.getMemorySlice().getTimestamp().equals(id)) {
-                evaluatedSlice.setChatMessages(memorySliceResult.getMemorySlice().getChatMessages());
-                return;
-            }
-        }
-        for (MemorySlice memorySlice : memoryResult.getRelatedMemorySliceResult()) {
-            if (memorySlice.getTimestamp().equals(id)) {
-                evaluatedSlice.setChatMessages(memorySlice.getChatMessages());
-                return;
-            }
-        }
-    }*/
 
     private void setSliceSummaryList(MemoryResult memoryResult, List<SliceSummary> sliceSummaryList, Map<Long, SliceSummary> map) {
         for (MemorySliceResult memorySliceResult : memoryResult.getMemorySliceResult()) {

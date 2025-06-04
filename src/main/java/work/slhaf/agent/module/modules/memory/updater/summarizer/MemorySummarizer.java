@@ -2,11 +2,10 @@ package work.slhaf.agent.module.modules.memory.updater.summarizer;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.core.interaction.InteractionThreadPoolExecutor;
+import work.slhaf.agent.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.data.SummarizeInput;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.data.SummarizeResult;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 @Data
@@ -21,7 +20,7 @@ public class MemorySummarizer {
     private MultiSummarizer multiSummarizer;
     private TotalSummarizer totalSummarizer;
 
-    public static MemorySummarizer getInstance() throws IOException, ClassNotFoundException {
+    public static MemorySummarizer getInstance() {
         if (memorySummarizer == null) {
             synchronized (MemorySummarizer.class) {
                 if (memorySummarizer == null) {
@@ -36,11 +35,11 @@ public class MemorySummarizer {
         return memorySummarizer;
     }
 
-    public SummarizeResult execute(SummarizeInput input) throws InterruptedException {
+    public SummarizeResult execute(SummarizeInput input) {
         //进行长文本批量摘要
         singleSummarizer.execute(input.getChatMessages());
         //进行整体摘要并返回结果
-        return memorySummarizer.execute(input);
+        return multiSummarizer.execute(input);
     }
 
     public String executeTotalSummary(HashMap<String, String> singleMemorySummary) {

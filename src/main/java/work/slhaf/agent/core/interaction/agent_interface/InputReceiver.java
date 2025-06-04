@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.interaction;
+package work.slhaf.agent.core.interaction.agent_interface;
 
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
 

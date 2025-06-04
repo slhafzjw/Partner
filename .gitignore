@@ -48,3 +48,4 @@ build/
 /src/test/java/memory/result/input4.json
 /src/test/java/memory/result/primary_input.json
 /src/main/resources/prompt/module/memory/topic_extractor.json.bak
+/backup/

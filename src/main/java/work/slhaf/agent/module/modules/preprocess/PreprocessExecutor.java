@@ -1,10 +1,9 @@
 package work.slhaf.agent.module.modules.preprocess;
 
-import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.core.interaction.data.InteractionContext;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
+import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.common.AppendPromptData;
@@ -60,19 +59,14 @@ public class PreprocessExecutor {
         context.setUserNickname(inputData.getUserNickName());
         context.setUserInfo(inputData.getUserInfo());
         context.setDateTime(inputData.getLocalDateTime());
+        context.setSingle(inputData.isSingle());
 
-        context.setFinished(false);
         String user = "[" + inputData.getUserNickName() + "(" + userId + ")]";
         String input = user + " " + inputData.getContent();
         context.setInput(input);
 
-        context.setCoreContext(new JSONObject());
-        setCoreContext(inputData, context, input, userId);
         setAppendedPrompt(context);
-        context.setModuleContext(new JSONObject());
-
-        context.setSingle(inputData.isSingle());
-        context.setFinished(false);
+        setCoreContext(inputData, context, input, userId);
 
         log.debug("[PreprocessExecutor] 预处理结果: {}", context);
         return context;
@@ -81,20 +75,21 @@ public class PreprocessExecutor {
     private void setAppendedPrompt(InteractionContext context) {
         HashMap<String, String> map = new HashMap<>();
         map.put("text", "用户输入内容");
-        map.put("datetime", "当前时间");
+        map.put("datetime", "本次用户输入对应的当前时间");
         map.put("user_nick", "用户昵称");
         map.put("user_id", "用户id, 与user_nick区分, 这是用户的唯一标识");
+        map.put("active_modules","已激活的模块, 为false时为激活但未活跃; 为true时为激活且活跃");
+        map.put("其他", "历史对话中将在用户消息的最后一行标注时间");
         AppendPromptData data = new AppendPromptData();
-        data.setComment("[system] 基础字段");
+        data.setModuleName("[基础模块]");
         data.setAppendedPrompt(map);
         context.setAppendedPrompt(data);
     }
 
     private void setCoreContext(InteractionInputData inputData, InteractionContext context, String input, String userId) {
-        context.getCoreContext().put("text", input);
-        context.getCoreContext().put("datetime", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-//        context.getCoreContext().put("character", memoryManager.getCharacter());
-        context.getCoreContext().put("user_nick", inputData.getUserNickName());
-        context.getCoreContext().put("user_id", userId);
+        context.getCoreContext().setText(input);
+        context.getCoreContext().setDateTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        context.getCoreContext().setUserNick(inputData.getUserNickName());
+        context.getCoreContext().setUserId(userId);
     }
 }

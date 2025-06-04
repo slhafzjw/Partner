@@ -5,8 +5,6 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.agent.module.common.Model;
 import work.slhaf.agent.module.common.ModelConstant;
 
-import java.io.IOException;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TaskEvaluator extends Model {
@@ -15,7 +13,7 @@ public class TaskEvaluator extends Model {
 
     private TaskEvaluator (){}
 
-    public static TaskEvaluator getInstance() throws IOException, ClassNotFoundException {
+    public static TaskEvaluator getInstance() {
         if (taskEvaluator == null) {
             taskEvaluator = new TaskEvaluator();
             setModel(taskEvaluator,MODEL_KEY, ModelConstant.Prompt.SCHEDULE,true);

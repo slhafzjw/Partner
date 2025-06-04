@@ -1,4 +1,4 @@
-package work.slhaf.agent.common.pojo;
+package work.slhaf.agent.common.serialize;
 
 import java.io.Serializable;
 

@@ -2,7 +2,7 @@ package work.slhaf.agent.core.memory.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.agent.common.pojo.PersistableObject;
+import work.slhaf.agent.common.serialize.PersistableObject;
 
 import java.io.Serial;
 import java.util.List;
@@ -17,4 +17,10 @@ public class MemoryResult extends PersistableObject {
 
     private CopyOnWriteArrayList<MemorySliceResult> memorySliceResult;
     private List<MemorySlice> relatedMemorySliceResult;
+
+    public boolean isEmpty(){
+        boolean a = memorySliceResult == null || memorySliceResult.isEmpty();
+        boolean b = relatedMemorySliceResult == null || relatedMemorySliceResult.isEmpty();
+        return a && b;
+    }
 }
