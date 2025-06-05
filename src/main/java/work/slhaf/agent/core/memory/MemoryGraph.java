@@ -186,7 +186,6 @@ public class MemoryGraph extends PersistableObject {
     }
 
     public void insertMemory(List<String> topicPath, MemorySlice slice) {
-
         try {
             //检查是否存在当天对应的memorySlice并确定是否插入
             LocalDate now = LocalDate.now();
@@ -250,29 +249,31 @@ public class MemoryGraph extends PersistableObject {
         String rootTopic = topicPath.getFirst();
         topicPath.removeFirst();
         if (!topicNodes.containsKey(rootTopic)) {
-            TopicNode rootNode = new TopicNode();
-            rootNode.setMemoryNodes(new CopyOnWriteArrayList<>());
-            rootNode.setTopicNodes(new ConcurrentHashMap<>());
-            topicNodes.put(rootTopic, rootNode);
-            existedTopics.put(rootTopic, new LinkedHashSet<>());
+            synchronized (this) {
+                if (!topicNodes.containsKey(rootTopic)) {
+                    TopicNode rootNode = new TopicNode();
+                    topicNodes.put(rootTopic, rootNode);
+                    existedTopics.put(rootTopic, new LinkedHashSet<>());
+                }
+            }
         }
 
-        TopicNode lastTopicNode = topicNodes.get(rootTopic);
+        TopicNode current = topicNodes.get(rootTopic);
         Set<String> existedTopicNodes = existedTopics.get(rootTopic);
         for (String topic : topicPath) {
-            if (existedTopicNodes.contains(topic) && lastTopicNode.getTopicNodes().containsKey(topic)) {
-                lastTopicNode = lastTopicNode.getTopicNodes().get(topic);
+            if (existedTopicNodes.contains(topic) && current.getTopicNodes().containsKey(topic)) {
+                current = current.getTopicNodes().get(topic);
             } else {
                 TopicNode newNode = new TopicNode();
-                lastTopicNode.getTopicNodes().put(topic, newNode);
-                lastTopicNode = newNode;
-                CopyOnWriteArrayList<MemoryNode> nodeList = new CopyOnWriteArrayList<>();
-                lastTopicNode.setMemoryNodes(nodeList);
-                lastTopicNode.setTopicNodes(new ConcurrentHashMap<>());
+                current.getTopicNodes().put(topic, newNode);
+                current = newNode;
+
+                current.setMemoryNodes(new CopyOnWriteArrayList<>());
+                current.setTopicNodes(new ConcurrentHashMap<>());
                 existedTopicNodes.add(topic);
             }
         }
-        return lastTopicNode;
+        return current;
     }
 
     private void updateUserDialogMap(MemorySlice slice) {

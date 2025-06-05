@@ -3,6 +3,7 @@ package work.slhaf.agent.core.memory;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.serialize.PersistableObject;
@@ -22,6 +23,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static work.slhaf.agent.common.util.ExtractUtil.extractUserId;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
@@ -32,7 +35,8 @@ public class MemoryManager extends PersistableObject {
 
     private static volatile MemoryManager memoryManager;
     private final Lock sliceInsertLock = new ReentrantLock();
-    private final Lock messageCleanLock = new ReentrantLock();
+    public final Lock messageLock = new ReentrantLock();
+
 
     private MemoryGraph memoryGraph;
     private HashMap<String, List<EvaluatedSlice>> activatedSlices;
@@ -80,7 +84,7 @@ public class MemoryManager extends PersistableObject {
         //过滤掉与缓存重复的切片
         CopyOnWriteArrayList<MemorySliceResult> memorySliceResult = memoryResult.getMemorySliceResult();
         List<MemorySlice> relatedMemorySliceResult = memoryResult.getRelatedMemorySliceResult();
-        getDialogMap().forEach((k,v) -> {
+        getDialogMap().forEach((k, v) -> {
             memorySliceResult.removeIf(m -> m.getMemorySlice().getSummary().equals(v));
             relatedMemorySliceResult.removeIf(m -> m.getSummary().equals(v));
         });
@@ -145,9 +149,9 @@ public class MemoryManager extends PersistableObject {
     }
 
     public void cleanMessage(List<Message> messages) {
-        messageCleanLock.lock();
+        messageLock.lock();
         memoryGraph.getChatMessages().removeAll(messages);
-        messageCleanLock.unlock();
+        messageLock.unlock();
     }
 
     public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
@@ -178,7 +182,7 @@ public class MemoryManager extends PersistableObject {
             memoryManager.getActivatedSlices().get(userId).forEach(slice -> str.append("\n\n").append("[").append(slice.getDate()).append("]\n")
                     .append(slice.getSummary()));
             return str.toString();
-        }else {
+        } else {
             return null;
         }
     }
@@ -202,8 +206,31 @@ public class MemoryManager extends PersistableObject {
                         .append(dialog);
             });
             return str.toString();
-        }else {
+        } else {
             return null;
         }
+    }
+
+    private boolean isCacheSingleUser() {
+        return memoryGraph.getUserDialogMap().size() <= 1;
+    }
+
+    public boolean isSingleUser() {
+        return isCacheSingleUser() && isChatMessagesSingleUser();
+    }
+
+    private boolean isChatMessagesSingleUser() {
+        Set<String> userIdSet = new HashSet<>();
+        memoryManager.getChatMessages().forEach(m -> {
+            if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+                return;
+            }
+            String userId = extractUserId(m.getContent());
+            if (userId == null || userId.isEmpty()) {
+                return;
+            }
+            userIdSet.add(userId);
+        });
+        return userIdSet.size() <= 1;
     }
 }

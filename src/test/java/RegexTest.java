@@ -1,3 +1,7 @@
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,5 +27,27 @@ public class RegexTest {
             }
         }
 
+    }
+
+    @Test
+    public void topicPathFixTest(){
+        String a = "xxxxx[awdohno][awdsjo]";
+        a = fix(a);
+        System.out.println(a);
+    }
+
+    private String fix(String topicPath) {
+        String[] parts = topicPath.split("->");
+        List<String> cleanedParts = new ArrayList<>();
+
+        for (String part : parts) {
+            // 修正正则表达式，正确移除 [xxx] 部分
+            String cleaned = part.replaceAll("\\[[^\\]]*\\]", "").trim();
+            if (!cleaned.isEmpty()) { // 忽略空字符串
+                cleanedParts.add(cleaned);
+            }
+        }
+
+        return String.join("->", cleanedParts);
     }
 }

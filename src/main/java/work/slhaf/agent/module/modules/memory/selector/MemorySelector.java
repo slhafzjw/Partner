@@ -12,6 +12,7 @@ import work.slhaf.agent.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
 import work.slhaf.agent.core.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.common.AppendPromptData;
 import work.slhaf.agent.module.common.PreModuleActions;
 import work.slhaf.agent.module.modules.memory.selector.evaluator.SliceSelectEvaluator;
@@ -28,6 +29,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
+import static work.slhaf.agent.common.util.ExtractUtil.fixTopicPath;
+
 @Data
 @Slf4j
 public class MemorySelector implements InteractionModule, PreModuleActions {
@@ -38,6 +41,7 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
     private MemoryManager memoryManager;
     private SliceSelectEvaluator sliceSelectEvaluator;
     private MemorySelectExtractor memorySelectExtractor;
+    private SessionManager sessionManager;
 
     private MemorySelector() {
     }
@@ -50,6 +54,7 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
                     memorySelector.setMemoryManager(MemoryManager.getInstance());
                     memorySelector.setSliceSelectEvaluator(SliceSelectEvaluator.getInstance());
                     memorySelector.setMemorySelectExtractor(MemorySelectExtractor.getInstance());
+                    memorySelector.setSessionManager(SessionManager.getInstance());
                 }
             }
         }
@@ -113,7 +118,10 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
         for (ExtractorMatchData match : matches) {
             try {
                 MemoryResult memoryResult = switch (match.getType()) {
-                    case ExtractorMatchData.Constant.TOPIC -> memoryManager.selectMemory(match.getText());
+                    case ExtractorMatchData.Constant.TOPIC -> {
+                        fixTopicPath(match.getText());
+                        yield  memoryManager.selectMemory(match.getText());
+                    }
                     case ExtractorMatchData.Constant.DATE ->
                             memoryManager.selectMemory(LocalDate.parse(match.getText()));
                     default -> null;
@@ -174,7 +182,7 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
         }
 
         String userDialogMapStr = memoryManager.getUserDialogMapStr(userId);
-        if (userDialogMapStr != null && !userDialogMapStr.isEmpty()) {
+        if (userDialogMapStr != null && !userDialogMapStr.isEmpty() && !memoryManager.isSingleUser()) {
             map.put("[用户记忆缓存] <与最新一条消息的发送者的近两天对话记忆印象, 可能与[记忆缓存]稍有重复>", userDialogMapStr);
         }
 
@@ -184,4 +192,5 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
         }
         return map;
     }
+
 }

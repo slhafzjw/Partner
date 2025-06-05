@@ -76,9 +76,7 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
 
     private CopyOnWriteArrayList<MemorySlice> deserialize(File file) throws IOException, ClassNotFoundException {
         try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-            CopyOnWriteArrayList<MemorySlice> sliceList = (CopyOnWriteArrayList<MemorySlice>) ois.readObject();
-            log.info("读取记忆切片成功");
-            return sliceList;
+            return (CopyOnWriteArrayList<MemorySlice>) ois.readObject();
         }
     }
 }

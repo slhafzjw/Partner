@@ -22,8 +22,8 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static work.slhaf.agent.common.util.ExtractUtil.extractUserId;
 
 @Data
 @Slf4j
@@ -31,12 +31,11 @@ public class MemoryUpdater implements InteractionModule {
 
     private static volatile MemoryUpdater memoryUpdater;
 
-    private static final String USERID_REGEX = "\\[.*\\(([^)]+)\\)\\]";
     private static final long SCHEDULED_UPDATE_INTERVAL = 10 * 1000;
     private static final long UPDATE_TRIGGER_INTERVAL = 60 * 60 * 1000;
     //    private static final int TRIGGER_TOKEN_LIMIT = 5 * 1000;
     private static final int TOKEN_PER_RECALL = 230;
-    private static final int TRIGGER_ROLL_LIMIT = 24;
+    private static final int TRIGGER_ROLL_LIMIT = 36;
 
     private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
@@ -47,7 +46,6 @@ public class MemoryUpdater implements InteractionModule {
      * 用于临时存储完整对话记录，在MemoryManager的分离后
      */
     private List<Message> tempMessage;
-    private final ReentrantLock messageUpdateLock = new ReentrantLock();
 
     private MemoryUpdater() {
     }
@@ -120,7 +118,6 @@ public class MemoryUpdater implements InteractionModule {
                 }
             }
         });
-        sessionManager.resetLastUpdatedTime();
     }
 
     private void updateMemory() {
@@ -131,27 +128,27 @@ public class MemoryUpdater implements InteractionModule {
         updateSingleChatSlices(singleMemorySummary);
         //更新多人场景下的记忆及相关的确定性记忆
         updateMultiChatSlices(singleMemorySummary);
+        sessionManager.resetLastUpdatedTime();
+        log.debug("[MemoryUpdater] 记忆更新流程结束...");
     }
 
     private void updateMultiChatSlices(HashMap<String, String> singleMemorySummary) {
         //此时chatMessages中不再包含单聊记录，直接执行摘要以及切片插入
         //对剩下的多人聊天记录进行进行摘要
-        executor.execute(() -> {
+        Callable<Void> task = () -> {
             log.debug("[MemoryUpdater] 多人聊天记忆更新流程开始...");
             List<Message> chatMessages;
-            messageUpdateLock.lock();
+            memoryManager.getMessageLock().lock();
             chatMessages = new ArrayList<>(memoryManager.getChatMessages());
-            messageUpdateLock.unlock();
+            memoryManager.getMessageLock().unlock();
             cleanMessage(chatMessages);
             if (!chatMessages.isEmpty()) {
                 log.debug("[MemoryUpdater] 存在多人聊天记录, 流程正常进行...");
                 //以第一条user对应的id为发起用户
-                Pattern pattern = Pattern.compile(USERID_REGEX);
-                Matcher matcher = pattern.matcher(chatMessages.getFirst().getContent());
-                if (!matcher.find()) {
+                String userId = extractUserId(chatMessages.getFirst().getContent());
+                if (userId == null) {
                     throw new RuntimeException("未匹配到 userId!");
                 }
-                String userId = matcher.group(1);
                 SummarizeInput summarizeInput = new SummarizeInput(chatMessages, memoryManager.getTopicTree());
                 log.debug("[MemoryUpdater] 多人聊天记忆更新-总结流程-输入: {}", summarizeInput);
                 SummarizeResult summarizeResult = memorySummarizer.execute(summarizeInput);
@@ -169,7 +166,10 @@ public class MemoryUpdater implements InteractionModule {
             }
             log.debug("[MemoryUpdater] 对话缓存更新完毕");
             log.debug("[MemoryUpdater] 多人聊天记忆更新流程结束...");
-        });
+
+            return null;
+        };
+        executor.invokeAll(List.of(task));
     }
 
     private void cleanMessage(List<Message> chatMessages) {
@@ -179,17 +179,17 @@ public class MemoryUpdater implements InteractionModule {
                 continue;
             }
             String time = Arrays.stream(message.getContent().split("\\*\\*")).toList().getLast();
-            message.getContent().replace("\r\n**" + time, "");
+            message.setContent(message.getContent().replace("\r\n**" + time, ""));
         }
     }
 
     private void clearChatMessages() {
-        //不全部清空，保留前1/3的输入防止上下文割裂
-        messageUpdateLock.lock();
-        List<Message> temp = new ArrayList<>(tempMessage.subList(0, TRIGGER_ROLL_LIMIT / 3));
+        //不全部清空，保留一部分输入防止上下文割裂
+        memoryManager.getMessageLock().lock();
+        List<Message> temp = new ArrayList<>(tempMessage.subList(tempMessage.size() - TRIGGER_ROLL_LIMIT / 6, tempMessage.size()));
         memoryManager.getChatMessages().clear();
         memoryManager.getChatMessages().addAll(temp);
-        messageUpdateLock.unlock();
+        memoryManager.getMessageLock().unlock();
     }
 
     private void setInvolvedUserId(String startUserId, MemorySlice memorySlice, List<Message> chatMessages) {
@@ -198,13 +198,10 @@ public class MemoryUpdater implements InteractionModule {
                 continue;
             }
             //匹配userId
-            String content = chatMessage.getContent();
-            Pattern pattern = Pattern.compile(USERID_REGEX);
-            Matcher matcher = pattern.matcher(content);
-            if (!matcher.find()) {
+            String userId = extractUserId(chatMessage.getContent());
+            if (userId == null) {
                 continue;
             }
-            String userId = matcher.group(1);
             if (userId.equals(startUserId)) {
                 continue;
             }

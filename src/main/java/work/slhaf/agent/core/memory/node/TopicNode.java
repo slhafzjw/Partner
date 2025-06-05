@@ -15,6 +15,6 @@ public class TopicNode extends PersistableObject {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private ConcurrentHashMap<String,TopicNode> topicNodes;
-    private CopyOnWriteArrayList<MemoryNode> memoryNodes;
+    private ConcurrentHashMap<String,TopicNode> topicNodes = new ConcurrentHashMap<>();
+    private CopyOnWriteArrayList<MemoryNode> memoryNodes = new CopyOnWriteArrayList<>();
 }

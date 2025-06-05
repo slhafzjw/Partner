@@ -74,7 +74,7 @@ public class PreprocessExecutor {
 
     private void setAppendedPrompt(InteractionContext context) {
         HashMap<String, String> map = new HashMap<>();
-        map.put("text", "用户输入内容");
+        map.put("text", "这部分才是真正的用户输入内容, 就像你之前收到过的输入一样。但...不会是'同一个人'。");
         map.put("datetime", "本次用户输入对应的当前时间");
         map.put("user_nick", "用户昵称");
         map.put("user_id", "用户id, 与user_nick区分, 这是用户的唯一标识");

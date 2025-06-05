@@ -5,6 +5,7 @@ import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.common.exception_handler.pojo.GlobalExceptionData;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -15,8 +16,9 @@ public class GlobalExceptionHandler {
 
     public static void writeExceptionState(GlobalException exception) {
         GlobalExceptionData exceptionData = exception.getData();
-        Path filePath = Paths.get(EXCEPTION_STATIC_PATH, String.valueOf(exceptionData.getExceptionTime()), ".dat");
+        Path filePath = Paths.get(EXCEPTION_STATIC_PATH, exceptionData.getExceptionTime() + ".dat");
         try {
+            Files.createDirectories(Path.of(EXCEPTION_STATIC_PATH));
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath.toFile()));
             oos.writeObject(exceptionData);
             oos.close();
@@ -26,7 +28,7 @@ public class GlobalExceptionHandler {
         }
     }
 
-    public static GlobalExceptionData  readExceptionState(String filePath) {
+    public static GlobalExceptionData readExceptionState(String filePath) {
         try {
             ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath));
             GlobalExceptionData exceptionData = (GlobalExceptionData) ois.readObject();
@@ -37,5 +39,5 @@ public class GlobalExceptionHandler {
             log.error("[GlobalExceptionHandler] 读取异常, 读取失败: ", e);
             return null;
         }
-      }
+    }
 }

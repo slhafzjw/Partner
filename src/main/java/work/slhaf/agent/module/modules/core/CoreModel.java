@@ -59,6 +59,12 @@ public class CoreModel extends Model implements InteractionModule {
     }
 
     @Override
+    protected void updateChatClientSettings() {
+        this.chatClient.setTemperature(0.3);
+        this.chatClient.setTop_p(0.7);
+    }
+
+    @Override
     public void execute(InteractionContext interactionContext) {
         String userId = interactionContext.getUserId();
         log.debug("[CoreModel] 主对话流程开始: {}", userId);
@@ -84,7 +90,7 @@ public class CoreModel extends Model implements InteractionModule {
                     response.putAll(JSONObject.parse(extractJson(chatResponse.getMessage())));
                 } catch (Exception e) {
                     log.warn("主模型回复格式出错, 将直接作为消息返回, 建议尝试更换主模型...");
-                    handleExceptionResponse(response, chatResponse.getMessage(), interactionContext);
+                    handleExceptionResponse(response, chatResponse.getMessage());
                 }
                 log.debug("[CoreModel] CoreModel 响应内容: {}", response);
                 updateModuleContextAndChatMessages(interactionContext, response.getString("text"), chatResponse);
@@ -93,7 +99,7 @@ public class CoreModel extends Model implements InteractionModule {
                 count++;
                 log.error("[CoreModel] CoreModel执行异常: {}", e.getLocalizedMessage());
                 if (count > 3) {
-                    handleExceptionResponse(response, "主模型交互出错: " + e.getLocalizedMessage(), interactionContext);
+                    handleExceptionResponse(response, "主模型交互出错: " + e.getLocalizedMessage());
                     this.chatMessages.removeLast();
                     break;
                 }
@@ -132,20 +138,33 @@ public class CoreModel extends Model implements InteractionModule {
 
     @Override
     protected ChatResponse chat() {
-        List<Message> temp = new ArrayList<>(baseMessages);
+        List<Message> temp = new ArrayList<>(baseMessages.subList(0, baseMessages.size() - 2));
         temp.addAll(appendedMessages);
+        temp.addAll(baseMessages.subList(baseMessages.size() - 2, baseMessages.size()));
         temp.addAll(chatMessages);
         return this.chatClient.runChat(temp);
     }
 
     private void updateModuleContextAndChatMessages(InteractionContext interactionContext, String response, ChatResponse chatResponse) {
-        this.chatMessages.removeLast();
+        memoryManager.getMessageLock().lock();
+        this.chatMessages.removeIf(m -> {
+            if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+                return false;
+            }
+            try {
+                JSONObject.parseObject(extractJson(m.getContent()));
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        });
         //添加时间标志
         String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("\r\n**[yyyy-MM-dd HH:mm:ss]"));
         Message primaryUserMessage = new Message(ChatConstant.Character.USER, interactionContext.getCoreContext().getText() + dateTime);
         this.chatMessages.add(primaryUserMessage);
         Message assistantMessage = new Message(ChatConstant.Character.ASSISTANT, response);
         this.chatMessages.add(assistantMessage);
+        memoryManager.getMessageLock().unlock();
         //设置上下文
         interactionContext.getModuleContext().getExtraContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
         //区分单人聊天场景
@@ -160,10 +179,9 @@ public class CoreModel extends Model implements InteractionModule {
         this.chatMessages.add(userMessage);
     }
 
-    private void handleExceptionResponse(JSONObject response, String chatResponse, InteractionContext interactionContext) {
+    private void handleExceptionResponse(JSONObject response, String chatResponse) {
         response.put("text", chatResponse);
-        interactionContext.setFinished(true);
-
+//        interactionContext.setFinished(true);
     }
 
     private void setMessageCount(InteractionContext interactionContext) {
@@ -173,7 +191,7 @@ public class CoreModel extends Model implements InteractionModule {
     private void setAppendedPromptMessage(List<AppendPromptData> appendPrompt) {
         Message appendDeclareMessage = Message.builder()
                 .role(ChatConstant.Character.USER)
-                .content(ModelConstant.CharacterPrefix.SYSTEM + "以下为‘你’的相关认知内容，可在对话中参考")
+                .content(ModelConstant.CharacterPrefix.SYSTEM + "认知补充开始")
                 .build();
         this.appendedMessages.add(appendDeclareMessage);
         for (AppendPromptData data : appendPrompt) {
@@ -184,7 +202,7 @@ public class CoreModel extends Model implements InteractionModule {
         }
         Message appendEndMessage = Message.builder()
                 .role(ChatConstant.Character.USER)
-                .content(ModelConstant.CharacterPrefix.SYSTEM + "相关认知内容结束，接下来是‘你’——‘Partner’与用户的真正交互")
+                .content(ModelConstant.CharacterPrefix.SYSTEM + "认知补充结束")
                 .build();
         this.appendedMessages.add(appendEndMessage);
     }
@@ -192,7 +210,7 @@ public class CoreModel extends Model implements InteractionModule {
     private void setAssistantMessage() {
         appendedMessages.add(Message.builder()
                 .role(ChatConstant.Character.ASSISTANT)
-                .content("明白了")
+                .content("嗯，明白了")
                 .build());
     }
 

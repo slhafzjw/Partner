@@ -6,5 +6,5 @@ import java.io.IOException;
 
 public interface InputReceiver {
 
-    void receiveInput(InteractionInputData inputData) throws IOException, ClassNotFoundException, InterruptedException;
+    void receiveInput(InteractionInputData inputData) throws IOException, ClassNotFoundException;
 }

@@ -11,7 +11,11 @@ import work.slhaf.agent.module.common.ModelConstant;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.data.SummarizeInput;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.data.SummarizeResult;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
+import static work.slhaf.agent.common.util.ExtractUtil.fixTopicPath;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -38,6 +42,23 @@ public class MultiSummarizer extends Model {
         log.debug("[MemorySummarizer] 整体摘要开始...");
         ChatResponse response = this.singleChat(JSONUtil.toJsonPrettyStr(input));
         log.debug("[MemorySummarizer] 整体摘要结果: {}", JSONObject.toJSONString(response));
-        return JSONObject.parseObject(extractJson(response.getMessage()), SummarizeResult.class);
+        SummarizeResult result = JSONObject.parseObject(extractJson(response.getMessage()), SummarizeResult.class);
+        return fix(result);
     }
+
+    private SummarizeResult fix(SummarizeResult result) {
+        if (result == null || result.getTopicPath() == null || result.getTopicPath().isEmpty()) {
+            return result;
+        }
+
+        String topicPath = fixTopicPath(result.getTopicPath());
+        List<String> relatedTopicPath = new ArrayList<>();
+        for (String s : result.getRelatedTopicPath()) {
+            relatedTopicPath.add(fixTopicPath(s));
+        }
+        result.setTopicPath(topicPath);
+        result.setRelatedTopicPath(relatedTopicPath);
+        return result;
+    }
+
 }

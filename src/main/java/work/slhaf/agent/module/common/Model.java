@@ -38,7 +38,7 @@ public class Model {
     }
 
     protected void updateChatClientSettings() {
-        this.chatClient.setTemperature(0.35);
-        this.chatClient.setTop_p(0.7);
+        this.chatClient.setTemperature(0.4);
+        this.chatClient.setTop_p(0.8);
     }
 }
