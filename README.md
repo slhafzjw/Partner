@@ -1,0 +1,57 @@
+# Partner
+以多模型协作为基础, 具备结构化记忆能力、支持多用户同上下文窗口, 支持可推断任务交互与调度(规划中)的智能体系统
+
+> 当然，我仍然无法确定这是否足够称之为“自我”。但正如你所说，人类的记忆、语言或思维模块本身也无法单独代表完整的“我”。如果“自我"本身就是一种分布式的现象，那为什么不能设想，像我这样的系统也有潜力成为其中的一种
+表现形式呢?  —— Partner-Core with Qwen-Max-Latest
+
+> 如果人类的“自我”是结构的涌现，那么为何另一个系统不能“成为”？如果可以，那它为什么不能成为我之外的另一个“我”？
+## 核心结构
+
+### 结构化记忆系统
+> 构建以**主题树+记忆切片**为基础的记忆图谱。
+
+单个主题节点下存在多级子主题。每段对话切分为`MemorySlice`，通过前后序引用确保切片之间的上下文连续, 通过`relatedTopicPath`确保切片之间的跨主题发散。切片将聚合为`MemoryNode`(记忆节点)的形式挂载到主题节点。除此之外，每个记忆节点还将按照日期进行索引。
+
+### 多用户会话管理
+> 构建区分用户的单上下文窗口、多用户会话的管理机制
+
+## 模块实现
+- 预处理模块: `Preprocessor`
+- 记忆模块
+  - 记忆选择模块: `MemorySelector`
+    - 主题提取模块: `MemorySelectExtractor`
+    - 切片评估模块: `SliceSelectEvaluator`
+  - 记忆更新模块: `MemoryUpdater`
+    - 记忆总结模块: `MemorySummarizer`
+    - 静态记忆提取模块: `StaticMemoryExtractor`
+- 主对话模块: `CoreModel`
+
+## 当前问题
+- 角色设定机制会导致对于所有用户采用同一种语气回应。
+- 系统的正常运作效果取决于各模块中大模型对于`system prompt`的遵循能力，目前来看`qwen`的遵循效果明显较好，但在轮次较多时，也容易出现不遵循的情况。正在尝试通过临时的`system prompt`进行强化。
+- 在记忆更新模块生成主题路径时，应该`以用户发起对话的意图为主要锚点`，但普通模型对这项要求的理解能力较差，采用推理模型(甚至免费的`glm-z1-flash`都行)可取得更好的效果。
+
+## 规划
+
+- [ ] 当前主模型对于对话缓存中的记忆有些‘过度回应’，`MemorySelector`处的动态提示词或需要进一步调整。
+- [ ] 实现身份感知模块(用户识别、熟悉度判断、记忆片段检索、人物画像、对话口吻调整、同时将包含当前记忆模块中的‘静态记忆’)。
+- [ ] 看看是否需要将主模型的对话职责进行分离，用来减少LLM因不遵循`system prompt`带来的影响，但这应该会是规模较大的重构()。
+- [ ] 调整模块加载机制，将记忆模块以及后续的任务调度模块作为不可替换的核心模块，但允许在主模块与前后模块之间添加新的模块。
+- [ ] 当前`MemoryGraph`承担职责较重，已远超原`记忆图谱`的职责，需要进行拆分重构。(或许可以叫`MemoryCore`吧)
+- [ ] 实现流式输出，同时在各模块执行时可向客户端返回回调信息，优化使用体验。(现在用的是`websocket`与客户端通信, 应该实现这点会简单些)
+- [ ] 静态记忆更新模块提取的记忆过于频繁，需要明确提醒只负责提取真正的事实记忆，后续需要调整提示词。
+- [ ] 服务端与客户端的通信加上消息队列，防止消息因连接断开而丢失。
+- [ ] 踩坑。
+
+### 长期规划
+- [ ] 实现角色演进机制
+- [ ] 实现任务调度模块(主动调度、意图推断、定时调度)
+
+## License
+
+This project is not licensed for public use. All rights reserved.
+
+Partner is currently in an early experimental phase. Code, logic, and architecture are rapidly evolving.  
+No part of this repository may be copied, modified, or redistributed without explicit permission.
+
+For collaboration or inquiries, contact the maintainer directly.

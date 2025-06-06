@@ -1,0 +1,36 @@
+name: Sync from Gitea
+
+# 1. 给 GITHUB_TOKEN 开写权限
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 配置 Git 用户
+        run: |
+          git config --global user.name "Gitea Sync Bot"
+          git config --global user.email "slhafzjw@slhaf.work"
+
+      - name: 关闭全局 SSL 校验
+        run: git config --global http.sslVerify false
+
+      - name: Clone from Gitea (mirror)
+        run: |
+          git clone --mirror \
+            https://${{ secrets.GITEA_USER }}:${{ secrets.GITEA_TOKEN }}@${{ secrets.GITEA_URL }} \
+            gitea-mirror
+
+      - name: Push to GitHub
+        run: |
+          cd gitea-mirror
+          # 明确推到名为 "github" 的 remote
+          git remote add github \
+            https://${{ github.repository_owner }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git push --mirror github
