@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.serialize.PersistableObject;
+import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
 
 import java.io.Serial;
 

@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.memory.pojo;
+package work.slhaf.agent.core.memory.submodule.graph.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

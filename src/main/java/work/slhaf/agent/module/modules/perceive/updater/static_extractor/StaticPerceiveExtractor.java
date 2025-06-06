@@ -1,4 +1,4 @@
-package work.slhaf.agent.module.modules.perceive.static_extractor;
+package work.slhaf.agent.module.modules.perceive.updater.static_extractor;
 
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.chat.pojo.ChatResponse;
 import work.slhaf.agent.module.common.Model;
 import work.slhaf.agent.module.common.ModelConstant;
-import work.slhaf.agent.module.modules.perceive.static_extractor.data.StaticExtractInput;
+import work.slhaf.agent.module.modules.perceive.updater.static_extractor.data.StaticExtractInput;
 
 import java.util.HashMap;
 import java.util.Map;
