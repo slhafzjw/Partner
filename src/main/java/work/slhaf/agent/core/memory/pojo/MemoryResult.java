@@ -3,6 +3,7 @@ package work.slhaf.agent.core.memory.pojo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.serialize.PersistableObject;
+import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
 
 import java.io.Serial;
 import java.util.List;

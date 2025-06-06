@@ -1,11 +1,11 @@
-package work.slhaf.agent.core.memory.node;
+package work.slhaf.agent.core.memory.submodule.graph.pojo.node;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.serialize.PersistableObject;
 import work.slhaf.agent.core.memory.exception.NullSliceListException;
-import work.slhaf.agent.core.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
 
 import java.io.*;
 import java.nio.file.Files;

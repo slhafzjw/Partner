@@ -1,4 +1,4 @@
-package work.slhaf.agent.module.modules.perceive.static_extractor.data;
+package work.slhaf.agent.module.modules.perceive.updater.static_extractor.data;
 
 import lombok.Builder;
 import lombok.Data;

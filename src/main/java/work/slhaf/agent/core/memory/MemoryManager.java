@@ -6,11 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.config.Config;
+import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
+import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.common.serialize.PersistableObject;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
-import work.slhaf.agent.core.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
-import work.slhaf.agent.core.memory.pojo.User;
+import work.slhaf.agent.core.memory.submodule.cache.CacheCore;
+import work.slhaf.agent.core.memory.submodule.graph.GraphCore;
+import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
+import work.slhaf.agent.core.memory.submodule.perceive.PerceiveCore;
+import work.slhaf.agent.core.memory.submodule.perceive.pojo.User;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
@@ -38,7 +43,11 @@ public class MemoryManager extends PersistableObject {
     public final Lock messageLock = new ReentrantLock();
 
 
-    private MemoryGraph memoryGraph;
+    private MemoryCore memoryCore;
+    private CacheCore cacheCore;
+    private GraphCore graphCore;
+    private PerceiveCore perceiveCore;
+
     private HashMap<String, List<EvaluatedSlice>> activatedSlices;
 
     private MemoryManager() {
@@ -51,7 +60,8 @@ public class MemoryManager extends PersistableObject {
                 if (memoryManager == null) {
                     Config config = Config.getConfig();
                     memoryManager = new MemoryManager();
-                    memoryManager.setMemoryGraph(MemoryGraph.getInstance(config.getAgentId()));
+                    memoryManager.setMemoryCore(MemoryCore.getInstance(config.getAgentId()));
+                    memoryManager.setCores();
                     memoryManager.setActivatedSlices(new HashMap<>());
                     memoryManager.setShutdownHook();
                     log.info("[MemoryManager] MemoryManager注册完毕...");
@@ -59,6 +69,12 @@ public class MemoryManager extends PersistableObject {
             }
         }
         return memoryManager;
+    }
+
+    private void setCores() {
+        this.setCacheCore(this.getMemoryCore().getCacheCore());
+        this.setGraphCore(this.getMemoryCore().getGraphCore());
+        this.setPerceiveCore(this.getMemoryCore().getPerceiveCore());
     }
 
     private void setShutdownHook() {
@@ -72,12 +88,36 @@ public class MemoryManager extends PersistableObject {
         }));
     }
 
-    public MemoryResult selectMemory(String path) {
-        return cacheFilter(memoryGraph.selectMemory(path));
+    public MemoryResult selectMemory(String topicPathStr) {
+        MemoryResult memoryResult;
+        List<String> topicPath = List.of(topicPathStr.split("->"));
+        try {
+            List<String> path = new ArrayList<>(topicPath);
+            //每日刷新缓存
+            cacheCore.checkCacheDate();
+            //检测缓存并更新计数, 查看是否需要放入缓存
+            cacheCore.updateCacheCounter(path);
+            //查看是否存在缓存，如果存在，则直接返回
+            if ((memoryResult = cacheCore.selectCache(path)) != null) {
+                return memoryResult;
+            }
+            memoryResult = graphCore.selectMemory(path);
+            //尝试更新缓存
+            cacheCore.updateCache(topicPath, memoryResult);
+        } catch (Exception e) {
+            log.error("[MemoryManager] selectMemory error: ", e);
+            log.error("[MemoryManager] 路径: {}", topicPathStr);
+            log.error("[MemoryManager] 主题树: {}", getTopicTree());
+            memoryResult = new MemoryResult();
+            memoryResult.setRelatedMemorySliceResult(new ArrayList<>());
+            memoryResult.setMemorySliceResult(new CopyOnWriteArrayList<>());
+            GlobalExceptionHandler.writeExceptionState(new GlobalException(e.getLocalizedMessage()));
+        }
+        return cacheFilter(memoryResult);
     }
 
     public MemoryResult selectMemory(LocalDate date) throws IOException, ClassNotFoundException {
-        return cacheFilter(memoryGraph.selectMemory(date));
+        return cacheFilter(graphCore.selectMemory(date));
     }
 
     private MemoryResult cacheFilter(MemoryResult memoryResult) {
@@ -92,30 +132,30 @@ public class MemoryManager extends PersistableObject {
     }
 
     public void cleanSelectedSliceFilter() {
-        memoryGraph.getSelectedSlices().clear();
+        graphCore.getSelectedSlices().clear();
     }
 
     public String getUserId(String userInfo, String nickName) {
         String userId = null;
-        for (User user : memoryGraph.getUsers()) {
+        for (User user : perceiveCore.getUsers()) {
             if (user.getInfo().contains(userInfo)) {
                 userId = user.getUuid();
             }
         }
         if (userId == null) {
             User newUser = setNewUser(userInfo, nickName);
-            memoryGraph.getUsers().add(newUser);
+            perceiveCore.getUsers().add(newUser);
             userId = newUser.getUuid();
         }
         return userId;
     }
 
     public List<Message> getChatMessages() {
-        return memoryGraph.getChatMessages();
+        return memoryCore.getChatMessages();
     }
 
     public void setChatMessages(List<Message> chatMessages) {
-        memoryGraph.setChatMessages(chatMessages);
+        memoryCore.setChatMessages(chatMessages);
     }
 
     private static User setNewUser(String userInfo, String nickName) {
@@ -129,37 +169,50 @@ public class MemoryManager extends PersistableObject {
     }
 
     public String getTopicTree() {
-        return memoryGraph.getTopicTree();
+        return graphCore.getTopicTree();
     }
 
     public HashMap<LocalDateTime, String> getDialogMap() {
-        return memoryGraph.getDialogMap();
+        return cacheCore.getDialogMap();
     }
 
     public ConcurrentHashMap<LocalDateTime, String> getUserDialogMap(String userId) {
-        return memoryGraph.getUserDialogMap().get(userId);
+        return cacheCore.getUserDialogMap().get(userId);
     }
 
     public void insertSlice(MemorySlice memorySlice, String topicPath) {
         sliceInsertLock.lock();
         List<String> topicPathList = Arrays.stream(topicPath.split("->")).toList();
-        memoryGraph.insertMemory(topicPathList, memorySlice);
+        try {
+            //检查是否存在当天对应的memorySlice并确定是否插入
+            //每日刷新缓存
+            cacheCore.checkCacheDate();
+            //如果topicPath在memorySliceCache中存在对应缓存，由于进行的插入操作，则需要移除该缓存，但不清除相关计数
+            cacheCore.clearCacheByTopicPath(topicPathList);
+            graphCore.insertMemory(topicPathList, memorySlice);
+            if (!memorySlice.isPrivate()) {
+                cacheCore.updateUserDialogMap(memorySlice);
+            }
+        } catch (Exception e) {
+            log.error("[MemoryManager] 插入记忆时出错: ", e);
+            GlobalExceptionHandler.writeExceptionState(new GlobalException("插入记忆时出错: " + e.getLocalizedMessage()));
+        }
         log.debug("[MemoryManager] 插入切片: {}, 路径: {}", memorySlice, topicPath);
         sliceInsertLock.unlock();
     }
 
     public void cleanMessage(List<Message> messages) {
         messageLock.lock();
-        memoryGraph.getChatMessages().removeAll(messages);
+        memoryCore.getChatMessages().removeAll(messages);
         messageLock.unlock();
     }
 
     public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
-        memoryGraph.updateDialogMap(dateTime, newDialogCache);
+        cacheCore.updateDialogMap(dateTime, newDialogCache);
     }
 
-    public void save() throws IOException {
-        memoryGraph.serialize();
+    private void save() throws IOException {
+        memoryCore.serialize();
     }
 
     public void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices) {
@@ -168,7 +221,7 @@ public class MemoryManager extends PersistableObject {
     }
 
     public User getUser(String id) {
-        for (User user : memoryGraph.getUsers()) {
+        for (User user : perceiveCore.getUsers()) {
             if (user.getUuid().equals(id)) {
                 return user;
             }
@@ -189,16 +242,16 @@ public class MemoryManager extends PersistableObject {
 
     public String getDialogMapStr() {
         StringBuilder str = new StringBuilder();
-        memoryGraph.getDialogMap().forEach((dateTime, dialog) -> str.append("\n\n").append("[").append(dateTime).append("]\n")
+        cacheCore.getDialogMap().forEach((dateTime, dialog) -> str.append("\n\n").append("[").append(dateTime).append("]\n")
                 .append(dialog));
         return str.toString();
     }
 
     public String getUserDialogMapStr(String userId) {
-        if (memoryGraph.getUserDialogMap().containsKey(userId)) {
+        if (cacheCore.getUserDialogMap().containsKey(userId)) {
             StringBuilder str = new StringBuilder();
-            Collection<String> dialogMapValues = memoryGraph.getDialogMap().values();
-            memoryGraph.getUserDialogMap().get(userId).forEach((dateTime, dialog) -> {
+            Collection<String> dialogMapValues = cacheCore.getDialogMap().values();
+            cacheCore.getUserDialogMap().get(userId).forEach((dateTime, dialog) -> {
                 if (dialogMapValues.contains(dialog)) {
                     return;
                 }
@@ -212,7 +265,7 @@ public class MemoryManager extends PersistableObject {
     }
 
     private boolean isCacheSingleUser() {
-        return memoryGraph.getUserDialogMap().size() <= 1;
+        return cacheCore.getUserDialogMap().size() <= 1;
     }
 
     public boolean isSingleUser() {

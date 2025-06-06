@@ -9,7 +9,7 @@ import work.slhaf.agent.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.interaction.module.InteractionModule;
 import work.slhaf.agent.core.memory.MemoryManager;
-import work.slhaf.agent.core.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.MemorySummarizer;
@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static work.slhaf.agent.common.util.ExtractUtil.extractUserId;
 

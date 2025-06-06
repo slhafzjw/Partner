@@ -3,15 +3,13 @@ package work.slhaf.agent.module.modules.memory.selector;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
-import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.interaction.module.InteractionModule;
 import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.memory.pojo.MemoryResult;
-import work.slhaf.agent.core.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.common.AppendPromptData;
 import work.slhaf.agent.module.common.PreModuleActions;
@@ -28,8 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-
-import static work.slhaf.agent.common.util.ExtractUtil.fixTopicPath;
 
 @Data
 @Slf4j
