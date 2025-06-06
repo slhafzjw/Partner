@@ -15,6 +15,7 @@ import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.common.Model;
 import work.slhaf.agent.module.common.ModelConstant;
 import work.slhaf.agent.module.modules.memory.selector.extractor.data.ExtractorInput;
+import work.slhaf.agent.module.modules.memory.selector.extractor.data.ExtractorMatchData;
 import work.slhaf.agent.module.modules.memory.selector.extractor.data.ExtractorResult;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
+import static work.slhaf.agent.common.util.ExtractUtil.fixTopicPath;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -86,6 +88,17 @@ public class MemorySelectExtractor extends Model {
             extractorResult.setRecall(false);
             extractorResult.setMatches(List.of());
         }
+        return fix(extractorResult);
+    }
+
+    private ExtractorResult fix(ExtractorResult extractorResult) {
+        extractorResult.getMatches().forEach(m -> {
+            if (m.getType().equals(ExtractorMatchData.Constant.DATE)) {
+                return;
+            }
+            m.setText(fixTopicPath(m.getText()));
+        });
+        extractorResult.getMatches().removeIf(m ->  m.getText().split("->")[0].isEmpty());
         return extractorResult;
     }
 

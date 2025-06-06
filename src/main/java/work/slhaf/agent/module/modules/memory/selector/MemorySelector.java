@@ -118,10 +118,7 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
         for (ExtractorMatchData match : matches) {
             try {
                 MemoryResult memoryResult = switch (match.getType()) {
-                    case ExtractorMatchData.Constant.TOPIC -> {
-                        fixTopicPath(match.getText());
-                        yield  memoryManager.selectMemory(match.getText());
-                    }
+                    case ExtractorMatchData.Constant.TOPIC -> memoryManager.selectMemory(match.getText());
                     case ExtractorMatchData.Constant.DATE ->
                             memoryManager.selectMemory(LocalDate.parse(match.getText()));
                     default -> null;
@@ -131,7 +128,7 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
                 memoryResultList.add(memoryResult);
             } catch (UnExistedDateIndexException | UnExistedTopicException e) {
                 log.error("[MemorySelector] 不存在的记忆索引! 请尝试更换更合适的主题提取LLM!", e);
-                GlobalExceptionHandler.writeExceptionState(new GlobalException(e.getMessage()));
+                log.error("[MemorySelector] 错误索引: {}", match.getText());
             }
         }
         //清理切片记录
