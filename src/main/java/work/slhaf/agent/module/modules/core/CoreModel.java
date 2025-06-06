@@ -121,10 +121,9 @@ public class CoreModel extends Model implements InteractionModule {
     }
 
     private void activateModule(InteractionContext context) {
-        HashMap<String, Boolean> activeModules = context.getCoreContext().getActiveModules();
         for (AppendPromptData data : context.getModuleContext().getAppendedPrompt()) {
             if (data.getAppendedPrompt().isEmpty()) continue;
-            activeModules.put(data.getModuleName(), true);
+            context.getCoreContext().activateModule(data.getModuleName());
         }
     }
 

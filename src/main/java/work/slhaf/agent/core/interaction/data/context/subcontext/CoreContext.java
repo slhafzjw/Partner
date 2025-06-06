@@ -2,11 +2,19 @@ package work.slhaf.agent.core.interaction.data.context.subcontext;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import work.slhaf.agent.common.serialize.PersistableObject;
 
+import java.io.Serial;
 import java.util.HashMap;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class CoreContext {
+public class CoreContext extends PersistableObject {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private String text;
     private String dateTime;
     private String userNick;
