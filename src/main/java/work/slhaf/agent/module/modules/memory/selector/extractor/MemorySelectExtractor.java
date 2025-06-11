@@ -9,8 +9,10 @@ import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.chat.pojo.MetaMessage;
 import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
+import work.slhaf.agent.core.cognation.CognationCapability;
+import work.slhaf.agent.core.cognation.CognationManager;
+import work.slhaf.agent.core.cognation.submodule.memory.MemoryCapability;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
-import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.common.Model;
 import work.slhaf.agent.module.common.ModelConstant;
@@ -33,7 +35,8 @@ public class MemorySelectExtractor extends Model {
     public static final String MODEL_KEY = "topic_extractor";
     private static volatile MemorySelectExtractor memorySelectExtractor;
 
-    private MemoryManager memoryManager;
+    private MemoryCapability memoryCapability;
+    private CognationCapability cognationCapability;
     private SessionManager sessionManager;
 
     private MemorySelectExtractor() {
@@ -44,7 +47,8 @@ public class MemorySelectExtractor extends Model {
             synchronized (MemorySelectExtractor.class) {
                 if (memorySelectExtractor == null) {
                     memorySelectExtractor = new MemorySelectExtractor();
-                    memorySelectExtractor.setMemoryManager(MemoryManager.getInstance());
+                    memorySelectExtractor.setMemoryCapability(CognationManager.getInstance());
+                    memorySelectExtractor.setCognationCapability(CognationManager.getInstance());
                     memorySelectExtractor.setSessionManager(SessionManager.getInstance());
                     setModel(memorySelectExtractor, MODEL_KEY, ModelConstant.Prompt.MEMORY, false);
                 }
@@ -69,12 +73,12 @@ public class MemorySelectExtractor extends Model {
 
         ExtractorResult extractorResult;
         try {
-            List<EvaluatedSlice> activatedMemorySlices = memoryManager.getActivatedSlices().get(context.getUserId());
+            List<EvaluatedSlice> activatedMemorySlices = cognationCapability.getActivatedSlices(context.getUserId());
             ExtractorInput extractorInput = ExtractorInput.builder()
                     .text(context.getInput())
                     .date(context.getDateTime().toLocalDate())
                     .history(chatMessages)
-                    .topic_tree(memoryManager.getTopicTree())
+                    .topic_tree(memoryCapability.getTopicTree())
                     .activatedMemorySlices(activatedMemorySlices)
                     .build();
             log.debug("[MemorySelectExtractor] 主题提取输入: {}", JSONObject.toJSONString(extractorInput));

@@ -1,11 +1,11 @@
-package work.slhaf.agent.core.memory.submodule.cache;
+package work.slhaf.agent.core.cognation.submodule.cache;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.serialize.PersistableObject;
-import work.slhaf.agent.core.memory.pojo.MemoryResult;
-import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
+import work.slhaf.agent.core.cognation.common.pojo.MemoryResult;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
 
 import java.io.Serial;
 import java.time.LocalDate;

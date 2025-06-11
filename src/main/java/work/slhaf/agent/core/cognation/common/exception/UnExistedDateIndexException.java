@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.memory.exception;
+package work.slhaf.agent.core.cognation.common.exception;
 
 public class UnExistedDateIndexException extends RuntimeException {
     public UnExistedDateIndexException(String message) {

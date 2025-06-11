@@ -8,9 +8,10 @@ import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.ChatResponse;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.chat.pojo.MetaMessage;
+import work.slhaf.agent.core.cognation.CognationCapability;
+import work.slhaf.agent.core.cognation.CognationManager;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.interaction.module.InteractionModule;
-import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.common.AppendPromptData;
 import work.slhaf.agent.module.common.Model;
@@ -20,7 +21,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
@@ -33,7 +33,7 @@ public class CoreModel extends Model implements InteractionModule {
     public static final String MODEL_KEY = "core_model";
     private static volatile CoreModel coreModel;
 
-    private MemoryManager memoryManager;
+    private CognationCapability cognationCapability;
     private SessionManager sessionManager;
     private List<Message> appendedMessages;
 
@@ -45,8 +45,8 @@ public class CoreModel extends Model implements InteractionModule {
             synchronized (CoreModel.class) {
                 if (coreModel == null) {
                     coreModel = new CoreModel();
-                    coreModel.memoryManager = MemoryManager.getInstance();
-                    coreModel.chatMessages = coreModel.memoryManager.getChatMessages();
+                    coreModel.cognationCapability = CognationManager.getInstance();
+                    coreModel.chatMessages = coreModel.cognationCapability.getChatMessages();
                     coreModel.appendedMessages = new ArrayList<>();
                     coreModel.sessionManager = SessionManager.getInstance();
                     setModel(coreModel, MODEL_KEY, ModelConstant.Prompt.CORE, true);
@@ -145,7 +145,7 @@ public class CoreModel extends Model implements InteractionModule {
     }
 
     private void updateModuleContextAndChatMessages(InteractionContext interactionContext, String response, ChatResponse chatResponse) {
-        memoryManager.getMessageLock().lock();
+        cognationCapability.getMessageLock().lock();
         this.chatMessages.removeIf(m -> {
             if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
                 return false;
@@ -163,7 +163,7 @@ public class CoreModel extends Model implements InteractionModule {
         this.chatMessages.add(primaryUserMessage);
         Message assistantMessage = new Message(ChatConstant.Character.ASSISTANT, response);
         this.chatMessages.add(assistantMessage);
-        memoryManager.getMessageLock().unlock();
+        cognationCapability.getMessageLock().unlock();
         //设置上下文
         interactionContext.getModuleContext().getExtraContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
         //区分单人聊天场景

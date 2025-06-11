@@ -1,15 +1,15 @@
-package work.slhaf.agent.core.memory.submodule.graph;
+package work.slhaf.agent.core.cognation.submodule.memory;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.serialize.PersistableObject;
-import work.slhaf.agent.core.memory.exception.UnExistedDateIndexException;
-import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
-import work.slhaf.agent.core.memory.pojo.MemoryResult;
-import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
-import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
-import work.slhaf.agent.core.memory.submodule.graph.pojo.node.MemoryNode;
-import work.slhaf.agent.core.memory.submodule.graph.pojo.node.TopicNode;
+import work.slhaf.agent.core.cognation.common.exception.UnExistedDateIndexException;
+import work.slhaf.agent.core.cognation.common.exception.UnExistedTopicException;
+import work.slhaf.agent.core.cognation.common.pojo.MemoryResult;
+import work.slhaf.agent.core.cognation.common.pojo.MemorySliceResult;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.node.MemoryNode;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.node.TopicNode;
 
 import java.io.IOException;
 import java.io.Serial;
@@ -20,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class GraphCore extends PersistableObject {
+public class MemoryCore extends PersistableObject {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -77,9 +77,9 @@ public class GraphCore extends PersistableObject {
             throw new UnExistedDateIndexException("不存在的日期索引: " + date);
         }
         List<List<MemorySlice>> list = new ArrayList<>();
-        for (String memoryId : dateIndex.get(date)) {
+        for (String memoryNodeId : dateIndex.get(date)) {
             MemoryNode memoryNode = new MemoryNode();
-            memoryNode.setMemoryNodeId(memoryId);
+            memoryNode.setMemoryNodeId(memoryNodeId);
             list.add(memoryNode.loadMemorySliceList());
         }
         return list;
@@ -201,7 +201,6 @@ public class GraphCore extends PersistableObject {
         }
 
     }
-
 
     private void updateDateIndex(MemorySlice slice) {
         String memoryId = slice.getMemoryId();

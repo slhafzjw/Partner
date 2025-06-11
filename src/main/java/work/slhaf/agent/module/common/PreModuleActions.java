@@ -8,4 +8,5 @@ import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 public interface PreModuleActions {
     void setAppendedPrompt(InteractionContext context);
     void setActiveModule(InteractionContext context);
+    String getModuleName();
 }

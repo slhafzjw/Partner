@@ -2,9 +2,12 @@ package work.slhaf.agent.module.modules.preprocess;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.agent.core.cognation.CognationCapability;
+import work.slhaf.agent.core.cognation.CognationManager;
+import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCapability;
+import work.slhaf.agent.core.cognation.submodule.perceive.pojo.User;
 import work.slhaf.agent.core.interaction.data.InteractionInputData;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
-import work.slhaf.agent.core.memory.MemoryManager;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.common.AppendPromptData;
 
@@ -19,7 +22,8 @@ public class PreprocessExecutor {
 
     private static volatile PreprocessExecutor preprocessExecutor;
 
-    private MemoryManager memoryManager;
+    private CognationCapability cognationCapability;
+    private PerceiveCapability perceiveCapability;
     private SessionManager sessionManager;
 
     private PreprocessExecutor() {
@@ -30,7 +34,8 @@ public class PreprocessExecutor {
             synchronized (PreprocessExecutor.class) {
                 if (preprocessExecutor == null) {
                     preprocessExecutor = new PreprocessExecutor();
-                    preprocessExecutor.setMemoryManager(MemoryManager.getInstance());
+                    preprocessExecutor.setCognationCapability(CognationManager.getInstance());
+                    preprocessExecutor.setPerceiveCapability(CognationManager.getInstance());
                     preprocessExecutor.setSessionManager(SessionManager.getInstance());
                 }
             }
@@ -45,7 +50,7 @@ public class PreprocessExecutor {
 
     private void checkAndSetMemoryId() {
         String currentMemoryId = sessionManager.getCurrentMemoryId();
-        if (currentMemoryId == null || memoryManager.getChatMessages().isEmpty()) {
+        if (currentMemoryId == null || cognationCapability.getChatMessages().isEmpty()) {
             sessionManager.refreshMemoryId();
         }
     }
@@ -54,15 +59,19 @@ public class PreprocessExecutor {
         log.debug("[PreprocessExecutor] 预处理原始输入: {}", inputData);
         InteractionContext context = new InteractionContext();
 
-        String userId = memoryManager.getUserId(inputData.getUserInfo(), inputData.getUserNickName());
+        User user = perceiveCapability.getUser(inputData.getUserInfo(), inputData.getPlatform());
+        if (user == null) {
+            user = perceiveCapability.addUser(inputData.getUserInfo(), inputData.getPlatform(), inputData.getUserNickName());
+        }
+        String userId = user.getUuid();
         context.setUserId(userId);
         context.setUserNickname(inputData.getUserNickName());
         context.setUserInfo(inputData.getUserInfo());
         context.setDateTime(inputData.getLocalDateTime());
         context.setSingle(inputData.isSingle());
 
-        String user = "[" + inputData.getUserNickName() + "(" + userId + ")]";
-        String input = user + " " + inputData.getContent();
+        String userStr = "[" + inputData.getUserNickName() + "(" + userId + ")]";
+        String input = userStr + " " + inputData.getContent();
         context.setInput(input);
 
         setAppendedPrompt(context);
@@ -78,7 +87,7 @@ public class PreprocessExecutor {
         map.put("datetime", "本次用户输入对应的当前时间");
         map.put("user_nick", "用户昵称");
         map.put("user_id", "用户id, 与user_nick区分, 这是用户的唯一标识");
-        map.put("active_modules","已激活的模块, 为false时为激活但未活跃; 为true时为激活且活跃");
+        map.put("active_modules", "已激活的模块, 为false时为激活但未活跃; 为true时为激活且活跃");
         map.put("其他", "历史对话中将在用户消息的最后一行标注时间");
         AppendPromptData data = new AppendPromptData();
         data.setModuleName("[基础模块]");

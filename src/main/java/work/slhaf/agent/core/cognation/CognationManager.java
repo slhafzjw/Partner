@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.memory;
+package work.slhaf.agent.core.cognation;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -9,13 +9,18 @@ import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.common.serialize.PersistableObject;
-import work.slhaf.agent.core.memory.pojo.MemoryResult;
-import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
-import work.slhaf.agent.core.memory.submodule.cache.CacheCore;
-import work.slhaf.agent.core.memory.submodule.graph.GraphCore;
-import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
-import work.slhaf.agent.core.memory.submodule.perceive.PerceiveCore;
-import work.slhaf.agent.core.memory.submodule.perceive.pojo.User;
+import work.slhaf.agent.core.cognation.common.exception.UserNotExistsException;
+import work.slhaf.agent.core.cognation.common.pojo.ActiveData;
+import work.slhaf.agent.core.cognation.common.pojo.MemoryResult;
+import work.slhaf.agent.core.cognation.common.pojo.MemorySliceResult;
+import work.slhaf.agent.core.cognation.submodule.cache.CacheCapability;
+import work.slhaf.agent.core.cognation.submodule.cache.CacheCore;
+import work.slhaf.agent.core.cognation.submodule.memory.MemoryCapability;
+import work.slhaf.agent.core.cognation.submodule.memory.MemoryCore;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCapability;
+import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCore;
+import work.slhaf.agent.core.cognation.submodule.perceive.pojo.User;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
@@ -29,65 +34,65 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static work.slhaf.agent.common.util.ExtractUtil.extractUserId;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemoryManager extends PersistableObject {
+public class CognationManager extends PersistableObject implements CacheCapability, MemoryCapability, PerceiveCapability, CognationCapability {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private static volatile MemoryManager memoryManager;
+    private static volatile CognationManager cognationManager;
     private final Lock sliceInsertLock = new ReentrantLock();
     public final Lock messageLock = new ReentrantLock();
 
 
-    private MemoryCore memoryCore;
+    private CognationCore cognationCore;
     private CacheCore cacheCore;
-    private GraphCore graphCore;
+    private MemoryCore memoryCore;
     private PerceiveCore perceiveCore;
 
-    private HashMap<String, List<EvaluatedSlice>> activatedSlices;
+    private ActiveData activeData;
 
-    private MemoryManager() {
+    private CognationManager() {
     }
 
 
-    public static MemoryManager getInstance() throws IOException, ClassNotFoundException {
-        if (memoryManager == null) {
-            synchronized (MemoryManager.class) {
-                if (memoryManager == null) {
+    public static CognationManager getInstance() throws IOException, ClassNotFoundException {
+        if (cognationManager == null) {
+            synchronized (CognationManager.class) {
+                if (cognationManager == null) {
                     Config config = Config.getConfig();
-                    memoryManager = new MemoryManager();
-                    memoryManager.setMemoryCore(MemoryCore.getInstance(config.getAgentId()));
-                    memoryManager.setCores();
-                    memoryManager.setActivatedSlices(new HashMap<>());
-                    memoryManager.setShutdownHook();
-                    log.info("[MemoryManager] MemoryManager注册完毕...");
+                    cognationManager = new CognationManager();
+                    cognationManager.setCognationCore(CognationCore.getInstance(config.getAgentId()));
+                    cognationManager.setCores();
+                    cognationManager.setActiveData(new ActiveData());
+                    cognationManager.setShutdownHook();
+                    log.info("[CognationManager] MemoryManager注册完毕...");
                 }
             }
         }
-        return memoryManager;
+        return cognationManager;
     }
 
     private void setCores() {
-        this.setCacheCore(this.getMemoryCore().getCacheCore());
-        this.setGraphCore(this.getMemoryCore().getGraphCore());
-        this.setPerceiveCore(this.getMemoryCore().getPerceiveCore());
+        this.setCacheCore(this.getCognationCore().getCacheCore());
+        this.setMemoryCore(this.getCognationCore().getMemoryCore());
+        this.setPerceiveCore(this.getCognationCore().getPerceiveCore());
     }
 
     private void setShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                memoryManager.save();
-                log.info("[MemoryManager] MemoryGraph已保存");
+                cognationManager.save();
+                log.info("[CognationManager] MemoryGraph已保存");
             } catch (IOException e) {
-                log.error("[MemoryManager] 保存MemoryGraph失败: ", e);
+                log.error("[CognationManager] 保存MemoryGraph失败: ", e);
             }
         }));
     }
 
+    @Override
     public MemoryResult selectMemory(String topicPathStr) {
         MemoryResult memoryResult;
         List<String> topicPath = List.of(topicPathStr.split("->"));
@@ -101,13 +106,13 @@ public class MemoryManager extends PersistableObject {
             if ((memoryResult = cacheCore.selectCache(path)) != null) {
                 return memoryResult;
             }
-            memoryResult = graphCore.selectMemory(path);
+            memoryResult = memoryCore.selectMemory(path);
             //尝试更新缓存
             cacheCore.updateCache(topicPath, memoryResult);
         } catch (Exception e) {
-            log.error("[MemoryManager] selectMemory error: ", e);
-            log.error("[MemoryManager] 路径: {}", topicPathStr);
-            log.error("[MemoryManager] 主题树: {}", getTopicTree());
+            log.error("[CognationManager] selectMemory error: ", e);
+            log.error("[CognationManager] 路径: {}", topicPathStr);
+            log.error("[CognationManager] 主题树: {}", getTopicTree());
             memoryResult = new MemoryResult();
             memoryResult.setRelatedMemorySliceResult(new ArrayList<>());
             memoryResult.setMemorySliceResult(new CopyOnWriteArrayList<>());
@@ -116,8 +121,9 @@ public class MemoryManager extends PersistableObject {
         return cacheFilter(memoryResult);
     }
 
+    @Override
     public MemoryResult selectMemory(LocalDate date) throws IOException, ClassNotFoundException {
-        return cacheFilter(graphCore.selectMemory(date));
+        return cacheFilter(memoryCore.selectMemory(date));
     }
 
     private MemoryResult cacheFilter(MemoryResult memoryResult) {
@@ -131,55 +137,42 @@ public class MemoryManager extends PersistableObject {
         return memoryResult;
     }
 
+    @Override
     public void cleanSelectedSliceFilter() {
-        graphCore.getSelectedSlices().clear();
+        memoryCore.getSelectedSlices().clear();
     }
 
-    public String getUserId(String userInfo, String nickName) {
-        String userId = null;
-        for (User user : perceiveCore.getUsers()) {
-            if (user.getInfo().contains(userInfo)) {
-                userId = user.getUuid();
-            }
-        }
-        if (userId == null) {
-            User newUser = setNewUser(userInfo, nickName);
-            perceiveCore.getUsers().add(newUser);
-            userId = newUser.getUuid();
-        }
-        return userId;
+    @Override
+    public User getUser(String userInfo, String client) {
+        return perceiveCore.selectUser(userInfo, client);
     }
 
+    @Override
     public List<Message> getChatMessages() {
-        return memoryCore.getChatMessages();
+        return cognationCore.getChatMessages();
     }
 
+    @Override
     public void setChatMessages(List<Message> chatMessages) {
-        memoryCore.setChatMessages(chatMessages);
+        cognationCore.setChatMessages(chatMessages);
     }
 
-    private static User setNewUser(String userInfo, String nickName) {
-        User newUser = new User();
-        newUser.setUuid(UUID.randomUUID().toString());
-        List<String> infoList = new ArrayList<>();
-        infoList.add(userInfo);
-        newUser.setInfo(infoList);
-        newUser.setNickName(nickName);
-        return newUser;
-    }
-
+    @Override
     public String getTopicTree() {
-        return graphCore.getTopicTree();
+        return memoryCore.getTopicTree();
     }
 
+    @Override
     public HashMap<LocalDateTime, String> getDialogMap() {
         return cacheCore.getDialogMap();
     }
 
+    @Override
     public ConcurrentHashMap<LocalDateTime, String> getUserDialogMap(String userId) {
         return cacheCore.getUserDialogMap().get(userId);
     }
 
+    @Override
     public void insertSlice(MemorySlice memorySlice, String topicPath) {
         sliceInsertLock.lock();
         List<String> topicPathList = Arrays.stream(topicPath.split("->")).toList();
@@ -189,57 +182,55 @@ public class MemoryManager extends PersistableObject {
             cacheCore.checkCacheDate();
             //如果topicPath在memorySliceCache中存在对应缓存，由于进行的插入操作，则需要移除该缓存，但不清除相关计数
             cacheCore.clearCacheByTopicPath(topicPathList);
-            graphCore.insertMemory(topicPathList, memorySlice);
+            memoryCore.insertMemory(topicPathList, memorySlice);
             if (!memorySlice.isPrivate()) {
                 cacheCore.updateUserDialogMap(memorySlice);
             }
         } catch (Exception e) {
-            log.error("[MemoryManager] 插入记忆时出错: ", e);
+            log.error("[CognationManager] 插入记忆时出错: ", e);
             GlobalExceptionHandler.writeExceptionState(new GlobalException("插入记忆时出错: " + e.getLocalizedMessage()));
         }
-        log.debug("[MemoryManager] 插入切片: {}, 路径: {}", memorySlice, topicPath);
+        log.debug("[CognationManager] 插入切片: {}, 路径: {}", memorySlice, topicPath);
         sliceInsertLock.unlock();
     }
 
+    @Override
     public void cleanMessage(List<Message> messages) {
         messageLock.lock();
-        memoryCore.getChatMessages().removeAll(messages);
+        cognationCore.getChatMessages().removeAll(messages);
         messageLock.unlock();
     }
 
+    @Override
     public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
         cacheCore.updateDialogMap(dateTime, newDialogCache);
     }
 
     private void save() throws IOException {
-        memoryCore.serialize();
+        cognationCore.serialize();
     }
 
+    @Override
     public void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices) {
-        memoryManager.getActivatedSlices().put(userId, memorySlices);
-        log.debug("[MemoryManager] 已更新激活切片, userId: {}", userId);
+        activeData.updateActivatedSlices(userId, memorySlices);
+        log.debug("[CognationManager] 已更新激活切片, userId: {}", userId);
     }
 
+    @Override
     public User getUser(String id) {
-        for (User user : perceiveCore.getUsers()) {
-            if (user.getUuid().equals(id)) {
-                return user;
-            }
+        User user = perceiveCore.selectUser(id);
+        if (user == null) {
+            throw new UserNotExistsException("[CognationManager] 用户不存在: " + id);
         }
-        return null;
+        return user;
     }
 
+    @Override
     public String getActivatedSlicesStr(String userId) {
-        if (memoryManager.getActivatedSlices().containsKey(userId)) {
-            StringBuilder str = new StringBuilder();
-            memoryManager.getActivatedSlices().get(userId).forEach(slice -> str.append("\n\n").append("[").append(slice.getDate()).append("]\n")
-                    .append(slice.getSummary()));
-            return str.toString();
-        } else {
-            return null;
-        }
+        return activeData.getActivatedSlicesStr(userId);
     }
 
+    @Override
     public String getDialogMapStr() {
         StringBuilder str = new StringBuilder();
         cacheCore.getDialogMap().forEach((dateTime, dialog) -> str.append("\n\n").append("[").append(dateTime).append("]\n")
@@ -247,6 +238,7 @@ public class MemoryManager extends PersistableObject {
         return str.toString();
     }
 
+    @Override
     public String getUserDialogMapStr(String userId) {
         if (cacheCore.getUserDialogMap().containsKey(userId)) {
             StringBuilder str = new StringBuilder();
@@ -268,13 +260,14 @@ public class MemoryManager extends PersistableObject {
         return cacheCore.getUserDialogMap().size() <= 1;
     }
 
+    @Override
     public boolean isSingleUser() {
         return isCacheSingleUser() && isChatMessagesSingleUser();
     }
 
     private boolean isChatMessagesSingleUser() {
         Set<String> userIdSet = new HashSet<>();
-        memoryManager.getChatMessages().forEach(m -> {
+        cognationManager.getChatMessages().forEach(m -> {
             if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
                 return;
             }
@@ -285,5 +278,35 @@ public class MemoryManager extends PersistableObject {
             userIdSet.add(userId);
         });
         return userIdSet.size() <= 1;
+    }
+
+    @Override
+    public User addUser(String userInfo, String platform, String userNickName) {
+        return perceiveCore.addUser(userInfo, platform, userNickName);
+    }
+
+    @Override
+    public HashMap<String, List<EvaluatedSlice>> getActivatedSlices() {
+        return activeData.getActivatedSlices();
+    }
+
+    @Override
+    public void clearActivatedSlices(String userId) {
+        activeData.clearActivatedSlices(userId);
+    }
+
+    @Override
+    public boolean hasActivatedSlices(String userId) {
+        return activeData.hasActivatedSlices(userId);
+    }
+
+    @Override
+    public int getActivatedSlicesSize(String userId) {
+        return activeData.getActivatedSlices().get(userId).size();
+    }
+
+    @Override
+    public List<EvaluatedSlice> getActivatedSlices(String userId) {
+        return activeData.getActivatedSlices().get(userId);
     }
 }

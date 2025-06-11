@@ -3,13 +3,16 @@ package work.slhaf.agent.module.modules.memory.selector;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.agent.core.cognation.CognationCapability;
+import work.slhaf.agent.core.cognation.CognationManager;
+import work.slhaf.agent.core.cognation.common.exception.UnExistedDateIndexException;
+import work.slhaf.agent.core.cognation.common.exception.UnExistedTopicException;
+import work.slhaf.agent.core.cognation.common.pojo.MemoryResult;
+import work.slhaf.agent.core.cognation.submodule.cache.CacheCapability;
+import work.slhaf.agent.core.cognation.submodule.memory.MemoryCapability;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.interaction.module.InteractionModule;
-import work.slhaf.agent.core.memory.MemoryManager;
-import work.slhaf.agent.core.memory.exception.UnExistedDateIndexException;
-import work.slhaf.agent.core.memory.exception.UnExistedTopicException;
-import work.slhaf.agent.core.memory.pojo.MemoryResult;
-import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.common.AppendPromptData;
 import work.slhaf.agent.module.common.PreModuleActions;
@@ -32,9 +35,10 @@ import java.util.List;
 public class MemorySelector implements InteractionModule, PreModuleActions {
 
     private static volatile MemorySelector memorySelector;
-    private static final String MODULE_NAME = "[记忆模块]";
 
-    private MemoryManager memoryManager;
+    private CacheCapability cacheCapability;
+    private MemoryCapability memoryCapability;
+    private CognationCapability cognationCapability;
     private SliceSelectEvaluator sliceSelectEvaluator;
     private MemorySelectExtractor memorySelectExtractor;
     private SessionManager sessionManager;
@@ -47,7 +51,9 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
             synchronized (MemorySelector.class) {
                 if (memorySelector == null) {
                     memorySelector = new MemorySelector();
-                    memorySelector.setMemoryManager(MemoryManager.getInstance());
+                    memorySelector.setCacheCapability(CognationManager.getInstance());
+                    memorySelector.setMemoryCapability(CognationManager.getInstance());
+                    memorySelector.setCognationCapability(CognationManager.getInstance());
                     memorySelector.setSliceSelectEvaluator(SliceSelectEvaluator.getInstance());
                     memorySelector.setMemorySelectExtractor(MemorySelectExtractor.getInstance());
                     memorySelector.setSessionManager(SessionManager.getInstance());
@@ -64,11 +70,9 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(interactionContext);
         if (extractorResult.isRecall() || !extractorResult.getMatches().isEmpty()) {
-            if (memoryManager.getActivatedSlices().get(userId) != null) {
-                memoryManager.getActivatedSlices().get(userId).clear();
-            }
+            cognationCapability.clearActivatedSlices(userId);
             List<EvaluatedSlice> evaluatedSlices = selectAndEvaluateMemory(interactionContext, extractorResult);
-            memoryManager.updateActivatedSlices(userId, evaluatedSlices);
+            cognationCapability.updateActivatedSlices(userId, evaluatedSlices);
         }
         //设置追加提示词
         setAppendedPrompt(interactionContext);
@@ -87,7 +91,7 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
         EvaluatorInput evaluatorInput = EvaluatorInput.builder()
                 .input(interactionContext.getInput())
                 .memoryResults(memoryResultList)
-                .messages(memoryManager.getChatMessages())
+                .messages(cognationCapability.getChatMessages())
                 .build();
         log.debug("[MemorySelector] 切片评估输入: {}", JSONObject.toJSONString(evaluatorInput));
         List<EvaluatedSlice> memorySlices = sliceSelectEvaluator.execute(evaluatorInput);
@@ -97,15 +101,10 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
 
     private void setModuleContextRecall(InteractionContext interactionContext) {
         String userId = interactionContext.getUserId();
-        boolean recall;
-        if (memoryManager.getActivatedSlices().get(userId) == null) {
-            recall = false;
-        } else {
-            recall = !memoryManager.getActivatedSlices().get(userId).isEmpty();
-        }
+        boolean recall = cognationCapability.hasActivatedSlices(userId);
         interactionContext.getModuleContext().getExtraContext().put("recall", recall);
         if (recall) {
-            interactionContext.getModuleContext().getExtraContext().put("recall_count", memoryManager.getActivatedSlices().get(userId).size());
+            interactionContext.getModuleContext().getExtraContext().put("recall_count", cognationCapability.getActivatedSlicesSize(userId));
         }
     }
 
@@ -114,9 +113,9 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
         for (ExtractorMatchData match : matches) {
             try {
                 MemoryResult memoryResult = switch (match.getType()) {
-                    case ExtractorMatchData.Constant.TOPIC -> memoryManager.selectMemory(match.getText());
+                    case ExtractorMatchData.Constant.TOPIC -> memoryCapability.selectMemory(match.getText());
                     case ExtractorMatchData.Constant.DATE ->
-                            memoryManager.selectMemory(LocalDate.parse(match.getText()));
+                            memoryCapability.selectMemory(LocalDate.parse(match.getText()));
                     default -> null;
                 };
                 if (memoryResult == null || memoryResult.isEmpty()) continue;
@@ -128,7 +127,7 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
             }
         }
         //清理切片记录
-        memoryManager.cleanSelectedSliceFilter();
+        memoryCapability.cleanSelectedSliceFilter();
 
         //根据userInfo过滤是否为私人记忆
         for (MemoryResult memoryResult : memoryResultList) {
@@ -140,7 +139,7 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
     }
 
     private void removeDuplicateSlice(MemoryResult memoryResult) {
-        Collection<String> values = memoryManager.getDialogMap().values();
+        Collection<String> values = cacheCapability.getDialogMap().values();
         memoryResult.getRelatedMemorySliceResult().removeIf(m -> values.contains(m.getSummary()));
         memoryResult.getMemorySliceResult().removeIf(m -> values.contains(m.getMemorySlice().getSummary()));
     }
@@ -157,29 +156,34 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
         String userId = context.getUserId();
         HashMap<String, String> map = getPromptDataMap(userId);
         AppendPromptData data = new AppendPromptData();
-        data.setModuleName(MODULE_NAME);
+        data.setModuleName(getModuleName());
         data.setAppendedPrompt(map);
         context.setAppendedPrompt(data);
     }
 
     @Override
     public void setActiveModule(InteractionContext context) {
-        context.getCoreContext().addActiveModule(MODULE_NAME);
+        context.getCoreContext().addActiveModule(getModuleName());
+    }
+
+    @Override
+    public String getModuleName() {
+        return "[记忆模块]";
     }
 
     private HashMap<String, String> getPromptDataMap(String userId) {
         HashMap<String, String> map = new HashMap<>();
-        String dialogMapStr = memoryManager.getDialogMapStr();
+        String dialogMapStr = cacheCapability.getDialogMapStr();
         if (!dialogMapStr.isEmpty()) {
             map.put("[记忆缓存] <你最近两日和所有聊天者的对话记忆印象>", dialogMapStr);
         }
 
-        String userDialogMapStr = memoryManager.getUserDialogMapStr(userId);
-        if (userDialogMapStr != null && !userDialogMapStr.isEmpty() && !memoryManager.isSingleUser()) {
+        String userDialogMapStr = cacheCapability.getUserDialogMapStr(userId);
+        if (userDialogMapStr != null && !userDialogMapStr.isEmpty() && !cognationCapability.isSingleUser()) {
             map.put("[用户记忆缓存] <与最新一条消息的发送者的近两天对话记忆印象, 可能与[记忆缓存]稍有重复>", userDialogMapStr);
         }
 
-        String sliceStr = memoryManager.getActivatedSlicesStr(userId);
+        String sliceStr = cognationCapability.getActivatedSlicesStr(userId);
         if (sliceStr != null && !sliceStr.isEmpty()) {
             map.put("[记忆切片] <你与最新一条消息的发送者的相关回忆, 不会与[记忆缓存]重复, 如果有重复你也可以指出来()>", sliceStr);
         }

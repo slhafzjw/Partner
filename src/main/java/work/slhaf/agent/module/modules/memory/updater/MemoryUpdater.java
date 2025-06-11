@@ -6,10 +6,14 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.thread.InteractionThreadPoolExecutor;
+import work.slhaf.agent.core.cognation.CognationCapability;
+import work.slhaf.agent.core.cognation.CognationManager;
+import work.slhaf.agent.core.cognation.submodule.cache.CacheCapability;
+import work.slhaf.agent.core.cognation.submodule.memory.MemoryCapability;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
+import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCapability;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.interaction.module.InteractionModule;
-import work.slhaf.agent.core.memory.MemoryManager;
-import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
 import work.slhaf.agent.core.session.SessionManager;
 import work.slhaf.agent.module.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.module.modules.memory.updater.summarizer.MemorySummarizer;
@@ -36,7 +40,10 @@ public class MemoryUpdater implements InteractionModule {
     private static final int TOKEN_PER_RECALL = 230;
     private static final int TRIGGER_ROLL_LIMIT = 36;
 
-    private MemoryManager memoryManager;
+    private CognationCapability cognationCapability;
+    private MemoryCapability memoryCapability;
+    private CacheCapability cacheCapability;
+    private PerceiveCapability perceiveCapability;
     private InteractionThreadPoolExecutor executor;
     private MemorySelectExtractor memorySelectExtractor;
     private MemorySummarizer memorySummarizer;
@@ -54,7 +61,10 @@ public class MemoryUpdater implements InteractionModule {
             synchronized (MemoryUpdater.class) {
                 if (memoryUpdater == null) {
                     memoryUpdater = new MemoryUpdater();
-                    memoryUpdater.setMemoryManager(MemoryManager.getInstance());
+                    memoryUpdater.setCognationCapability(CognationManager.getInstance());
+                    memoryUpdater.setMemoryCapability(CognationManager.getInstance());
+                    memoryUpdater.setCacheCapability(CognationManager.getInstance());
+                    memoryUpdater.setPerceiveCapability(CognationManager.getInstance());
                     memoryUpdater.setMemorySelectExtractor(MemorySelectExtractor.getInstance());
                     memoryUpdater.setMemorySummarizer(MemorySummarizer.getInstance());
                     memoryUpdater.setSessionManager(SessionManager.getInstance());
@@ -73,10 +83,10 @@ public class MemoryUpdater implements InteractionModule {
                 try {
                     long currentTime = System.currentTimeMillis();
                     long lastUpdatedTime = sessionManager.getLastUpdatedTime();
-                    int chatCount = memoryManager.getChatMessages().size();
+                    int chatCount = cognationCapability.getChatMessages().size();
                     if (lastUpdatedTime != 0 && currentTime - lastUpdatedTime > UPDATE_TRIGGER_INTERVAL && chatCount > 1) {
                         updateMemory();
-                        memoryManager.getChatMessages().clear();
+                        cognationCapability.getChatMessages().clear();
                         //重置MemoryId
                         sessionManager.refreshMemoryId();
                         log.info("[MemoryUpdater] 记忆更新: 自动触发");
@@ -105,7 +115,7 @@ public class MemoryUpdater implements InteractionModule {
                 int recallCount = moduleContext.getIntValue("recall_count");
                 log.debug("[MemoryUpdater] 记忆切片数量 [{}]", recallCount);
             }
-            int messageCount = memoryManager.getChatMessages().size();
+            int messageCount = cognationCapability.getChatMessages().size();
             if (messageCount >= TRIGGER_ROLL_LIMIT) {
                 try {
                     log.debug("[MemoryUpdater] 记忆更新: 已达{}轮", TRIGGER_ROLL_LIMIT);
@@ -121,7 +131,7 @@ public class MemoryUpdater implements InteractionModule {
 
     private void updateMemory() {
         log.debug("[MemoryUpdater] 记忆更新流程开始...");
-        tempMessage = new ArrayList<>(memoryManager.getChatMessages());
+        tempMessage = new ArrayList<>(cognationCapability.getChatMessages());
         HashMap<String, String> singleMemorySummary = new HashMap<>();
         //更新单聊记忆，同时从chatMessages中去掉单聊记忆
         updateSingleChatSlices(singleMemorySummary);
@@ -137,9 +147,9 @@ public class MemoryUpdater implements InteractionModule {
         Callable<Void> task = () -> {
             log.debug("[MemoryUpdater] 多人聊天记忆更新流程开始...");
             List<Message> chatMessages;
-            memoryManager.getMessageLock().lock();
-            chatMessages = new ArrayList<>(memoryManager.getChatMessages());
-            memoryManager.getMessageLock().unlock();
+            cognationCapability.getMessageLock().lock();
+            chatMessages = new ArrayList<>(cognationCapability.getChatMessages());
+            cognationCapability.getMessageLock().unlock();
             cleanMessage(chatMessages);
             if (!chatMessages.isEmpty()) {
                 log.debug("[MemoryUpdater] 存在多人聊天记录, 流程正常进行...");
@@ -148,20 +158,20 @@ public class MemoryUpdater implements InteractionModule {
                 if (userId == null) {
                     throw new RuntimeException("未匹配到 userId!");
                 }
-                SummarizeInput summarizeInput = new SummarizeInput(chatMessages, memoryManager.getTopicTree());
+                SummarizeInput summarizeInput = new SummarizeInput(chatMessages, memoryCapability.getTopicTree());
                 log.debug("[MemoryUpdater] 多人聊天记忆更新-总结流程-输入: {}", summarizeInput);
                 SummarizeResult summarizeResult = memorySummarizer.execute(summarizeInput);
                 log.debug("[MemoryUpdater] 多人聊天记忆更新-总结流程-输出: {}", summarizeResult);
                 MemorySlice memorySlice = getMemorySlice(userId, summarizeResult, chatMessages);
                 //设置involvedUserId
                 setInvolvedUserId(userId, memorySlice, chatMessages);
-                memoryManager.insertSlice(memorySlice, summarizeResult.getTopicPath());
+                memoryCapability.insertSlice(memorySlice, summarizeResult.getTopicPath());
 
-                memoryManager.updateDialogMap(LocalDateTime.now(), summarizeResult.getSummary());
+                cacheCapability.updateDialogMap(LocalDateTime.now(), summarizeResult.getSummary());
 
             } else {
                 log.debug("[MemoryUpdater] 不存在多人聊天记录, 将以单聊总结为对话缓存的主要输入: {}", singleMemorySummary);
-                memoryManager.updateDialogMap(LocalDateTime.now(), memorySummarizer.executeTotalSummary(singleMemorySummary));
+                cacheCapability.updateDialogMap(LocalDateTime.now(), memorySummarizer.executeTotalSummary(singleMemorySummary));
             }
             log.debug("[MemoryUpdater] 对话缓存更新完毕");
             log.debug("[MemoryUpdater] 多人聊天记忆更新流程结束...");
@@ -184,11 +194,11 @@ public class MemoryUpdater implements InteractionModule {
 
     private void clearChatMessages() {
         //不全部清空，保留一部分输入防止上下文割裂
-        memoryManager.getMessageLock().lock();
+        cognationCapability.getMessageLock().lock();
         List<Message> temp = new ArrayList<>(tempMessage.subList(tempMessage.size() - TRIGGER_ROLL_LIMIT / 6, tempMessage.size()));
-        memoryManager.getChatMessages().clear();
-        memoryManager.getChatMessages().addAll(temp);
-        memoryManager.getMessageLock().unlock();
+        cognationCapability.getChatMessages().clear();
+        cognationCapability.getChatMessages().addAll(temp);
+        cognationCapability.getMessageLock().unlock();
     }
 
     private void setInvolvedUserId(String startUserId, MemorySlice memorySlice, List<Message> chatMessages) {
@@ -224,17 +234,17 @@ public class MemoryUpdater implements InteractionModule {
                 log.debug("[MemoryUpdater] 单聊记忆[{}]更新: {}", thisCount, id);
                 try {
                     //单聊记忆更新
-                    SummarizeInput summarizeInput = new SummarizeInput(messages, memoryManager.getTopicTree());
+                    SummarizeInput summarizeInput = new SummarizeInput(messages, memoryCapability.getTopicTree());
                     log.debug("[MemoryUpdater] 单聊记忆[{}]更新-总结流程-输入: {}", thisCount, JSONObject.toJSONString(summarizeInput));
                     SummarizeResult summarizeResult = memorySummarizer.execute(summarizeInput);
                     log.debug("[MemoryUpdater] 单聊记忆[{}]更新-总结流程-输出: {}", thisCount, JSONObject.toJSONString(summarizeResult));
                     MemorySlice memorySlice = getMemorySlice(id, summarizeResult, messages);
                     //插入时userDialogMap已经进行更新
-                    memoryManager.insertSlice(memorySlice, summarizeResult.getTopicPath());
+                    memoryCapability.insertSlice(memorySlice, summarizeResult.getTopicPath());
                     //从chatMessages中移除单聊记录
-                    memoryManager.cleanMessage(messages);
+                    cognationCapability.cleanMessage(messages);
                     //添加至singleMemorySummary
-                    String key = memoryManager.getUser(id).getNickName() + "[" + id + "]";
+                    String key = perceiveCapability.getUser(id).getNickName() + "[" + id + "]";
                     singleMemorySummary.put(key, summarizeResult.getSummary());
                     log.debug("[MemoryUpdater] 单聊记忆[{}]更新成功: ", thisCount);
                 } catch (Exception e) {

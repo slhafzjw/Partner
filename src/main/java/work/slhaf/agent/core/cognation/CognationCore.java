@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.memory;
+package work.slhaf.agent.core.cognation;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -6,61 +6,62 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.serialize.PersistableObject;
-import work.slhaf.agent.core.memory.submodule.cache.CacheCore;
-import work.slhaf.agent.core.memory.submodule.graph.GraphCore;
-import work.slhaf.agent.core.memory.submodule.perceive.PerceiveCore;
+import work.slhaf.agent.core.cognation.submodule.cache.CacheCore;
+import work.slhaf.agent.core.cognation.submodule.memory.MemoryCore;
+import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCore;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemoryCore extends PersistableObject {
+public class CognationCore extends PersistableObject {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
     private static final String STORAGE_DIR = "./data/memory/";
-    private static volatile MemoryCore memoryCore;
+    private static volatile CognationCore cognationCore;
 
     private String id;
-    private GraphCore graphCore = new GraphCore();
+    private MemoryCore memoryCore = new MemoryCore();
     private CacheCore cacheCore = new CacheCore();
     private PerceiveCore perceiveCore = new PerceiveCore();
 
     /**
      * 主模型的聊天记录
      */
-    private List<Message> chatMessages;
+    private List<Message> chatMessages = new ArrayList<>();
 
-    public MemoryCore(String id) {
+    public CognationCore(String id) {
         this.id = id;
     }
 
-    public static MemoryCore getInstance(String id) throws IOException, ClassNotFoundException {
-        if (memoryCore == null) {
-            synchronized (MemoryCore.class) {
+    public static CognationCore getInstance(String id) throws IOException, ClassNotFoundException {
+        if (cognationCore == null) {
+            synchronized (CognationCore.class) {
                 // 检查存储目录是否存在，不存在则创建
-                if (memoryCore == null) {
+                if (cognationCore == null) {
                     createStorageDirectory();
                     Path filePath = getFilePath(id);
                     if (Files.exists(filePath)) {
-                        memoryCore = deserialize(id);
+                        cognationCore = deserialize(id);
                     } else {
                         FileUtils.createParentDirectories(filePath.toFile().getParentFile());
-                        memoryCore = new MemoryCore(id);
-                        memoryCore.serialize();
+                        cognationCore = new CognationCore(id);
+                        cognationCore.serialize();
                     }
-                    log.info("MemoryGraph注册完毕...");
+                    log.info("CognationCore注册完毕...");
                 }
             }
         }
-        return memoryCore;
+        return cognationCore;
     }
 
     public void serialize() throws IOException {
@@ -73,19 +74,19 @@ public class MemoryCore extends PersistableObject {
             oos.close();
             Path path = getFilePath(this.id);
             Files.move(filePath, path, StandardCopyOption.REPLACE_EXISTING);
-            log.info("MemoryCore 已保存到: {}", path);
+            log.info("CognationCore 已保存到: {}", path);
         } catch (IOException e) {
             Files.delete(filePath);
             log.error("序列化保存失败: {}", e.getMessage());
         }
     }
 
-    private static MemoryCore deserialize(String id) throws IOException, ClassNotFoundException {
+    private static CognationCore deserialize(String id) throws IOException, ClassNotFoundException {
         Path filePath = getFilePath(id);
         try (ObjectInputStream ois = new ObjectInputStream(
                 new FileInputStream(filePath.toFile()))) {
-            MemoryCore graph = (MemoryCore) ois.readObject();
-            log.info("MemoryCore 已从文件加载: {}", filePath);
+            CognationCore graph = (CognationCore) ois.readObject();
+            log.info("CognationCore 已从文件加载: {}", filePath);
             return graph;
         }
     }

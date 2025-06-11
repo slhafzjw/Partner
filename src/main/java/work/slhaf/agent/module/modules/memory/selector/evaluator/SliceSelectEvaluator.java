@@ -7,10 +7,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.agent.core.memory.MemoryManager;
-import work.slhaf.agent.core.memory.pojo.MemoryResult;
-import work.slhaf.agent.core.memory.pojo.MemorySliceResult;
-import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
+import work.slhaf.agent.core.cognation.common.pojo.MemoryResult;
+import work.slhaf.agent.core.cognation.common.pojo.MemorySliceResult;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
 import work.slhaf.agent.module.common.Model;
 import work.slhaf.agent.module.common.ModelConstant;
 import work.slhaf.agent.module.modules.memory.selector.evaluator.data.EvaluatorBatchInput;
@@ -34,7 +33,6 @@ import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 public class SliceSelectEvaluator extends Model {
     public static final String MODEL_KEY = "slice_evaluator";
     private static volatile SliceSelectEvaluator sliceSelectEvaluator;
-    private MemoryManager memoryManager;
     private InteractionThreadPoolExecutor executor;
 
     private SliceSelectEvaluator() {
@@ -45,7 +43,6 @@ public class SliceSelectEvaluator extends Model {
             synchronized (SliceSelectEvaluator.class) {
                 if (sliceSelectEvaluator == null) {
                     sliceSelectEvaluator = new SliceSelectEvaluator();
-                    sliceSelectEvaluator.setMemoryManager(MemoryManager.getInstance());
                     sliceSelectEvaluator.setExecutor(InteractionThreadPoolExecutor.getInstance());
                     setModel(sliceSelectEvaluator, MODEL_KEY, ModelConstant.Prompt.MEMORY, false);
                     log.info("SliceEvaluator注册完毕...");

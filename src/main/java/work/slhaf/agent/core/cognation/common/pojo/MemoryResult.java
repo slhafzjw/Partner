@@ -1,9 +1,9 @@
-package work.slhaf.agent.core.memory.pojo;
+package work.slhaf.agent.core.cognation.common.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.serialize.PersistableObject;
-import work.slhaf.agent.core.memory.submodule.graph.pojo.MemorySlice;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
 
 import java.io.Serial;
 import java.util.List;
