@@ -22,7 +22,6 @@ import static work.slhaf.agent.common.util.ExtractUtil.fixTopicPath;
 @Slf4j
 public class MultiSummarizer extends Model {
 
-    public static final String MODEL_KEY = "multi_summarizer";
     private static volatile MultiSummarizer multiSummarizer;
 
     public static MultiSummarizer getInstance() {
@@ -30,7 +29,7 @@ public class MultiSummarizer extends Model {
             synchronized (MultiSummarizer.class) {
                 if (multiSummarizer == null) {
                     multiSummarizer = new MultiSummarizer();
-                    setModel(multiSummarizer, MODEL_KEY, ModelConstant.Prompt.MEMORY, true);
+                    setModel(multiSummarizer, multiSummarizer.modelKey(), ModelConstant.Prompt.MEMORY, true);
                     multiSummarizer.updateChatClientSettings();
                 }
             }
@@ -61,4 +60,8 @@ public class MultiSummarizer extends Model {
         return result;
     }
 
+    @Override
+    protected String modelKey() {
+        return "multi_summarizer";
+    }
 }

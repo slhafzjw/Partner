@@ -5,7 +5,6 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.serialize.PersistableObject;
 
 import java.io.Serial;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,21 +18,21 @@ public class User extends PersistableObject {
 
     private String uuid;
     private String nickName;
-    private HashMap<String/*platform*/,String> info = new HashMap<>();
+    private HashMap<String/*platform*/, String> info = new HashMap<>();
 
-    private String relation;
-    private HashMap<LocalDate, String> events = new HashMap<>();
+    private String relation = Constant.Relation.STRANGER;
+    //    private HashMap<LocalDate, String> events = new HashMap<>();
     private List<String> impressions = new ArrayList<>();
     private List<String> attitude = new ArrayList<>();
     private List<String> staticMemory = new ArrayList<>();
 
-    public void addInfo(String platform,String userInfo) {
+    public void addInfo(String platform, String userInfo) {
         this.info.put(platform, userInfo);
     }
 
     public static class Constant {
         public static class Relation {
-            public static final String STRANGER = "stranger";
+            public static final String STRANGER = "陌生";
         }
     }
 }

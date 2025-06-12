@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-public class Model {
+public abstract class Model {
     protected ChatClient chatClient;
     protected List<Message> chatMessages;
     protected List<Message> baseMessages;
@@ -41,4 +41,6 @@ public class Model {
         this.chatClient.setTemperature(0.4);
         this.chatClient.setTop_p(0.8);
     }
+
+    protected abstract String modelKey();
 }

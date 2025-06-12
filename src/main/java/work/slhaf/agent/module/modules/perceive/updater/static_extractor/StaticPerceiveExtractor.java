@@ -18,15 +18,13 @@ public class StaticPerceiveExtractor extends Model {
 
     private static volatile StaticPerceiveExtractor staticPerceiveExtractor;
 
-    public static final String MODEL_KEY = "static_extractor";
-
 
     public static StaticPerceiveExtractor getInstance() {
         if (staticPerceiveExtractor == null) {
             synchronized (StaticPerceiveExtractor.class) {
                 if (staticPerceiveExtractor == null) {
                     staticPerceiveExtractor = new StaticPerceiveExtractor();
-                    setModel(staticPerceiveExtractor, MODEL_KEY, ModelConstant.Prompt.MEMORY, true);
+                    setModel(staticPerceiveExtractor, staticPerceiveExtractor.modelKey(), ModelConstant.Prompt.MEMORY, true);
                 }
             }
         }
@@ -39,5 +37,10 @@ public class StaticPerceiveExtractor extends Model {
         Map<String, String> result = new HashMap<>();
         jsonObject.forEach((k, v) -> result.put(k, (String) v));
         return result;
+    }
+
+    @Override
+    protected String modelKey() {
+        return "static_extractor";
     }
 }

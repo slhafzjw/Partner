@@ -36,9 +36,6 @@ public class MemoryUpdater implements InteractionModule {
 
     private static final long SCHEDULED_UPDATE_INTERVAL = 10 * 1000;
     private static final long UPDATE_TRIGGER_INTERVAL = 60 * 60 * 1000;
-    //    private static final int TRIGGER_TOKEN_LIMIT = 5 * 1000;
-    private static final int TOKEN_PER_RECALL = 230;
-    private static final int TRIGGER_ROLL_LIMIT = 36;
 
     private CognationCapability cognationCapability;
     private MemoryCapability memoryCapability;
@@ -101,31 +98,32 @@ public class MemoryUpdater implements InteractionModule {
     }
 
     @Override
-    public void execute(InteractionContext interactionContext) {
-        if (interactionContext.isFinished()) {
+    public void execute(InteractionContext context) {
+        if (context.isFinished()) {
             log.warn("[MemoryUpdater] 流程强制结束, 不触发记忆被动更新机制");
             return;
         }
         executor.execute(() -> {
             //如果token 大于阈值，则更新记忆
-            JSONObject moduleContext = interactionContext.getModuleContext().getExtraContext();
+            JSONObject moduleContext = context.getModuleContext().getExtraContext();
             boolean recall = moduleContext.getBoolean("recall");
             if (recall) {
                 log.debug("[MemoryUpdater] 存在回忆");
                 int recallCount = moduleContext.getIntValue("recall_count");
                 log.debug("[MemoryUpdater] 记忆切片数量 [{}]", recallCount);
             }
-            int messageCount = cognationCapability.getChatMessages().size();
-            if (messageCount >= TRIGGER_ROLL_LIMIT) {
+            boolean trigger = context.getModuleContext().getExtraContext().getBoolean("post_process_trigger");
+            if (!trigger) {
+                return;
+            }
                 try {
-                    log.debug("[MemoryUpdater] 记忆更新: 已达{}轮", TRIGGER_ROLL_LIMIT);
+                    log.debug("[MemoryUpdater] 记忆更新触发");
                     updateMemory();
                     //清空chatMessages
                     clearChatMessages();
                 } catch (Exception e) {
                     log.error("[MemoryUpdater] 记忆更新线程出错: ", e);
                 }
-            }
         });
     }
 
@@ -195,9 +193,9 @@ public class MemoryUpdater implements InteractionModule {
     private void clearChatMessages() {
         //不全部清空，保留一部分输入防止上下文割裂
         cognationCapability.getMessageLock().lock();
-        List<Message> temp = new ArrayList<>(tempMessage.subList(tempMessage.size() - TRIGGER_ROLL_LIMIT / 6, tempMessage.size()));
-        cognationCapability.getChatMessages().clear();
-        cognationCapability.getChatMessages().addAll(temp);
+        List<Message> temp = new ArrayList<>(tempMessage.subList(tempMessage.size() - tempMessage.size() / 6, tempMessage.size()));
+        cognationCapability.getChatMessages().removeAll(tempMessage);
+        cognationCapability.getChatMessages().addAll(0, temp);
         cognationCapability.getMessageLock().unlock();
     }
 

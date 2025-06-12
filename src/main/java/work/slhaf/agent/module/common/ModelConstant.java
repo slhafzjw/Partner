@@ -6,6 +6,7 @@ public class ModelConstant {
         public static final String MEMORY = "memory";
         public static final String SCHEDULE = "schedule";
         public static final String CORE = "core";
+        public static final String PERCEIVE = "perceive";
     }
 
     public static class CharacterPrefix {

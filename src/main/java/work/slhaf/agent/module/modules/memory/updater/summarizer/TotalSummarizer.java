@@ -18,7 +18,6 @@ import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 @Slf4j
 public class TotalSummarizer extends Model {
 
-    public static final String MODEL_KEY = "total_summarizer";
     private static volatile TotalSummarizer totalSummarizer;
 
     public static TotalSummarizer getInstance() {
@@ -26,7 +25,7 @@ public class TotalSummarizer extends Model {
             synchronized (TotalSummarizer.class) {
                 if (totalSummarizer == null) {
                     totalSummarizer = new TotalSummarizer();
-                    setModel(totalSummarizer, MODEL_KEY, ModelConstant.Prompt.MEMORY, true);
+                    setModel(totalSummarizer, totalSummarizer.modelKey(), ModelConstant.Prompt.MEMORY, true);
                     totalSummarizer.updateChatClientSettings();
                 }
             }
@@ -37,5 +36,10 @@ public class TotalSummarizer extends Model {
     public String execute(HashMap<String, String> singleMemorySummary){
         ChatResponse response = this.singleChat(JSONUtil.toJsonPrettyStr(singleMemorySummary));
         return JSONObject.parseObject(extractJson(response.getMessage())).getString("content");
+    }
+
+    @Override
+    protected String modelKey() {
+        return "total_summarizer";
     }
 }

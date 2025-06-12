@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.serialize.PersistableObject;
 import work.slhaf.agent.core.cognation.submodule.perceive.pojo.User;
+import work.slhaf.agent.module.modules.perceive.updater.pojo.PerceiveChatResult;
 
 import java.io.Serial;
 import java.util.ArrayList;
@@ -73,5 +74,15 @@ public class PerceiveCore extends PersistableObject {
         }
         usersLock.unlock();
         return null;
+    }
+
+    public void updateUser(PerceiveChatResult perceiveChatResult, String userId) {
+        usersLock.lock();
+        User user = selectUser(userId);
+        user.setRelation(perceiveChatResult.getRelation());
+        user.setImpressions(perceiveChatResult.getImpressions());
+        user.setAttitude(perceiveChatResult.getAttitude());
+        user.setStaticMemory(perceiveChatResult.getStaticMemory());
+        usersLock.unlock();
     }
 }

@@ -12,10 +12,8 @@ import work.slhaf.agent.core.cognation.submodule.cache.CacheCapability;
 import work.slhaf.agent.core.cognation.submodule.memory.MemoryCapability;
 import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
-import work.slhaf.agent.core.interaction.module.InteractionModule;
 import work.slhaf.agent.core.session.SessionManager;
-import work.slhaf.agent.module.common.AppendPromptData;
-import work.slhaf.agent.module.common.PreModuleActions;
+import work.slhaf.agent.module.common.PreModule;
 import work.slhaf.agent.module.modules.memory.selector.evaluator.SliceSelectEvaluator;
 import work.slhaf.agent.module.modules.memory.selector.evaluator.data.EvaluatorInput;
 import work.slhaf.agent.module.modules.memory.selector.extractor.MemorySelectExtractor;
@@ -32,7 +30,7 @@ import java.util.List;
 
 @Data
 @Slf4j
-public class MemorySelector implements InteractionModule, PreModuleActions {
+public class MemorySelector extends PreModule {
 
     private static volatile MemorySelector memorySelector;
 
@@ -152,26 +150,11 @@ public class MemorySelector implements InteractionModule, PreModuleActions {
     }
 
     @Override
-    public void setAppendedPrompt(InteractionContext context) {
-        String userId = context.getUserId();
-        HashMap<String, String> map = getPromptDataMap(userId);
-        AppendPromptData data = new AppendPromptData();
-        data.setModuleName(getModuleName());
-        data.setAppendedPrompt(map);
-        context.setAppendedPrompt(data);
-    }
-
-    @Override
-    public void setActiveModule(InteractionContext context) {
-        context.getCoreContext().addActiveModule(getModuleName());
-    }
-
-    @Override
-    public String getModuleName() {
+    public String moduleName() {
         return "[记忆模块]";
     }
 
-    private HashMap<String, String> getPromptDataMap(String userId) {
+    protected HashMap<String, String> getPromptDataMap(String userId) {
         HashMap<String, String> map = new HashMap<>();
         String dialogMapStr = cacheCapability.getDialogMapStr();
         if (!dialogMapStr.isEmpty()) {

@@ -32,7 +32,6 @@ import static work.slhaf.agent.common.util.ExtractUtil.fixTopicPath;
 @Data
 @Slf4j
 public class MemorySelectExtractor extends Model {
-    public static final String MODEL_KEY = "topic_extractor";
     private static volatile MemorySelectExtractor memorySelectExtractor;
 
     private MemoryCapability memoryCapability;
@@ -50,7 +49,7 @@ public class MemorySelectExtractor extends Model {
                     memorySelectExtractor.setMemoryCapability(CognationManager.getInstance());
                     memorySelectExtractor.setCognationCapability(CognationManager.getInstance());
                     memorySelectExtractor.setSessionManager(SessionManager.getInstance());
-                    setModel(memorySelectExtractor, MODEL_KEY, ModelConstant.Prompt.MEMORY, false);
+                    setModel(memorySelectExtractor, memorySelectExtractor.modelKey(), ModelConstant.Prompt.MEMORY, false);
                 }
             }
         }
@@ -106,4 +105,8 @@ public class MemorySelectExtractor extends Model {
         return extractorResult;
     }
 
+    @Override
+    protected String modelKey() {
+        return "topic_extractor";
+    }
 }

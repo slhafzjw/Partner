@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Data
 public class SingleSummarizer extends Model {
 
-    public static final String MODEL_KEY = "single_summarizer";
     private static volatile SingleSummarizer singleSummarizer;
 
     private InteractionThreadPoolExecutor executor;
@@ -33,7 +32,7 @@ public class SingleSummarizer extends Model {
                 if (singleSummarizer == null) {
                     singleSummarizer = new SingleSummarizer();
                     singleSummarizer.setExecutor(InteractionThreadPoolExecutor.getInstance());
-                    setModel(singleSummarizer, MODEL_KEY, ModelConstant.Prompt.MEMORY, false);
+                    setModel(singleSummarizer, singleSummarizer.modelKey(), ModelConstant.Prompt.MEMORY, false);
                 }
             }
         }
@@ -72,4 +71,8 @@ public class SingleSummarizer extends Model {
         }
     }
 
+    @Override
+    protected String modelKey() {
+        return "single_summarizer";
+    }
 }

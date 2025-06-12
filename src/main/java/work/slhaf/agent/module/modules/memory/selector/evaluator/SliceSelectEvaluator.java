@@ -31,7 +31,6 @@ import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 @Data
 @Slf4j
 public class SliceSelectEvaluator extends Model {
-    public static final String MODEL_KEY = "slice_evaluator";
     private static volatile SliceSelectEvaluator sliceSelectEvaluator;
     private InteractionThreadPoolExecutor executor;
 
@@ -44,7 +43,7 @@ public class SliceSelectEvaluator extends Model {
                 if (sliceSelectEvaluator == null) {
                     sliceSelectEvaluator = new SliceSelectEvaluator();
                     sliceSelectEvaluator.setExecutor(InteractionThreadPoolExecutor.getInstance());
-                    setModel(sliceSelectEvaluator, MODEL_KEY, ModelConstant.Prompt.MEMORY, false);
+                    setModel(sliceSelectEvaluator, sliceSelectEvaluator.modelKey(), ModelConstant.Prompt.MEMORY, false);
                     log.info("SliceEvaluator注册完毕...");
                 }
             }
@@ -135,4 +134,8 @@ public class SliceSelectEvaluator extends Model {
     }
 
 
+    @Override
+    protected String modelKey() {
+        return "slice_evaluator";
+    }
 }

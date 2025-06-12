@@ -11,7 +11,7 @@ import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.interaction.module.InteractionModule;
 import work.slhaf.agent.core.interaction.module.InteractionModulesLoader;
 import work.slhaf.agent.module.modules.core.CoreModel;
-import work.slhaf.agent.module.modules.preprocess.PreprocessExecutor;
+import work.slhaf.agent.module.modules.process.PreprocessExecutor;
 import work.slhaf.agent.module.modules.task.TaskScheduler;
 
 import java.io.IOException;
@@ -46,7 +46,6 @@ public class InteractionHub {
     public void call(InteractionInputData inputData) throws IOException, ClassNotFoundException {
         InteractionContext interactionContext = PreprocessExecutor.getInstance().execute(inputData);
         try {
-            //预处理
             for (InteractionModule interactionModule : interactionModules) {
                 interactionModule.execute(interactionContext);
             }
