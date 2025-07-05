@@ -49,7 +49,7 @@ public class MemorySelectExtractor extends Model {
                     memorySelectExtractor.setMemoryCapability(CognationManager.getInstance());
                     memorySelectExtractor.setCognationCapability(CognationManager.getInstance());
                     memorySelectExtractor.setSessionManager(SessionManager.getInstance());
-                    setModel(memorySelectExtractor, memorySelectExtractor.modelKey(), ModelConstant.Prompt.MEMORY, false);
+                    setModel(memorySelectExtractor, ModelConstant.Prompt.MEMORY, false);
                 }
             }
         }

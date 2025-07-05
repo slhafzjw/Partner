@@ -17,7 +17,8 @@ public abstract class Model {
     protected List<Message> chatMessages;
     protected List<Message> baseMessages;
 
-    protected static void setModel(Model model, String model_key, String promptModule, boolean withAwareness) {
+    protected static void setModel(Model model, String promptModule, boolean withAwareness) {
+        String model_key = model.modelKey();
         ModelConfig modelConfig = ModelConfig.load(model_key);
 
         model.setBaseMessages(withAwareness ? ResourcesUtil.Prompt.loadPromptWithSelfAwareness(model_key, promptModule) : ResourcesUtil.Prompt.loadPrompt(model_key, promptModule));

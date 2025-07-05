@@ -32,7 +32,7 @@ public class SingleSummarizer extends Model {
                 if (singleSummarizer == null) {
                     singleSummarizer = new SingleSummarizer();
                     singleSummarizer.setExecutor(InteractionThreadPoolExecutor.getInstance());
-                    setModel(singleSummarizer, singleSummarizer.modelKey(), ModelConstant.Prompt.MEMORY, false);
+                    setModel(singleSummarizer, ModelConstant.Prompt.MEMORY, false);
                 }
             }
         }

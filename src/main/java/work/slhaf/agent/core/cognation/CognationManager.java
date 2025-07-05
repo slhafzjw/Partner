@@ -21,7 +21,6 @@ import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCapability;
 import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCore;
 import work.slhaf.agent.core.cognation.submodule.perceive.pojo.User;
-import work.slhaf.agent.module.modules.perceive.updater.pojo.PerceiveChatResult;
 import work.slhaf.agent.shared.memory.EvaluatedSlice;
 
 import java.io.IOException;
@@ -287,8 +286,8 @@ public class CognationManager extends PersistableObject implements CacheCapabili
     }
 
     @Override
-    public void updateUser(PerceiveChatResult perceiveChatResult, String userId) {
-        perceiveCore.updateUser(perceiveChatResult, userId);
+    public void updateUser(User tempUser) {
+        perceiveCore.updateUser(tempUser);
     }
 
     @Override

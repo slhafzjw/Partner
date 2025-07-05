@@ -14,21 +14,21 @@ import java.util.Map;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class StaticPerceiveExtractor extends Model {
+public class StaticExtractor extends Model {
 
-    private static volatile StaticPerceiveExtractor staticPerceiveExtractor;
+    private static volatile StaticExtractor staticExtractor;
 
 
-    public static StaticPerceiveExtractor getInstance() {
-        if (staticPerceiveExtractor == null) {
-            synchronized (StaticPerceiveExtractor.class) {
-                if (staticPerceiveExtractor == null) {
-                    staticPerceiveExtractor = new StaticPerceiveExtractor();
-                    setModel(staticPerceiveExtractor, staticPerceiveExtractor.modelKey(), ModelConstant.Prompt.MEMORY, true);
+    public static StaticExtractor getInstance() {
+        if (staticExtractor == null) {
+            synchronized (StaticExtractor.class) {
+                if (staticExtractor == null) {
+                    staticExtractor = new StaticExtractor();
+                    setModel(staticExtractor, ModelConstant.Prompt.MEMORY, true);
                 }
             }
         }
-        return staticPerceiveExtractor;
+        return staticExtractor;
     }
 
     public Map<String, String> execute(StaticExtractInput input) {

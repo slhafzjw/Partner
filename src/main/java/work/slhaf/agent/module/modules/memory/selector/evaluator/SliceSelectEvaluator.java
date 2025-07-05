@@ -43,7 +43,7 @@ public class SliceSelectEvaluator extends Model {
                 if (sliceSelectEvaluator == null) {
                     sliceSelectEvaluator = new SliceSelectEvaluator();
                     sliceSelectEvaluator.setExecutor(InteractionThreadPoolExecutor.getInstance());
-                    setModel(sliceSelectEvaluator, sliceSelectEvaluator.modelKey(), ModelConstant.Prompt.MEMORY, false);
+                    setModel(sliceSelectEvaluator, ModelConstant.Prompt.MEMORY, false);
                     log.info("SliceEvaluator注册完毕...");
                 }
             }

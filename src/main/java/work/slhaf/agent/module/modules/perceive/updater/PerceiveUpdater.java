@@ -17,6 +17,8 @@ import work.slhaf.agent.module.common.Model;
 import work.slhaf.agent.module.common.ModelConstant;
 import work.slhaf.agent.module.modules.perceive.updater.pojo.PerceiveChatInput;
 import work.slhaf.agent.module.modules.perceive.updater.pojo.PerceiveChatResult;
+import work.slhaf.agent.module.modules.perceive.updater.relation_extractor.RelationExtractor;
+import work.slhaf.agent.module.modules.perceive.updater.static_extractor.StaticExtractor;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,9 +34,12 @@ import java.util.List;
 public class PerceiveUpdater extends Model implements InteractionModule {
 
     private static volatile PerceiveUpdater perceiveUpdater;
+
     private PerceiveCapability perceiveCapability;
     private CognationCapability cognationCapability;
     private InteractionThreadPoolExecutor executor;
+    private RelationExtractor relationExtractor;
+    private StaticExtractor staticExtractor;
 
     private List<Message> tempMessages;
 
@@ -46,7 +51,9 @@ public class PerceiveUpdater extends Model implements InteractionModule {
                     perceiveUpdater.setPerceiveCapability(CognationManager.getInstance());
                     perceiveUpdater.setCognationCapability(CognationManager.getInstance());
                     perceiveUpdater.setExecutor(InteractionThreadPoolExecutor.getInstance());
-                    setModel(perceiveUpdater, perceiveUpdater.modelKey(), ModelConstant.Prompt.PERCEIVE, false);
+                    perceiveUpdater.setRelationExtractor(RelationExtractor.getInstance());
+                    perceiveUpdater.setStaticExtractor(StaticExtractor.getInstance());
+                    setModel(perceiveUpdater, ModelConstant.Prompt.PERCEIVE, true);
                 }
             }
         }
@@ -64,8 +71,19 @@ public class PerceiveUpdater extends Model implements InteractionModule {
             String userId = context.getUserId();
             PerceiveChatInput input = getPerceiveInput(userId);
             PerceiveChatResult perceiveChatResult = getPerceiveResult(input);
-            perceiveCapability.updateUser(perceiveChatResult,context.getUserId());
+            User user = getTempUser(context, perceiveChatResult);
+            user.setStaticMemory(perceiveChatResult.getStaticMemory());
+            perceiveCapability.updateUser(user);
         });
+    }
+
+    private static User getTempUser(InteractionContext context, PerceiveChatResult perceiveChatResult) {
+        User user = new User();
+        user.setUuid(context.getUserId());
+        user.setRelation(perceiveChatResult.getRelation());
+        user.setImpressions(perceiveChatResult.getImpressions());
+        user.setAttitude(perceiveChatResult.getAttitude());
+        return user;
     }
 
     private PerceiveChatResult getPerceiveResult(PerceiveChatInput input) {

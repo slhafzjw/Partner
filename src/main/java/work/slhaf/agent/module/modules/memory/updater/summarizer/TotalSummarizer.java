@@ -25,7 +25,7 @@ public class TotalSummarizer extends Model {
             synchronized (TotalSummarizer.class) {
                 if (totalSummarizer == null) {
                     totalSummarizer = new TotalSummarizer();
-                    setModel(totalSummarizer, totalSummarizer.modelKey(), ModelConstant.Prompt.MEMORY, true);
+                    setModel(totalSummarizer, ModelConstant.Prompt.MEMORY, true);
                     totalSummarizer.updateChatClientSettings();
                 }
             }

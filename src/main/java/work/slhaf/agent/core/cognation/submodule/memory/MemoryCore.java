@@ -51,6 +51,8 @@ public class MemoryCore extends PersistableObject {
      */
     private Set<Long> selectedSlices = new HashSet<>();
 
+    private HashMap<String,List<String>> userIndex = new HashMap<>();
+
 
     public MemoryResult selectMemory(LocalDate date) throws IOException, ClassNotFoundException {
         MemoryResult memoryResult = new MemoryResult();
@@ -137,9 +139,22 @@ public class MemoryCore extends PersistableObject {
 
         updateSlicePrecedent(slice);
         updateDateIndex(slice);
+        updateUserIndex(slice);
 
         node.saveMemorySliceList();
 
+    }
+
+    private void updateUserIndex(MemorySlice slice) {
+        String memoryId = slice.getMemoryId();
+        String userId = slice.getStartUserId();
+        if (!userIndex.containsKey(userId)) {
+            List<String> memoryIdSet = new ArrayList<>();
+            memoryIdSet.add(memoryId);
+            userIndex.put(userId, memoryIdSet);
+        } else {
+            userIndex.get(userId).add(memoryId);
+        }
     }
 
 

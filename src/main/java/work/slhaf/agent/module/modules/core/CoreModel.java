@@ -30,7 +30,6 @@ import static work.slhaf.agent.common.util.ExtractUtil.extractJson;
 @Slf4j
 public class CoreModel extends Model implements InteractionModule {
 
-    public static final String MODEL_KEY = "core_model";
     private static volatile CoreModel coreModel;
 
     private CognationCapability cognationCapability;
@@ -49,7 +48,7 @@ public class CoreModel extends Model implements InteractionModule {
                     coreModel.chatMessages = coreModel.cognationCapability.getChatMessages();
                     coreModel.appendedMessages = new ArrayList<>();
                     coreModel.sessionManager = SessionManager.getInstance();
-                    setModel(coreModel, MODEL_KEY, ModelConstant.Prompt.CORE, true);
+                    setModel(coreModel, ModelConstant.Prompt.CORE, true);
                     coreModel.updateChatClientSettings();
                     log.info("[CoreModel] CoreModel注册完毕...");
                 }
@@ -62,6 +61,11 @@ public class CoreModel extends Model implements InteractionModule {
     protected void updateChatClientSettings() {
         this.chatClient.setTemperature(0.3);
         this.chatClient.setTop_p(0.7);
+    }
+
+    @Override
+    protected String modelKey() {
+        return "core_model";
     }
 
     @Override
