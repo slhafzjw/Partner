@@ -82,6 +82,7 @@ public class PerceiveCore extends PersistableObject {
         user.setImpressions(temp.getImpressions());
         user.setAttitude(temp.getAttitude());
         user.setStaticMemory(temp.getStaticMemory());
+        user.updateRelationChange(user.getRelationChange());
         usersLock.unlock();
     }
 }

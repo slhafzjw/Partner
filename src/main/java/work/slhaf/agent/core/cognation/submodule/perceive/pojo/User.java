@@ -5,8 +5,10 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.agent.common.serialize.PersistableObject;
 
 import java.io.Serial;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
@@ -24,10 +26,21 @@ public class User extends PersistableObject {
     //    private HashMap<LocalDate, String> events = new HashMap<>();
     private List<String> impressions = new ArrayList<>();
     private List<String> attitude = new ArrayList<>();
-    private List<String> staticMemory = new ArrayList<>();
+    private LinkedHashMap<LocalDate,String> relationChange = new LinkedHashMap<>();
+    private HashMap<String,String> staticMemory = new HashMap<>();
 
     public void addInfo(String platform, String userInfo) {
         this.info.put(platform, userInfo);
+    }
+
+    public void updateRelationChange(String changeReason){
+        relationChange.put(LocalDate.now(),changeReason);
+    }
+    public void updateRelationChange(LocalDate date, String changeReason){
+        relationChange.put(date,changeReason);
+    }
+    public void updateRelationChange(LinkedHashMap<LocalDate,String> tempRelationChange){
+        relationChange.putAll(tempRelationChange);
     }
 
     public static class Constant {

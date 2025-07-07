@@ -9,7 +9,7 @@ import java.util.Map;
 
 @Data
 @Builder
-public class StaticExtractInput {
+public class StaticMemoryExtractInput {
     private String userId;
     private List<Message> messages;
     private Map<String,String> existedStaticMap;

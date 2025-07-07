@@ -17,8 +17,9 @@
 ### 针对LLM的'自我引导'机制
 > 通过特定的交互对话, 引导LLM产生一定的'自我定位'特征, 但似乎大多数模型都不太适合(要么幻觉严重, 要么工具底色太强), 经测试, qwen3系列的qwen-plus-latest、qwen-max-latest比较合适.
 
-## 模块实现
-- 预处理模块: `Preprocessor`
+## 模块(已实现/正在实现)
+- 预处理模块: `PreprocessExecutor`
+- 后处理模块: `PostprocessExecutor`
 - 记忆模块
   - 记忆选择模块: `MemorySelector`
     - 主题提取模块: `MemorySelectExtractor`
@@ -26,6 +27,11 @@
   - 记忆更新模块: `MemoryUpdater`
     - 记忆总结模块: `MemorySummarizer`
     - 静态记忆提取模块: `StaticMemoryExtractor`
+- 感知模块
+  - 感知选择模块: `PerceiveSelector`
+  - 感知更新模块: `PerceiveUpdater`
+    - 关系提取模块: `RelationExtractor`
+    - 静态记忆提取模块: `StaticExtractor`
 - 主对话模块: `CoreModel`
 
 ## 当前问题
@@ -37,11 +43,10 @@
 - [ ] 调整模块加载机制，将记忆模块以及后续的任务调度模块作为不可替换的核心模块，但允许在主模块与前后模块之间添加新的模块。
 - [ ] 实现流式输出，同时在各模块执行时可向客户端返回回调信息，优化使用体验。(现在用的是`websocket`与客户端通信, 应该实现这点会简单些)
 - [ ] 服务端与客户端的通信加上消息队列，防止消息因连接断开而丢失。
-- [ ] 踩坑。
-
-### 长期规划
 - [ ] 实现角色演进机制
 - [ ] 实现任务调度模块(主动调度、意图推断、定时调度)
+- [ ] 实现任务与主动调度模块，目前打算用 `时间轮算法` 实现定时操作
+- [ ] 踩坑。
 
 ## License
 

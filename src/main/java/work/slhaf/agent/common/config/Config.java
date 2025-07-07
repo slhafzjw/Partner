@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 import work.slhaf.agent.module.modules.core.CoreModel;
 import work.slhaf.agent.module.modules.memory.selector.MemorySelector;
 import work.slhaf.agent.module.modules.memory.updater.MemoryUpdater;
+import work.slhaf.agent.module.modules.process.PostprocessExecutor;
 
 import java.io.File;
 import java.io.IOException;
@@ -98,6 +99,7 @@ public class Config {
         List<ModuleConfig> moduleConfigList = List.of(
                 new ModuleConfig(MemorySelector.class.getName(), ModuleConfig.Constant.INTERNAL, null),
                 new ModuleConfig(CoreModel.class.getName(), ModuleConfig.Constant.INTERNAL, null),
+                new ModuleConfig(PostprocessExecutor.class.getName(),ModuleConfig.Constant.INTERNAL,null),
                 new ModuleConfig(MemoryUpdater.class.getName(), ModuleConfig.Constant.INTERNAL, null)
 //                new ModuleConfig(TaskScheduler.class.getName(), ModuleConfig.Constant.INTERNAL, null)
         );

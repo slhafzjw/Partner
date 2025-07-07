@@ -25,8 +25,6 @@ public class InteractionHub {
 
     @ToString.Exclude
     private TaskCallback callback;
-    private CoreModel coreModel;
-    private TaskScheduler taskScheduler;
     private List<InteractionModule> interactionModules;
 
     public static InteractionHub initialize() throws IOException {
