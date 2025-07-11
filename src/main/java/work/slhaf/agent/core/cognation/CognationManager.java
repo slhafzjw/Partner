@@ -2,6 +2,7 @@ package work.slhaf.agent.core.cognation;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.Message;
@@ -44,6 +45,7 @@ public class CognationManager extends PersistableObject implements CacheCapabili
 
     private static volatile CognationManager cognationManager;
     private final Lock sliceInsertLock = new ReentrantLock();
+    @Getter
     public final Lock messageLock = new ReentrantLock();
 
 

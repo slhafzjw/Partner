@@ -44,7 +44,6 @@ public class RelationExtractor extends Model {
         return relationExtractor;
     }
 
-    //TODO 完善关系提取与相应提示词
     public RelationExtractResult execute(InteractionContext context){
         tempMessages = new ArrayList<>(cognationCapability.getChatMessages());
         String userId = context.getUserId();
@@ -77,7 +76,7 @@ public class RelationExtractor extends Model {
         map.put("[关系] <你与用户的关系>", user.getRelation());
         map.put("[态度] <你对于用户的态度>", user.getAttitude().toString());
         map.put("[印象] <你对于用户的印象>", user.getImpressions().toString());
-        map.put("[静态记忆] <你对该用户的静态记忆>", user.getStaticMemory().toString());
+        map.put("[静态记忆] <你对该用户的事实性记忆>", user.getStaticMemory().toString());
         RelationExtractInput input = new RelationExtractInput();
         input.setPrimaryUserPerceive(map);
         input.setChatMessages(tempMessages);
