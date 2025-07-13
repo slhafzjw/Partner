@@ -3,13 +3,13 @@ package work.slhaf.agent.module.modules.memory.selector;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.core.cognation.CognationCapability;
+import work.slhaf.agent.core.cognation.capability.ability.CognationCapability;
 import work.slhaf.agent.core.cognation.CognationManager;
-import work.slhaf.agent.core.cognation.common.exception.UnExistedDateIndexException;
-import work.slhaf.agent.core.cognation.common.exception.UnExistedTopicException;
+import work.slhaf.agent.core.cognation.submodule.memory.exception.UnExistedDateIndexException;
+import work.slhaf.agent.core.cognation.submodule.memory.exception.UnExistedTopicException;
 import work.slhaf.agent.core.cognation.common.pojo.MemoryResult;
-import work.slhaf.agent.core.cognation.submodule.cache.CacheCapability;
-import work.slhaf.agent.core.cognation.submodule.memory.MemoryCapability;
+import work.slhaf.agent.core.cognation.capability.ability.CacheCapability;
+import work.slhaf.agent.core.cognation.capability.ability.MemoryCapability;
 import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.session.SessionManager;
@@ -19,7 +19,7 @@ import work.slhaf.agent.module.modules.memory.selector.evaluator.data.EvaluatorI
 import work.slhaf.agent.module.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.agent.module.modules.memory.selector.extractor.data.ExtractorMatchData;
 import work.slhaf.agent.module.modules.memory.selector.extractor.data.ExtractorResult;
-import work.slhaf.agent.shared.memory.EvaluatedSlice;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 
 import java.io.IOException;
 import java.time.LocalDate;

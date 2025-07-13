@@ -10,19 +10,22 @@ import work.slhaf.agent.common.config.Config;
 import work.slhaf.agent.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.agent.common.exception_handler.pojo.GlobalException;
 import work.slhaf.agent.common.serialize.PersistableObject;
-import work.slhaf.agent.core.cognation.common.exception.UserNotExistsException;
-import work.slhaf.agent.core.cognation.common.pojo.ActiveData;
+import work.slhaf.agent.core.cognation.capability.ability.CognationCapability;
+import work.slhaf.agent.core.cognation.cognation.CognationCore;
+import work.slhaf.agent.core.cognation.cognation.exception.UserNotExistsException;
+import work.slhaf.agent.core.cognation.cognation.pojo.ActiveData;
 import work.slhaf.agent.core.cognation.common.pojo.MemoryResult;
 import work.slhaf.agent.core.cognation.common.pojo.MemorySliceResult;
-import work.slhaf.agent.core.cognation.submodule.cache.CacheCapability;
+import work.slhaf.agent.core.cognation.capability.ability.CacheCapability;
 import work.slhaf.agent.core.cognation.submodule.cache.CacheCore;
-import work.slhaf.agent.core.cognation.submodule.memory.MemoryCapability;
+import work.slhaf.agent.core.cognation.submodule.dispatch.DispatchCore;
+import work.slhaf.agent.core.cognation.capability.ability.MemoryCapability;
 import work.slhaf.agent.core.cognation.submodule.memory.MemoryCore;
 import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
-import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCapability;
+import work.slhaf.agent.core.cognation.capability.ability.PerceiveCapability;
 import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCore;
 import work.slhaf.agent.core.cognation.submodule.perceive.pojo.User;
-import work.slhaf.agent.shared.memory.EvaluatedSlice;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 
 import java.io.IOException;
 import java.io.Serial;
@@ -53,6 +56,7 @@ public class CognationManager extends PersistableObject implements CacheCapabili
     private CacheCore cacheCore;
     private MemoryCore memoryCore;
     private PerceiveCore perceiveCore;
+    private DispatchCore dispatchCore;
 
     private ActiveData activeData;
 

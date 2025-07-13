@@ -3,7 +3,7 @@ package work.slhaf.agent.module.modules.perceive.selector;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.core.cognation.CognationManager;
-import work.slhaf.agent.core.cognation.submodule.perceive.PerceiveCapability;
+import work.slhaf.agent.core.cognation.capability.ability.PerceiveCapability;
 import work.slhaf.agent.core.cognation.submodule.perceive.pojo.User;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.module.common.PreModule;

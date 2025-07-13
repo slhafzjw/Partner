@@ -8,7 +8,7 @@ import work.slhaf.agent.common.chat.constant.ChatConstant;
 import work.slhaf.agent.common.chat.pojo.ChatResponse;
 import work.slhaf.agent.common.chat.pojo.Message;
 import work.slhaf.agent.common.chat.pojo.MetaMessage;
-import work.slhaf.agent.core.cognation.CognationCapability;
+import work.slhaf.agent.core.cognation.capability.ability.CognationCapability;
 import work.slhaf.agent.core.cognation.CognationManager;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.interaction.module.InteractionModule;

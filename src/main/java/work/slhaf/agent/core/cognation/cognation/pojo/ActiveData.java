@@ -1,7 +1,7 @@
-package work.slhaf.agent.core.cognation.common.pojo;
+package work.slhaf.agent.core.cognation.cognation.pojo;
 
 import lombok.Data;
-import work.slhaf.agent.shared.memory.EvaluatedSlice;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 
 import java.util.HashMap;
 import java.util.List;

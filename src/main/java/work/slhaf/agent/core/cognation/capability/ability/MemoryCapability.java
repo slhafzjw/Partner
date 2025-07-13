@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.cognation.submodule.memory;
+package work.slhaf.agent.core.cognation.capability.ability;
 
 import work.slhaf.agent.core.cognation.common.pojo.MemoryResult;
 import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;

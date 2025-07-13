@@ -1,4 +1,4 @@
-package work.slhaf.agent.shared.memory;
+package work.slhaf.agent.core.cognation.submodule.memory.pojo;
 
 import lombok.Builder;
 import lombok.Data;

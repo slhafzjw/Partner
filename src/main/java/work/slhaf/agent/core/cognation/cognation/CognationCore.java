@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.cognation;
+package work.slhaf.agent.core.cognation.cognation;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

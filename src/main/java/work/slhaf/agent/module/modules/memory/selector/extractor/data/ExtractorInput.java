@@ -3,7 +3,7 @@ package work.slhaf.agent.module.modules.memory.selector.extractor.data;
 import lombok.Builder;
 import lombok.Data;
 import work.slhaf.agent.common.chat.pojo.Message;
-import work.slhaf.agent.shared.memory.EvaluatedSlice;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 
 import java.time.LocalDate;
 import java.util.List;

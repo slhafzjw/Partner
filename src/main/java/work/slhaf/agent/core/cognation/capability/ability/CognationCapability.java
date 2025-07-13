@@ -1,12 +1,11 @@
-package work.slhaf.agent.core.cognation;
+package work.slhaf.agent.core.cognation.capability.ability;
 
 import work.slhaf.agent.common.chat.pojo.Message;
-import work.slhaf.agent.shared.memory.EvaluatedSlice;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public interface CognationCapability {
     List<Message> getChatMessages();

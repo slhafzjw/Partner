@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.agent.common.serialize.PersistableObject;
+import work.slhaf.agent.core.cognation.capability.interfaces.CapabilityCore;
 import work.slhaf.agent.core.cognation.common.pojo.MemoryResult;
 import work.slhaf.agent.core.cognation.submodule.memory.pojo.MemorySlice;
 
@@ -16,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
+@CapabilityCore(value = "cache")
 public class CacheCore extends PersistableObject {
 
     @Serial

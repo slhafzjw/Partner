@@ -16,7 +16,7 @@ import work.slhaf.agent.module.modules.memory.selector.evaluator.data.EvaluatorB
 import work.slhaf.agent.module.modules.memory.selector.evaluator.data.EvaluatorInput;
 import work.slhaf.agent.module.modules.memory.selector.evaluator.data.EvaluatorResult;
 import work.slhaf.agent.module.modules.memory.selector.evaluator.data.SliceSummary;
-import work.slhaf.agent.shared.memory.EvaluatedSlice;
+import work.slhaf.agent.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 
 import java.io.IOException;
 import java.util.*;

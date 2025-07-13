@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.cognation.submodule.perceive;
+package work.slhaf.agent.core.cognation.capability.ability;
 
 import work.slhaf.agent.core.cognation.submodule.perceive.pojo.User;
 

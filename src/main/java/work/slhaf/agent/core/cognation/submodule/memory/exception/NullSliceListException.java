@@ -1,4 +1,4 @@
-package work.slhaf.agent.core.cognation.common.exception;
+package work.slhaf.agent.core.cognation.submodule.memory.exception;
 
 public class NullSliceListException extends RuntimeException {
     public NullSliceListException(String message) {

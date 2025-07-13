@@ -2,7 +2,7 @@ package work.slhaf.agent.module.modules.process;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.agent.core.cognation.CognationCapability;
+import work.slhaf.agent.core.cognation.capability.ability.CognationCapability;
 import work.slhaf.agent.core.cognation.CognationManager;
 import work.slhaf.agent.core.interaction.data.context.InteractionContext;
 import work.slhaf.agent.core.interaction.module.InteractionModule;
