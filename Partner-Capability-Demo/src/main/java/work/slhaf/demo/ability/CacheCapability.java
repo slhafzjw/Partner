@@ -1,7 +1,7 @@
-package work.slhaf.demo.capability.ability;
+package work.slhaf.demo.ability;
 
 
-import work.slhaf.demo.capability.interfaces.Capability;
+import work.slhaf.demo.capability.annotation.Capability;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -13,5 +13,5 @@ public interface CacheCapability {
     ConcurrentHashMap<LocalDateTime, String> getUserDialogMap(String userId);
     void updateDialogMap(LocalDateTime dateTime, String newDialogCache);
     String getDialogMapStr();
-    String getUserDialogMapStr(String userId);
+    String getUserDialogMapStr(String userId,int id);
 }

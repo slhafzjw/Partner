@@ -1,4 +1,4 @@
-package work.slhaf.demo.capability.interfaces;
+package work.slhaf.demo.capability.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

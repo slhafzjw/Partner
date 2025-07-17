@@ -1,6 +1,6 @@
-package work.slhaf.demo.capability.ability;
+package work.slhaf.demo.ability;
 
-import work.slhaf.demo.capability.interfaces.Capability;
+import work.slhaf.demo.capability.annotation.Capability;
 
 @Capability(value = "perceive")
 public interface PerceiveCapability {

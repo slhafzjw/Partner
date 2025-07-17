@@ -1,8 +1,8 @@
 package work.slhaf.demo.core;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.demo.capability.interfaces.CapabilityCore;
-import work.slhaf.demo.capability.interfaces.CapabilityMethod;
+import work.slhaf.demo.capability.annotation.CapabilityCore;
+import work.slhaf.demo.capability.annotation.CapabilityMethod;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,14 +13,11 @@ public class MemoryCore {
 
     public static volatile MemoryCore memoryCore;
 
+    private MemoryCore() {
+        memoryCore = this;
+    }
+
     public static MemoryCore getInstance() {
-        if (memoryCore == null){
-            synchronized (MemoryCore.class){
-                if (memoryCore == null){
-                    memoryCore = new MemoryCore();
-                }
-            }
-        }
         return memoryCore;
     }
 

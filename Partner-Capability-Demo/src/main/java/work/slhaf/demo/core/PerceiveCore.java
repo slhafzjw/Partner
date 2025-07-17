@@ -1,8 +1,8 @@
 package work.slhaf.demo.core;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.demo.capability.interfaces.CapabilityCore;
-import work.slhaf.demo.capability.interfaces.CapabilityMethod;
+import work.slhaf.demo.capability.annotation.CapabilityCore;
+import work.slhaf.demo.capability.annotation.CapabilityMethod;
 
 @CapabilityCore(value = "perceive")
 @Slf4j
@@ -10,14 +10,11 @@ public class PerceiveCore {
 
     public static volatile PerceiveCore perceiveCore;
 
+    private PerceiveCore() {
+        perceiveCore = this;
+    }
+
     public static PerceiveCore getInstance() {
-        if (perceiveCore == null){
-            synchronized (PerceiveCore.class){
-                if (perceiveCore == null){
-                    perceiveCore = new PerceiveCore();
-                }
-            }
-        }
         return perceiveCore;
     }
 

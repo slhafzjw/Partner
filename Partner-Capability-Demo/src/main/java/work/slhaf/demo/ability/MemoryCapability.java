@@ -1,7 +1,7 @@
-package work.slhaf.demo.capability.ability;
+package work.slhaf.demo.ability;
 
-import work.slhaf.demo.capability.interfaces.Capability;
-import work.slhaf.demo.capability.interfaces.ToCoordinated;
+import work.slhaf.demo.capability.annotation.Capability;
+import work.slhaf.demo.capability.annotation.ToCoordinated;
 
 import java.util.List;
 

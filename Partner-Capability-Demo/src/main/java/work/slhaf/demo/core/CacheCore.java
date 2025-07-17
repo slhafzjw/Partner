@@ -1,8 +1,8 @@
 package work.slhaf.demo.core;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.demo.capability.interfaces.CapabilityCore;
-import work.slhaf.demo.capability.interfaces.CapabilityMethod;
+import work.slhaf.demo.capability.annotation.CapabilityCore;
+import work.slhaf.demo.capability.annotation.CapabilityMethod;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -14,14 +14,11 @@ public class CacheCore {
 
     public static volatile CacheCore cacheCore;
 
+    private CacheCore() {
+        cacheCore = this;
+    }
+
     public static CacheCore getInstance() {
-        if (cacheCore == null) {
-            synchronized (CacheCore.class) {
-                if (cacheCore == null) {
-                    cacheCore = new CacheCore();
-                }
-            }
-        }
         return cacheCore;
     }
 
@@ -49,9 +46,9 @@ public class CacheCore {
     }
 
     @CapabilityMethod
-    public String getUserDialogMapStr(String userId) {
+    public String getUserDialogMapStr(String userId,int id) {
         log.info("cache: getUserDialogMapStr");
-        return "";
+        return userId+id;
     }
 
 }

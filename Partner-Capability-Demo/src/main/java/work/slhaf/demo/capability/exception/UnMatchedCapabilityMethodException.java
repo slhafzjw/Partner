@@ -4,4 +4,8 @@ public class UnMatchedCapabilityMethodException extends CapabilityCheckFailedExc
     public UnMatchedCapabilityMethodException(String message) {
         super(message);
     }
+
+    public UnMatchedCapabilityMethodException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
