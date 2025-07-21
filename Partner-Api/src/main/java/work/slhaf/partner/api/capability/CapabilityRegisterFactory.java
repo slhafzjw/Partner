@@ -1,13 +1,13 @@
-package work.slhaf.demo.capability;
+package work.slhaf.partner.api.capability;
 
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
-import work.slhaf.demo.capability.annotation.*;
-import work.slhaf.demo.capability.exception.*;
-import work.slhaf.demo.capability.module.CapabilityHolder;
-import work.slhaf.demo.capability.util.CapabilityUtil;
+import work.slhaf.partner.api.capability.annotation.*;
+import work.slhaf.partner.api.capability.exception.*;
+import work.slhaf.partner.api.capability.module.CapabilityHolder;
+import work.slhaf.partner.api.capability.util.CapabilityUtil;
 
 import java.lang.reflect.*;
 import java.net.URL;
@@ -15,7 +15,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static work.slhaf.demo.capability.util.CapabilityUtil.methodSignature;
+import static work.slhaf.partner.api.capability.util.CapabilityUtil.methodSignature;
+
 
 public final class CapabilityRegisterFactory {
 
@@ -81,9 +82,9 @@ public final class CapabilityRegisterFactory {
 
     private HashMap<String, Object> getCognationManagerInstances() throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
         HashMap<String, Object> map = new HashMap<>();
-        for (Class<? extends BaseCognationManager> c : reflections.getSubTypesOf(BaseCognationManager.class)) {
-            Constructor<? extends BaseCognationManager> constructor = c.getDeclaredConstructor();
-            BaseCognationManager instance = constructor.newInstance();
+        for (Class<? extends BaseCoordinateManager> c : reflections.getSubTypesOf(BaseCoordinateManager.class)) {
+            Constructor<? extends BaseCoordinateManager> constructor = c.getDeclaredConstructor();
+            BaseCoordinateManager instance = constructor.newInstance();
 
             Arrays.stream(c.getMethods())
                     .filter(method -> method.isAnnotationPresent(Coordinated.class))
@@ -222,7 +223,7 @@ public final class CapabilityRegisterFactory {
                 })
                 .collect(Collectors.toSet());
         if (!methodsToCoordinated.isEmpty()) {
-            Set<Class<? extends BaseCognationManager>> subTypesOfAbsCM = reflections.getSubTypesOf(BaseCognationManager.class);
+            Set<Class<? extends BaseCoordinateManager>> subTypesOfAbsCM = reflections.getSubTypesOf(BaseCoordinateManager.class);
             Set<String> methodsCoordinated = getMethodsCoordinated(subTypesOfAbsCM);
             if (!methodsCoordinated.equals(methodsToCoordinated)) {
                 // 找出缺少的协调方法
@@ -244,9 +245,9 @@ public final class CapabilityRegisterFactory {
         }
     }
 
-    private Set<String> getMethodsCoordinated(Set<Class<? extends BaseCognationManager>> subTypesOfAbsCM) {
+    private Set<String> getMethodsCoordinated(Set<Class<? extends BaseCoordinateManager>> subTypesOfAbsCM) {
         Set<String> methodsCoordinated = new HashSet<>();
-        for (Class<? extends BaseCognationManager> cm : subTypesOfAbsCM) {
+        for (Class<? extends BaseCoordinateManager> cm : subTypesOfAbsCM) {
             Method[] methods = cm.getMethods();
             for (Method method : methods) {
                 if (method.isAnnotationPresent(Coordinated.class)) {

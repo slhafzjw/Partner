@@ -1,20 +1,30 @@
 autoDetectedPackages:
 - work.slhaf
 enableAutoDetect: true
-entryDisplayConfig: null
-funcDisplayConfig: null
+entryDisplayConfig:
+  excludedPathPatterns: []
+  skipJsCss: true
+funcDisplayConfig:
+  skipConstructors: false
+  skipFieldAccess: true
+  skipFieldChange: true
+  skipGetters: false
+  skipNonProjectPackages: false
+  skipPrivateMethods: false
+  skipSetters: false
 ignoreSameClassCall: null
 ignoreSamePackageCall: null
 includedPackagePrefixes: null
 includedParentClasses: null
-maxColSize: null
-maxNumFirst: null
-maxNumFirstImportant: null
-maxNumHash: null
-maxNumHashImportant: null
-maxObjectDepth: null
-maxStrSize: null
+maxColSize: 32
+maxNumFirst: 12
+maxNumFirstImportant: 1024
+maxNumHash: 3
+maxNumHashImportant: 256
+maxObjectDepth: 4
+maxStrSize: 4096
 name: xcodemap-filter
-recordMode: null
-sourceDisplayConfig: null
-startOnDebug: null
+recordMode: manual
+sourceDisplayConfig:
+  color: blue
+startOnDebug: false
