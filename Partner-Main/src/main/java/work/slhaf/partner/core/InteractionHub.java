@@ -3,7 +3,6 @@ package work.slhaf.partner.core;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.capability.CapabilityRegisterFactory;
 import work.slhaf.partner.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.partner.common.exception_handler.pojo.GlobalException;
 import work.slhaf.partner.core.interaction.agent_interface.TaskCallback;
@@ -33,7 +32,6 @@ public class InteractionHub {
                     interactionHub = new InteractionHub();
                     //加载模块
                     interactionHub.setInteractionModules(InteractionModulesLoader.getInstance().registerInteractionModules());
-                    CapabilityRegisterFactory.getInstance().registerCapabilities("work.slhaf.partner");
                     log.info("InteractionHub注册完毕...");
                 }
             }

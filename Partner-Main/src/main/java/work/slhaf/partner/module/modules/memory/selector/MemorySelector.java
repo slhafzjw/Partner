@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.capability.annotation.InjectCapability;
-import work.slhaf.partner.core.cognation.CognationManager;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.cognation.common.pojo.MemoryResult;
 import work.slhaf.partner.core.cognation.submodule.cache.CacheCapability;

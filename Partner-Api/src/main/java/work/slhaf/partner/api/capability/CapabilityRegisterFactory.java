@@ -6,8 +6,7 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import work.slhaf.partner.api.capability.annotation.*;
 import work.slhaf.partner.api.capability.exception.*;
-import work.slhaf.partner.api.capability.module.CapabilityHolder;
-import work.slhaf.partner.api.capability.util.CapabilityUtil;
+import work.slhaf.partner.api.common.util.AgentUtil;
 
 import java.lang.reflect.*;
 import java.net.URL;
@@ -15,12 +14,10 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static work.slhaf.partner.api.capability.util.CapabilityUtil.methodSignature;
+import static work.slhaf.partner.api.common.util.AgentUtil.methodSignature;
 
 
 public final class CapabilityRegisterFactory {
-
-    public static volatile CapabilityRegisterFactory capabilityRegisterFactory;
 
     private Reflections reflections;
     private final HashMap<String, Function<Object[], Object>> methodsRouterTable = new HashMap<>();
@@ -33,26 +30,20 @@ public final class CapabilityRegisterFactory {
     private CapabilityRegisterFactory() {
     }
 
-    public static CapabilityRegisterFactory getInstance() {
-        if (capabilityRegisterFactory == null) {
-            synchronized (CapabilityRegisterFactory.class) {
-                if (capabilityRegisterFactory == null) {
-                    capabilityRegisterFactory = new CapabilityRegisterFactory();
-                }
-            }
-        }
-        return capabilityRegisterFactory;
-    }
-
-
+    //TODO 需决定是否分离检查与路由表生成、注入逻辑，如果分离，可进一步添加hook点，但目前似乎并非必要
     public void registerCapabilities(String scannerPath) {
         setBasicVariable(scannerPath);
         //检查可注册能力是否正常
         statusCheck();
+        //扫描现有Capability, value为键，返回函数路由表, 函数路由表内部通过反射调用对应core的方法
+        generateRouterTable();
+        //通过动态代理注入能力
+        injectCapability();
+    }
+
+    private void generateRouterTable() {
         generateMethodsRouterTable();
         generateCoordinatedMethodsRouterTable();
-        //扫描现有Capability, value为键，返回函数路由表, 函数路由表内部通过反射调用对应core的方法
-        injectCapability();
     }
 
     private void generateCoordinatedMethodsRouterTable() {
@@ -82,9 +73,9 @@ public final class CapabilityRegisterFactory {
 
     private HashMap<String, Object> getCognationManagerInstances() throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
         HashMap<String, Object> map = new HashMap<>();
-        for (Class<? extends BaseCoordinateManager> c : reflections.getSubTypesOf(BaseCoordinateManager.class)) {
-            Constructor<? extends BaseCoordinateManager> constructor = c.getDeclaredConstructor();
-            BaseCoordinateManager instance = constructor.newInstance();
+        for (Class<?> c : reflections.getTypesAnnotatedWith(CoordinateManager.class)) {
+            Constructor<?> constructor = c.getDeclaredConstructor();
+            Object instance = constructor.newInstance();
 
             Arrays.stream(c.getMethods())
                     .filter(method -> method.isAnnotationPresent(Coordinated.class))
@@ -186,8 +177,8 @@ public final class CapabilityRegisterFactory {
 
     private void checkInjectCapability() {
         reflections.getFieldsAnnotatedWith(InjectCapability.class).forEach(field -> {
-            if (!CapabilityHolder.class.isAssignableFrom(field.getDeclaringClass())) {
-                throw new UnMatchedCapabilityException("InjectCapability 注解只能用于CapabilityHolder的子类");
+            if (!field.getDeclaringClass().isAssignableFrom(CapabilityHolder.class)) {
+                throw new UnMatchedCapabilityException("InjectCapability 注解只能用于 CapabilityHolder 注解所在类");
             }
         });
     }
@@ -223,7 +214,7 @@ public final class CapabilityRegisterFactory {
                 })
                 .collect(Collectors.toSet());
         if (!methodsToCoordinated.isEmpty()) {
-            Set<Class<? extends BaseCoordinateManager>> subTypesOfAbsCM = reflections.getSubTypesOf(BaseCoordinateManager.class);
+            Set<Class<?>> subTypesOfAbsCM = reflections.getTypesAnnotatedWith(CoordinateManager.class);
             Set<String> methodsCoordinated = getMethodsCoordinated(subTypesOfAbsCM);
             if (!methodsCoordinated.equals(methodsToCoordinated)) {
                 // 找出缺少的协调方法
@@ -245,9 +236,9 @@ public final class CapabilityRegisterFactory {
         }
     }
 
-    private Set<String> getMethodsCoordinated(Set<Class<? extends BaseCoordinateManager>> subTypesOfAbsCM) {
+    private Set<String> getMethodsCoordinated(Set<Class<?>> classes) {
         Set<String> methodsCoordinated = new HashSet<>();
-        for (Class<? extends BaseCoordinateManager> cm : subTypesOfAbsCM) {
+        for (Class<?> cm : classes) {
             Method[] methods = cm.getMethods();
             for (Method method : methods) {
                 if (method.isAnnotationPresent(Coordinated.class)) {
@@ -280,11 +271,11 @@ public final class CapabilityRegisterFactory {
     private LackRecord checkMethodsMatched(List<Method> methodsWithAnnotation, List<Method> capabilityMethods) {
         Set<String> collectedMethodsWithAnnotation = methodsWithAnnotation.stream()
                 .filter(method -> !method.isAnnotationPresent(ToCoordinated.class))
-                .map(CapabilityUtil::methodSignature)
+                .map(AgentUtil::methodSignature)
                 .collect(Collectors.toSet());
         Set<String> collectedCapabilityMethods = capabilityMethods.stream()
                 .filter(method -> !method.isAnnotationPresent(ToCoordinated.class))
-                .map(CapabilityUtil::methodSignature)
+                .map(AgentUtil::methodSignature)
                 .collect(Collectors.toSet());
         return checkMethodsMatched(collectedMethodsWithAnnotation, collectedCapabilityMethods);
     }

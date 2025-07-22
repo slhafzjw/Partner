@@ -1,4 +1,6 @@
-package work.slhaf.partner.core.cognation.submodule.cache;
+package work.slhaf.demo.ability;
+
+
 
 import work.slhaf.partner.api.capability.annotation.Capability;
 
@@ -12,5 +14,5 @@ public interface CacheCapability {
     ConcurrentHashMap<LocalDateTime, String> getUserDialogMap(String userId);
     void updateDialogMap(LocalDateTime dateTime, String newDialogCache);
     String getDialogMapStr();
-    String getUserDialogMapStr(String userId);
+    String getUserDialogMapStr(String userId,int id);
 }

@@ -14,7 +14,7 @@ import java.util.List;
 public interface ActivateModel {
 
     default void modelSettings() {
-        Model model = getModel();
+        Model model = new Model();
         ModelConfig modelConfig = ModelConfig.load(modelKey());
         model.setBaseMessages(withAwareness() ? ResourcesUtil.Prompt.loadPromptWithSelfAwareness(modelKey(), promptModule()) : ResourcesUtil.Prompt.loadPrompt(modelKey(), promptModule()));
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));

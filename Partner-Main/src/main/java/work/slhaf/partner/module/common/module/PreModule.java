@@ -1,7 +1,6 @@
 package work.slhaf.partner.module.common.module;
 
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.core.interaction.module.InteractionFlow;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 
 import java.util.HashMap;

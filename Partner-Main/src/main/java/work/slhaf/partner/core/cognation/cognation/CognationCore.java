@@ -62,6 +62,8 @@ public class CognationCore extends PersistableObject {
 
     private void connectCores(CognationCore temp) {
         temp.setCacheCore(CacheCore.getInstance());
+        temp.setMemoryCore(MemoryCore.getInstance());
+        temp.setPerceiveCore(PerceiveCore.getInstance());
     }
 
     private void setupHook(CognationCore temp) {
@@ -138,7 +140,7 @@ public class CognationCore extends PersistableObject {
 
     public void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices) {
         activeData.updateActivatedSlices(userId, memorySlices);
-        log.debug("[CognationManager] 已更新激活切片, userId: {}", userId);
+        log.debug("[CoordinatedManager] 已更新激活切片, userId: {}", userId);
     }
 
     public String getActivatedSlicesStr(String userId) {

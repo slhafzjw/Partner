@@ -1,7 +1,6 @@
 package work.slhaf.partner.core.cognation.submodule.memory;
 
 import work.slhaf.partner.api.capability.annotation.Capability;
-import work.slhaf.partner.api.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.api.capability.annotation.ToCoordinated;
 import work.slhaf.partner.core.cognation.common.pojo.MemoryResult;
 import work.slhaf.partner.core.cognation.submodule.memory.pojo.MemorySlice;

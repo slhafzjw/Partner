@@ -1,9 +1,6 @@
 package work.slhaf.partner.module.modules.task;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import work.slhaf.partner.module.common.model.Model;
-import work.slhaf.partner.module.common.model.ModelConstant;
 
 @Data
 public class TaskEvaluator  {

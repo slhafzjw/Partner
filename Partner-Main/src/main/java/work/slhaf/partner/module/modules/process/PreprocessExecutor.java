@@ -1,10 +1,9 @@
 package work.slhaf.partner.module.modules.process;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.api.capability.annotation.CapabilityHolder;
 import work.slhaf.partner.api.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.capability.module.CapabilityHolder;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.pojo.User;
@@ -18,10 +17,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class PreprocessExecutor extends CapabilityHolder {
+@CapabilityHolder
+public class PreprocessExecutor {
 
     private static volatile PreprocessExecutor preprocessExecutor;
 

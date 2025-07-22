@@ -9,7 +9,6 @@ import work.slhaf.partner.common.chat.pojo.ChatResponse;
 import work.slhaf.partner.common.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.module.common.model.ActivateModel;
-import work.slhaf.partner.module.common.model.Model;
 import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.module.common.module.SubModule;
 

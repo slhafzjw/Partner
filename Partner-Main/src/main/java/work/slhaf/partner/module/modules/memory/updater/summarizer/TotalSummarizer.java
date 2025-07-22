@@ -7,7 +7,6 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.common.chat.pojo.ChatResponse;
 import work.slhaf.partner.module.common.model.ActivateModel;
-import work.slhaf.partner.module.common.model.Model;
 import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.module.common.module.SubModule;
 
