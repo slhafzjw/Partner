@@ -3,15 +3,15 @@ package work.slhaf.partner.module.modules.perceive.updater.relation_extractor;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.common.chat.pojo.ChatResponse;
-import work.slhaf.partner.common.chat.pojo.Message;
+import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.flow.abstracts.ActivateModel;
+import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.pojo.User;
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.module.common.model.ActivateModel;
 import work.slhaf.partner.module.common.model.ModelConstant;
-import work.slhaf.partner.module.common.module.SubModule;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractInput;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractResult;
 
@@ -22,7 +22,7 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class RelationExtractor extends SubModule<InteractionContext, RelationExtractResult> implements ActivateModel {
+public class RelationExtractor extends AgentInteractionSubModule<InteractionContext, RelationExtractResult> implements ActivateModel {
 
     private static volatile RelationExtractor relationExtractor;
 

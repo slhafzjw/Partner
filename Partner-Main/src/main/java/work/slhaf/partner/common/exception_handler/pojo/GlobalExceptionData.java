@@ -2,7 +2,7 @@ package work.slhaf.partner.common.exception_handler.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.common.serialize.PersistableObject;
+import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.core.cognation.cognation.CognationCore;
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;
 import work.slhaf.partner.core.session.SessionManager;

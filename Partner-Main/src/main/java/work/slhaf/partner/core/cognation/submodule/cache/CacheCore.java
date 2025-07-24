@@ -3,9 +3,9 @@ package work.slhaf.partner.core.cognation.submodule.cache;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.capability.annotation.CapabilityCore;
-import work.slhaf.partner.api.capability.annotation.CapabilityMethod;
-import work.slhaf.partner.common.serialize.PersistableObject;
+import work.slhaf.partner.api.common.entity.PersistableObject;
+import work.slhaf.partner.api.factory.capability.annotation.CapabilityCore;
+import work.slhaf.partner.api.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.core.cognation.common.pojo.MemoryResult;
 import work.slhaf.partner.core.cognation.submodule.memory.pojo.MemorySlice;
 

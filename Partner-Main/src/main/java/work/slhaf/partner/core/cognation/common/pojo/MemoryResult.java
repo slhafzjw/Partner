@@ -2,7 +2,7 @@ package work.slhaf.partner.core.cognation.common.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.common.serialize.PersistableObject;
+import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.core.cognation.submodule.memory.pojo.MemorySlice;
 
 import java.io.Serial;

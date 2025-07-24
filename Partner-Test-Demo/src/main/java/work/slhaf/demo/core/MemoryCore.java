@@ -1,8 +1,8 @@
 package work.slhaf.demo.core;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.capability.annotation.CapabilityCore;
-import work.slhaf.partner.api.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.api.factory.capability.annotation.CapabilityCore;
+import work.slhaf.partner.api.factory.capability.annotation.CapabilityMethod;
 
 import java.util.ArrayList;
 import java.util.List;

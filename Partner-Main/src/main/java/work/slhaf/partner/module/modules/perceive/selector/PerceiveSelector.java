@@ -2,7 +2,7 @@ package work.slhaf.partner.module.modules.perceive.selector;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.pojo.User;
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;

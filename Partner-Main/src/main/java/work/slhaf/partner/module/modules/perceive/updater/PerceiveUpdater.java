@@ -3,7 +3,7 @@ package work.slhaf.partner.module.modules.perceive.updater;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;

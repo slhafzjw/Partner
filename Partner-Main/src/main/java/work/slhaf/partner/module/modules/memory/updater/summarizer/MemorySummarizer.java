@@ -3,8 +3,8 @@ package work.slhaf.partner.module.modules.memory.updater.summarizer;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.module.common.module.SubModule;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeInput;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeResult;
 
@@ -13,7 +13,7 @@ import java.util.HashMap;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemorySummarizer extends SubModule<SummarizeInput,SummarizeResult> {
+public class MemorySummarizer extends AgentInteractionSubModule<SummarizeInput,SummarizeResult> {
 
     private static volatile MemorySummarizer memorySummarizer;
     public static final String MODEL_KEY = "memory_summarizer";

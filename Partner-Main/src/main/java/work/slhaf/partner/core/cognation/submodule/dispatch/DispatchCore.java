@@ -1,6 +1,6 @@
 package work.slhaf.partner.core.cognation.submodule.dispatch;
 
-import work.slhaf.partner.common.serialize.PersistableObject;
+import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.core.cognation.submodule.dispatch.pojo.DispatchData;
 
 import java.io.Serial;

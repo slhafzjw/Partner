@@ -4,14 +4,14 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.capability.annotation.InjectCapability;
-import work.slhaf.partner.common.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.flow.abstracts.ActivateModel;
+import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.module.common.model.ActivateModel;
 import work.slhaf.partner.module.common.model.ModelConstant;
-import work.slhaf.partner.module.common.module.SubModule;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.data.StaticMemoryExtractInput;
 
 import java.io.IOException;
@@ -19,7 +19,7 @@ import java.util.HashMap;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class StaticMemoryExtractor extends SubModule<InteractionContext, HashMap<String, String>> implements ActivateModel {
+public class StaticMemoryExtractor extends AgentInteractionSubModule<InteractionContext, HashMap<String, String>> implements ActivateModel {
 
     private static volatile StaticMemoryExtractor staticMemoryExtractor;
 

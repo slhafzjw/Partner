@@ -101,7 +101,6 @@ public class Config {
                 new ModuleConfig(CoreModel.class.getName(), ModuleConfig.Constant.INTERNAL, null),
                 new ModuleConfig(PostprocessExecutor.class.getName(),ModuleConfig.Constant.INTERNAL,null),
                 new ModuleConfig(MemoryUpdater.class.getName(), ModuleConfig.Constant.INTERNAL, null)
-//                new ModuleConfig(TaskScheduler.class.getName(), ModuleConfig.Constant.INTERNAL, null)
         );
         config.setModuleConfigList(moduleConfigList);
     }

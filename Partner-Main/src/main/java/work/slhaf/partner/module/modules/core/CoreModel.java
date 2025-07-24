@@ -4,16 +4,16 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.capability.annotation.InjectCapability;
-import work.slhaf.partner.common.chat.constant.ChatConstant;
-import work.slhaf.partner.common.chat.pojo.ChatResponse;
-import work.slhaf.partner.common.chat.pojo.Message;
-import work.slhaf.partner.common.chat.pojo.MetaMessage;
+import work.slhaf.partner.api.common.chat.constant.ChatConstant;
+import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.common.chat.pojo.MetaMessage;
+import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.flow.abstracts.ActivateModel;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;
 import work.slhaf.partner.core.session.SessionManager;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
-import work.slhaf.partner.module.common.model.ActivateModel;
 import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.module.common.module.CoreModule;
 
@@ -46,7 +46,7 @@ public class CoreModel extends CoreModule implements ActivateModel {
             synchronized (CoreModel.class) {
                 if (coreModel == null) {
                     coreModel = new CoreModel();
-                    coreModel.model.setChatMessages(coreModel.cognationCapability.getChatMessages());
+                    coreModel.getModel().setChatMessages(coreModel.cognationCapability.getChatMessages());
                     coreModel.appendedMessages = new ArrayList<>();
                     coreModel.sessionManager = SessionManager.getInstance();
                     coreModel.updateChatClientSettings();

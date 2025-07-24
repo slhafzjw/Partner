@@ -1,9 +1,9 @@
 package work.slhaf.partner.core.cognation.cognation;
 
-import work.slhaf.partner.api.capability.annotation.Capability;
-import work.slhaf.partner.api.capability.annotation.CapabilityMethod;
-import work.slhaf.partner.api.capability.annotation.ToCoordinated;
-import work.slhaf.partner.common.chat.pojo.Message;
+import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.factory.capability.annotation.Capability;
+import work.slhaf.partner.api.factory.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.api.factory.capability.annotation.ToCoordinated;
 import work.slhaf.partner.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 
 import java.util.HashMap;

@@ -4,13 +4,13 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.common.chat.constant.ChatConstant;
-import work.slhaf.partner.common.chat.pojo.ChatResponse;
-import work.slhaf.partner.common.chat.pojo.Message;
+import work.slhaf.partner.api.common.chat.constant.ChatConstant;
+import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.flow.abstracts.ActivateModel;
+import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.module.common.model.ActivateModel;
 import work.slhaf.partner.module.common.model.ModelConstant;
-import work.slhaf.partner.module.common.module.SubModule;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
-public class SingleSummarizer extends SubModule<List<Message>,Void> implements ActivateModel {
+public class SingleSummarizer extends AgentInteractionSubModule<List<Message>,Void> implements ActivateModel {
 
     private static volatile SingleSummarizer singleSummarizer;
 

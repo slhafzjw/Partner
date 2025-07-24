@@ -1,8 +1,8 @@
 package work.slhaf.demo;
 
 
-import work.slhaf.partner.api.capability.annotation.CoordinateManager;
-import work.slhaf.partner.api.capability.annotation.Coordinated;
+import work.slhaf.partner.api.factory.capability.annotation.CoordinateManager;
+import work.slhaf.partner.api.factory.capability.annotation.Coordinated;
 
 import java.util.List;
 

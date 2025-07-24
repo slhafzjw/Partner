@@ -3,7 +3,7 @@ package work.slhaf.partner.core.cognation.submodule.memory.pojo;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.common.serialize.PersistableObject;
+import work.slhaf.partner.api.common.entity.PersistableObject;
 
 import java.io.Serial;
 import java.time.LocalDate;

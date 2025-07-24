@@ -5,9 +5,11 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.capability.annotation.InjectCapability;
-import work.slhaf.partner.common.chat.pojo.Message;
-import work.slhaf.partner.common.chat.pojo.MetaMessage;
+import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.common.chat.pojo.MetaMessage;
+import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.flow.abstracts.ActivateModel;
+import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
 import work.slhaf.partner.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.partner.common.exception_handler.pojo.GlobalException;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
@@ -15,9 +17,7 @@ import work.slhaf.partner.core.cognation.submodule.memory.MemoryCapability;
 import work.slhaf.partner.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;
 import work.slhaf.partner.core.session.SessionManager;
-import work.slhaf.partner.module.common.model.ActivateModel;
 import work.slhaf.partner.module.common.model.ModelConstant;
-import work.slhaf.partner.module.common.module.SubModule;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorInput;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorMatchData;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorResult;
@@ -32,7 +32,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemorySelectExtractor extends SubModule<InteractionContext, ExtractorResult> implements ActivateModel {
+public class MemorySelectExtractor extends AgentInteractionSubModule<InteractionContext, ExtractorResult> implements ActivateModel {
 
     private static volatile MemorySelectExtractor memorySelectExtractor;
 

@@ -1,8 +1,8 @@
 package work.slhaf.demo;
 
 import work.slhaf.demo.ability.MemoryCapability;
-import work.slhaf.partner.api.capability.annotation.CapabilityHolder;
-import work.slhaf.partner.api.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.factory.capability.annotation.CapabilityHolder;
+import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
 
 @CapabilityHolder
 public class TestModule  {

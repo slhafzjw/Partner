@@ -3,7 +3,7 @@ package work.slhaf.partner.core.interaction.data.context;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.common.serialize.PersistableObject;
+import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.core.interaction.data.context.subcontext.CoreContext;
 import work.slhaf.partner.core.interaction.data.context.subcontext.ModuleContext;
 import work.slhaf.partner.module.common.entity.AppendPromptData;

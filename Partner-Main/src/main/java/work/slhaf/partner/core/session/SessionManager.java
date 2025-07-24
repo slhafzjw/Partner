@@ -4,10 +4,10 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.common.chat.pojo.Message;
-import work.slhaf.partner.common.chat.pojo.MetaMessage;
+import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.common.chat.pojo.MetaMessage;
+import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.common.config.Config;
-import work.slhaf.partner.common.serialize.PersistableObject;
 
 import java.io.*;
 import java.nio.file.Files;

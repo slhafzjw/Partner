@@ -2,9 +2,9 @@ package work.slhaf.partner.core.cognation.submodule.perceive;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.capability.annotation.CapabilityCore;
-import work.slhaf.partner.api.capability.annotation.CapabilityMethod;
-import work.slhaf.partner.common.serialize.PersistableObject;
+import work.slhaf.partner.api.common.entity.PersistableObject;
+import work.slhaf.partner.api.factory.capability.annotation.CapabilityCore;
+import work.slhaf.partner.api.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.core.cognation.cognation.exception.UserNotExistsException;
 import work.slhaf.partner.core.cognation.submodule.perceive.pojo.User;
 

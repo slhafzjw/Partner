@@ -2,7 +2,7 @@ package work.slhaf.demo.ability;
 
 
 
-import work.slhaf.partner.api.capability.annotation.Capability;
+import work.slhaf.partner.api.factory.capability.annotation.Capability;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;

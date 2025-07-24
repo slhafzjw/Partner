@@ -3,8 +3,8 @@ package work.slhaf.partner.core.cognation.submodule.memory.pojo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import work.slhaf.partner.common.chat.pojo.Message;
-import work.slhaf.partner.common.serialize.PersistableObject;
+import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.common.entity.PersistableObject;
 
 import java.io.Serial;
 import java.util.List;

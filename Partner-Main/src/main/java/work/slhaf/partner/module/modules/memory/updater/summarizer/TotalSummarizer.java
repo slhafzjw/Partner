@@ -5,10 +5,10 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.common.chat.pojo.ChatResponse;
-import work.slhaf.partner.module.common.model.ActivateModel;
+import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.flow.abstracts.ActivateModel;
+import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
 import work.slhaf.partner.module.common.model.ModelConstant;
-import work.slhaf.partner.module.common.module.SubModule;
 
 import java.util.HashMap;
 
@@ -17,7 +17,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class TotalSummarizer extends SubModule<HashMap<String, String>, String> implements ActivateModel {
+public class TotalSummarizer extends AgentInteractionSubModule<HashMap<String, String>, String> implements ActivateModel {
 
     private static volatile TotalSummarizer totalSummarizer;
 

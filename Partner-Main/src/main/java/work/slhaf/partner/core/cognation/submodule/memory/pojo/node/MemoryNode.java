@@ -3,7 +3,7 @@ package work.slhaf.partner.core.cognation.submodule.memory.pojo.node;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.common.serialize.PersistableObject;
+import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.core.cognation.submodule.memory.exception.NullSliceListException;
 import work.slhaf.partner.core.cognation.submodule.memory.pojo.MemorySlice;
 
