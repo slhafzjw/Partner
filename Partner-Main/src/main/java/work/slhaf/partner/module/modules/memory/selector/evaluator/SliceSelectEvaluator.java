@@ -141,7 +141,7 @@ public class SliceSelectEvaluator extends AgentInteractionSubModule<EvaluatorInp
     }
 
     @Override
-    public boolean withAwareness() {
+    public boolean withBasicPrompt() {
         return false;
     }
 

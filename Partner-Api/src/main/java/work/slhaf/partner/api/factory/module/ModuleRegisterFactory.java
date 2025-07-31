@@ -4,6 +4,9 @@ import org.reflections.Reflections;
 import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
 import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 
+/**
+ * 负责扫描<code>@Module</code>注解获取模块实例
+ */
 public class ModuleRegisterFactory extends AgentBaseFactory {
 
     private Reflections reflections;

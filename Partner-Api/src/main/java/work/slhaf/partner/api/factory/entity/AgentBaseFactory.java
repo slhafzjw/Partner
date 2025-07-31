@@ -1,6 +1,6 @@
 package work.slhaf.partner.api.factory.entity;
 
-import work.slhaf.partner.api.factory.capability.exception.FactoryExecuteFailedException;
+import work.slhaf.partner.api.factory.capability.exception.CapabilityFactoryExecuteFailedException;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -10,7 +10,7 @@ public abstract class AgentBaseFactory {
             setVariables(context);
             run();
         } catch (Exception e) {
-            throw new FactoryExecuteFailedException(e.getMessage(), e);
+            throw new CapabilityFactoryExecuteFailedException(e.getMessage(), e);
         }
     }
 

@@ -64,7 +64,7 @@ public class StaticMemoryExtractor extends AgentInteractionSubModule<Interaction
     }
 
     @Override
-    public boolean withAwareness() {
+    public boolean withBasicPrompt() {
         return true;
     }
 

@@ -6,7 +6,7 @@ import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 import work.slhaf.partner.api.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.factory.capability.annotation.ToCoordinated;
-import work.slhaf.partner.api.factory.capability.exception.ProxySetFailedException;
+import work.slhaf.partner.api.factory.capability.exception.ProxySetFailedExceptionCapability;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
@@ -16,6 +16,9 @@ import java.util.function.Function;
 
 import static work.slhaf.partner.api.common.util.AgentUtil.methodSignature;
 
+/**
+ * 负责执行<code>Capability</code>的注入逻辑
+ */
 public class CapabilityInjectFactory extends AgentBaseFactory {
 
     private Reflections reflections;
@@ -37,7 +40,6 @@ public class CapabilityInjectFactory extends AgentBaseFactory {
         Set<Field> fields = reflections.getFieldsAnnotatedWith(InjectCapability.class);
         //在动态代理内部，通过函数路由表调用对应的方法
         createProxy(fields);
-
     }
 
     private void createProxy(Set<Field> fields) {
@@ -60,7 +62,7 @@ public class CapabilityInjectFactory extends AgentBaseFactory {
                 field.set(capabilityHolderInstances.get(field.getDeclaringClass()), instance);
             }
         } catch (Exception e) {
-            throw new ProxySetFailedException("代理设置失败", e);
+            throw new ProxySetFailedExceptionCapability("代理设置失败", e);
         }
     }
 

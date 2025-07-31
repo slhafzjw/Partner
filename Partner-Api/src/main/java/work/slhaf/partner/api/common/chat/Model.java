@@ -1,7 +1,6 @@
-package work.slhaf.partner.api.flow.abstracts;
+package work.slhaf.partner.api.common.chat;
 
 import lombok.Data;
-import work.slhaf.partner.api.common.chat.ChatClient;
 import work.slhaf.partner.api.common.chat.pojo.Message;
 
 import java.util.List;

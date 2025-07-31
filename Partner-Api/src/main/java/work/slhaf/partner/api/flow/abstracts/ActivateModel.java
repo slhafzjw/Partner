@@ -1,9 +1,12 @@
 package work.slhaf.partner.api.flow.abstracts;
 
 import work.slhaf.partner.api.common.chat.ChatClient;
+import work.slhaf.partner.api.common.chat.Model;
 import work.slhaf.partner.api.common.chat.constant.ChatConstant;
 import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.factory.config.ModelConfigFactory;
+import work.slhaf.partner.api.factory.config.pojo.ModelConfig;
 import work.slhaf.partner.api.factory.module.annotation.Before;
 
 import java.util.ArrayList;
@@ -11,13 +14,22 @@ import java.util.List;
 
 public interface ActivateModel {
 
-
     @Before
     default void modelSettings() {
-//        Model model = new Model();
-//        ModelConfig modelConfig = ModelConfig.load(modelKey());
-//        model.setBaseMessages(withAwareness() ? ResourcesUtil.Prompt.loadPromptWithSelfAwareness(modelKey(), promptModule()) : ResourcesUtil.Prompt.loadPrompt(modelKey(), promptModule()));
-//        model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
+        Model model = new Model();
+        ModelConfig modelConfig = ModelConfigFactory.factory.loadModelConfig(modelKey());
+        model.setBaseMessages(withBasicPrompt() ? loadSpecificPromptAndBasicPrompt(modelKey(), promptModule()) : loadSpecificPrompt(modelKey(), promptModule()));
+        model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
+    }
+
+    private List<Message> loadSpecificPrompt(String modelKey, String specificModule) {
+
+        return null;
+    }
+
+    private List<Message> loadSpecificPromptAndBasicPrompt(String modelKey, String specificModule) {
+
+        return null;
     }
 
     default ChatResponse chat() {
@@ -68,7 +80,7 @@ public interface ActivateModel {
 
     String modelKey();
 
-    boolean withAwareness();
+    boolean withBasicPrompt();
 
     String promptModule();
 }

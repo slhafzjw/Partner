@@ -69,7 +69,7 @@ public class CoreModel extends CoreModule implements ActivateModel {
     }
 
     @Override
-    public boolean withAwareness() {
+    public boolean withBasicPrompt() {
         return true;
     }
 

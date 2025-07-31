@@ -71,7 +71,7 @@ public class MultiSummarizer extends AgentInteractionSubModule<SummarizeInput, S
     }
 
     @Override
-    public boolean withAwareness() {
+    public boolean withBasicPrompt() {
         return true;
     }
 

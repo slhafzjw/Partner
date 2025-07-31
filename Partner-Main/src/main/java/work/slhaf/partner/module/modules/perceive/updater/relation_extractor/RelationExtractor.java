@@ -91,7 +91,7 @@ public class RelationExtractor extends AgentInteractionSubModule<InteractionCont
     }
 
     @Override
-    public boolean withAwareness() {
+    public boolean withBasicPrompt() {
         return true;
     }
 

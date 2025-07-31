@@ -114,7 +114,7 @@ public class MemorySelectExtractor extends AgentInteractionSubModule<Interaction
     }
 
     @Override
-    public boolean withAwareness() {
+    public boolean withBasicPrompt() {
         return false;
     }
 

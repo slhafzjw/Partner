@@ -16,6 +16,9 @@ import java.util.stream.Collectors;
 
 import static work.slhaf.partner.api.common.util.AgentUtil.methodSignature;
 
+/**
+ * 执行<code>Capability</code>相关检查
+ */
 public class CapabilityCheckFactory extends AgentBaseFactory {
 
     private Reflections reflections;
@@ -38,6 +41,9 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
         checkInjectCapability();
     }
 
+    /**
+     * 检查<code>@InjectCapability</code>注解是否只用在<code>@CapabilityHolder</code>所标识类的字段上
+     */
     private void checkInjectCapability() {
         reflections.getFieldsAnnotatedWith(InjectCapability.class).forEach(field -> {
             if (!field.getDeclaringClass().isAssignableFrom(CapabilityHolder.class)) {
@@ -46,6 +52,9 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
         });
     }
 
+    /**
+     * 检查是否包含协调方法，如果存在，则进一步检查是否存在<code>@CoordinateManager</code>提供对应的实现
+     */
     private void checkCoordinatedMethods() {
         //检查各个capability中是否含有ToCoordinated注解
         //如果含有，则需要查找AbstractCognationManager的子类,看这里是否有对应的Coordinated注解所在方法
@@ -93,6 +102,9 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
         return methodsCoordinated;
     }
 
+    /**
+     * 查看在<code>Capability</code>在对应的<core>CapabilityCore</core>中存在尚未实现的方法
+     */
     private void checkCapabilityMethods() {
         HashMap<String, List<Method>> capabilitiesMethods = getCapabilityMethods(capabilities);
         StringBuilder sb = new StringBuilder();
@@ -151,6 +163,9 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
         return capabilityMethods;
     }
 
+    /**
+     * 检查<code>Capability</code>和<code>CapabilityCore</code>的数量和标识是否匹配
+     */
     private void checkCountAndCapabilities() {
         if (cores.size() != capabilities.size()) {
             throw new UnMatchedCapabilityException("Capability 注册异常: 已存在的CapabilityCore与Capability数量不匹配!");

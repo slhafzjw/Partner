@@ -2,6 +2,7 @@ package work.slhaf.partner.api.factory;
 
 import cn.hutool.core.bean.BeanUtil;
 import work.slhaf.partner.api.entity.AgentContext;
+import work.slhaf.partner.api.factory.config.ConfigLoaderFactory;
 import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 import work.slhaf.partner.api.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.factory.capability.CapabilityRegisterFactory;
@@ -16,6 +17,8 @@ public class AgentRegisterFactory {
     public static AgentContext launch(String path) {
         AgentRegisterContext registerContext = new AgentRegisterContext(path);
         //流程
+        //0. 加载配置
+        new ConfigLoaderFactory().execute(registerContext);
         //1. 执行register和check逻辑
         new CapabilityRegisterFactory().execute(registerContext);
         new CapabilityCheckFactory().execute(registerContext);

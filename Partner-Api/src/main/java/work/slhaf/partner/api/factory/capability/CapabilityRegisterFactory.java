@@ -4,9 +4,9 @@ import org.reflections.Reflections;
 import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
 import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 import work.slhaf.partner.api.factory.capability.annotation.*;
-import work.slhaf.partner.api.factory.capability.exception.CoreInstancesCreateFailedException;
+import work.slhaf.partner.api.factory.capability.exception.CoreInstancesCreateFailedExceptionCapability;
 import work.slhaf.partner.api.factory.capability.exception.DuplicateMethodException;
-import work.slhaf.partner.api.factory.capability.exception.FactoryExecuteFailedException;
+import work.slhaf.partner.api.factory.capability.exception.CapabilityFactoryExecuteFailedException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -16,9 +16,13 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Function;
 
+import static cn.hutool.core.util.ClassUtil.isNormalClass;
 import static work.slhaf.partner.api.common.util.AgentUtil.methodSignature;
 
 
+/**
+ * 负责获取<code>@Capability</code>和<code>@CapabilityCore</code>标识的类，并生成函数路由表、设置<code>Core</code>实例用于后续注入
+ */
 public final class CapabilityRegisterFactory extends AgentBaseFactory {
 
     private Reflections reflections;
@@ -35,19 +39,22 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
         methodsRouterTable = context.getMethodsRouterTable();
         coordinatedMethodsRouterTable = context.getCoordinatedMethodsRouterTable();
         capabilityCoreInstances = context.getCapabilityCoreInstances();
-        capabilityHolderInstances = context.getCapabilityHolderInstances();
         cores = context.getCores();
         capabilities = context.getCapabilities();
+        capabilityHolderInstances = context.getCapabilityHolderInstances();
     }
 
     @Override
-    protected void run() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    protected void run() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         setCapabilityCoreInstances();
         setAnnotatedClasses();
         generateRouterTable();
     }
 
-    private void setAnnotatedClasses() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    /**
+     * 设置<code>CapabilityCore</code>、<code>Capability</code>注解标识类
+     */
+    private void setAnnotatedClasses() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
         cores.addAll(reflections.getTypesAnnotatedWith(CapabilityCore.class));
         capabilities.addAll(reflections.getTypesAnnotatedWith(Capability.class));
         setCapabilityHolderInstances();
@@ -55,16 +62,25 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
 
     private void setCapabilityHolderInstances() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         for (Class<?> clazz : reflections.getTypesAnnotatedWith(CapabilityHolder.class)) {
+            if (!isNormalClass(clazz)){
+                continue;
+            }
             Object o = clazz.getDeclaredConstructor().newInstance();
             capabilityHolderInstances.put(clazz, o);
         }
     }
 
+    /**
+     * 生成函数路由表
+     */
     private void generateRouterTable() {
         generateMethodsRouterTable();
         generateCoordinatedMethodsRouterTable();
     }
 
+    /**
+     * 生成协调函数对应的函数路由表
+     */
     private void generateCoordinatedMethodsRouterTable() {
         Set<Method> methodsAnnotatedWith = reflections.getMethodsAnnotatedWith(Coordinated.class);
         if (methodsAnnotatedWith.isEmpty()) {
@@ -85,11 +101,14 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
                 coordinatedMethodsRouterTable.put(key, function);
             });
         } catch (Exception e) {
-            throw new FactoryExecuteFailedException("创建协调方法路由表出错", e);
+            throw new CapabilityFactoryExecuteFailedException("创建协调方法路由表出错", e);
         }
 
     }
 
+    /**
+     * 获取<code>CoordinateManager</code>子类实例
+     */
     private HashMap<String, Object> getCoordinateManagerInstances() throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
         HashMap<String, Object> map = new HashMap<>();
         for (Class<?> c : reflections.getTypesAnnotatedWith(CoordinateManager.class)) {
@@ -106,6 +125,9 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
         return map;
     }
 
+    /**
+     * 生成普通方法对应的函数路由表
+     */
     private void generateMethodsRouterTable() {
         //扫描`@Capability`与`@CapabilityMethod`注解的类与方法
         //将`capabilityValue.methodSignature`作为key,函数对象为通过反射拿到的core实例对应的方法
@@ -127,6 +149,9 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
                 }));
     }
 
+    /**
+     * 反射获取<code>CapabilityCore</code>实例
+     */
     private void setCapabilityCoreInstances() {
         try {
             for (Class<?> core : cores) {
@@ -136,7 +161,7 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
             }
         } catch (InvocationTargetException | NoSuchMethodException | InstantiationException |
                  IllegalAccessException e) {
-            throw new CoreInstancesCreateFailedException("core实例创建失败");
+            throw new CoreInstancesCreateFailedExceptionCapability("core实例创建失败");
         }
     }
 }

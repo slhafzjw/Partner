@@ -14,7 +14,7 @@ public class ResourcesUtil {
     private static final ClassLoader classloader = Agent.class.getClassLoader();
 
     public static class Prompt {
-        private static final String SELF_AWARENESS_PATH = "prompt/self_awareness.json";
+        private static final String SELF_AWARENESS_PATH = "prompt/basic_prompt.json";
         private static final String MODULE_PROMPT_PREFIX_PATH = "prompt/module/";
 
         public static List<Message> loadPromptWithSelfAwareness(String modelKey, String promptType) {

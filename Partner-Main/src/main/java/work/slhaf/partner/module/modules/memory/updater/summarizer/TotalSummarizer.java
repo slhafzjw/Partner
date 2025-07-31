@@ -49,7 +49,7 @@ public class TotalSummarizer extends AgentInteractionSubModule<HashMap<String, S
     }
 
     @Override
-    public boolean withAwareness() {
+    public boolean withBasicPrompt() {
         return true;
     }
 

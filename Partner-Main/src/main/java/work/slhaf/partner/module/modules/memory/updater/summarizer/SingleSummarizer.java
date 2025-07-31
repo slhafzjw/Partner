@@ -83,7 +83,7 @@ public class SingleSummarizer extends AgentInteractionSubModule<List<Message>,Vo
     }
 
     @Override
-    public boolean withAwareness() {
+    public boolean withBasicPrompt() {
         return false;
     }
 
