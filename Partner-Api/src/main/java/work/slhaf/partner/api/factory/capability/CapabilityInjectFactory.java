@@ -1,12 +1,12 @@
 package work.slhaf.partner.api.factory.capability;
 
 import org.reflections.Reflections;
-import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
-import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 import work.slhaf.partner.api.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.factory.capability.annotation.ToCoordinated;
 import work.slhaf.partner.api.factory.capability.exception.ProxySetFailedExceptionCapability;
+import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
+import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;

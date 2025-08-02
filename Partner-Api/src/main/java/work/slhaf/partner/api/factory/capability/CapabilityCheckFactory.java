@@ -1,14 +1,14 @@
 package work.slhaf.partner.api.factory.capability;
 
 import org.reflections.Reflections;
-import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
-import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 import work.slhaf.partner.api.common.util.AgentUtil;
 import work.slhaf.partner.api.factory.capability.annotation.*;
 import work.slhaf.partner.api.factory.capability.exception.DuplicateCapabilityException;
 import work.slhaf.partner.api.factory.capability.exception.UnMatchedCapabilityException;
 import work.slhaf.partner.api.factory.capability.exception.UnMatchedCapabilityMethodException;
 import work.slhaf.partner.api.factory.capability.exception.UnMatchedCoordinatedMethodException;
+import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
+import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 
 import java.lang.reflect.Method;
 import java.util.*;

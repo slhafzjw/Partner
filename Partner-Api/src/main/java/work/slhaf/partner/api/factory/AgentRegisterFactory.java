@@ -2,10 +2,10 @@ package work.slhaf.partner.api.factory;
 
 import cn.hutool.core.bean.BeanUtil;
 import work.slhaf.partner.api.entity.AgentContext;
-import work.slhaf.partner.api.factory.config.ConfigLoaderFactory;
-import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 import work.slhaf.partner.api.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.factory.capability.CapabilityRegisterFactory;
+import work.slhaf.partner.api.factory.config.ConfigLoaderFactory;
+import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
 import work.slhaf.partner.api.factory.module.ModuleCheckFactory;
 import work.slhaf.partner.api.factory.module.ModuleRegisterFactory;
 

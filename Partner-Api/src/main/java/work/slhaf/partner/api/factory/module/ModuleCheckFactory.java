@@ -13,5 +13,6 @@ public class ModuleCheckFactory extends AgentBaseFactory {
     protected void run() {
         //检查注解AgentModule所在类是否继承了AgentInteractionModule
         //检查hook注解所在方法是否位于AgentInteractionModule子类/AgentInteractionSubModule子类/ActivateModel子类
+        //检查当前加载的模块数量、名称与prompt是否一致
     }
 }

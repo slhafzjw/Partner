@@ -5,7 +5,7 @@ import work.slhaf.partner.api.common.chat.Model;
 import work.slhaf.partner.api.common.chat.constant.ChatConstant;
 import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.common.chat.pojo.Message;
-import work.slhaf.partner.api.factory.config.ModelConfigFactory;
+import work.slhaf.partner.api.factory.config.ModelConfigManager;
 import work.slhaf.partner.api.factory.config.pojo.ModelConfig;
 import work.slhaf.partner.api.factory.module.annotation.Before;
 
@@ -17,7 +17,7 @@ public interface ActivateModel {
     @Before
     default void modelSettings() {
         Model model = new Model();
-        ModelConfig modelConfig = ModelConfigFactory.factory.loadModelConfig(modelKey());
+        ModelConfig modelConfig = ModelConfigManager.INSTANCE.loadModelConfig(modelKey());
         model.setBaseMessages(withBasicPrompt() ? loadSpecificPromptAndBasicPrompt(modelKey(), promptModule()) : loadSpecificPrompt(modelKey(), promptModule()));
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
     }
