@@ -2,9 +2,13 @@ package work.slhaf.partner.api.factory.entity;
 
 import lombok.Data;
 import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
+import org.reflections.util.ConfigurationBuilder;
 import work.slhaf.partner.api.common.chat.pojo.Message;
 import work.slhaf.partner.api.factory.config.pojo.ModelConfig;
+import work.slhaf.partner.api.factory.module.pojo.MetaModule;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -21,8 +25,16 @@ public class AgentRegisterContext {
     private Set<Class<?>> capabilities;
     private HashMap<String, List<Message>> modelPromptMap = new HashMap<>();
     private HashMap<String, ModelConfig> modelConfigMap = new HashMap<>();
+    private List<MetaModule> moduleList = new ArrayList<>();
 
-    public AgentRegisterContext(String path) {
-        reflections = new Reflections(path);
+    public AgentRegisterContext(List<String> paths) {
+        reflections = new Reflections(new ConfigurationBuilder().setScanners(
+                        Scanners.FieldsAnnotated,
+                        Scanners.SubTypes,
+                        Scanners.MethodsAnnotated,
+                        Scanners.TypesAnnotated
+                )
+                .forPackages(paths.toArray(paths.toArray(new String[0])))
+        );
     }
 }

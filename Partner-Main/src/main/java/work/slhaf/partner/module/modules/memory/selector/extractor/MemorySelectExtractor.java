@@ -17,7 +17,6 @@ import work.slhaf.partner.core.cognation.submodule.memory.MemoryCapability;
 import work.slhaf.partner.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;
 import work.slhaf.partner.core.session.SessionManager;
-import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorInput;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorMatchData;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorResult;
@@ -118,8 +117,4 @@ public class MemorySelectExtractor extends AgentInteractionSubModule<Interaction
         return false;
     }
 
-    @Override
-    public String promptModule() {
-        return ModelConstant.Prompt.MEMORY;
-    }
 }

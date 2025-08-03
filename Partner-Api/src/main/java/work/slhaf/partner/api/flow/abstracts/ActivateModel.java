@@ -18,16 +18,16 @@ public interface ActivateModel {
     default void modelSettings() {
         Model model = new Model();
         ModelConfig modelConfig = ModelConfigManager.INSTANCE.loadModelConfig(modelKey());
-        model.setBaseMessages(withBasicPrompt() ? loadSpecificPromptAndBasicPrompt(modelKey(), promptModule()) : loadSpecificPrompt(modelKey(), promptModule()));
+        model.setBaseMessages(withBasicPrompt() ? loadSpecificPromptAndBasicPrompt(modelKey()) : loadSpecificPrompt(modelKey()));
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
     }
 
-    private List<Message> loadSpecificPrompt(String modelKey, String specificModule) {
+    private List<Message> loadSpecificPrompt(String modelKey) {
 
         return null;
     }
 
-    private List<Message> loadSpecificPromptAndBasicPrompt(String modelKey, String specificModule) {
+    private List<Message> loadSpecificPromptAndBasicPrompt(String modelKey) {
 
         return null;
     }
@@ -82,5 +82,4 @@ public interface ActivateModel {
 
     boolean withBasicPrompt();
 
-    String promptModule();
 }

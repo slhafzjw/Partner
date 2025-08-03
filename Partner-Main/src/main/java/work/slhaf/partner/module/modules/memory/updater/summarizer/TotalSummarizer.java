@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
-import work.slhaf.partner.module.common.model.ModelConstant;
 
 import java.util.HashMap;
 
@@ -53,8 +52,4 @@ public class TotalSummarizer extends AgentInteractionSubModule<HashMap<String, S
         return true;
     }
 
-    @Override
-    public String promptModule() {
-        return ModelConstant.Prompt.MEMORY;
-    }
 }

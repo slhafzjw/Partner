@@ -11,7 +11,6 @@ import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.data.StaticMemoryExtractInput;
 
 import java.io.IOException;
@@ -68,8 +67,4 @@ public class StaticMemoryExtractor extends AgentInteractionSubModule<Interaction
         return true;
     }
 
-    @Override
-    public String promptModule() {
-        return ModelConstant.Prompt.MEMORY;
-    }
 }

@@ -10,7 +10,6 @@ import work.slhaf.partner.api.common.chat.pojo.Message;
 import work.slhaf.partner.api.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.module.common.model.ModelConstant;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -87,8 +86,4 @@ public class SingleSummarizer extends AgentInteractionSubModule<List<Message>,Vo
         return false;
     }
 
-    @Override
-    public String promptModule() {
-        return ModelConstant.Prompt.MEMORY;
-    }
 }

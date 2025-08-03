@@ -13,7 +13,6 @@ import work.slhaf.partner.core.cognation.common.pojo.MemoryResult;
 import work.slhaf.partner.core.cognation.common.pojo.MemorySliceResult;
 import work.slhaf.partner.core.cognation.submodule.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.core.cognation.submodule.memory.pojo.MemorySlice;
-import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorBatchInput;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorInput;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorResult;
@@ -143,11 +142,6 @@ public class SliceSelectEvaluator extends AgentInteractionSubModule<EvaluatorInp
     @Override
     public boolean withBasicPrompt() {
         return false;
-    }
-
-    @Override
-    public String promptModule() {
-        return ModelConstant.Prompt.MEMORY;
     }
 
 }

@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
-import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeInput;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeResult;
 
@@ -75,8 +74,4 @@ public class MultiSummarizer extends AgentInteractionSubModule<SummarizeInput, S
         return true;
     }
 
-    @Override
-    public String promptModule() {
-        return ModelConstant.Prompt.MEMORY;
-    }
 }

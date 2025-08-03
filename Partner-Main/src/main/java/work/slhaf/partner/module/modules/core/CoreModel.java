@@ -74,11 +74,6 @@ public class CoreModel extends CoreModule implements ActivateModel {
     }
 
     @Override
-    public String promptModule() {
-        return ModelConstant.Prompt.CORE;
-    }
-
-    @Override
     public void execute(InteractionContext interactionContext) {
         String userId = interactionContext.getUserId();
         log.debug("[CoreModel] 主对话流程开始: {}", userId);
