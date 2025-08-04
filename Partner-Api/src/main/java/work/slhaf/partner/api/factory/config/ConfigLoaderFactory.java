@@ -2,9 +2,10 @@ package work.slhaf.partner.api.factory.config;
 
 import lombok.Setter;
 import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.factory.AgentBaseFactory;
 import work.slhaf.partner.api.factory.config.pojo.ModelConfig;
-import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
-import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
+import work.slhaf.partner.api.factory.context.AgentRegisterContext;
+import work.slhaf.partner.api.factory.context.ConfigFactoryContext;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,8 +19,9 @@ public class ConfigLoaderFactory extends AgentBaseFactory {
 
     @Override
     protected void setVariables(AgentRegisterContext context) {
-        modelConfigMap = context.getModelConfigMap();
-        modelPromptMap = context.getModelPromptMap();
+        ConfigFactoryContext factoryContext = context.getConfigFactoryContext();
+        modelConfigMap = factoryContext.getModelConfigMap();
+        modelPromptMap = factoryContext.getModelPromptMap();
     }
 
     @Override

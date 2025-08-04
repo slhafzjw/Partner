@@ -13,11 +13,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>0.10.2</version>
-        </dependency>
-        <dependency>
             <groupId>work.slhaf</groupId>
             <artifactId>Partner-Api</artifactId>
             <version>0.5.0</version>

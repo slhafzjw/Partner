@@ -1,6 +1,7 @@
-package work.slhaf.partner.api.factory.entity;
+package work.slhaf.partner.api.factory;
 
 import work.slhaf.partner.api.factory.capability.exception.CapabilityFactoryExecuteFailedException;
+import work.slhaf.partner.api.factory.context.AgentRegisterContext;
 
 import java.lang.reflect.InvocationTargetException;
 

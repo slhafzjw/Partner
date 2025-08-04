@@ -1,12 +1,13 @@
 package work.slhaf.partner.api.factory.capability;
 
 import org.reflections.Reflections;
+import work.slhaf.partner.api.factory.AgentBaseFactory;
 import work.slhaf.partner.api.factory.capability.annotation.*;
 import work.slhaf.partner.api.factory.capability.exception.CapabilityFactoryExecuteFailedException;
 import work.slhaf.partner.api.factory.capability.exception.CoreInstancesCreateFailedExceptionCapability;
 import work.slhaf.partner.api.factory.capability.exception.DuplicateMethodException;
-import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
-import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
+import work.slhaf.partner.api.factory.context.AgentRegisterContext;
+import work.slhaf.partner.api.factory.context.CapabilityFactoryContext;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -35,13 +36,14 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
 
     @Override
     protected void setVariables(AgentRegisterContext context) {
+        CapabilityFactoryContext factoryContext = context.getCapabilityFactoryContext();
         reflections = context.getReflections();
-        methodsRouterTable = context.getMethodsRouterTable();
-        coordinatedMethodsRouterTable = context.getCoordinatedMethodsRouterTable();
-        capabilityCoreInstances = context.getCapabilityCoreInstances();
-        cores = context.getCores();
-        capabilities = context.getCapabilities();
-        capabilityHolderInstances = context.getCapabilityHolderInstances();
+        methodsRouterTable = factoryContext.getMethodsRouterTable();
+        coordinatedMethodsRouterTable = factoryContext.getCoordinatedMethodsRouterTable();
+        capabilityCoreInstances = factoryContext.getCapabilityCoreInstances();
+        cores = factoryContext.getCores();
+        capabilities = factoryContext.getCapabilities();
+        capabilityHolderInstances = factoryContext.getCapabilityHolderInstances();
     }
 
     @Override

@@ -1,7 +1,7 @@
 package work.slhaf.partner.api.factory.module;
 
-import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
-import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
+import work.slhaf.partner.api.factory.AgentBaseFactory;
+import work.slhaf.partner.api.factory.context.AgentRegisterContext;
 
 import java.lang.reflect.InvocationTargetException;
 

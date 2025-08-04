@@ -1,9 +1,9 @@
 package work.slhaf.partner.api.factory.module;
 
 import org.reflections.Reflections;
+import work.slhaf.partner.api.factory.AgentBaseFactory;
 import work.slhaf.partner.api.factory.config.ModelConfigManager;
-import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
-import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
+import work.slhaf.partner.api.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.factory.module.annotation.After;
 import work.slhaf.partner.api.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.factory.module.annotation.Before;
@@ -28,12 +28,25 @@ public class ModuleCheckFactory extends AgentBaseFactory {
 
     @Override
     protected void run() {
+        Set<Class<?>> types = reflections.getTypesAnnotatedWith(AgentModule.class);
         //检查注解AgentModule所在类是否继承了AgentInteractionModule
-        agentModuleAnnotationCheck();
+        agentModuleAnnotationCheck(types);
+        //检查AgentModule是否具备无参构造方法
+        moduleConstructorsCheck(types);
         //检查hook注解所在方法是否位于AgentInteractionModule子类/AgentInteractionSubModule子类/ActivateModel子类
         hookLocationCheck();
         //检查实现了ActivateModel的模块数量、名称与prompt是否一致
         activateModelImplCheck();
+    }
+
+    private void moduleConstructorsCheck(Set<Class<?>> types) {
+        for (Class<?> type : types) {
+            try {
+                type.getConstructor();
+            } catch (NoSuchMethodException e) {
+                throw new ModuleCheckException("缺少无参构造方法的模块: " + type.getSimpleName(), e);
+            }
+        }
     }
 
     private void activateModelImplCheck() {
@@ -47,10 +60,10 @@ public class ModuleCheckFactory extends AgentBaseFactory {
             Set<String> promptKeySet = ModelConfigManager.INSTANCE.getModelPromptMap().keySet();
             if (!promptKeySet.containsAll(modelKeySet)) {
                 modelKeySet.removeAll(promptKeySet);
-                throw new ModuleCheckException("存在未配置Prompt的ActivateModel实现! 缺少Prompt的ModelKey列表: "+ modelKeySet);
+                throw new ModuleCheckException("存在未配置Prompt的ActivateModel实现! 缺少Prompt的ModelKey列表: " + modelKeySet);
             }
-        }catch (Exception e) {
-            throw new ModuleCheckException("ActivateModel 检测出错",e);
+        } catch (Exception e) {
+            throw new ModuleCheckException("ActivateModel 检测出错", e);
         }
     }
 
@@ -89,12 +102,11 @@ public class ModuleCheckFactory extends AgentBaseFactory {
             if (ActivateModel.class.isAssignableFrom(type)) {
                 continue;
             }
-            throw new ModuleCheckException("在不支持的类中使用了hook注解: "+type.getSimpleName());
+            throw new ModuleCheckException("在不支持的类中使用了hook注解: " + type.getSimpleName());
         }
     }
 
-    private void agentModuleAnnotationCheck() {
-        Set<Class<?>> types = reflections.getTypesAnnotatedWith(AgentModule.class);
+    private void agentModuleAnnotationCheck(Set<Class<?>> types) {
         for (Class<?> type : types) {
             if (type.isAnnotation()) {
                 continue;

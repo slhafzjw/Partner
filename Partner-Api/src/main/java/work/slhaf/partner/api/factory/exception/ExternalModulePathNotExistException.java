@@ -1,7 +1,11 @@
 package work.slhaf.partner.api.factory.exception;
 
-public class ExternalModulePathNotExistException extends RuntimeException {
+public class ExternalModulePathNotExistException extends AgentRegisterFactoryFailedException {
     public ExternalModulePathNotExistException(String message) {
-        super("AgentRegisterFactory 执行失败: " + message);
+        super(message);
+    }
+
+    public ExternalModulePathNotExistException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

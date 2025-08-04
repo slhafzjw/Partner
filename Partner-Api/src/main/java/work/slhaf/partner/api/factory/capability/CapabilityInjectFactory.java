@@ -1,12 +1,13 @@
 package work.slhaf.partner.api.factory.capability;
 
 import org.reflections.Reflections;
+import work.slhaf.partner.api.factory.AgentBaseFactory;
 import work.slhaf.partner.api.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.factory.capability.annotation.ToCoordinated;
 import work.slhaf.partner.api.factory.capability.exception.ProxySetFailedExceptionCapability;
-import work.slhaf.partner.api.factory.entity.AgentBaseFactory;
-import work.slhaf.partner.api.factory.entity.AgentRegisterContext;
+import work.slhaf.partner.api.factory.context.AgentRegisterContext;
+import work.slhaf.partner.api.factory.context.CapabilityFactoryContext;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
@@ -28,10 +29,11 @@ public class CapabilityInjectFactory extends AgentBaseFactory {
 
     @Override
     protected void setVariables(AgentRegisterContext context) {
+        CapabilityFactoryContext factoryContext = context.getCapabilityFactoryContext();
         reflections = context.getReflections();
-        coordinatedMethodsRouterTable = context.getCoordinatedMethodsRouterTable();
-        methodsRouterTable = context.getMethodsRouterTable();
-        capabilityHolderInstances = context.getCapabilityHolderInstances();
+        coordinatedMethodsRouterTable = factoryContext.getCoordinatedMethodsRouterTable();
+        methodsRouterTable = factoryContext.getMethodsRouterTable();
+        capabilityHolderInstances = factoryContext.getCapabilityHolderInstances();
     }
 
     @Override
