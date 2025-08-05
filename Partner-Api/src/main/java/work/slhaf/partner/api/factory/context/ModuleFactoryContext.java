@@ -14,4 +14,5 @@ public class ModuleFactoryContext {
     private List<MetaModule> moduleList = new ArrayList<>();
     private HashMap<Class<?>,Set<MetaMethod>> preHookMethods = new HashMap<>();
     private HashMap<Class<?>,Set<MetaMethod>> postHookMethods = new HashMap<>();
+    private HashMap<Class<?>,Set<MetaMethod>> initHookMethods = new HashMap<>();
 }

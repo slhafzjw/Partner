@@ -7,14 +7,14 @@ import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.common.chat.pojo.Message;
 import work.slhaf.partner.api.factory.config.ModelConfigManager;
 import work.slhaf.partner.api.factory.config.pojo.ModelConfig;
-import work.slhaf.partner.api.factory.module.annotation.Before;
+import work.slhaf.partner.api.factory.module.annotation.BeforeExecute;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public interface ActivateModel {
 
-    @Before
+    @BeforeExecute
     default void modelSettings() {
         Model model = new Model();
         ModelConfig modelConfig = ModelConfigManager.INSTANCE.loadModelConfig(modelKey());

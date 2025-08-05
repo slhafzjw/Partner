@@ -1,12 +1,14 @@
 package work.slhaf.partner.api.factory.module;
 
+import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.factory.AgentBaseFactory;
 import work.slhaf.partner.api.factory.config.ModelConfigManager;
 import work.slhaf.partner.api.factory.context.AgentRegisterContext;
-import work.slhaf.partner.api.factory.module.annotation.After;
+import work.slhaf.partner.api.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.factory.module.annotation.AgentModule;
-import work.slhaf.partner.api.factory.module.annotation.Before;
+import work.slhaf.partner.api.factory.module.annotation.BeforeExecute;
+import work.slhaf.partner.api.factory.module.annotation.Init;
 import work.slhaf.partner.api.factory.module.exception.ModuleCheckException;
 import work.slhaf.partner.api.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.flow.abstracts.AgentInteractionModule;
@@ -68,14 +70,35 @@ public class ModuleCheckFactory extends AgentBaseFactory {
     }
 
     private void hookLocationCheck() {
-        //检查@After注解
+        //检查@AfterExecute注解
         postHookLocationCheck();
-        //检查@Before注解
+        //检查@BeforeExecute注解
         preHookLocationCheck();
+        //检查@Init注解
+        initHookLocationCheck();
+        //检查@AgentModule注解是否只位于普通类上
+        agentModuleLocationCheck();
+    }
+
+    private void agentModuleLocationCheck() {
+        Set<Class<?>> types = reflections.getTypesAnnotatedWith(AgentModule.class);
+        for (Class<?> type : types) {
+            if (!ClassUtil.isNormalClass(type)) {
+                throw new ModuleCheckException("AgentModule 注解仅能位于普通类上! 异常类信息: " + type.getSimpleName());
+            }
+        }
+    }
+
+    private void initHookLocationCheck() {
+        Set<Method> methods = reflections.getMethodsAnnotatedWith(Init.class);
+        Set<Class<?>> types = methods.stream()
+                .map(Method::getDeclaringClass)
+                .collect(Collectors.toSet());
+        checkLocation(types);
     }
 
     private void preHookLocationCheck() {
-        Set<Method> methods = reflections.getMethodsAnnotatedWith(Before.class);
+        Set<Method> methods = reflections.getMethodsAnnotatedWith(BeforeExecute.class);
         Set<Class<?>> types = methods.stream()
                 .map(Method::getDeclaringClass)
                 .collect(Collectors.toSet());
@@ -84,7 +107,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
 
 
     private void postHookLocationCheck() {
-        Set<Method> methods = reflections.getMethodsAnnotatedWith(After.class);
+        Set<Method> methods = reflections.getMethodsAnnotatedWith(AfterExecute.class);
         Set<Class<?>> types = methods.stream()
                 .map(Method::getDeclaringClass)
                 .collect(Collectors.toSet());

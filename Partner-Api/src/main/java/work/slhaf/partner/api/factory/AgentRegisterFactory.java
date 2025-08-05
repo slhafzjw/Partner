@@ -1,8 +1,6 @@
 package work.slhaf.partner.api.factory;
 
-import cn.hutool.core.bean.BeanUtil;
 import org.reflections.util.ClasspathHelper;
-import work.slhaf.partner.api.entity.AgentContext;
 import work.slhaf.partner.api.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.factory.capability.CapabilityInjectFactory;
 import work.slhaf.partner.api.factory.capability.CapabilityRegisterFactory;
@@ -14,6 +12,7 @@ import work.slhaf.partner.api.factory.module.ModuleCheckFactory;
 import work.slhaf.partner.api.factory.module.ModulePreHookExecuteFactory;
 import work.slhaf.partner.api.factory.module.ModuleProxyFactory;
 import work.slhaf.partner.api.factory.module.ModuleRegisterFactory;
+import work.slhaf.partner.api.factory.module.pojo.MetaModule;
 
 import java.io.File;
 import java.net.URL;
@@ -27,7 +26,7 @@ public class AgentRegisterFactory {
     private AgentRegisterFactory() {
     }
 
-    public static AgentContext launch(String packageName) {
+    public static List<MetaModule> launch(String packageName) {
         urls.addAll(packageNameToURL(packageName));
         AgentRegisterContext registerContext = new AgentRegisterContext(urls);
         //流程
@@ -46,10 +45,9 @@ public class AgentRegisterFactory {
         //. 执行模块PreHook逻辑
         new ModulePreHookExecuteFactory().execute(registerContext);
 
-        AgentContext agentContext = new AgentContext();
-        BeanUtil.copyProperties(registerContext, agentContext);
-        return agentContext;
+        return registerContext.getModuleFactoryContext().getModuleList();
     }
+
 
     /**
      * 添加可扫描包

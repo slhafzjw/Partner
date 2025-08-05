@@ -1,4 +1,5 @@
 autoDetectedPackages:
+- module
 - work.slhaf
 enableAutoDetect: true
 entryDisplayConfig:

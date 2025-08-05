@@ -1,8 +1,10 @@
 package work.slhaf.partner.api.entity;
 
 import lombok.Data;
+import work.slhaf.partner.api.factory.module.pojo.MetaModule;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -14,4 +16,5 @@ public class AgentContext {
     private HashMap<Class<?>, Object> capabilityHolderInstances;
     private Set<Class<?>> cores;
     private Set<Class<?>> capabilities;
+    private List<MetaModule> moduleList;
 }

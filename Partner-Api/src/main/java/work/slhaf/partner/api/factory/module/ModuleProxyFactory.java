@@ -1,9 +1,6 @@
 package work.slhaf.partner.api.factory.module;
 
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.*;
-import net.bytebuddy.matcher.ElementMatchers;
 import work.slhaf.partner.api.factory.AgentBaseFactory;
 import work.slhaf.partner.api.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.factory.context.ModuleFactoryContext;
@@ -11,57 +8,79 @@ import work.slhaf.partner.api.factory.module.exception.ModuleInstanceGenerateFai
 import work.slhaf.partner.api.factory.module.exception.ModuleProxyGenerateFailedException;
 import work.slhaf.partner.api.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.flow.abstracts.AgentInteractionModule;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
 /**
- * 通过扫描注解<code>@Before</code>，获取到各个模块的后hook逻辑并通过动态代理添加到执行逻辑之后
+ * 通过扫描注解<code>@BeforeExecute</code>，获取到各个模块的后hook逻辑并通过动态代理添加到执行逻辑之后
  */
 public class ModuleProxyFactory extends AgentBaseFactory {
 
     private List<MetaModule> moduleList;
     private HashMap<Class<?>, Set<MetaMethod>> postHookMethods;
+    private HashMap<Class<?>, Set<MetaMethod>> preHookMethods;
 
     @Override
     protected void setVariables(AgentRegisterContext context) {
         ModuleFactoryContext factoryContext = context.getModuleFactoryContext();
         moduleList = factoryContext.getModuleList();
         postHookMethods = factoryContext.getPostHookMethods();
+        preHookMethods = factoryContext.getPreHookMethods();
     }
 
     @Override
     protected void run() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        //TODO 生成实例、并通过动态代理添加PostHook逻辑
+        //TODO 填充具体逻辑
         generateInstances();
-        setPostHookProxy();
+        setHookProxy();
     }
 
-    private void setPostHookProxy() {
+    private void setHookProxy() {
         for (MetaModule module : moduleList) {
             Class<?> clazz = module.getClazz();
             try {
-                Class<?> proxyClass = new ByteBuddy()
-                        .subclass(clazz)
-                        .method(ElementMatchers.isOverriddenFrom(AgentInteractionModule.class))
-                        .intercept(MethodDelegation.to(new ModuleProxyInterceptor(postHookMethods.get(clazz).stream().sorted(Comparator.comparing(MetaMethod::getOrder)).toList())))
-                        .make()
-                        .load(ModuleProxyFactory.class.getClassLoader())
-                        .getLoaded();
-
-                AgentInteractionModule interactionModule = (AgentInteractionModule) proxyClass.getConstructor().newInstance();
-                //TODO 检测代理写法是否正确
-                //TODO 添加ModuleManager,负责统一管理Module的加载、卸载
+                MethodsListRecord record = getHookMethodsList(clazz);
+                //生成实例，
+                generateProxiedInstances(record);
             } catch (Exception e) {
                 throw new ModuleProxyGenerateFailedException("创建代理对象失败: " + clazz.getSimpleName(), e);
             }
         }
+    }
+
+    private void generateProxiedInstances(MethodsListRecord record) {
+
+    }
+
+    private MethodsListRecord getHookMethodsList(Class<?> clazz) {
+        List<MetaMethod> post = new ArrayList<>();
+        List<MetaMethod> pre = new ArrayList<>();
+        //获取该类本身的hook逻辑
+        getHookMethodsList(post, pre, clazz);
+        //获取它所继承、实现的抽象类或接口, 以AgentInteractionModule、ActiveModel为终点
+        List<Class<?>> classes = getExtendedClasses(clazz);
+        //获取这些类中的hook逻辑
+        getHookMethodsList(post, pre, classes);
+        return new MethodsListRecord(post, pre);
+    }
+
+    private void getHookMethodsList(List<MetaMethod> post, List<MetaMethod> pre, List<Class<?>> classes) {
+
+    }
+
+    private List<Class<?>> getExtendedClasses(Class<?> clazz) {
+
+        return null;
+    }
+
+    private void getHookMethodsList(List<MetaMethod> post, List<MetaMethod> pre, Class<?> clazz) {
+
     }
 
     private void generateInstances() {
@@ -78,19 +97,27 @@ public class ModuleProxyFactory extends AgentBaseFactory {
 
     private static class ModuleProxyInterceptor {
 
-        private List<MetaMethod> postHookMethods;
+        private final List<MetaMethod> postHookMethods;
+        private final List<MetaMethod> preHookMethods;
 
-        private ModuleProxyInterceptor(List<MetaMethod> postHookMethods) {
+        private ModuleProxyInterceptor(List<MetaMethod> postHookMethods, List<MetaMethod> preHookMethods) {
             this.postHookMethods = postHookMethods;
+            this.preHookMethods = preHookMethods;
         }
 
         @RuntimeType
         public Object intercept(@Origin Method method, @AllArguments Object[] allArguments, @SuperCall Callable<?> zuper, @This Object proxy) throws Exception {
+            for (MetaMethod metaMethod : preHookMethods) {
+                metaMethod.getMethod().invoke(proxy);
+            }
             Object res = zuper.call();
             for (MetaMethod metaMethod : postHookMethods) {
-                metaMethod.getMethod().invoke(proxy, allArguments);
+                metaMethod.getMethod().invoke(proxy);
             }
             return res;
         }
+    }
+
+    record MethodsListRecord(List<MetaMethod> post, List<MetaMethod> pre) {
     }
 }
