@@ -1,21 +1,25 @@
 package work.slhaf.partner.api.factory.module;
 
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.*;
+import net.bytebuddy.matcher.ElementMatchers;
 import work.slhaf.partner.api.factory.AgentBaseFactory;
 import work.slhaf.partner.api.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.factory.context.ModuleFactoryContext;
+import work.slhaf.partner.api.factory.module.annotation.AfterExecute;
+import work.slhaf.partner.api.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.factory.module.exception.ModuleInstanceGenerateFailedException;
 import work.slhaf.partner.api.factory.module.exception.ModuleProxyGenerateFailedException;
 import work.slhaf.partner.api.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.factory.module.pojo.MetaModule;
+import work.slhaf.partner.api.flow.abstracts.AgentInteractionModule;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 /**
  * 通过扫描注解<code>@BeforeExecute</code>，获取到各个模块的后hook逻辑并通过动态代理添加到执行逻辑之后
@@ -23,20 +27,15 @@ import java.util.concurrent.Callable;
 public class ModuleProxyFactory extends AgentBaseFactory {
 
     private List<MetaModule> moduleList;
-    private HashMap<Class<?>, Set<MetaMethod>> postHookMethods;
-    private HashMap<Class<?>, Set<MetaMethod>> preHookMethods;
 
     @Override
     protected void setVariables(AgentRegisterContext context) {
         ModuleFactoryContext factoryContext = context.getModuleFactoryContext();
         moduleList = factoryContext.getModuleList();
-        postHookMethods = factoryContext.getPostHookMethods();
-        preHookMethods = factoryContext.getPreHookMethods();
     }
 
     @Override
     protected void run() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        //TODO 填充具体逻辑
         generateInstances();
         setHookProxy();
     }
@@ -45,42 +44,115 @@ public class ModuleProxyFactory extends AgentBaseFactory {
         for (MetaModule module : moduleList) {
             Class<?> clazz = module.getClazz();
             try {
-                MethodsListRecord record = getHookMethodsList(clazz);
+                MethodsListRecord record = collectHookMethods(clazz);
                 //生成实例，
-                generateProxiedInstances(record);
+                generateProxiedInstances(record, module);
             } catch (Exception e) {
                 throw new ModuleProxyGenerateFailedException("创建代理对象失败: " + clazz.getSimpleName(), e);
             }
         }
     }
 
-    private void generateProxiedInstances(MethodsListRecord record) {
-
+    private void generateProxiedInstances(MethodsListRecord record, MetaModule metaModule) {
+        try {
+            Class<?> clazz = metaModule.getClazz();
+            Class<?> proxyClass = new ByteBuddy()
+                    .subclass(clazz)
+                    .method(ElementMatchers.isOverriddenFrom(AgentInteractionModule.class))
+                    .intercept(MethodDelegation.to(new ModuleProxyInterceptor(record.post, record.pre)))
+                    .make()
+                    .load(ModuleProxyFactory.class.getClassLoader())
+                    .getLoaded();
+            metaModule.setInstance(proxyClass.getConstructor().newInstance());
+        } catch (Exception e) {
+            throw new ModuleProxyGenerateFailedException("模块Hook代理生成失败! 代理失败的模块名: " + metaModule.getClazz().getSimpleName(), e);
+        }
     }
 
-    private MethodsListRecord getHookMethodsList(Class<?> clazz) {
+    private MethodsListRecord collectHookMethods(Class<?> clazz) {
         List<MetaMethod> post = new ArrayList<>();
         List<MetaMethod> pre = new ArrayList<>();
         //获取该类本身的hook逻辑
-        getHookMethodsList(post, pre, clazz);
+        collectHookMethods(post, pre, clazz);
         //获取它所继承、实现的抽象类或接口, 以AgentInteractionModule、ActiveModel为终点
-        List<Class<?>> classes = getExtendedClasses(clazz);
+        Set<Class<?>> classes = collectSuperClasses(clazz);
         //获取这些类中的hook逻辑
-        getHookMethodsList(post, pre, classes);
+        collectHookMethods(post, pre, classes);
         return new MethodsListRecord(post, pre);
     }
 
-    private void getHookMethodsList(List<MetaMethod> post, List<MetaMethod> pre, List<Class<?>> classes) {
-
+    private void collectHookMethods(List<MetaMethod> post, List<MetaMethod> pre, Set<Class<?>> classes) {
+        for (Class<?> type : classes) {
+            collectPreHookMethods(pre, type);
+            collectPostHookMethods(post, type);
+        }
     }
 
-    private List<Class<?>> getExtendedClasses(Class<?> clazz) {
-
-        return null;
+    private void collectPostHookMethods(List<MetaMethod> post, Class<?> type) {
+        Set<MetaMethod> collectedPostHookMethod = Arrays.stream(type.getMethods())
+                .filter(method -> method.isAnnotationPresent(AfterExecute.class))
+                .map(method -> {
+                    MetaMethod metaMethod = new MetaMethod();
+                    metaMethod.setMethod(method);
+                    metaMethod.setOrder(method.getAnnotation(AfterExecute.class).order());
+                    return metaMethod;
+                })
+                .collect(Collectors.toSet());
+        post.addAll(collectedPostHookMethod);
     }
 
-    private void getHookMethodsList(List<MetaMethod> post, List<MetaMethod> pre, Class<?> clazz) {
+    private void collectPreHookMethods(List<MetaMethod> pre, Class<?> type) {
+        Set<MetaMethod> collectedPreHookMethods = Arrays.stream(type.getMethods())
+                .filter(method -> method.isAnnotationPresent(BeforeExecute.class))
+                .map(method -> {
+                    MetaMethod metaMethod = new MetaMethod();
+                    metaMethod.setMethod(method);
+                    metaMethod.setOrder(method.getAnnotation(BeforeExecute.class).order());
+                    return metaMethod;
+                })
+                .collect(Collectors.toSet());
+        pre.addAll(collectedPreHookMethods);
+    }
 
+    private Set<Class<?>> collectSuperClasses(Class<?> clazz) {
+        Set<Class<?>> classes = new HashSet<>();
+        collectSuperClasses(classes, clazz);
+        return classes;
+    }
+
+    private void collectSuperClasses(Set<Class<?>> classes, Class<?> clazz) {
+        Class<?> superclass = clazz.getSuperclass();
+        if (superclass == null || superclass == AgentInteractionModule.class) {
+            return;
+        }
+        collectSuperClasses(classes, superclass);
+        classes.add(superclass);
+        collectInterfaces(clazz, classes);
+    }
+
+    private void collectInterfaces(Class<?> clazz, Set<Class<?>> classes) {
+        for (Class<?> type : clazz.getInterfaces()) {
+            if (classes.add(type)) {
+                collectInterfaces(type, classes);
+            }
+        }
+    }
+
+    private void collectHookMethods(List<MetaMethod> post, List<MetaMethod> pre, Class<?> clazz) {
+        Method[] methods = clazz.getMethods();
+        for (Method method : methods) {
+            if (method.isAnnotationPresent(BeforeExecute.class)) {
+                MetaMethod metaMethod = new MetaMethod();
+                metaMethod.setOrder(method.getAnnotation(BeforeExecute.class).order());
+                pre.add(metaMethod);
+                metaMethod.setMethod(method);
+            } else if (method.isAnnotationPresent(AfterExecute.class)) {
+                MetaMethod metaMethod = new MetaMethod();
+                metaMethod.setOrder(method.getAnnotation(AfterExecute.class).order());
+                post.add(metaMethod);
+                metaMethod.setMethod(method);
+            }
+        }
     }
 
     private void generateInstances() {
@@ -119,5 +191,9 @@ public class ModuleProxyFactory extends AgentBaseFactory {
     }
 
     record MethodsListRecord(List<MetaMethod> post, List<MetaMethod> pre) {
+        public MethodsListRecord {
+            post.sort(Comparator.comparingInt(MetaMethod::getOrder));
+            pre.sort(Comparator.comparingInt(MetaMethod::getOrder));
+        }
     }
 }

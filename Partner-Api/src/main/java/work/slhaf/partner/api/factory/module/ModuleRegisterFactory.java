@@ -4,9 +4,7 @@ import org.reflections.Reflections;
 import work.slhaf.partner.api.factory.AgentBaseFactory;
 import work.slhaf.partner.api.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.factory.context.ModuleFactoryContext;
-import work.slhaf.partner.api.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.factory.module.annotation.AgentModule;
-import work.slhaf.partner.api.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.factory.module.annotation.Init;
 import work.slhaf.partner.api.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.factory.module.pojo.MetaModule;
@@ -21,8 +19,6 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
 
     private Reflections reflections;
     private List<MetaModule> moduleList;
-    private HashMap<Class<?>, Set<MetaMethod>> postHookMethods;
-    private HashMap<Class<?>, Set<MetaMethod>> preHookMethods;
     private HashMap<Class<?>, Set<MetaMethod>> initHookMethods;
 
     @Override
@@ -30,22 +26,15 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
         ModuleFactoryContext factoryContext = context.getModuleFactoryContext();
         reflections = context.getReflections();
         moduleList = factoryContext.getModuleList();
-        postHookMethods = factoryContext.getPostHookMethods();
-        preHookMethods = factoryContext.getPreHookMethods();
         initHookMethods = factoryContext.getInitHookMethods();
     }
 
     @Override
     protected void run() {
-        registerModuleList();
-        registerHookSet();
-    }
-
-    private void registerHookSet() {
-        setPostHookMethods();
-        setPreHookMethods();
+        setModuleList();
         setInitMethods();
     }
+
 
     private void setInitMethods() {
         Set<Method> methods = reflections.getMethodsAnnotatedWith(Init.class);
@@ -55,28 +44,6 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
             metaMethod.setOrder(method.getAnnotation(Init.class).order());
 
             addMetaMethod(method, metaMethod, initHookMethods);
-        }
-    }
-
-    private void setPreHookMethods() {
-        Set<Method> methods = reflections.getMethodsAnnotatedWith(AfterExecute.class);
-        for (Method method : methods) {
-            MetaMethod metaMethod = new MetaMethod();
-            metaMethod.setMethod(method);
-            metaMethod.setOrder(method.getAnnotation(AfterExecute.class).order());
-
-            addMetaMethod(method, metaMethod, postHookMethods);
-        }
-    }
-
-    private void setPostHookMethods() {
-        Set<Method> methods = reflections.getMethodsAnnotatedWith(BeforeExecute.class);
-        for (Method method : methods) {
-            MetaMethod metaMethod = new MetaMethod();
-            metaMethod.setMethod(method);
-            metaMethod.setOrder(method.getAnnotation(BeforeExecute.class).order());
-
-            addMetaMethod(method, metaMethod, preHookMethods);
         }
     }
 
@@ -91,7 +58,7 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
         }
     }
 
-    private void registerModuleList() {
+    private void setModuleList() {
         //反射扫描获取@AgentModule所在类, 该部分为Agent流程执行模块
         Set<Class<?>> modules = reflections.getTypesAnnotatedWith(AgentModule.class);
         for (Class<?> module : modules) {
