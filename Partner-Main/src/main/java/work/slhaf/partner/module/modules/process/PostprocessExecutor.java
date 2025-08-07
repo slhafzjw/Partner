@@ -3,7 +3,7 @@ package work.slhaf.partner.module.modules.process;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.interaction.data.context.InteractionContext;
 import work.slhaf.partner.module.common.module.PostModule;

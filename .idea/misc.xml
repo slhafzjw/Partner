@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
-    <list size="3">
-      <item index="0" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CapabilityMethod" />
-      <item index="1" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CoordinateManager" />
-      <item index="2" class="java.lang.String" itemvalue="work.slhaf.partner.api.register.capability.annotation.Capability" />
+    <list size="6">
+      <item index="0" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.Capability" />
+      <item index="1" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore" />
+      <item index="2" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod" />
+      <item index="3" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CapabilityMethod" />
+      <item index="4" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CoordinateManager" />
+      <item index="5" class="java.lang.String" itemvalue="work.slhaf.partner.api.register.capability.annotation.Capability" />
     </list>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />

@@ -1,6 +1,6 @@
 package work.slhaf.partner.core.cognation.submodule.perceive;
 
-import work.slhaf.partner.api.factory.capability.annotation.Capability;
+import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.core.cognation.submodule.perceive.pojo.User;
 
 @Capability(value = "perceive")

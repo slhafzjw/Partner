@@ -5,9 +5,9 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
-import work.slhaf.partner.api.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.agent.flow.abstracts.ActivateModel;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeInput;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeResult;
 

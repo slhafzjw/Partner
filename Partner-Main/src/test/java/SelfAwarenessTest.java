@@ -1,9 +1,9 @@
 import cn.hutool.json.JSONUtil;
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.api.common.chat.ChatClient;
-import work.slhaf.partner.api.common.chat.constant.ChatConstant;
-import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
-import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.chat.ChatClient;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.config.ModelConfig;
 import work.slhaf.partner.common.util.ResourcesUtil;
 import work.slhaf.partner.module.common.model.ModelConstant;

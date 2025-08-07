@@ -2,7 +2,7 @@ package work.slhaf.partner.common.util;
 
 import com.alibaba.fastjson2.JSONArray;
 import work.slhaf.partner.Agent;
-import work.slhaf.partner.api.common.chat.pojo.Message;
+import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;

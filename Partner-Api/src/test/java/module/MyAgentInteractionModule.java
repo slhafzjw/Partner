@@ -1,7 +1,7 @@
 package module;
 
-import work.slhaf.partner.api.flow.abstracts.AgentInteractionModule;
-import work.slhaf.partner.api.flow.entity.InteractionFlowContext;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionModule;
+import work.slhaf.partner.api.agent.flow.entity.InteractionFlowContext;
 
 public class MyAgentInteractionModule extends AgentInteractionModule {
     @Override

@@ -2,8 +2,8 @@ package work.slhaf.partner.module.modules.process;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.factory.capability.annotation.CapabilityHolder;
-import work.slhaf.partner.api.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityHolder;
+import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.pojo.User;

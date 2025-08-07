@@ -1,4 +1,5 @@
 autoDetectedPackages:
+- factory
 - module
 - work.slhaf
 enableAutoDetect: true

@@ -2,9 +2,9 @@ package work.slhaf.partner.core.cognation;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.common.chat.constant.ChatConstant;
-import work.slhaf.partner.api.factory.capability.annotation.CoordinateManager;
-import work.slhaf.partner.api.factory.capability.annotation.Coordinated;
+import work.slhaf.partner.api.agent.factory.capability.annotation.CoordinateManager;
+import work.slhaf.partner.api.agent.factory.capability.annotation.Coordinated;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.common.exception_handler.GlobalExceptionHandler;
 import work.slhaf.partner.common.exception_handler.pojo.GlobalException;
 import work.slhaf.partner.core.cognation.cognation.CognationCore;

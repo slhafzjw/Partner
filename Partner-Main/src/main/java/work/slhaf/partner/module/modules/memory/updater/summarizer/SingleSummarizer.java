@@ -4,11 +4,11 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.common.chat.constant.ChatConstant;
-import work.slhaf.partner.api.common.chat.pojo.ChatResponse;
-import work.slhaf.partner.api.common.chat.pojo.Message;
-import work.slhaf.partner.api.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.agent.flow.abstracts.ActivateModel;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 
 import java.util.ArrayList;

@@ -2,9 +2,9 @@ package work.slhaf.partner.core.cognation.submodule.memory;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
+import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.api.common.entity.PersistableObject;
-import work.slhaf.partner.api.factory.capability.annotation.CapabilityCore;
-import work.slhaf.partner.api.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.core.cognation.common.pojo.MemoryResult;
 import work.slhaf.partner.core.cognation.common.pojo.MemorySliceResult;
 import work.slhaf.partner.core.cognation.submodule.memory.exception.UnExistedDateIndexException;
