@@ -49,3 +49,4 @@ build/
 /Partner-Core/src/main/java/src/test/java/memory/result/primary_input.json
 /Partner-Core/src/main/java/src/main/resources/prompt/module/memory/topic_extractor.json.bak
 /backup/
+/Partner-Main/src/test/java/text/test.json

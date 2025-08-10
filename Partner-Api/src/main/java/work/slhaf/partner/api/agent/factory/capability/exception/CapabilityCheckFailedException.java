@@ -1,6 +1,8 @@
 package work.slhaf.partner.api.agent.factory.capability.exception;
 
-public class CapabilityCheckFailedException extends RuntimeException {
+import work.slhaf.partner.api.agent.runtime.exception.AgentLaunchFailedException;
+
+public class CapabilityCheckFailedException extends AgentLaunchFailedException {
     public CapabilityCheckFailedException(String message) {
         super("Capability注册失败: " + message);
     }

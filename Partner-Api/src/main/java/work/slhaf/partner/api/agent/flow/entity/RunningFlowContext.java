@@ -6,6 +6,6 @@ import lombok.Data;
  * 流程上下文
  */
 @Data
-public abstract class InteractionFlowContext {
+public abstract class RunningFlowContext {
 
 }

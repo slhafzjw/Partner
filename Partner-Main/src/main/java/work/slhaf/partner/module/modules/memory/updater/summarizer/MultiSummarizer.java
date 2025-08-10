@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeInput;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeResult;
@@ -20,7 +20,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MultiSummarizer extends AgentInteractionSubModule<SummarizeInput, SummarizeResult> implements ActivateModel {
+public class MultiSummarizer extends AgentRunningSubModule<SummarizeInput, SummarizeResult> implements ActivateModel {
 
     private static volatile MultiSummarizer multiSummarizer;
 

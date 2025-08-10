@@ -8,4 +8,5 @@ public class MetaModule {
     private int order;
     private Class<?> clazz;
     private Object instance;
+    private boolean enabled = true;
 }

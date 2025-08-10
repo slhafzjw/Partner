@@ -1,9 +1,10 @@
 package work.slhaf.partner.api.agent.flow.abstracts;
 
-import work.slhaf.partner.api.agent.factory.config.ModelConfigManager;
+import cn.hutool.core.bean.BeanUtil;
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.flow.entity.Model;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
 import work.slhaf.partner.api.chat.ChatClient;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
@@ -14,24 +15,29 @@ import java.util.List;
 
 public interface ActivateModel {
 
-    ModelConfigManager modelConfigManager = ModelConfigManager.INSTANCE;
+    AgentConfigManager AGENT_CONFIG_MANAGER = AgentConfigManager.INSTANCE;
 
     @Init
     default void modelSettings() {
         Model model = new Model();
-        ModelConfig modelConfig = ModelConfigManager.INSTANCE.loadModelConfig(modelKey());
+        ModelConfig modelConfig = AgentConfigManager.INSTANCE.loadModelConfig(modelKey());
         model.setBaseMessages(withBasicPrompt() ? loadSpecificPromptAndBasicPrompt(modelKey()) : loadSpecificPrompt(modelKey()));
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
+        ((Module) this).setModel(model);
+    }
+
+    default void updateModelSettings(ChatClient newChatClient) {
+        BeanUtil.copyProperties(newChatClient, chatClient());
     }
 
     private List<Message> loadSpecificPrompt(String modelKey) {
-        return modelConfigManager.loadModelPrompt(modelKey);
+        return AGENT_CONFIG_MANAGER.loadModelPrompt(modelKey);
     }
 
     private List<Message> loadSpecificPromptAndBasicPrompt(String modelKey) {
         List<Message> messages = new ArrayList<>();
-        messages.addAll(modelConfigManager.loadModelPrompt("basic"));
-        messages.addAll(modelConfigManager.loadModelPrompt(modelKey));
+        messages.addAll(AGENT_CONFIG_MANAGER.loadModelPrompt("basic"));
+        messages.addAll(AGENT_CONFIG_MANAGER.loadModelPrompt(modelKey));
         return messages;
     }
 

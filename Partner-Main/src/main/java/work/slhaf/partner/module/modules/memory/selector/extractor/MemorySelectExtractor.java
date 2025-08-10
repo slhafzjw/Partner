@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.common.exception_handler.GlobalExceptionHandler;
@@ -31,7 +31,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemorySelectExtractor extends AgentInteractionSubModule<InteractionContext, ExtractorResult> implements ActivateModel {
+public class MemorySelectExtractor extends AgentRunningSubModule<InteractionContext, ExtractorResult> implements ActivateModel {
 
     private static volatile MemorySelectExtractor memorySelectExtractor;
 

@@ -1,11 +1,11 @@
-package work.slhaf.partner.api.agent.exception;
+package work.slhaf.partner.api.agent.runtime.exception;
 
 public class AgentLaunchFailedException extends RuntimeException {
     public AgentLaunchFailedException(String message, Throwable cause) {
-        super("Agent 启动失败: " + message, cause);
+        super("Agent 启动失败 " + message, cause);
     }
 
     public AgentLaunchFailedException(String message) {
-        super("Agent 启动失败: " + message);
+        super("Agent 启动失败 " + message);
     }
 }

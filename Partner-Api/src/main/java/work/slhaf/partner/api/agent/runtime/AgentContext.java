@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.entity;
+package work.slhaf.partner.api.agent.runtime;
 
 import lombok.Data;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;

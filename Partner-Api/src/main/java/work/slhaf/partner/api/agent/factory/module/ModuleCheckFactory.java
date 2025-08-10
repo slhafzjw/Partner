@@ -3,7 +3,6 @@ package work.slhaf.partner.api.agent.factory.module;
 import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
-import work.slhaf.partner.api.agent.factory.config.ModelConfigManager;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
@@ -11,8 +10,9 @@ import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleCheckException;
 import work.slhaf.partner.api.agent.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionModule;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningSubModule;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
@@ -59,7 +59,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
                 ActivateModel instance = type.getConstructor().newInstance();
                 modelKeySet.add(instance.modelKey());
             }
-            Set<String> promptKeySet = ModelConfigManager.INSTANCE.getModelPromptMap().keySet();
+            Set<String> promptKeySet = AgentConfigManager.INSTANCE.getModelPromptMap().keySet();
             if (!promptKeySet.containsAll(modelKeySet)) {
                 modelKeySet.removeAll(promptKeySet);
                 throw new ModuleCheckException("存在未配置Prompt的ActivateModel实现! 缺少Prompt的ModelKey列表: " + modelKeySet);
@@ -116,10 +116,10 @@ public class ModuleCheckFactory extends AgentBaseFactory {
 
     private void checkLocation(Set<Class<?>> types) {
         for (Class<?> type : types) {
-            if (AgentInteractionModule.class.isAssignableFrom(type)) {
+            if (AgentRunningModule.class.isAssignableFrom(type)) {
                 continue;
             }
-            if (AgentInteractionSubModule.class.isAssignableFrom(type)) {
+            if (AgentRunningSubModule.class.isAssignableFrom(type)) {
                 continue;
             }
             if (ActivateModel.class.isAssignableFrom(type)) {
@@ -134,7 +134,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
             if (type.isAnnotation()) {
                 continue;
             }
-            if (type.isAssignableFrom(AgentInteractionModule.class)) {
+            if (type.isAssignableFrom(AgentRunningModule.class)) {
                 continue;
             }
             throw new ModuleCheckException("存在未继承AgentInteractionModule.class的AgentModule实现: " + type.getSimpleName());

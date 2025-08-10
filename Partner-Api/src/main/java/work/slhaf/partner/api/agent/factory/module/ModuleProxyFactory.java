@@ -13,7 +13,7 @@ import work.slhaf.partner.api.agent.factory.module.exception.ModuleInstanceGener
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleProxyGenerateFailedException;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionModule;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningModule;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -60,7 +60,7 @@ public class ModuleProxyFactory extends AgentBaseFactory {
             Class<?> clazz = metaModule.getClazz();
             Class<?> proxyClass = new ByteBuddy()
                     .subclass(clazz)
-                    .method(ElementMatchers.isOverriddenFrom(AgentInteractionModule.class))
+                    .method(ElementMatchers.isOverriddenFrom(AgentRunningModule.class))
                     .intercept(MethodDelegation.to(new ModuleProxyInterceptor(record.post, record.pre)))
                     .make()
                     .load(ModuleProxyFactory.class.getClassLoader())
@@ -77,7 +77,7 @@ public class ModuleProxyFactory extends AgentBaseFactory {
         //获取该类本身的hook逻辑
         collectHookMethods(post, pre, clazz);
         //获取它所继承、实现的抽象类或接口, 以AgentInteractionModule、ActiveModel为终点
-        Set<Class<?>> classes = collectExtendedClasses(clazz, AgentInteractionModule.class);
+        Set<Class<?>> classes = collectExtendedClasses(clazz, AgentRunningModule.class);
         //获取这些类中的hook逻辑
         collectHookMethods(post, pre, classes);
         return new MethodsListRecord(post, pre);

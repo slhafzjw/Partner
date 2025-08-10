@@ -7,7 +7,7 @@ import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleInitHookExecuteFailedException;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionModule;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningModule;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
@@ -52,7 +52,7 @@ public class ModuleInitHookExecuteFactory extends AgentBaseFactory {
     }
 
     private List<MetaMethod> collectInitHookMethods(Class<?> clazz) {
-        Set<Class<?>> classes = collectExtendedClasses(clazz, AgentInteractionModule.class);
+        Set<Class<?>> classes = collectExtendedClasses(clazz, AgentRunningModule.class);
         return classes.stream()
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)

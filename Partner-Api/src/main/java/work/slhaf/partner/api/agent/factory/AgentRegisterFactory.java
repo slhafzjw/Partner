@@ -13,6 +13,7 @@ import work.slhaf.partner.api.agent.factory.module.ModuleInitHookExecuteFactory;
 import work.slhaf.partner.api.agent.factory.module.ModuleProxyFactory;
 import work.slhaf.partner.api.agent.factory.module.ModuleRegisterFactory;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
 
 import java.io.File;
 import java.net.URL;
@@ -45,12 +46,14 @@ public class AgentRegisterFactory {
         //. 执行模块PreHook逻辑
         new ModuleInitHookExecuteFactory().execute(registerContext);
 
-        return registerContext.getModuleFactoryContext().getModuleList();
+        List<MetaModule> moduleList = registerContext.getModuleFactoryContext().getModuleList();
+        return AgentConfigManager.INSTANCE.moduleEnabledStatusFilter(moduleList);
     }
 
 
     /**
      * 添加可扫描包
+     *
      * @param packageName 指定的包名
      */
     public static void addScanPackage(String packageName) {
@@ -59,6 +62,7 @@ public class AgentRegisterFactory {
 
     /**
      * 添加外部模块目录
+     *
      * @param externalPackagePath 指定的外部模块目录路径
      */
     public static void addScanDir(String externalPackagePath) {
@@ -67,7 +71,11 @@ public class AgentRegisterFactory {
             throw new ExternalModulePathNotExistException("不存在的外部模块目录: " + externalPackagePath);
         }
         try {
-            for (File f : file.listFiles()) {
+            File[] files = file.listFiles();
+            if (files == null || files.length == 0) {
+                throw new ExternalModulePathNotExistException("外部模块目录为空: " + externalPackagePath);
+            }
+            for (File f : files) {
                 if (f.getName().endsWith(".jar")) {
                     urls.add(f.toURI().toURL());
                 }

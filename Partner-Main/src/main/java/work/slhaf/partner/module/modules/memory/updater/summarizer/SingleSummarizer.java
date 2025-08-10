@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
-public class SingleSummarizer extends AgentInteractionSubModule<List<Message>,Void> implements ActivateModel {
+public class SingleSummarizer extends AgentRunningSubModule<List<Message>,Void> implements ActivateModel {
 
     private static volatile SingleSummarizer singleSummarizer;
 

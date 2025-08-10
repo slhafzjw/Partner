@@ -4,7 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
@@ -21,7 +21,7 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class RelationExtractor extends AgentInteractionSubModule<InteractionContext, RelationExtractResult> implements ActivateModel {
+public class RelationExtractor extends AgentRunningSubModule<InteractionContext, RelationExtractResult> implements ActivateModel {
 
     private static volatile RelationExtractor relationExtractor;
 

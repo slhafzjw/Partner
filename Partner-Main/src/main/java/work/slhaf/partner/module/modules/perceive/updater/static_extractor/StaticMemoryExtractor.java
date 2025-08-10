@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentInteractionSubModule;
+import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.cognation.cognation.CognationCapability;
 import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
@@ -18,7 +18,7 @@ import java.util.HashMap;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class StaticMemoryExtractor extends AgentInteractionSubModule<InteractionContext, HashMap<String, String>> implements ActivateModel {
+public class StaticMemoryExtractor extends AgentRunningSubModule<InteractionContext, HashMap<String, String>> implements ActivateModel {
 
     private static volatile StaticMemoryExtractor staticMemoryExtractor;
 

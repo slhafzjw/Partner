@@ -6,7 +6,7 @@ package work.slhaf.partner.api.agent.flow.abstracts;
  * @param <I> 输入类型
  * @param <O> 输出类型
  */
-public abstract class AgentInteractionSubModule<I, O> extends Module {
+public abstract class AgentRunningSubModule<I, O> extends Module {
 
     public abstract O execute(I data);
 

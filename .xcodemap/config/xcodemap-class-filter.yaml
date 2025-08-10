@@ -26,6 +26,7 @@ maxNumHashImportant: 256
 maxObjectDepth: 4
 maxStrSize: 4096
 name: xcodemap-filter
+openMainWindow: true
 recordMode: manual
 sourceDisplayConfig:
   color: blue
