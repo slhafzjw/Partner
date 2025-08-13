@@ -7,7 +7,7 @@ import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleInitHookExecuteFailedException;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;

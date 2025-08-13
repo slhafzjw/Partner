@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.flow.entity;
+package work.slhaf.partner.api.agent.runtime.interaction.flow.entity;
 
 import lombok.Data;
 import work.slhaf.partner.api.chat.ChatClient;

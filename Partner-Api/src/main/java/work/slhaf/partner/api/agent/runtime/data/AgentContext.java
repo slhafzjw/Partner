@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.runtime;
+package work.slhaf.partner.api.agent.runtime.data;
 
 import lombok.Data;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
@@ -10,6 +10,9 @@ import java.util.function.Function;
 
 @Data
 public class AgentContext {
+
+    public static AgentContext INSTANCE = new AgentContext();
+
     private HashMap<String, Function<Object[], Object>> methodsRouterTable;
     private HashMap<String, Function<Object[], Object>> coordinatedMethodsRouterTable;
     private HashMap<Class<?>, Object> capabilityCoreInstances;

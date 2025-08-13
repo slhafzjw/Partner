@@ -9,10 +9,10 @@ import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleCheckException;
-import work.slhaf.partner.api.agent.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningModule;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
@@ -134,7 +134,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
             if (type.isAnnotation()) {
                 continue;
             }
-            if (type.isAssignableFrom(AgentRunningModule.class)) {
+            if (AgentRunningModule.class.isAssignableFrom(type) && ClassUtil.isNormalClass(type)) {
                 continue;
             }
             throw new ModuleCheckException("存在未继承AgentInteractionModule.class的AgentModule实现: " + type.getSimpleName());

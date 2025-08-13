@@ -1,11 +1,13 @@
 package work.slhaf.partner.api.agent.factory.module;
 
+import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
 
 import java.util.Comparator;
 import java.util.List;
@@ -35,14 +37,17 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
         //反射扫描获取@AgentModule所在类, 该部分为Agent流程执行模块
         Set<Class<?>> modules = reflections.getTypesAnnotatedWith(AgentModule.class);
         for (Class<?> module : modules) {
-            AgentModule agentModule = module.getAnnotation(AgentModule.class);
+            if (!ClassUtil.isNormalClass(module)) {
+                continue;
+            }
+            Class<? extends AgentRunningModule> clazz = module.asSubclass(AgentRunningModule.class);
+            AgentModule agentModule = clazz.getAnnotation(AgentModule.class);
             MetaModule metaModule = new MetaModule();
             metaModule.setName(agentModule.name());
             metaModule.setOrder(agentModule.order());
-            metaModule.setClazz(module);
+            metaModule.setClazz(clazz);
             moduleList.add(metaModule);
         }
         moduleList.sort(Comparator.comparing(MetaModule::getOrder));
-
     }
 }

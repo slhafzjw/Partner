@@ -1,9 +1,9 @@
-package work.slhaf.partner.api.agent.flow.abstracts;
+package work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts;
 
 import lombok.Getter;
 import lombok.Setter;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityHolder;
-import work.slhaf.partner.api.agent.flow.entity.Model;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.Model;
 
 /**
  * 模块基类

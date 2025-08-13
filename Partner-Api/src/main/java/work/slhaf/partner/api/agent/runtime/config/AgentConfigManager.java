@@ -1,6 +1,6 @@
 package work.slhaf.partner.api.agent.runtime.config;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.config.exception.ConfigNotExistException;
@@ -16,21 +16,16 @@ import java.util.List;
 import java.util.Set;
 
 @Slf4j
+@Data
 public abstract class AgentConfigManager {
 
     @Setter
     public static AgentConfigManager INSTANCE;
     private static final String DEFAULT_KEY = "default";
 
-    @Getter
     protected HashMap<String, ModelConfig> modelConfigMap;
-    @Getter
     protected HashMap<String, List<Message>> modelPromptMap;
-
-    @Getter
-    @Setter
     protected HashMap<String, Boolean> moduleEnabledStatus;
-
     protected List<MetaModule> moduleList;
 
     public void load() {
@@ -48,7 +43,7 @@ public abstract class AgentConfigManager {
 
     protected abstract HashMap<String, Boolean> loadModuleEnabledStatusMap();
 
-    public List<MetaModule> moduleEnabledStatusFilter(List<MetaModule> moduleList) {
+    public void moduleEnabledStatusFilterAndRecord(List<MetaModule> moduleList) {
         this.moduleList = moduleList;
         this.moduleEnabledStatus = loadModuleEnabledStatusMap();
 
@@ -65,7 +60,6 @@ public abstract class AgentConfigManager {
         if (unmatch) {
             dumpModuleEnabledStatus();
         }
-        return moduleList;
     }
 
     /**

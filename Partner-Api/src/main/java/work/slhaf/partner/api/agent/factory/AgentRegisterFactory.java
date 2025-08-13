@@ -1,5 +1,6 @@
 package work.slhaf.partner.api.agent.factory;
 
+import cn.hutool.core.bean.BeanUtil;
 import org.reflections.util.ClasspathHelper;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectFactory;
@@ -13,6 +14,7 @@ import work.slhaf.partner.api.agent.factory.module.ModuleInitHookExecuteFactory;
 import work.slhaf.partner.api.agent.factory.module.ModuleProxyFactory;
 import work.slhaf.partner.api.agent.factory.module.ModuleRegisterFactory;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
+import work.slhaf.partner.api.agent.runtime.data.AgentContext;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
 
 import java.io.File;
@@ -27,7 +29,7 @@ public class AgentRegisterFactory {
     private AgentRegisterFactory() {
     }
 
-    public static List<MetaModule> launch(String packageName) {
+    public static void launch(String packageName) {
         urls.addAll(packageNameToURL(packageName));
         AgentRegisterContext registerContext = new AgentRegisterContext(urls);
         //流程
@@ -47,7 +49,9 @@ public class AgentRegisterFactory {
         new ModuleInitHookExecuteFactory().execute(registerContext);
 
         List<MetaModule> moduleList = registerContext.getModuleFactoryContext().getModuleList();
-        return AgentConfigManager.INSTANCE.moduleEnabledStatusFilter(moduleList);
+        AgentConfigManager.INSTANCE.moduleEnabledStatusFilterAndRecord(moduleList);
+
+        BeanUtil.copyProperties(registerContext, AgentContext.INSTANCE);
     }
 
 
@@ -88,6 +92,5 @@ public class AgentRegisterFactory {
     private static List<URL> packageNameToURL(String packageName) {
         return ClasspathHelper.forPackage(packageName).stream().toList();
     }
-
 
 }

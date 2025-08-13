@@ -1,6 +1,5 @@
 package work.slhaf.partner.api.agent.factory.config;
 
-import lombok.Setter;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;

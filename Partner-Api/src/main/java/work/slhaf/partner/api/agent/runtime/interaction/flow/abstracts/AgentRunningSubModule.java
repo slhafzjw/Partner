@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.flow.abstracts;
+package work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts;
 
 
 /**

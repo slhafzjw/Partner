@@ -13,7 +13,7 @@ import work.slhaf.partner.api.agent.factory.module.exception.ModuleInstanceGener
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleProxyGenerateFailedException;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.agent.flow.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -57,8 +57,8 @@ public class ModuleProxyFactory extends AgentBaseFactory {
 
     private void generateProxiedInstances(MethodsListRecord record, MetaModule metaModule) {
         try {
-            Class<?> clazz = metaModule.getClazz();
-            Class<?> proxyClass = new ByteBuddy()
+            Class<? extends AgentRunningModule> clazz = metaModule.getClazz();
+            Class<? extends AgentRunningModule> proxyClass = new ByteBuddy()
                     .subclass(clazz)
                     .method(ElementMatchers.isOverriddenFrom(AgentRunningModule.class))
                     .intercept(MethodDelegation.to(new ModuleProxyInterceptor(record.post, record.pre)))
@@ -137,8 +137,8 @@ public class ModuleProxyFactory extends AgentBaseFactory {
     private void generateInstances() {
         for (MetaModule metaModule : moduleList) {
             try {
-                Class<?> clazz = metaModule.getClazz();
-                Object instance = clazz.getConstructor().newInstance();
+                Class<? extends AgentRunningModule> clazz = metaModule.getClazz();
+                AgentRunningModule instance = clazz.getConstructor().newInstance();
                 metaModule.setInstance(instance);
             } catch (Exception e) {
                 throw new ModuleInstanceGenerateFailedException("模块实例构造失败:" + e.getMessage());
@@ -148,17 +148,17 @@ public class ModuleProxyFactory extends AgentBaseFactory {
 
     private record ModuleProxyInterceptor(List<MetaMethod> postHookMethods, List<MetaMethod> preHookMethods) {
         @RuntimeType
-            public Object intercept(@Origin Method method, @AllArguments Object[] allArguments, @SuperCall Callable<?> zuper, @This Object proxy) throws Exception {
-                for (MetaMethod metaMethod : preHookMethods) {
-                    metaMethod.getMethod().invoke(proxy);
-                }
-                Object res = zuper.call();
-                for (MetaMethod metaMethod : postHookMethods) {
-                    metaMethod.getMethod().invoke(proxy);
-                }
-                return res;
+        public Object intercept(@Origin Method method, @AllArguments Object[] allArguments, @SuperCall Callable<?> zuper, @This Object proxy) throws Exception {
+            for (MetaMethod metaMethod : preHookMethods) {
+                metaMethod.getMethod().invoke(proxy);
             }
+            Object res = zuper.call();
+            for (MetaMethod metaMethod : postHookMethods) {
+                metaMethod.getMethod().invoke(proxy);
+            }
+            return res;
         }
+    }
 
     record MethodsListRecord(List<MetaMethod> post, List<MetaMethod> pre) {
         public MethodsListRecord {
