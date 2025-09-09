@@ -8,9 +8,9 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
-import work.slhaf.partner.core.cognation.cognation.CognationCapability;
-import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.core.interaction.data.context.InteractionContext;
+import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.data.StaticMemoryExtractInput;
 
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.HashMap;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class StaticMemoryExtractor extends AgentRunningSubModule<InteractionContext, HashMap<String, String>> implements ActivateModel {
+public class StaticMemoryExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, HashMap<String, String>> implements ActivateModel {
 
     private static volatile StaticMemoryExtractor staticMemoryExtractor;
 
@@ -43,7 +43,7 @@ public class StaticMemoryExtractor extends AgentRunningSubModule<InteractionCont
     }
 
     @Override
-    public HashMap<String, String> execute(InteractionContext context) {
+    public HashMap<String, String> execute(PartnerRunningFlowContext context) {
         StaticMemoryExtractInput input = StaticMemoryExtractInput.builder()
                 .userId(context.getUserId())
                 .messages(cognationCapability.getChatMessages())

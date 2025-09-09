@@ -5,17 +5,19 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
-import work.slhaf.partner.core.cognation.cognation.CognationCapability;
-import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.core.session.SessionManager;
+import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.session.SessionManager;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 import work.slhaf.partner.module.common.model.ModelConstant;
-import work.slhaf.partner.module.common.module.CoreModule;
+import work.slhaf.partner.module.common.module.CoreRunningModule;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -28,33 +30,21 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class CoreModel extends CoreModule implements ActivateModel {
-
-    private static volatile CoreModel coreModel;
-
+@CoreModule
+public class CoreModel extends CoreRunningModule implements ActivateModel {
+    
     @InjectCapability
     private CognationCapability cognationCapability;
     private SessionManager sessionManager;
     private List<Message> appendedMessages;
 
-    private CoreModel() {
-        modelSettings();
-    }
-
-    public static CoreModel getInstance() throws IOException, ClassNotFoundException {
-        if (coreModel == null) {
-            synchronized (CoreModel.class) {
-                if (coreModel == null) {
-                    coreModel = new CoreModel();
-                    coreModel.getModel().setChatMessages(coreModel.cognationCapability.getChatMessages());
-                    coreModel.appendedMessages = new ArrayList<>();
-                    coreModel.sessionManager = SessionManager.getInstance();
-                    coreModel.updateChatClientSettings();
-                    log.info("[CoreModel] CoreModel注册完毕...");
-                }
-            }
-        }
-        return coreModel;
+    @Init
+    public void init(){
+        List<Message> chatMessages = this.cognationCapability.getChatMessages();
+        this.getModel().setChatMessages(chatMessages);
+        this.appendedMessages = new ArrayList<>();
+        this.sessionManager = SessionManager.getInstance();
+        log.info("[CoreModel] CoreModel注册完毕...");
     }
 
     @Override
@@ -74,21 +64,34 @@ public class CoreModel extends CoreModule implements ActivateModel {
     }
 
     @Override
-    public void execute(InteractionContext interactionContext) {
-        String userId = interactionContext.getUserId();
+    public void execute(PartnerRunningFlowContext runningFlowContext) {
+        String userId = runningFlowContext.getUserId();
         log.debug("[CoreModel] 主对话流程开始: {}", userId);
-        List<AppendPromptData> appendedPrompt = interactionContext.getModuleContext().getAppendedPrompt();
+        beforeChat(runningFlowContext);
+        executeChat(runningFlowContext);
+        log.debug("[CoreModel] 主对话流程({})结束...", userId);
+    }
+
+    private void beforeChat(PartnerRunningFlowContext runningFlowContext) {
+        setAppendedPromptMessage(runningFlowContext);
+        activateModule(runningFlowContext);
+        setMessageCount(runningFlowContext);
+
+        log.debug("[CoreModel] 当前消息列表大小: {}", chatMessages().size());
+        log.debug("[CoreModel] 当前核心prompt内容: {}", runningFlowContext.getCoreContext().toString());
+
+        setMessage(runningFlowContext.getCoreContext().toString());
+    }
+
+    private void setAppendedPromptMessage(PartnerRunningFlowContext runningFlowContext) {
+        List<AppendPromptData> appendedPrompt = runningFlowContext.getModuleContext().getAppendedPrompt();
         int appendedPromptSize = getAppendedPromptSize(appendedPrompt);
         if (appendedPromptSize > 0) {
             setAppendedPromptMessage(appendedPrompt);
         }
-        activateModule(interactionContext);
-        setMessageCount(interactionContext);
+    }
 
-        log.debug("[CoreModel] 当前消息列表大小: {}", chatMessages().size());
-        log.debug("[CoreModel] 当前核心prompt内容: {}", interactionContext.getCoreContext().toString());
-
-        setMessage(interactionContext.getCoreContext().toString());
+    private void executeChat(PartnerRunningFlowContext runningFlowContext) {
         JSONObject response = new JSONObject();
 
         int count = 0;
@@ -102,7 +105,7 @@ public class CoreModel extends CoreModule implements ActivateModel {
                     handleExceptionResponse(response, chatResponse.getMessage());
                 }
                 log.debug("[CoreModel] CoreModel 响应内容: {}", response);
-                updateModuleContextAndChatMessages(interactionContext, response.getString("text"), chatResponse);
+                updateModuleContextAndChatMessages(runningFlowContext, response.getString("text"), chatResponse);
                 break;
             } catch (Exception e) {
                 count++;
@@ -113,12 +116,11 @@ public class CoreModel extends CoreModule implements ActivateModel {
                     break;
                 }
             } finally {
-                updateCoreResponse(interactionContext, response);
+                updateCoreResponse(runningFlowContext, response);
                 resetAppendedMessages();
                 log.debug("[CoreModel] 消息列表更新大小: {}", chatMessages().size());
             }
         }
-        log.debug("[CoreModel] 主对话流程({})结束...", userId);
     }
 
     private int getAppendedPromptSize(List<AppendPromptData> appendedPrompt) {
@@ -129,15 +131,15 @@ public class CoreModel extends CoreModule implements ActivateModel {
         return size;
     }
 
-    private void activateModule(InteractionContext context) {
+    private void activateModule(PartnerRunningFlowContext context) {
         for (AppendPromptData data : context.getModuleContext().getAppendedPrompt()) {
             if (data.getAppendedPrompt().isEmpty()) continue;
             context.getCoreContext().activateModule(data.getModuleName());
         }
     }
 
-    private void updateCoreResponse(InteractionContext interactionContext, JSONObject response) {
-        interactionContext.getCoreResponse().put("text", response.getString("text"));
+    private void updateCoreResponse(PartnerRunningFlowContext runningFlowContext, JSONObject response) {
+        runningFlowContext.getCoreResponse().put("text", response.getString("text"));
     }
 
     private void resetAppendedMessages() {
@@ -153,7 +155,7 @@ public class CoreModel extends CoreModule implements ActivateModel {
         return chatClient().runChat(temp);
     }
 
-    private void updateModuleContextAndChatMessages(InteractionContext interactionContext, String response, ChatResponse chatResponse) {
+    private void updateModuleContextAndChatMessages(PartnerRunningFlowContext runningFlowContext, String response, ChatResponse chatResponse) {
         cognationCapability.getMessageLock().lock();
         chatMessages().removeIf(m -> {
             if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
@@ -168,17 +170,17 @@ public class CoreModel extends CoreModule implements ActivateModel {
         });
         //添加时间标志
         String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("\r\n**[yyyy-MM-dd HH:mm:ss]"));
-        Message primaryUserMessage = new Message(ChatConstant.Character.USER, interactionContext.getCoreContext().getText() + dateTime);
+        Message primaryUserMessage = new Message(ChatConstant.Character.USER, runningFlowContext.getCoreContext().getText() + dateTime);
         chatMessages().add(primaryUserMessage);
         Message assistantMessage = new Message(ChatConstant.Character.ASSISTANT, response);
         chatMessages().add(assistantMessage);
         cognationCapability.getMessageLock().unlock();
         //设置上下文
-        interactionContext.getModuleContext().getExtraContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
+        runningFlowContext.getModuleContext().getExtraContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
         //区分单人聊天场景
-        if (interactionContext.isSingle()) {
+        if (runningFlowContext.isSingle()) {
             MetaMessage metaMessage = new MetaMessage(primaryUserMessage, assistantMessage);
-            sessionManager.addMetaMessage(interactionContext.getUserId(), metaMessage);
+            sessionManager.addMetaMessage(runningFlowContext.getUserId(), metaMessage);
         }
     }
 
@@ -192,8 +194,8 @@ public class CoreModel extends CoreModule implements ActivateModel {
 //        interactionContext.setFinished(true);
     }
 
-    private void setMessageCount(InteractionContext interactionContext) {
-        interactionContext.getModuleContext().getExtraContext().put("message_count", chatMessages().size());
+    private void setMessageCount(PartnerRunningFlowContext runningFlowContext) {
+        runningFlowContext.getModuleContext().getExtraContext().put("message_count", chatMessages().size());
     }
 
     private void setAppendedPromptMessage(List<AppendPromptData> appendPrompt) {

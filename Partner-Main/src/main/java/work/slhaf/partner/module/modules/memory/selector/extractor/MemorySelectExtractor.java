@@ -10,13 +10,13 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateM
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
-import work.slhaf.partner.common.exception_handler.GlobalExceptionHandler;
-import work.slhaf.partner.common.exception_handler.pojo.GlobalException;
-import work.slhaf.partner.core.cognation.cognation.CognationCapability;
-import work.slhaf.partner.core.cognation.submodule.memory.MemoryCapability;
-import work.slhaf.partner.core.cognation.submodule.memory.pojo.EvaluatedSlice;
-import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.core.session.SessionManager;
+import work.slhaf.partner.common.exception.callback.GlobalExceptionHandler;
+import work.slhaf.partner.runtime.exception.pojo.GlobalException;
+import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.submodule.memory.MemoryCapability;
+import work.slhaf.partner.core.submodule.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.session.SessionManager;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorInput;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorMatchData;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorResult;
@@ -31,7 +31,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemorySelectExtractor extends AgentRunningSubModule<InteractionContext, ExtractorResult> implements ActivateModel {
+public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, ExtractorResult> implements ActivateModel {
 
     private static volatile MemorySelectExtractor memorySelectExtractor;
 
@@ -58,7 +58,7 @@ public class MemorySelectExtractor extends AgentRunningSubModule<InteractionCont
     }
 
     @Override
-    public ExtractorResult execute(InteractionContext context) {
+    public ExtractorResult execute(PartnerRunningFlowContext context) {
         log.debug("[MemorySelectExtractor] 主题提取模块开始...");
         //结构化为指定格式
         List<Message> chatMessages = new ArrayList<>();

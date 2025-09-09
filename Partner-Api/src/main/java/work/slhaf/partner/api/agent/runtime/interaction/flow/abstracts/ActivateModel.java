@@ -17,7 +17,7 @@ public interface ActivateModel {
 
     AgentConfigManager AGENT_CONFIG_MANAGER = AgentConfigManager.INSTANCE;
 
-    @Init
+    @Init(order = -1)
     default void modelSettings() {
         Model model = new Model();
         ModelConfig modelConfig = AgentConfigManager.INSTANCE.loadModelConfig(modelKey());

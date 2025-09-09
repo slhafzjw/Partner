@@ -4,7 +4,6 @@ import work.slhaf.partner.api.chat.ChatClient;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.common.config.ModelConfig;
 import work.slhaf.partner.common.util.ResourcesUtil;
 import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorInput;
@@ -67,10 +66,9 @@ public class SelfAwarenessTest {
 
 
     private static ChatClient getChatClient(String modelKey) {
-        ModelConfig coreModel = ModelConfig.load(modelKey);
-        String model = coreModel.getModel();
-        String baseUrl = coreModel.getBaseUrl();
-        String apikey = coreModel.getApikey();
+        String model = "";
+        String baseUrl = "";
+        String apikey = "";
         ChatClient chatClient = new ChatClient(baseUrl, apikey, model);
         chatClient.setTop_p(0.7);
         chatClient.setTemperature(0.35);

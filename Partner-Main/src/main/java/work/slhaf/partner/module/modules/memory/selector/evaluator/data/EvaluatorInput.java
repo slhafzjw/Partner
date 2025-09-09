@@ -3,7 +3,7 @@ package work.slhaf.partner.module.modules.memory.selector.evaluator.data;
 import lombok.Builder;
 import lombok.Data;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.cognation.common.pojo.MemoryResult;
+import work.slhaf.partner.core.common.pojo.MemoryResult;
 
 import java.util.List;
 

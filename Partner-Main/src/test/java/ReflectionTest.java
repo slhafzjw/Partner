@@ -1,6 +1,6 @@
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.core.cognation.common.pojo.MemoryResult;
-import work.slhaf.partner.core.cognation.submodule.memory.MemoryCapability;
+import work.slhaf.partner.core.common.pojo.MemoryResult;
+import work.slhaf.partner.core.submodule.memory.MemoryCapability;
 
 import java.lang.reflect.Proxy;
 import java.util.function.Function;

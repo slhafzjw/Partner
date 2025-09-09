@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 @Data
 public abstract class AgentOutputData extends InteractionData{
 
-    private int code;
+    protected int code;
 
     public static class StatusCode {
         public static final int SUCCESS = 1;

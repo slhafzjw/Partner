@@ -4,7 +4,7 @@ public class GlobalExceptionHandler {
 
     public static GlobalExceptionHandler INSTANCE = new GlobalExceptionHandler();
 
-    private AgentExceptionCallback exceptionCallback = new DefaultAgentExceptionCallback();
+    private AgentExceptionCallback exceptionCallback = new LogAgentExceptionCallback();
 
     public void handle(Throwable e) {
 

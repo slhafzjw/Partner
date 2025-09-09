@@ -5,7 +5,7 @@ import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ConfigFactoryContext;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
-import work.slhaf.partner.api.agent.runtime.config.DefaultAgentConfigManager;
+import work.slhaf.partner.api.agent.runtime.config.FileAgentConfigManager;
 import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.util.HashMap;
@@ -24,7 +24,7 @@ public class ConfigLoaderFactory extends AgentBaseFactory {
         modelPromptMap = factoryContext.getModelPromptMap();
 
         if (AgentConfigManager.INSTANCE == null){
-            AgentConfigManager.setINSTANCE(new DefaultAgentConfigManager());
+            AgentConfigManager.setINSTANCE(new FileAgentConfigManager());
         }
 
         agentConfigManager = AgentConfigManager.INSTANCE;

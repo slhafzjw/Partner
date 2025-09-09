@@ -17,8 +17,11 @@ public class AgentRunningFlow<C extends RunningFlowContext> {
             for (MetaModule metaModule : moduleList) {
                 metaModule.getInstance().execute(interactionContext);
             }
+            interactionContext.setOk(1);
         }catch (Exception e){
             GlobalExceptionHandler.INSTANCE.handle(e);
+            interactionContext.setOk(0);
+            interactionContext.setErrMsg(e.getMessage());
         }
         return interactionContext;
     }

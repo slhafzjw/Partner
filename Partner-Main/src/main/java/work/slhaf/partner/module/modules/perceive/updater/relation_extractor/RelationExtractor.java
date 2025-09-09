@@ -7,10 +7,10 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateM
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.cognation.cognation.CognationCapability;
-import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.core.cognation.submodule.perceive.pojo.User;
-import work.slhaf.partner.core.interaction.data.context.InteractionContext;
+import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
+import work.slhaf.partner.core.submodule.perceive.pojo.User;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractInput;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractResult;
 
@@ -21,7 +21,7 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class RelationExtractor extends AgentRunningSubModule<InteractionContext, RelationExtractResult> implements ActivateModel {
+public class RelationExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, RelationExtractResult> implements ActivateModel {
 
     private static volatile RelationExtractor relationExtractor;
 
@@ -45,7 +45,7 @@ public class RelationExtractor extends AgentRunningSubModule<InteractionContext,
     }
 
     @Override
-    public RelationExtractResult execute(InteractionContext context){
+    public RelationExtractResult execute(PartnerRunningFlowContext context){
         tempMessages = new ArrayList<>(cognationCapability.getChatMessages());
         String userId = context.getUserId();
         RelationExtractInput input = getRelationInput(userId);
@@ -56,7 +56,7 @@ public class RelationExtractor extends AgentRunningSubModule<InteractionContext,
     }
 
 
-    private User getTempUser(InteractionContext context, RelationExtractResult relationExtractResult) {
+    private User getTempUser(PartnerRunningFlowContext context, RelationExtractResult relationExtractResult) {
         User user = new User();
         user.setUuid(context.getUserId());
         user.setRelation(relationExtractResult.getRelation());

@@ -9,10 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.core.cognation.common.pojo.MemoryResult;
-import work.slhaf.partner.core.cognation.common.pojo.MemorySliceResult;
-import work.slhaf.partner.core.cognation.submodule.memory.pojo.EvaluatedSlice;
-import work.slhaf.partner.core.cognation.submodule.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.common.pojo.MemoryResult;
+import work.slhaf.partner.core.common.pojo.MemorySliceResult;
+import work.slhaf.partner.core.submodule.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorBatchInput;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorInput;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorResult;
@@ -33,10 +33,6 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 public class SliceSelectEvaluator extends AgentRunningSubModule<EvaluatorInput, List<EvaluatedSlice>> implements ActivateModel {
     private static volatile SliceSelectEvaluator sliceSelectEvaluator;
     private InteractionThreadPoolExecutor executor;
-
-    private SliceSelectEvaluator() {
-        modelSettings();
-    }
 
     public static SliceSelectEvaluator getInstance() throws IOException, ClassNotFoundException {
         if (sliceSelectEvaluator == null) {

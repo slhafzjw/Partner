@@ -5,17 +5,18 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.core.cognation.cognation.CognationCapability;
-import work.slhaf.partner.core.cognation.common.pojo.MemoryResult;
-import work.slhaf.partner.core.cognation.submodule.cache.CacheCapability;
-import work.slhaf.partner.core.cognation.submodule.memory.MemoryCapability;
-import work.slhaf.partner.core.cognation.submodule.memory.exception.UnExistedDateIndexException;
-import work.slhaf.partner.core.cognation.submodule.memory.exception.UnExistedTopicException;
-import work.slhaf.partner.core.cognation.submodule.memory.pojo.EvaluatedSlice;
-import work.slhaf.partner.core.cognation.submodule.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.core.session.SessionManager;
-import work.slhaf.partner.module.common.module.PreModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.common.pojo.MemoryResult;
+import work.slhaf.partner.core.submodule.cache.CacheCapability;
+import work.slhaf.partner.core.submodule.memory.MemoryCapability;
+import work.slhaf.partner.core.submodule.memory.exception.UnExistedDateIndexException;
+import work.slhaf.partner.core.submodule.memory.exception.UnExistedTopicException;
+import work.slhaf.partner.core.submodule.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.session.SessionManager;
+import work.slhaf.partner.module.common.module.PreRunningModule;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.SliceSelectEvaluator;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorInput;
 import work.slhaf.partner.module.modules.memory.selector.extractor.MemorySelectExtractor;
@@ -32,7 +33,8 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemorySelector extends PreModule {
+@AgentModule(name="memory_selector",order=1)
+public class MemorySelector extends PreRunningModule {
 
     private static volatile MemorySelector memorySelector;
 
@@ -65,32 +67,32 @@ public class MemorySelector extends PreModule {
     }
 
     @Override
-    public void execute(InteractionContext interactionContext) throws IOException, ClassNotFoundException {
+    public void execute(PartnerRunningFlowContext runningFlowContext) throws IOException, ClassNotFoundException {
         log.debug("[MemorySelector] 记忆回溯流程开始...");
-        String userId = interactionContext.getUserId();
+        String userId = runningFlowContext.getUserId();
         //获取主题路径
-        ExtractorResult extractorResult = memorySelectExtractor.execute(interactionContext);
+        ExtractorResult extractorResult = memorySelectExtractor.execute(runningFlowContext);
         if (extractorResult.isRecall() || !extractorResult.getMatches().isEmpty()) {
             cognationCapability.clearActivatedSlices(userId);
-            List<EvaluatedSlice> evaluatedSlices = selectAndEvaluateMemory(interactionContext, extractorResult);
+            List<EvaluatedSlice> evaluatedSlices = selectAndEvaluateMemory(runningFlowContext, extractorResult);
             cognationCapability.updateActivatedSlices(userId, evaluatedSlices);
         }
         //设置追加提示词
-        setAppendedPrompt(interactionContext);
-        setModuleContextRecall(interactionContext);
-        setActiveModule(interactionContext);
+        setAppendedPrompt(runningFlowContext);
+        setModuleContextRecall(runningFlowContext);
+        setActiveModule(runningFlowContext);
         log.debug("[MemorySelector] 记忆回溯完成...");
     }
 
-    private List<EvaluatedSlice> selectAndEvaluateMemory(InteractionContext interactionContext, ExtractorResult extractorResult) throws IOException, ClassNotFoundException {
+    private List<EvaluatedSlice> selectAndEvaluateMemory(PartnerRunningFlowContext runningFlowContext, ExtractorResult extractorResult) throws IOException, ClassNotFoundException {
         log.debug("[MemorySelector] 触发记忆回溯...");
         //查找切片
-        String userId = interactionContext.getUserId();
+        String userId = runningFlowContext.getUserId();
         List<MemoryResult> memoryResultList = new ArrayList<>();
         setMemoryResultList(memoryResultList, extractorResult.getMatches(), userId);
         //评估切片
         EvaluatorInput evaluatorInput = EvaluatorInput.builder()
-                .input(interactionContext.getInput())
+                .input(runningFlowContext.getInput())
                 .memoryResults(memoryResultList)
                 .messages(cognationCapability.getChatMessages())
                 .build();
@@ -100,12 +102,12 @@ public class MemorySelector extends PreModule {
         return memorySlices;
     }
 
-    private void setModuleContextRecall(InteractionContext interactionContext) {
-        String userId = interactionContext.getUserId();
+    private void setModuleContextRecall(PartnerRunningFlowContext runningFlowContext) {
+        String userId = runningFlowContext.getUserId();
         boolean recall = cognationCapability.hasActivatedSlices(userId);
-        interactionContext.getModuleContext().getExtraContext().put("recall", recall);
+        runningFlowContext.getModuleContext().getExtraContext().put("recall", recall);
         if (recall) {
-            interactionContext.getModuleContext().getExtraContext().put("recall_count", cognationCapability.getActivatedSlicesSize(userId));
+            runningFlowContext.getModuleContext().getExtraContext().put("recall_count", cognationCapability.getActivatedSlicesSize(userId));
         }
     }
 

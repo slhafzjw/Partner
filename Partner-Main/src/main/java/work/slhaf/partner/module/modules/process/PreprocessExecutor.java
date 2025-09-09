@@ -4,12 +4,12 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityHolder;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.core.cognation.cognation.CognationCapability;
-import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.core.cognation.submodule.perceive.pojo.User;
-import work.slhaf.partner.core.interaction.data.InteractionInputData;
-import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.core.session.SessionManager;
+import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
+import work.slhaf.partner.core.submodule.perceive.pojo.User;
+import work.slhaf.partner.runtime.interaction.data.PartnerInputData;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.session.SessionManager;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class PreprocessExecutor {
         return preprocessExecutor;
     }
 
-    public InteractionContext execute(InteractionInputData inputData) {
+    public PartnerRunningFlowContext execute(PartnerInputData inputData) {
         checkAndSetMemoryId();
         return getInteractionContext(inputData);
     }
@@ -57,9 +57,9 @@ public class PreprocessExecutor {
         }
     }
 
-    private InteractionContext getInteractionContext(InteractionInputData inputData) {
+    private PartnerRunningFlowContext getInteractionContext(PartnerInputData inputData) {
         log.debug("[PreprocessExecutor] 预处理原始输入: {}", inputData);
-        InteractionContext context = new InteractionContext();
+        PartnerRunningFlowContext context = new PartnerRunningFlowContext();
 
         User user = perceiveCapability.getUser(inputData.getUserInfo(), inputData.getPlatform());
         if (user == null) {
@@ -67,10 +67,6 @@ public class PreprocessExecutor {
         }
         String userId = user.getUuid();
         context.setUserId(userId);
-        context.setUserNickname(inputData.getUserNickName());
-        context.setUserInfo(inputData.getUserInfo());
-        context.setDateTime(inputData.getLocalDateTime());
-        context.setSingle(inputData.isSingle());
 
         String userStr = "[" + inputData.getUserNickName() + "(" + userId + ")]";
         String input = userStr + " " + inputData.getContent();
@@ -83,7 +79,7 @@ public class PreprocessExecutor {
         return context;
     }
 
-    private void setAppendedPrompt(InteractionContext context) {
+    private void setAppendedPrompt(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
         map.put("text", "这部分才是真正的用户输入内容, 就像你之前收到过的输入一样。但...不会是'同一个人'。");
         map.put("datetime", "本次用户输入对应的当前时间");
@@ -97,7 +93,7 @@ public class PreprocessExecutor {
         context.setAppendedPrompt(data);
     }
 
-    private void setCoreContext(InteractionInputData inputData, InteractionContext context, String input, String userId) {
+    private void setCoreContext(PartnerInputData inputData, PartnerRunningFlowContext context, String input, String userId) {
         context.getCoreContext().setText(input);
         context.getCoreContext().setDateTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         context.getCoreContext().setUserNick(inputData.getUserNickName());

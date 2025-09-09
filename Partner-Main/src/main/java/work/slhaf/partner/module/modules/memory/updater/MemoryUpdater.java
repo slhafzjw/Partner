@@ -8,14 +8,14 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.core.cognation.cognation.CognationCapability;
-import work.slhaf.partner.core.cognation.submodule.cache.CacheCapability;
-import work.slhaf.partner.core.cognation.submodule.memory.MemoryCapability;
-import work.slhaf.partner.core.cognation.submodule.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.core.session.SessionManager;
-import work.slhaf.partner.module.common.module.PostModule;
+import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.submodule.cache.CacheCapability;
+import work.slhaf.partner.core.submodule.memory.MemoryCapability;
+import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.session.SessionManager;
+import work.slhaf.partner.module.common.module.PostRunningModule;
 import work.slhaf.partner.module.modules.memory.selector.extractor.MemorySelectExtractor;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.MemorySummarizer;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeInput;
@@ -32,7 +32,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractUserId;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemoryUpdater extends PostModule {
+public class MemoryUpdater extends PostRunningModule {
 
     private static volatile MemoryUpdater memoryUpdater;
 
@@ -100,7 +100,7 @@ public class MemoryUpdater extends PostModule {
     }
 
     @Override
-    public void execute(InteractionContext context) {
+    public void execute(PartnerRunningFlowContext context) {
         if (context.isFinished()) {
             log.warn("[MemoryUpdater] 流程强制结束, 不触发记忆被动更新机制");
             return;

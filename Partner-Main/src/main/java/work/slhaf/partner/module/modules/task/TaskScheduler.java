@@ -2,8 +2,8 @@ package work.slhaf.partner.module.modules.task;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.core.interaction.module.InteractionFlow;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.interaction.module.InteractionFlow;
 
 @Data
 @Slf4j
@@ -22,7 +22,7 @@ public class TaskScheduler implements InteractionFlow {
     }
 
     @Override
-    public void execute(InteractionContext interactionContext) {
+    public void execute(PartnerRunningFlowContext runningFlowContext) {
 
     }
 }

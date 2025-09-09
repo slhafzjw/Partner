@@ -1,15 +1,13 @@
 package work.slhaf.partner.module.modules.perceive.updater;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.core.cognation.cognation.CognationCapability;
-import work.slhaf.partner.core.cognation.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.core.cognation.submodule.perceive.pojo.User;
-import work.slhaf.partner.core.interaction.data.context.InteractionContext;
-import work.slhaf.partner.module.common.module.PostModule;
+import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
+import work.slhaf.partner.core.submodule.perceive.pojo.User;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.RelationExtractor;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractResult;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.StaticMemoryExtractor;
@@ -24,10 +22,9 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * 感知更新，异步
  */
-@EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
-public class PerceiveUpdater extends PostModule {
+public class PerceiveUpdater {
 
     private static volatile PerceiveUpdater perceiveUpdater;
 
@@ -54,8 +51,7 @@ public class PerceiveUpdater extends PostModule {
         return perceiveUpdater;
     }
 
-    @Override
-    public void execute(InteractionContext context) throws IOException, ClassNotFoundException {
+    public void execute(PartnerRunningFlowContext context) throws IOException, ClassNotFoundException {
         executor.execute(() -> {
             boolean trigger = context.getModuleContext().getExtraContext().getBoolean("perceive_updater");
             if (!trigger){
@@ -78,7 +74,7 @@ public class PerceiveUpdater extends PostModule {
         });
     }
 
-    private void runRelationExtractorAction(InteractionContext context, ReentrantLock userLock, User user) {
+    private void runRelationExtractorAction(PartnerRunningFlowContext context, ReentrantLock userLock, User user) {
         RelationExtractResult relationExtractResult = relationExtractor.execute(context);
         userLock.lock();
         user.setRelation(relationExtractResult.getRelation());
@@ -88,7 +84,7 @@ public class PerceiveUpdater extends PostModule {
         userLock.unlock();
     }
 
-    private void runStaticExtractorAction(InteractionContext context, ReentrantLock userLock, User user) {
+    private void runStaticExtractorAction(PartnerRunningFlowContext context, ReentrantLock userLock, User user) {
         HashMap<String, String> newStaticMemory = staticMemoryExtractor.execute(context);
         userLock.lock();
         user.setStaticMemory(newStaticMemory);
