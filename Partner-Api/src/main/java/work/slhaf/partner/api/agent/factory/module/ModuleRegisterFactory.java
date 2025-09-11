@@ -6,8 +6,11 @@ import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
+import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 
 import java.util.Comparator;
 import java.util.List;
@@ -20,17 +23,33 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
 
     private Reflections reflections;
     private List<MetaModule> moduleList;
+    private List<MetaSubModule> subModuleList;
 
     @Override
     protected void setVariables(AgentRegisterContext context) {
         ModuleFactoryContext factoryContext = context.getModuleFactoryContext();
         reflections = context.getReflections();
-        moduleList = factoryContext.getModuleList();
+        moduleList = factoryContext.getAgentModuleList();
+        subModuleList = factoryContext.getAgentSubModuleList();
     }
 
     @Override
     protected void run() {
         setModuleList();
+        setSubModuleList();
+    }
+
+    private void setSubModuleList() {
+        Set<Class<?>> subModules = reflections.getTypesAnnotatedWith(AgentSubModule.class);
+        for (Class<?> subModule : subModules) {
+            if (!ClassUtil.isNormalClass(subModule)) {
+                continue;
+            }
+            Class<? extends AgentRunningSubModule> clazz = subModule.asSubclass(AgentRunningSubModule.class);
+            MetaSubModule metaSubModule = new MetaSubModule();
+            metaSubModule.setClazz(clazz);
+            subModuleList.add(metaSubModule);
+        }
     }
 
     private void setModuleList() {
@@ -50,4 +69,5 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
         }
         moduleList.sort(Comparator.comparing(MetaModule::getOrder));
     }
+
 }

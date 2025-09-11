@@ -19,6 +19,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static work.slhaf.partner.api.agent.util.AgentUtil.getMethodAnnotationTypeSet;
+
 public class ModuleCheckFactory extends AgentBaseFactory {
 
     private Reflections reflections;
@@ -90,10 +92,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
     }
 
     private void initHookLocationCheck() {
-        Set<Method> methods = reflections.getMethodsAnnotatedWith(Init.class);
-        Set<Class<?>> types = methods.stream()
-                .map(Method::getDeclaringClass)
-                .collect(Collectors.toSet());
+        Set<Class<?>> types = getMethodAnnotationTypeSet(AgentModule.class,reflections);
         checkLocation(types);
     }
 

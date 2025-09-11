@@ -48,7 +48,7 @@ public class AgentRegisterFactory {
         //. 执行模块PreHook逻辑
         new ModuleInitHookExecuteFactory().execute(registerContext);
 
-        List<MetaModule> moduleList = registerContext.getModuleFactoryContext().getModuleList();
+        List<MetaModule> moduleList = registerContext.getModuleFactoryContext().getAgentModuleList();
         AgentConfigManager.INSTANCE.moduleEnabledStatusFilterAndRecord(moduleList);
 
         BeanUtil.copyProperties(registerContext, AgentContext.INSTANCE);
