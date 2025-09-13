@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * <h2>Agent 启动入口</h2>
+ * 详细启动流程请参阅{@link AgentRegisterFactory}
+ */
 public final class Agent {
 
     public static AgentGatewayStep newAgent(Class<?> clazz) {

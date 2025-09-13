@@ -5,6 +5,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.Init;
+import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
@@ -32,6 +35,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractUserId;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
+@AgentModule(name="memory_updater",order=6)
 public class MemoryUpdater extends PostRunningModule {
 
     private static volatile MemoryUpdater memoryUpdater;
@@ -47,25 +51,24 @@ public class MemoryUpdater extends PostRunningModule {
     private CacheCapability cacheCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
-    private InteractionThreadPoolExecutor executor;
+
+    @InjectModule
     private MemorySelectExtractor memorySelectExtractor;
+    @InjectModule
     private MemorySummarizer memorySummarizer;
+
     private SessionManager sessionManager;
+    private InteractionThreadPoolExecutor executor;
     /**
      * 用于临时存储完整对话记录，在MemoryManager的分离后
      */
     private List<Message> tempMessage;
-
-    private MemoryUpdater() {
-    }
 
     public static MemoryUpdater getInstance() throws IOException, ClassNotFoundException {
         if (memoryUpdater == null) {
             synchronized (MemoryUpdater.class) {
                 if (memoryUpdater == null) {
                     memoryUpdater = new MemoryUpdater();
-                    memoryUpdater.setMemorySelectExtractor(MemorySelectExtractor.getInstance());
-                    memoryUpdater.setMemorySummarizer(MemorySummarizer.getInstance());
                     memoryUpdater.setSessionManager(SessionManager.getInstance());
                     memoryUpdater.setExecutor(InteractionThreadPoolExecutor.getInstance());
                     memoryUpdater.setScheduledUpdater();
@@ -73,6 +76,13 @@ public class MemoryUpdater extends PostRunningModule {
             }
         }
         return memoryUpdater;
+    }
+
+    @Init
+    public void init() {
+        executor = InteractionThreadPoolExecutor.getInstance();
+        sessionManager = SessionManager.getInstance();
+        setScheduledUpdater();
     }
 
     private void setScheduledUpdater() {

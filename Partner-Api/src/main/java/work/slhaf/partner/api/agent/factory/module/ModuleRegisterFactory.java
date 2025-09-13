@@ -17,7 +17,27 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 负责扫描<code>@Module</code>注解获取模块实例
+ * <h2>Agent启动流程 2</h2>
+ *
+ * <p>
+ * 负责收集 {@link AgentModule} 与 {@link AgentSubModule} 注解所在类的信息，供后续工厂完成动态代理、模块与能力注入
+ * <p/>
+ *
+ * <ol>
+ *     <li>
+ *         <p>{@link ModuleRegisterFactory#setModuleList()}</p>
+ *         扫描 {@link AgentModule} 注解，获取执行模块信息: 类型、模块名称({@link AgentModule#name()})，执行顺序。并按照注解的 {@link AgentModule#order()} 字段进行排序
+ *     </li>
+ *     <li>
+ *         <p>{@link ModuleRegisterFactory#setSubModuleList()}</p>
+ *         扫描 {@link AgentSubModule} 注册，获取子模块类型信息
+ *     </li>
+ *     <li>
+ *         两种模块都将存入各自的list中，供后续模块完成注册与注入
+ *     </li>
+ * </ol>
+ *
+ * <p>下一步流程请参阅{@link ModuleProxyFactory}</p>
  */
 public class ModuleRegisterFactory extends AgentBaseFactory {
 

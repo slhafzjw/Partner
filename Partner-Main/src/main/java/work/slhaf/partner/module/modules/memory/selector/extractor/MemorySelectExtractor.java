@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -21,7 +22,6 @@ import work.slhaf.partner.module.modules.memory.selector.extractor.data.Extracto
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorMatchData;
 import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorResult;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,36 +31,25 @@ import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, ExtractorResult> implements ActivateModel {
-
-    private static volatile MemorySelectExtractor memorySelectExtractor;
+public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, ExtractorResult>
+        implements ActivateModel {
 
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
+
     private SessionManager sessionManager;
 
-    private MemorySelectExtractor() {
-        modelSettings();
-    }
-
-    public static MemorySelectExtractor getInstance() throws IOException, ClassNotFoundException {
-        if (memorySelectExtractor == null) {
-            synchronized (MemorySelectExtractor.class) {
-                if (memorySelectExtractor == null) {
-                    memorySelectExtractor = new MemorySelectExtractor();
-                    memorySelectExtractor.setSessionManager(SessionManager.getInstance());
-                }
-            }
-        }
-        return memorySelectExtractor;
+    @Init
+    public void init() {
+        sessionManager = SessionManager.getInstance();
     }
 
     @Override
     public ExtractorResult execute(PartnerRunningFlowContext context) {
         log.debug("[MemorySelectExtractor] 主题提取模块开始...");
-        //结构化为指定格式
+        // 结构化为指定格式
         List<Message> chatMessages = new ArrayList<>();
         List<MetaMessage> metaMessages = sessionManager.getSingleMetaMessageMap().get(context.getUserId());
         if (metaMessages == null) {

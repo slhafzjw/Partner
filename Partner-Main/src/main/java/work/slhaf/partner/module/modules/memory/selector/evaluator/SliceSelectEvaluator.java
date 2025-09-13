@@ -6,6 +6,8 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
@@ -30,21 +32,14 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
+@AgentSubModule
 public class SliceSelectEvaluator extends AgentRunningSubModule<EvaluatorInput, List<EvaluatedSlice>> implements ActivateModel {
-    private static volatile SliceSelectEvaluator sliceSelectEvaluator;
+
     private InteractionThreadPoolExecutor executor;
 
-    public static SliceSelectEvaluator getInstance() throws IOException, ClassNotFoundException {
-        if (sliceSelectEvaluator == null) {
-            synchronized (SliceSelectEvaluator.class) {
-                if (sliceSelectEvaluator == null) {
-                    sliceSelectEvaluator = new SliceSelectEvaluator();
-                    sliceSelectEvaluator.setExecutor(InteractionThreadPoolExecutor.getInstance());
-                    log.info("SliceEvaluator注册完毕...");
-                }
-            }
-        }
-        return sliceSelectEvaluator;
+    @Init
+    public void init() {
+        executor = InteractionThreadPoolExecutor.getInstance();
     }
 
     @Override

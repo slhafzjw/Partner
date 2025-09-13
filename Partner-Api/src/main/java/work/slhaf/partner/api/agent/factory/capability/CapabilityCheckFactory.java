@@ -9,6 +9,9 @@ import work.slhaf.partner.api.agent.factory.capability.exception.UnMatchedCapabi
 import work.slhaf.partner.api.agent.factory.capability.exception.UnMatchedCoordinatedMethodException;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
+import work.slhaf.partner.api.agent.factory.module.ModuleCheckFactory;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.util.AgentUtil;
 
 import java.lang.reflect.Method;
@@ -18,7 +21,34 @@ import java.util.stream.Collectors;
 import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
 
 /**
- * 执行<code>Capability</code>相关检查
+ * <h2>Agent启动流程 4</h2>
+ *
+ * <p>负责通过反射收集 {@link Capability} 和 {@link CapabilityCore} 注解所在类，并判断是否存在被错误忽略的方法</p>
+ *
+ * <ol>
+ *     <li>
+ *         <p>{@link CapabilityCheckFactory#loadCoresAndCapabilities()}</p>
+ *         通过反射收集 {@link Capability} 和 {@link CapabilityCore} 注解所在类为对应集合
+ *     </li>
+ *     <li>
+ *         <p>{@link CapabilityCheckFactory#checkCountAndCapabilities()}</p>
+ *         检测 {@link Capability} 与 {@link CapabilityCore} 的数量、对应的能力是否相等。每一个core都将对应一个capability，并通过value属性进行匹配
+ *     </li>
+ *     <li>
+ *         <p>{@link CapabilityCheckFactory#checkCapabilityMethods()}</p>
+ *         检测在 {@link Capability} 与 {@link CapabilityCore} 中是否存在对方尚未实现/注册的方法
+ *     </li>
+ *     <li>
+ *         <p>{@link CapabilityCheckFactory#checkCoordinatedMethods()}</p>
+ *         检查是否包含协调方法({@link ToCoordinated})，如果存在，则进一步检查在 {@link CoordinateManager} 所注类中是否有提供对应的实现
+ *     </li>
+ *     <li>
+ *         <p>{@link CapabilityCheckFactory#checkInjectCapability()}</p>
+ *         检查 {@link InjectCapability} 注解是否只用在 {@link CapabilityHolder} 所标识类的字段上。{@link AgentModule} 与 {@link AgentSubModule} 已经被 {@link CapabilityHolder} 标注
+ *     </li>
+ * </ol>
+ *
+ * <p>下一步流程请参阅{@link CapabilityRegisterFactory}</p>
  */
 public class CapabilityCheckFactory extends AgentBaseFactory {
 
@@ -37,10 +67,16 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
 
     @Override
     protected void run() {
+        loadCoresAndCapabilities();
         checkCountAndCapabilities();
         checkCapabilityMethods();
         checkCoordinatedMethods();
         checkInjectCapability();
+    }
+
+    private void loadCoresAndCapabilities() {
+        cores.addAll(reflections.getTypesAnnotatedWith(CapabilityCore.class));
+        capabilities.addAll(reflections.getTypesAnnotatedWith(Capability.class));
     }
 
     /**

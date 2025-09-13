@@ -4,10 +4,7 @@ import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
-import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
-import work.slhaf.partner.api.agent.factory.module.annotation.Init;
+import work.slhaf.partner.api.agent.factory.module.annotation.*;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleCheckException;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
@@ -21,6 +18,30 @@ import java.util.stream.Collectors;
 
 import static work.slhaf.partner.api.agent.util.AgentUtil.getMethodAnnotationTypeSet;
 
+/**
+ * <h2>Agent启动流程 1</h2>
+ *
+ * <p>
+ * 检查模块部分抽象类与注解、接口的使用方式
+ * </p>
+ *
+ * <ol>
+ *     <li>
+ *         <p>{@link ModuleCheckFactory#annotationAbstractCheck(Set, Class)}</p>
+ *         所有添加了 {@link AgentModule} 注解的类都将作为Agent的执行模块，为规范模块入口，都必须实现抽象类: {@link AgentRunningModule}; {@link AgentSubModule} 注解所在类则必须实现 {@link AgentRunningSubModule}
+ *     </li>
+ *     <li>
+ *         <p>{@link ModuleCheckFactory#moduleConstructorsCheck(Set)}</p>
+ *         所有 {@link AgentModule} 与 {@link AgentSubModule} 注解所在类都必须具备空参构造方法，初始化逻辑可放在 @Init 注解所处方法中，将在 Capability 与 subModules 注入后才会执行
+ *     </li>
+ *     <li>
+ *         <p>{@link ModuleCheckFactory#activateModelImplCheck()}</p>
+ *         检查实现了 {@link ActivateModel} 的模块数量、名称与prompt是否一致
+ *     </li>
+ * </ol>
+ *
+ * <p>下一步流程请参阅{@link ModuleRegisterFactory}</p>
+ */
 public class ModuleCheckFactory extends AgentBaseFactory {
 
     private Reflections reflections;
@@ -32,13 +53,14 @@ public class ModuleCheckFactory extends AgentBaseFactory {
 
     @Override
     protected void run() {
-        Set<Class<?>> types = reflections.getTypesAnnotatedWith(AgentModule.class);
-        //检查注解AgentModule所在类是否继承了AgentInteractionModule
-        agentModuleAnnotationCheck(types);
+        Set<Class<?>> moduleTypes = reflections.getTypesAnnotatedWith(AgentModule.class);
+        Set<Class<?>> subModuleTypes = reflections.getTypesAnnotatedWith(AgentSubModule.class);
+        //检查注解AgentModule或AgentSubModule所在类是否继承了对应的抽象类
+        annotationAbstractCheck(moduleTypes, AgentRunningModule.class);
+        annotationAbstractCheck(subModuleTypes, AgentRunningSubModule.class);
         //检查AgentModule是否具备无参构造方法
-        moduleConstructorsCheck(types);
-        //检查hook注解所在方法是否位于AgentInteractionModule子类/AgentInteractionSubModule子类/ActivateModel子类
-        hookLocationCheck();
+        moduleConstructorsCheck(moduleTypes);
+        moduleConstructorsCheck(subModuleTypes);
         //检查实现了ActivateModel的模块数量、名称与prompt是否一致
         activateModelImplCheck();
     }
@@ -92,7 +114,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
     }
 
     private void initHookLocationCheck() {
-        Set<Class<?>> types = getMethodAnnotationTypeSet(AgentModule.class,reflections);
+        Set<Class<?>> types = getMethodAnnotationTypeSet(AgentModule.class, reflections);
         checkLocation(types);
     }
 
@@ -128,12 +150,12 @@ public class ModuleCheckFactory extends AgentBaseFactory {
         }
     }
 
-    private void agentModuleAnnotationCheck(Set<Class<?>> types) {
+    private void annotationAbstractCheck(Set<Class<?>> types, Class<?> clazz) {
         for (Class<?> type : types) {
             if (type.isAnnotation()) {
                 continue;
             }
-            if (AgentRunningModule.class.isAssignableFrom(type) && ClassUtil.isNormalClass(type)) {
+            if (clazz.isAssignableFrom(type) && ClassUtil.isNormalClass(type)) {
                 continue;
             }
             throw new ModuleCheckException("存在未继承AgentInteractionModule.class的AgentModule实现: " + type.getSimpleName());

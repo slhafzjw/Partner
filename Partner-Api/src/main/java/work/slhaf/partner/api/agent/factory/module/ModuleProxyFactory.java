@@ -4,9 +4,10 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.*;
 import net.bytebuddy.matcher.ElementMatchers;
-import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
+import work.slhaf.partner.api.agent.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
+import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
 import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
@@ -18,10 +19,9 @@ import work.slhaf.partner.api.agent.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.Module;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -30,46 +30,85 @@ import java.util.stream.Collectors;
 import static work.slhaf.partner.api.agent.util.AgentUtil.collectExtendedClasses;
 
 /**
- * 通过扫描注解<code>@BeforeExecute</code>，获取到各个模块的后hook逻辑并通过动态代理添加到执行逻辑之后
+ * <h2>Agent启动流程 3</h2>
+ *
+ * <p>
+ * 扫描前置模块各个hook注解生成代理对象，放入对应的list中并按照类型为键放入 {@link ModuleProxyFactory#capabilityHolderInstances} 中供后续完成能力(capability)注入
+ * <p/>
+ *
+ * <ol>
+ *
+ *     <li>
+ *         <p>{@link ModuleProxyFactory#createProxiedInstances()}</p>
+ *         根据moduleList中的类型信息，向上查找继承链获取所有hook方法收集为{@link MethodsListRecord}，然后通过ByteBuddy根据收集到的preHook与postHook生成代理对象，放入对应的 {@link MetaModule} 对象以及 instanceMap 中
+ *     </li>
+ *     <li>
+ *         <p>{@link ModuleProxyFactory#injectSubModule()}</p>
+ *         通过反射将子模块实例注入到执行模块中带有注解 {@link InjectModule} 的字段
+ *     </li>
+ * </ol>
+ *
+ * <p>下一步流程请参阅{@link CapabilityCheckFactory}</p>
  */
 public class ModuleProxyFactory extends AgentBaseFactory {
 
     private List<MetaModule> moduleList;
     private List<MetaSubModule> subModuleList;
-    private Reflections reflections;
+    private HashMap<Class<?>, Object> capabilityHolderInstances;
     private final HashMap<Class<?>, Object> subModuleInstances = new HashMap<>();
     private final HashMap<Class<?>, Object> moduleInstances = new HashMap<>();
 
     @Override
     protected void setVariables(AgentRegisterContext context) {
         ModuleFactoryContext factoryContext = context.getModuleFactoryContext();
+        CapabilityFactoryContext capabilityFactoryContext = context.getCapabilityFactoryContext();
         moduleList = factoryContext.getAgentModuleList();
         subModuleList = factoryContext.getAgentSubModuleList();
-        reflections = context.getReflections();
+        capabilityHolderInstances = capabilityFactoryContext.getCapabilityHolderInstances();
     }
 
     @Override
     protected void run() {
-        generateInstances();
-        createProxy();
+        createProxiedInstances();
         injectSubModule();
     }
 
     private void injectSubModule() {
-        Set<Field> fields = reflections.getFieldsAnnotatedWith(InjectModule.class);
-        try {
-            for (Field field : fields) {
-                field.setAccessible(true);
-                field.set(moduleInstances.get(field.getDeclaringClass()), subModuleInstances.get(field.getType()));
-            }
-        } catch (Exception e) {
-            throw new ModuleInstanceGenerateFailedException("模块实例注入失败", e);
+        for (MetaModule module : moduleList) {
+            Arrays.stream(module.getClazz().getFields())
+                    .filter(field -> field.isAnnotationPresent(InjectModule.class))
+                    .forEach(field -> {
+                        try {
+                            field.setAccessible(true);
+                            field.set(
+                                    moduleInstances.get(module.getClazz()),
+                                    subModuleInstances.get(field.getType())
+                            );
+                        } catch (IllegalAccessException e) {
+                            throw new ModuleInstanceGenerateFailedException("模块实例注入失败", e);
+                        }
+                    });
         }
+
     }
 
-    private void createProxy() {
+    private void createProxiedInstances() {
         generateModuleProxy(moduleList);
         generateModuleProxy(subModuleList);
+        updateInstanceMap(moduleInstances, moduleList);
+        updateInstanceMap(subModuleInstances, subModuleList);
+        updateCapabilityHolderInstances();
+    }
+
+    private void updateCapabilityHolderInstances() {
+        capabilityHolderInstances.putAll(moduleInstances);
+        capabilityHolderInstances.putAll(subModuleInstances);
+    }
+
+    private void updateInstanceMap(HashMap<Class<?>, Object> instanceMap, List<? extends BaseMetaModule> list) {
+        for (BaseMetaModule baseMetaModule : list) {
+            instanceMap.put(baseMetaModule.getClazz(), baseMetaModule.getInstance());
+        }
     }
 
 
@@ -88,8 +127,8 @@ public class ModuleProxyFactory extends AgentBaseFactory {
 
     private void generateProxiedInstances(MethodsListRecord record, BaseMetaModule module) {
         try {
-            Class<? extends AgentRunningModule> clazz = module.getClazz();
-            Class<? extends AgentRunningModule> proxyClass = new ByteBuddy()
+            Class<? extends Module> clazz = module.getClazz();
+            Class<? extends Module> proxyClass = new ByteBuddy()
                     .subclass(clazz)
                     .method(ElementMatchers.isOverriddenFrom(AgentRunningModule.class))
                     .intercept(MethodDelegation.to(new ModuleProxyInterceptor(record.post, record.pre)))
@@ -161,30 +200,6 @@ public class ModuleProxyFactory extends AgentBaseFactory {
                 metaMethod.setOrder(method.getAnnotation(AfterExecute.class).order());
                 post.add(metaMethod);
                 metaMethod.setMethod(method);
-            }
-        }
-    }
-
-    private void generateInstances() {
-        for (MetaModule module : moduleList) {
-            try {
-                Class<? extends AgentRunningModule> clazz = module.getClazz();
-                AgentRunningModule instance = clazz.getConstructor().newInstance();
-                module.setInstance(instance);
-                moduleInstances.put(module.getClazz(), instance);
-            } catch (Exception e) {
-                throw new ModuleInstanceGenerateFailedException("模块实例构造失败:" + e.getMessage());
-            }
-        }
-
-        for (MetaSubModule module : subModuleList) {
-            try {
-                Class<? extends AgentRunningSubModule> clazz = module.getClazz();
-                AgentRunningSubModule instance = clazz.getConstructor().newInstance();
-                module.setInstance(instance);
-                subModuleInstances.put(module.getClazz(), instance);
-            } catch (Exception e) {
-                throw new ModuleInstanceGenerateFailedException("模块实例构造失败:" + e.getMessage());
             }
         }
     }

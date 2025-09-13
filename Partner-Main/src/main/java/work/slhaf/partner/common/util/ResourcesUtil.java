@@ -1,7 +1,7 @@
 package work.slhaf.partner.common.util;
 
 import com.alibaba.fastjson2.JSONArray;
-import work.slhaf.partner.Agent;
+import work.slhaf.partner.api.agent.Agent;
 import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.io.InputStream;

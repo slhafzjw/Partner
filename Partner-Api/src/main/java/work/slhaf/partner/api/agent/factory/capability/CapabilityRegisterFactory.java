@@ -8,6 +8,8 @@ import work.slhaf.partner.api.agent.factory.capability.exception.CoreInstancesCr
 import work.slhaf.partner.api.agent.factory.capability.exception.DuplicateMethodException;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -17,19 +19,48 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Function;
 
-import static cn.hutool.core.util.ClassUtil.isNormalClass;
 import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
 
 
 /**
- * 负责获取<code>@Capability</code>和<code>@CapabilityCore</code>标识的类，并生成函数路由表、设置<code>Core</code>实例用于后续注入
+ * <h2>Agent启动流程 5</h2>
+ *
+ * <p>
+ * 负责收集注解 {@link Capability} 和 {@link CapabilityCore} 标识的类，并生成函数路由表、创建core、capability实例，以及放入instanceMap供后续进行注入操作
+ * </p>
+ *
+ * <ol>
+ *     <li>
+ *         <p>{@link CapabilityRegisterFactory#setCoreInstances()}</p>
+ *         通过反射调用无参构造函数创建core实例，并将实例放入instanceMap供后续使用
+ *     </li>
+ *     <li>
+ *         <p>{@link CapabilityRegisterFactory#generateRouterTable()}</p>
+ *         生成函数路由表:
+ *         <ul>
+ *             <li>
+ *                 <p>{@link CapabilityRegisterFactory#generateMethodsRouterTable()}</p>
+ *                 生成普通方法对应的函数路由表
+ *             </li>
+ *             <li>
+ *                 <p>{@link CapabilityRegisterFactory#generateCoordinatedMethodsRouterTable()}</p>
+ *                 生成协调方法对应的函数路由表
+ *             </li>
+ *         </ul>
+ *     </li>
+ *     <li>
+ *         函数路由表生成完毕、core实例创建完毕之后，将交由下一工厂完成能力(Capability)注入操作，注入到 {@link AgentModule} 与 {@link AgentSubModule} 对应的实例中
+ *     </li>
+ * </ol>
+ *
+ * <p>下一步流程请参阅{@link CapabilityInjectFactory}</p>
  */
-public final class CapabilityRegisterFactory extends AgentBaseFactory {
+public class CapabilityRegisterFactory extends AgentBaseFactory {
 
     private Reflections reflections;
     private HashMap<String, Function<Object[], Object>> methodsRouterTable;
     private HashMap<String, Function<Object[], Object>> coordinatedMethodsRouterTable;
-    private HashMap<Class<?>, Object> capabilityCoreInstances;
+    private HashMap<Class<?>, Object> coreInstances;
     private HashMap<Class<?>, Object> capabilityHolderInstances;
     private Set<Class<?>> cores;
     private Set<Class<?>> capabilities;
@@ -40,36 +71,16 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
         reflections = context.getReflections();
         methodsRouterTable = factoryContext.getMethodsRouterTable();
         coordinatedMethodsRouterTable = factoryContext.getCoordinatedMethodsRouterTable();
-        capabilityCoreInstances = factoryContext.getCapabilityCoreInstances();
+        coreInstances = factoryContext.getCapabilityCoreInstances();
         cores = factoryContext.getCores();
         capabilities = factoryContext.getCapabilities();
         capabilityHolderInstances = factoryContext.getCapabilityHolderInstances();
     }
 
     @Override
-    protected void run() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        setCapabilityCoreInstances();
-        setAnnotatedClasses();
+    protected void run() {
+        setCoreInstances();
         generateRouterTable();
-    }
-
-    /**
-     * 设置<code>CapabilityCore</code>、<code>Capability</code>注解标识类
-     */
-    private void setAnnotatedClasses() throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
-        cores.addAll(reflections.getTypesAnnotatedWith(CapabilityCore.class));
-        capabilities.addAll(reflections.getTypesAnnotatedWith(Capability.class));
-        setCapabilityHolderInstances();
-    }
-
-    private void setCapabilityHolderInstances() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        for (Class<?> clazz : reflections.getTypesAnnotatedWith(CapabilityHolder.class)) {
-            if (!isNormalClass(clazz)){
-                continue;
-            }
-            Object o = clazz.getDeclaredConstructor().newInstance();
-            capabilityHolderInstances.put(clazz, o);
-        }
     }
 
     /**
@@ -128,17 +139,16 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
     }
 
     /**
-     * 生成普通方法对应的函数路由表
+     * 扫描`@Capability`与`@CapabilityMethod`注解的类与方法
+     * 将`capabilityValue.methodSignature`作为key,函数对象为通过反射拿到的core实例对应的方法
      */
     private void generateMethodsRouterTable() {
-        //扫描`@Capability`与`@CapabilityMethod`注解的类与方法
-        //将`capabilityValue.methodSignature`作为key,函数对象为通过反射拿到的core实例对应的方法
         cores.forEach(core -> Arrays.stream(core.getMethods())
                 .filter(method -> method.isAnnotationPresent(CapabilityMethod.class))
                 .forEach(method -> {
                     Function<Object[], Object> function = args -> {
                         try {
-                            return method.invoke(capabilityCoreInstances.get(core), args);
+                            return method.invoke(coreInstances.get(core), args);
                         } catch (IllegalAccessException | InvocationTargetException e) {
                             throw new RuntimeException(e);
                         }
@@ -154,12 +164,12 @@ public final class CapabilityRegisterFactory extends AgentBaseFactory {
     /**
      * 反射获取<code>CapabilityCore</code>实例
      */
-    private void setCapabilityCoreInstances() {
+    private void setCoreInstances() {
         try {
             for (Class<?> core : cores) {
                 Constructor<?> constructor = core.getDeclaredConstructor();
                 constructor.setAccessible(true);
-                capabilityCoreInstances.put(core, constructor.newInstance());
+                coreInstances.put(core, constructor.newInstance());
             }
         } catch (InvocationTargetException | NoSuchMethodException | InstantiationException |
                  IllegalAccessException e) {

@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.common.pojo.MemoryResult;
 import work.slhaf.partner.core.submodule.cache.CacheCapability;
@@ -36,8 +37,6 @@ import java.util.List;
 @AgentModule(name="memory_selector",order=1)
 public class MemorySelector extends PreRunningModule {
 
-    private static volatile MemorySelector memorySelector;
-
     @InjectCapability
     private CacheCapability cacheCapability;
     @InjectCapability
@@ -45,26 +44,10 @@ public class MemorySelector extends PreRunningModule {
     @InjectCapability
     private CognationCapability cognationCapability;
 
+    @InjectModule
     private SliceSelectEvaluator sliceSelectEvaluator;
+    @InjectModule
     private MemorySelectExtractor memorySelectExtractor;
-    private SessionManager sessionManager;
-
-    private MemorySelector() {
-    }
-
-    public static MemorySelector getInstance() throws IOException, ClassNotFoundException {
-        if (memorySelector == null) {
-            synchronized (MemorySelector.class) {
-                if (memorySelector == null) {
-                    memorySelector = new MemorySelector();
-                    memorySelector.setSliceSelectEvaluator(SliceSelectEvaluator.getInstance());
-                    memorySelector.setMemorySelectExtractor(MemorySelectExtractor.getInstance());
-                    memorySelector.setSessionManager(SessionManager.getInstance());
-                }
-            }
-        }
-        return memorySelector;
-    }
 
     @Override
     public void execute(PartnerRunningFlowContext runningFlowContext) throws IOException, ClassNotFoundException {

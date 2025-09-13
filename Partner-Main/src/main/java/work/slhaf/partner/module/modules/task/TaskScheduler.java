@@ -2,27 +2,28 @@ package work.slhaf.partner.module.modules.task;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
-import work.slhaf.partner.runtime.interaction.module.InteractionFlow;
 
 @Data
 @Slf4j
-public class TaskScheduler implements InteractionFlow {
-    private static TaskScheduler taskScheduler;
+public class TaskScheduler extends AgentRunningModule {
+  private static TaskScheduler taskScheduler;
 
-    private TaskScheduler(){}
+  private TaskScheduler() {
+  }
 
-    public static TaskScheduler getInstance() {
-        if (taskScheduler == null) {
-            taskScheduler = new TaskScheduler();
-            log.info("TaskScheduler注册完毕...");
-        }
-
-        return taskScheduler;
+  public static TaskScheduler getInstance() {
+    if (taskScheduler == null) {
+      taskScheduler = new TaskScheduler();
+      log.info("TaskScheduler注册完毕...");
     }
 
-    @Override
-    public void execute(PartnerRunningFlowContext runningFlowContext) {
+    return taskScheduler;
+  }
 
-    }
+  @Override
+  public void execute(PartnerRunningFlowContext runningFlowContext) {
+
+  }
 }
