@@ -2,12 +2,11 @@ package work.slhaf.partner.module.modules.task;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 @Data
 @Slf4j
-public class TaskScheduler extends AgentRunningModule {
+public class TaskScheduler   {
   private static TaskScheduler taskScheduler;
 
   private TaskScheduler() {
@@ -22,7 +21,6 @@ public class TaskScheduler extends AgentRunningModule {
     return taskScheduler;
   }
 
-  @Override
   public void execute(PartnerRunningFlowContext runningFlowContext) {
 
   }

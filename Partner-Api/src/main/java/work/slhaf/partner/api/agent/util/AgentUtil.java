@@ -1,8 +1,8 @@
 package work.slhaf.partner.api.agent.util;
 
 import org.reflections.Reflections;
-import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,8 +40,8 @@ public final class AgentUtil {
         collectInterfaces(clazz, classes);
     }
 
-    public static Set<Class<?>> getMethodAnnotationTypeSet(Class<?> clazz, Reflections reflections){
-        Set<Method> methods = reflections.getMethodsAnnotatedWith(Init.class);
+    public static Set<Class<?>> getMethodAnnotationTypeSet(Class<? extends Annotation> clazz, Reflections reflections){
+        Set<Method> methods = reflections.getMethodsAnnotatedWith(clazz);
         return methods.stream()
                 .map(Method::getDeclaringClass)
                 .collect(Collectors.toSet());

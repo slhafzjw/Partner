@@ -3,6 +3,8 @@ package work.slhaf.partner.module.modules.perceive.updater.relation_extractor;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
@@ -10,39 +12,26 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
 import work.slhaf.partner.core.submodule.perceive.pojo.User;
-import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractInput;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractResult;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@AgentSubModule
 public class RelationExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, RelationExtractResult> implements ActivateModel {
 
-    private static volatile RelationExtractor relationExtractor;
-
+    @InjectCapability
     private CognationCapability cognationCapability;
+    @InjectCapability
     private PerceiveCapability perceiveCapability;
 
     private List<Message> tempMessages;
 
-    private RelationExtractor(){
-        modelSettings();
-    }
-    public static RelationExtractor getInstance() throws IOException, ClassNotFoundException {
-        if (relationExtractor == null) {
-            synchronized (RelationExtractor.class) {
-                if (relationExtractor == null) {
-                    relationExtractor = new RelationExtractor();
-                }
-            }
-        }
-        return relationExtractor;
-    }
 
     @Override
     public RelationExtractResult execute(PartnerRunningFlowContext context){

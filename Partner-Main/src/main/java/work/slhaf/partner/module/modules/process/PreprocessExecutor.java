@@ -4,15 +4,15 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityHolder;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
 import work.slhaf.partner.core.submodule.perceive.pojo.User;
-import work.slhaf.partner.runtime.interaction.data.PartnerInputData;
+import work.slhaf.partner.module.common.module.PreRunningModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.interaction.data.context.subcontext.CoreContext;
 import work.slhaf.partner.runtime.session.SessionManager;
-import work.slhaf.partner.module.common.entity.AppendPromptData;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -20,7 +20,7 @@ import java.util.HashMap;
 @Data
 @Slf4j
 @CapabilityHolder
-public class PreprocessExecutor {
+public class PreprocessExecutor extends PreRunningModule {
 
     private static volatile PreprocessExecutor preprocessExecutor;
 
@@ -30,24 +30,15 @@ public class PreprocessExecutor {
     private PerceiveCapability perceiveCapability;
     private SessionManager sessionManager;
 
-    private PreprocessExecutor() {
+    @Init
+    public void init() {
+        this.sessionManager = SessionManager.getInstance();
     }
 
-    public static PreprocessExecutor getInstance() throws IOException, ClassNotFoundException {
-        if (preprocessExecutor == null) {
-            synchronized (PreprocessExecutor.class) {
-                if (preprocessExecutor == null) {
-                    preprocessExecutor = new PreprocessExecutor();
-                    preprocessExecutor.setSessionManager(SessionManager.getInstance());
-                }
-            }
-        }
-        return preprocessExecutor;
-    }
-
-    public PartnerRunningFlowContext execute(PartnerInputData inputData) {
+    @Override
+    public void doExecute(PartnerRunningFlowContext context) {
         checkAndSetMemoryId();
-        return getInteractionContext(inputData);
+        getInteractionContext(context);
     }
 
     private void checkAndSetMemoryId() {
@@ -57,29 +48,25 @@ public class PreprocessExecutor {
         }
     }
 
-    private PartnerRunningFlowContext getInteractionContext(PartnerInputData inputData) {
-        log.debug("[PreprocessExecutor] 预处理原始输入: {}", inputData);
-        PartnerRunningFlowContext context = new PartnerRunningFlowContext();
-
-        User user = perceiveCapability.getUser(inputData.getUserInfo(), inputData.getPlatform());
+    private void getInteractionContext(PartnerRunningFlowContext context) {
+        log.debug("[PreprocessExecutor] 预处理原始输入: {}", context);
+        User user = perceiveCapability.getUser(context.getUserInfo(), context.getPlatform());
         if (user == null) {
-            user = perceiveCapability.addUser(inputData.getUserInfo(), inputData.getPlatform(), inputData.getUserNickName());
+            user = perceiveCapability.addUser(context.getUserInfo(), context.getPlatform(), context.getUserNickname());
         }
         String userId = user.getUuid();
         context.setUserId(userId);
 
-        String userStr = "[" + inputData.getUserNickName() + "(" + userId + ")]";
-        String input = userStr + " " + inputData.getContent();
+        String userStr = "[" + context.getUserNickname() + "(" + userId + ")]";
+        String input = userStr + " " + context.getInput();
         context.setInput(input);
-
-        setAppendedPrompt(context);
-        setCoreContext(inputData, context, input, userId);
-
+        setCoreContext(context);
         log.debug("[PreprocessExecutor] 预处理结果: {}", context);
-        return context;
     }
 
-    private void setAppendedPrompt(PartnerRunningFlowContext context) {
+
+    @Override
+    protected HashMap<String, String> getPromptDataMap(String userId) {
         HashMap<String, String> map = new HashMap<>();
         map.put("text", "这部分才是真正的用户输入内容, 就像你之前收到过的输入一样。但...不会是'同一个人'。");
         map.put("datetime", "本次用户输入对应的当前时间");
@@ -87,16 +74,19 @@ public class PreprocessExecutor {
         map.put("user_id", "用户id, 与user_nick区分, 这是用户的唯一标识");
         map.put("active_modules", "已激活的模块, 为false时为激活但未活跃; 为true时为激活且活跃");
         map.put("其他", "历史对话中将在用户消息的最后一行标注时间");
-        AppendPromptData data = new AppendPromptData();
-        data.setModuleName("[基础模块]");
-        data.setAppendedPrompt(map);
-        context.setAppendedPrompt(data);
+        return map;
     }
 
-    private void setCoreContext(PartnerInputData inputData, PartnerRunningFlowContext context, String input, String userId) {
-        context.getCoreContext().setText(input);
-        context.getCoreContext().setDateTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        context.getCoreContext().setUserNick(inputData.getUserNickName());
-        context.getCoreContext().setUserId(userId);
+    @Override
+    protected String moduleName() {
+        return "[基础模块]";
+    }
+
+    private void setCoreContext(PartnerRunningFlowContext context) {
+        CoreContext coreContext = context.getCoreContext();
+        coreContext.setText(context.getInput());
+        coreContext.setDateTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        coreContext.setUserNick(context.getUserNickname());
+        coreContext.setUserId(context.getUserId());
     }
 }

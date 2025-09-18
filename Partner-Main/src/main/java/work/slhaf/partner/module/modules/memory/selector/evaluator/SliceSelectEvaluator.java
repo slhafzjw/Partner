@@ -11,16 +11,15 @@ import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.core.common.pojo.MemoryResult;
-import work.slhaf.partner.core.common.pojo.MemorySliceResult;
 import work.slhaf.partner.core.submodule.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.submodule.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.submodule.memory.pojo.MemorySliceResult;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorBatchInput;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorInput;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorResult;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.data.SliceSummary;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;

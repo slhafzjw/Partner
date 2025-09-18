@@ -21,7 +21,6 @@ import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.Module;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -146,8 +145,8 @@ public class ModuleProxyFactory extends AgentBaseFactory {
         List<MetaMethod> pre = new ArrayList<>();
         //获取该类本身的hook逻辑
         collectHookMethods(post, pre, clazz);
-        //获取它所继承、实现的抽象类或接口, 以AgentInteractionModule、ActiveModel为终点
-        Set<Class<?>> classes = collectExtendedClasses(clazz, AgentRunningModule.class);
+        //获取它所继承、实现的抽象类或接口, 以Module为终点，收集继承链上所有父类和接口
+        Set<Class<?>> classes = collectExtendedClasses(clazz, Module.class);
         //获取这些类中的hook逻辑
         collectHookMethods(post, pre, classes);
         return new MethodsListRecord(post, pre);

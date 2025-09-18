@@ -6,15 +6,15 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.CoordinateMana
 import work.slhaf.partner.api.agent.factory.capability.annotation.Coordinated;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.common.exception.callback.GlobalExceptionHandler;
-import work.slhaf.partner.runtime.exception.pojo.GlobalException;
 import work.slhaf.partner.core.cognation.CognationCore;
-import work.slhaf.partner.core.common.pojo.MemoryResult;
-import work.slhaf.partner.core.common.pojo.MemorySliceResult;
 import work.slhaf.partner.core.submodule.cache.CacheCore;
 import work.slhaf.partner.core.submodule.dispatch.DispatchCore;
 import work.slhaf.partner.core.submodule.memory.MemoryCore;
+import work.slhaf.partner.core.submodule.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.submodule.memory.pojo.MemorySliceResult;
 import work.slhaf.partner.core.submodule.perceive.PerceiveCore;
+import work.slhaf.partner.runtime.exception.pojo.GlobalException;
 
 import java.io.IOException;
 import java.io.Serial;

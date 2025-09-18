@@ -1,16 +1,21 @@
 package work.slhaf.partner.module.modules.perceive.updater;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.Init;
+import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
 import work.slhaf.partner.core.submodule.perceive.pojo.User;
-import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.RelationExtractor;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractResult;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.StaticMemoryExtractor;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,9 +27,11 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * 感知更新，异步
  */
+@EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
-public class PerceiveUpdater {
+@AgentModule(name = "perceive_updater", order = 8)
+public class PerceiveUpdater extends AgentRunningModule<PartnerRunningFlowContext> {
 
     private static volatile PerceiveUpdater perceiveUpdater;
 
@@ -32,23 +39,18 @@ public class PerceiveUpdater {
     private PerceiveCapability perceiveCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
-    private InteractionThreadPoolExecutor executor;
+
+    @InjectModule
     private RelationExtractor relationExtractor;
+    @InjectModule
     private StaticMemoryExtractor staticMemoryExtractor;
 
+    private InteractionThreadPoolExecutor executor;
 
-    public static PerceiveUpdater getInstance() throws IOException, ClassNotFoundException {
-        if (perceiveUpdater == null) {
-            synchronized (PerceiveUpdater.class) {
-                if (perceiveUpdater == null) {
-                    perceiveUpdater = new PerceiveUpdater();
-                    perceiveUpdater.setExecutor(InteractionThreadPoolExecutor.getInstance());
-                    perceiveUpdater.setRelationExtractor(RelationExtractor.getInstance());
-                    perceiveUpdater.setStaticMemoryExtractor(StaticMemoryExtractor.getInstance());
-                }
-            }
-        }
-        return perceiveUpdater;
+
+    @Init
+    public void init() {
+        this.executor = InteractionThreadPoolExecutor.getInstance();
     }
 
     public void execute(PartnerRunningFlowContext context) throws IOException, ClassNotFoundException {

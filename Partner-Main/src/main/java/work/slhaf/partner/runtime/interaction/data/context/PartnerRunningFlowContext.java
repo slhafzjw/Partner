@@ -4,9 +4,9 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext;
+import work.slhaf.partner.module.common.entity.AppendPromptData;
 import work.slhaf.partner.runtime.interaction.data.context.subcontext.CoreContext;
 import work.slhaf.partner.runtime.interaction.data.context.subcontext.ModuleContext;
-import work.slhaf.partner.module.common.entity.AppendPromptData;
 
 import java.io.Serial;
 import java.time.LocalDateTime;
@@ -25,6 +25,7 @@ public class PartnerRunningFlowContext extends RunningFlowContext {
     protected String userId;
     protected String userNickname;
     protected String userInfo;
+    protected String platform;
     protected LocalDateTime dateTime;
     protected boolean single;
 

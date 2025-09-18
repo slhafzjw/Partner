@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.api.common.entity.PersistableObject;
-import work.slhaf.partner.core.common.pojo.MemoryResult;
+import work.slhaf.partner.core.submodule.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
 
 import java.io.Serial;

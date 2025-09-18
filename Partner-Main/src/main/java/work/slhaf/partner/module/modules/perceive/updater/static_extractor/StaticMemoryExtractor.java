@@ -5,19 +5,20 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.data.StaticMemoryExtractInput;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
+@AgentSubModule
 public class StaticMemoryExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, HashMap<String, String>> implements ActivateModel {
 
     private static volatile StaticMemoryExtractor staticMemoryExtractor;
@@ -26,21 +27,6 @@ public class StaticMemoryExtractor extends AgentRunningSubModule<PartnerRunningF
     private CognationCapability cognationCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
-
-    private StaticMemoryExtractor() {
-        modelSettings();
-    }
-
-    public static StaticMemoryExtractor getInstance() throws IOException, ClassNotFoundException {
-        if (staticMemoryExtractor == null) {
-            synchronized (StaticMemoryExtractor.class) {
-                if (staticMemoryExtractor == null) {
-                    staticMemoryExtractor = new StaticMemoryExtractor();
-                }
-            }
-        }
-        return staticMemoryExtractor;
-    }
 
     @Override
     public HashMap<String, String> execute(PartnerRunningFlowContext context) {

@@ -13,13 +13,12 @@ import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
-import work.slhaf.partner.runtime.session.SessionManager;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.module.common.module.CoreRunningModule;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.session.SessionManager;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -44,6 +43,8 @@ public class CoreModel extends CoreRunningModule implements ActivateModel {
         this.getModel().setChatMessages(chatMessages);
         this.appendedMessages = new ArrayList<>();
         this.sessionManager = SessionManager.getInstance();
+
+        updateChatClientSettings();
         log.info("[CoreModel] CoreModel注册完毕...");
     }
 
@@ -51,11 +52,6 @@ public class CoreModel extends CoreRunningModule implements ActivateModel {
     public void updateChatClientSettings() {
         chatClient().setTemperature(0.3);
         chatClient().setTop_p(0.7);
-    }
-
-    @Override
-    public String modelKey() {
-        return "core_model";
     }
 
     @Override

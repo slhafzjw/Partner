@@ -23,6 +23,8 @@ public class PartnerInteractionAdapter extends AgentInteractionAdapter<PartnerIn
         context.setUserInfo(inputData.getUserInfo());
         context.setDateTime(inputData.getDateTime());
         context.setSingle(inputData.isSingle());
+        context.setPlatform(inputData.getPlatform());
+        context.setInput(inputData.getContent());
         return context;
     }
 }

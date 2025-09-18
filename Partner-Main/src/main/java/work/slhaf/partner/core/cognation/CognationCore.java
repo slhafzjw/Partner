@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
+import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.core.cognation.pojo.ActiveData;
@@ -64,6 +65,16 @@ public class CognationCore extends PersistableObject {
         temp.setCacheCore(CacheCore.getInstance());
         temp.setMemoryCore(MemoryCore.getInstance());
         temp.setPerceiveCore(PerceiveCore.getInstance());
+    }
+
+    @CapabilityMethod
+    public List<Message> getChatMessages() {
+        return chatMessages;
+    }
+
+    @CapabilityMethod
+    public void setChatMessages(List<Message> chatMessages) {
+        this.chatMessages = chatMessages;
     }
 
     private void setupHook(CognationCore temp) {
@@ -131,6 +142,7 @@ public class CognationCore extends PersistableObject {
         }
     }
 
+    @CapabilityMethod
     public void cleanMessage(List<Message> messages) {
         messageLock.lock();
         this.getChatMessages().removeAll(messages);
@@ -138,31 +150,38 @@ public class CognationCore extends PersistableObject {
 
     }
 
+    @CapabilityMethod
     public void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices) {
         activeData.updateActivatedSlices(userId, memorySlices);
         log.debug("[CoordinatedManager] 已更新激活切片, userId: {}", userId);
     }
 
+    @CapabilityMethod
     public String getActivatedSlicesStr(String userId) {
         return activeData.getActivatedSlicesStr(userId);
     }
 
+    @CapabilityMethod
     public HashMap<String, List<EvaluatedSlice>> getActivatedSlices() {
         return activeData.getActivatedSlices();
     }
 
+    @CapabilityMethod
     public void clearActivatedSlices(String userId) {
         activeData.clearActivatedSlices(userId);
     }
 
+    @CapabilityMethod
     public boolean hasActivatedSlices(String userId) {
         return activeData.hasActivatedSlices(userId);
     }
 
+    @CapabilityMethod
     public int getActivatedSlicesSize(String userId) {
         return activeData.getActivatedSlices().get(userId).size();
     }
 
+    @CapabilityMethod
     public List<EvaluatedSlice> getActivatedSlices(String userId) {
         return activeData.getActivatedSlices().get(userId);
     }

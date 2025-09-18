@@ -9,7 +9,6 @@ import work.slhaf.partner.api.agent.factory.capability.exception.UnMatchedCapabi
 import work.slhaf.partner.api.agent.factory.capability.exception.UnMatchedCoordinatedMethodException;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.ModuleCheckFactory;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.util.AgentUtil;

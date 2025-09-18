@@ -14,8 +14,8 @@ import work.slhaf.partner.api.agent.factory.module.ModuleInitHookExecuteFactory;
 import work.slhaf.partner.api.agent.factory.module.ModuleProxyFactory;
 import work.slhaf.partner.api.agent.factory.module.ModuleRegisterFactory;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.agent.runtime.data.AgentContext;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
+import work.slhaf.partner.api.agent.runtime.data.AgentContext;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.AgentRunningFlow;
 
 import java.io.File;

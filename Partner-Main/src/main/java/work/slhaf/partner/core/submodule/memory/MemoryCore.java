@@ -5,11 +5,11 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.api.common.entity.PersistableObject;
-import work.slhaf.partner.core.common.pojo.MemoryResult;
-import work.slhaf.partner.core.common.pojo.MemorySliceResult;
 import work.slhaf.partner.core.submodule.memory.exception.UnExistedDateIndexException;
 import work.slhaf.partner.core.submodule.memory.exception.UnExistedTopicException;
+import work.slhaf.partner.core.submodule.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.submodule.memory.pojo.MemorySliceResult;
 import work.slhaf.partner.core.submodule.memory.pojo.node.MemoryNode;
 import work.slhaf.partner.core.submodule.memory.pojo.node.TopicNode;
 

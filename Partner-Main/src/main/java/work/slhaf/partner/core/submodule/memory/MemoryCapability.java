@@ -2,7 +2,7 @@ package work.slhaf.partner.core.submodule.memory;
 
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.agent.factory.capability.annotation.ToCoordinated;
-import work.slhaf.partner.core.common.pojo.MemoryResult;
+import work.slhaf.partner.core.submodule.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
 
 import java.io.IOException;

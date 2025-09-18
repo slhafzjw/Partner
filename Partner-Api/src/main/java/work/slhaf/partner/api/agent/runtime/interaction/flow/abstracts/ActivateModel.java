@@ -2,6 +2,7 @@ package work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts;
 
 import cn.hutool.core.bean.BeanUtil;
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.Model;
@@ -87,7 +88,9 @@ public interface ActivateModel {
         ((Module) this).setModel(model);
     }
 
-    String modelKey();
+    default String modelKey(){
+        return this.getClass().getAnnotation(AgentModule.class).name();
+    }
 
     boolean withBasicPrompt();
 
