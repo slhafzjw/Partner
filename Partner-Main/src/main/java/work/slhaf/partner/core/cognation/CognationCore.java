@@ -22,6 +22,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 @EqualsAndHashCode(callSuper = true)
@@ -184,6 +185,11 @@ public class CognationCore extends PersistableObject {
     @CapabilityMethod
     public List<EvaluatedSlice> getActivatedSlices(String userId) {
         return activeData.getActivatedSlices().get(userId);
+    }
+
+    @CapabilityMethod
+    public Lock getMessageLock() {
+        return messageLock;
     }
 }
 

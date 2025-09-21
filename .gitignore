@@ -36,8 +36,8 @@ build/
 
 ### Mac OS ###
 .DS_Store
-/data/
-/config/
+/backup/data/
+/backup/config/
 /Partner-Core/src/main/java/src/test/java/memory/test.json
 /Partner-Core/src/main/java/src/test/java/memory/result/input1.json
 /Partner-Core/src/main/java/src/test/java/memory/result/input2.json
@@ -51,3 +51,5 @@ build/
 /backup/
 /Partner-Main/src/test/java/text/test.json
 /CLAUDE.md
+/config/
+/data/

@@ -17,6 +17,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static work.slhaf.partner.api.agent.util.AgentUtil.isAssignableFromAnnotation;
 import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
 
 /**
@@ -66,6 +67,7 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
 
     @Override
     protected void run() {
+        //TODO 对于CoordinateManager的所注类进行唯一性检验以及检测是否留有公开的无参构造方法
         loadCoresAndCapabilities();
         checkCountAndCapabilities();
         checkCapabilityMethods();
@@ -83,8 +85,9 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
      */
     private void checkInjectCapability() {
         reflections.getFieldsAnnotatedWith(InjectCapability.class).forEach(field -> {
-            if (!field.getDeclaringClass().isAssignableFrom(CapabilityHolder.class)) {
-                throw new UnMatchedCapabilityException("InjectCapability 注解只能用于 CapabilityHolder 注解所在类");
+            Class<?> declaringClass = field.getDeclaringClass();
+            if (!isAssignableFromAnnotation(declaringClass, CapabilityHolder.class)){
+                throw new UnMatchedCapabilityException("InjectCapability 注解只能用于 CapabilityHolder 注解所在类，检查该类是否使用了@CapabilityHolder注解或者受其标注的注解或父类: "+declaringClass);
             }
         });
     }

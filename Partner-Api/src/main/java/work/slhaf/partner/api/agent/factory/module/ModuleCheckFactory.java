@@ -56,16 +56,41 @@ public class ModuleCheckFactory extends AgentBaseFactory {
 
     @Override
     protected void run() {
-        Set<Class<?>> moduleTypes = reflections.getTypesAnnotatedWith(AgentModule.class);
-        Set<Class<?>> subModuleTypes = reflections.getTypesAnnotatedWith(AgentSubModule.class);
+        AnnotatedModules annotatedModules = getAnnotatedModules();
+        ExtendedModules extendedModules = getExtendedModules();
+        checkIfClassCorresponds(annotatedModules, extendedModules);
         //检查注解AgentModule或AgentSubModule所在类是否继承了对应的抽象类
-        annotationAbstractCheck(moduleTypes, AgentRunningModule.class);
-        annotationAbstractCheck(subModuleTypes, AgentRunningSubModule.class);
+        annotationAbstractCheck(annotatedModules.moduleTypes(), AgentRunningModule.class);
+        annotationAbstractCheck(annotatedModules.subModuleTypes(), AgentRunningSubModule.class);
         //检查AgentModule是否具备无参构造方法
-        moduleConstructorsCheck(moduleTypes);
-        moduleConstructorsCheck(subModuleTypes);
+        moduleConstructorsCheck(annotatedModules.moduleTypes());
+        moduleConstructorsCheck(annotatedModules.subModuleTypes());
         //检查实现了ActivateModel的模块数量、名称与prompt是否一致
         activateModelImplCheck();
+    }
+
+    private ExtendedModules getExtendedModules() {
+        Set<Class<?>> moduleTypes = reflections.getSubTypesOf(AgentRunningModule.class)
+                .stream()
+                .filter(ClassUtil::isNormalClass)
+                .collect(Collectors.toSet());
+        Set<Class<?>> subModuleTypes = reflections.getSubTypesOf(AgentRunningSubModule.class)
+                .stream()
+                .filter(ClassUtil::isNormalClass)
+                .collect(Collectors.toSet());
+        return new ExtendedModules(moduleTypes, subModuleTypes);
+    }
+
+    private AnnotatedModules getAnnotatedModules() {
+        Set<Class<?>> moduleTypes = reflections.getTypesAnnotatedWith(AgentModule.class)
+                .stream()
+                .filter(ClassUtil::isNormalClass)
+                .collect(Collectors.toSet());
+        Set<Class<?>> subModuleTypes = reflections.getTypesAnnotatedWith(AgentSubModule.class)
+                .stream()
+                .filter(ClassUtil::isNormalClass)
+                .collect(Collectors.toSet());
+        return new AnnotatedModules(moduleTypes, subModuleTypes);
     }
 
     private void moduleConstructorsCheck(Set<Class<?>> types) {
@@ -163,5 +188,49 @@ public class ModuleCheckFactory extends AgentBaseFactory {
             }
             throw new ModuleCheckException("存在未继承AgentInteractionModule.class的AgentModule实现: " + type.getSimpleName());
         }
+    }
+
+    private void checkIfClassCorresponds(AnnotatedModules annotatedModules, ExtendedModules extendedModules) {
+        // 检查是否有被@AgentModule注解但没有继承AgentRunningModule的类
+        checkSets(annotatedModules.moduleTypes(), extendedModules.moduleTypes(), 
+                 "存在被@AgentModule注解但未继承AgentRunningModule的类");
+        
+        // 检查是否有继承AgentRunningModule但没有被@AgentModule注解的类
+        checkSets(extendedModules.moduleTypes(), annotatedModules.moduleTypes(),
+                 "存在继承AgentRunningModule但未被@AgentModule注解的类");
+        
+        // 检查是否有被@AgentSubModule注解但没有继承AgentRunningSubModule的类
+        checkSets(annotatedModules.subModuleTypes(), extendedModules.subModuleTypes(),
+                 "存在被@AgentSubModule注解但未继承AgentRunningSubModule的类");
+        
+        // 检查是否有继承AgentRunningSubModule但没有被@AgentSubModule注解的类
+        checkSets(extendedModules.subModuleTypes(), annotatedModules.subModuleTypes(),
+                 "存在继承AgentRunningSubModule但未被@AgentSubModule注解的类");
+    }
+    
+    /**
+     * 检查源集合中是否有不在目标集合中的元素
+     * @param source 源集合
+     * @param target 目标集合
+     * @param errorMessage 错误信息前缀
+     */
+    private void checkSets(Set<Class<?>> source, Set<Class<?>> target, String errorMessage) {
+        // 只有在需要时才创建HashSet以节省内存
+        if (!target.containsAll(source)) {
+            // 使用流式处理找出差异部分，避免创建完整的中间集合
+            String classNames = source.stream()
+                    .filter(clazz -> !target.contains(clazz))
+                    .map(Class::getSimpleName)
+                    .limit(10) // 限制显示数量，避免信息泄露
+                    .collect(Collectors.joining(", ", "[", "]"));
+            
+            throw new ModuleCheckException(errorMessage + ": " + classNames);
+        }
+    }
+
+    private record AnnotatedModules(Set<Class<?>> moduleTypes, Set<Class<?>> subModuleTypes) {
+    }
+
+    private record ExtendedModules(Set<Class<?>> moduleTypes, Set<Class<?>> subModuleTypes) {
     }
 }

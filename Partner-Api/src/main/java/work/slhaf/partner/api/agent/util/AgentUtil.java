@@ -10,6 +10,28 @@ import java.util.stream.Collectors;
 
 public final class AgentUtil {
 
+    public static boolean isAssignableFromAnnotation(Class<?> clazz,Class<? extends Annotation> targetAnnotation){
+        Set<Class<?>> visited = new HashSet<>();
+        return isAssignableFromAnnotation(clazz,targetAnnotation,visited);
+    }
+
+    private static boolean isAssignableFromAnnotation(Class<?> clazz,Class<? extends Annotation> targetAnnotation,Set<Class<?>> visited){
+        if (!visited.add(clazz)){
+            return false;
+        }
+        if (clazz.isAnnotationPresent(targetAnnotation)){
+            return true;
+        }
+        Annotation[] annotations = clazz.getAnnotations();
+        for (Annotation annotation : annotations) {
+            boolean ok = isAssignableFromAnnotation(annotation.annotationType(),targetAnnotation,visited);
+            if (ok){
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String methodSignature(Method method) {
         StringBuilder sb = new StringBuilder();
         sb.append("(");

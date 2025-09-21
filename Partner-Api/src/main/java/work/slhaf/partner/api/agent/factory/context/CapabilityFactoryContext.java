@@ -3,6 +3,7 @@ package work.slhaf.partner.api.agent.factory.context;
 import lombok.Data;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -12,6 +13,6 @@ public class CapabilityFactoryContext {
     private final HashMap<String, Function<Object[], Object>> coordinatedMethodsRouterTable = new HashMap<>();
     private final HashMap<Class<?>, Object> capabilityCoreInstances = new HashMap<>();
     private final HashMap<Class<?>, Object> capabilityHolderInstances = new HashMap<>();
-    private Set<Class<?>> cores;
-    private Set<Class<?>> capabilities;
+    private Set<Class<?>> cores = new HashSet<>();
+    private Set<Class<?>> capabilities = new HashSet<>();
 }

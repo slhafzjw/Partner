@@ -7,6 +7,7 @@ import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
@@ -80,14 +81,24 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
                 continue;
             }
             Class<? extends AgentRunningModule> clazz = module.asSubclass(AgentRunningModule.class);
-            AgentModule agentModule = clazz.getAnnotation(AgentModule.class);
-            MetaModule metaModule = new MetaModule();
-            metaModule.setName(agentModule.name());
-            metaModule.setOrder(agentModule.order());
-            metaModule.setClazz(clazz);
+            MetaModule metaModule = getMetaModule(clazz);
             moduleList.add(metaModule);
         }
         moduleList.sort(Comparator.comparing(MetaModule::getOrder));
+    }
+
+    private static MetaModule getMetaModule(Class<? extends AgentRunningModule> clazz) {
+        MetaModule metaModule = new MetaModule();
+        AgentModule agentModule;
+        if (clazz.isAnnotationPresent(CoreModule.class)){
+            agentModule = CoreModule.class.getAnnotation(AgentModule.class);
+        }else{
+            agentModule = clazz.getAnnotation(AgentModule.class);
+        }
+        metaModule.setName(agentModule.name());
+        metaModule.setOrder(agentModule.order());
+        metaModule.setClazz(clazz);
+        return metaModule;
     }
 
 }

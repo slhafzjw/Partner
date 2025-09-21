@@ -25,10 +25,6 @@ import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 @AgentSubModule
 public class MultiSummarizer extends AgentRunningSubModule<SummarizeInput, SummarizeResult> implements ActivateModel {
 
-    private MultiSummarizer() {
-        modelSettings();
-    }
-
     @Init
     public void init() {
         updateChatClientSettings();

@@ -32,9 +32,8 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<Pa
     // 记录最后一次收到Pong的时间
     private final ConcurrentHashMap<WebSocket, Long> lastPongTimes = new ConcurrentHashMap<>();
 
-    public static WebSocketGateway initialize() {
-        PartnerAgentConfigManager configManager = (PartnerAgentConfigManager) AgentConfigManager.INSTANCE;
-        return new WebSocketGateway(configManager.getConfig().getPort());
+    public WebSocketGateway() {
+        this(((PartnerAgentConfigManager) AgentConfigManager.INSTANCE).getConfig().getPort());
     }
 
     private WebSocketGateway(int port) {

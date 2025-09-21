@@ -100,6 +100,7 @@ public class ModuleProxyFactory extends AgentBaseFactory {
     }
 
     private void updateCapabilityHolderInstances() {
+        //TODO 扫描并添加所有与@CapabilityHolder相关的实例
         capabilityHolderInstances.putAll(moduleInstances);
         capabilityHolderInstances.putAll(subModuleInstances);
     }
@@ -203,7 +204,7 @@ public class ModuleProxyFactory extends AgentBaseFactory {
         }
     }
 
-    private record ModuleProxyInterceptor(List<MetaMethod> postHookMethods, List<MetaMethod> preHookMethods) {
+    public record ModuleProxyInterceptor(List<MetaMethod> postHookMethods, List<MetaMethod> preHookMethods) {
         @RuntimeType
         public Object intercept(@Origin Method method, @AllArguments Object[] allArguments, @SuperCall Callable<?> zuper, @This Object proxy) throws Exception {
             for (MetaMethod metaMethod : preHookMethods) {

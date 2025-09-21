@@ -18,15 +18,19 @@ import java.util.concurrent.Executors;
  */
 public final class Agent {
 
-    public static AgentGatewayStep newAgent(Class<?> clazz) {
+    public static AgentConfigManagerStep newAgent(Class<?> clazz) {
         if (clazz == null) {
             throw new AgentLaunchFailedException("Agent class 和 interaction flow context 不能为 null");
         }
         return new AgentApp(clazz);
     }
 
+    public interface AgentConfigManagerStep {
+        AgentGatewayStep setAgentConfigManager(Class<? extends AgentConfigManager> agentConfigManager);
+    }
+
     public interface AgentGatewayStep {
-        AgentStep setGateway(AgentGateway gateway);
+        AgentStep setGateway(Class<? extends AgentGateway> gateway);
     }
 
     public interface AgentStep {
@@ -34,9 +38,7 @@ public final class Agent {
 
         AgentStep addAfterLaunchRunners(Runnable... runners);
 
-        AgentStep setAgentConfigManager(AgentConfigManager agentConfigManager);
-
-        AgentStep setAgentExceptionCallback(AgentExceptionCallback agentExceptionCallback);
+        AgentStep setAgentExceptionCallback(Class<? extends  AgentExceptionCallback> agentExceptionCallback);
 
         AgentStep addScanPackage(String packageName);
 
@@ -46,21 +48,24 @@ public final class Agent {
     }
 
 
-    public static class AgentApp implements AgentStep, AgentGatewayStep {
+    public static class AgentApp implements AgentStep, AgentGatewayStep, AgentConfigManagerStep {
 
         private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
         private final List<Runnable> beforeLaunchRunners = new ArrayList<>();
         private final List<Runnable> afterLaunchRunners = new ArrayList<>();
         private AgentGateway gateway;
         private final Class<?> applicationClass;
+        private Class<? extends AgentConfigManager> agentConfigManagerClass;
+        private Class<? extends AgentGateway> gatewayClass;
+        private Class<? extends AgentExceptionCallback> agentExceptionCallbackClass;
 
         private AgentApp(Class<?> clazz) {
             this.applicationClass = clazz;
         }
 
         @Override
-        public AgentStep setGateway(AgentGateway gateway) {
-            this.gateway = gateway;
+        public AgentStep setGateway(Class<? extends AgentGateway> gateway) {
+            this.gatewayClass = gateway;
             return this;
         }
 
@@ -77,14 +82,14 @@ public final class Agent {
         }
 
         @Override
-        public AgentStep setAgentConfigManager(AgentConfigManager agentConfigManager) {
-            AgentConfigManager.setINSTANCE(agentConfigManager);
+        public AgentGatewayStep setAgentConfigManager(Class<? extends AgentConfigManager> agentConfigManager) {
+            this.agentConfigManagerClass = agentConfigManager;
             return this;
         }
 
         @Override
-        public AgentStep setAgentExceptionCallback(AgentExceptionCallback agentExceptionCallback) {
-            GlobalExceptionHandler.setExceptionCallback(agentExceptionCallback);
+        public AgentStep setAgentExceptionCallback(Class<? extends AgentExceptionCallback> agentExceptionCallback) {
+            agentExceptionCallbackClass = agentExceptionCallback;
             return this;
         }
 
@@ -102,10 +107,29 @@ public final class Agent {
 
         @Override
         public void launch() {
-            launchRunners(beforeLaunchRunners);
+            beforeLaunch();
             AgentRegisterFactory.launch(applicationClass.getPackageName());
-            executorService.execute(() -> gateway.launch());
-            launchRunners(afterLaunchRunners);
+            afterLaunch();
+        }
+
+        private void afterLaunch() {
+            try {
+                this.gateway = gatewayClass.getDeclaredConstructor().newInstance();
+                executorService.execute(() -> gateway.launch());
+                launchRunners(afterLaunchRunners);
+            }catch (Exception e){
+                throw new AgentLaunchFailedException("Agent 后置任务启动失败", e);
+            }
+        }
+
+        private void beforeLaunch() {
+            try {
+                AgentConfigManager.setINSTANCE(agentConfigManagerClass.getDeclaredConstructor().newInstance());
+                GlobalExceptionHandler.setExceptionCallback(agentExceptionCallbackClass.getDeclaredConstructor().newInstance());
+                launchRunners(beforeLaunchRunners);
+            } catch (Exception e) {
+                throw new AgentLaunchFailedException("Agent 前置任务启动失败", e);
+            }
         }
 
         private void launchRunners(List<Runnable> runners) {

@@ -8,9 +8,9 @@ import work.slhaf.partner.runtime.interaction.WebSocketGateway;
 public class Main {
     public static void main(String[] args) {
         Agent.newAgent(Main.class)
-                .setGateway(WebSocketGateway.initialize())
-                .setAgentConfigManager(new PartnerAgentConfigManager())
-                .setAgentExceptionCallback(new PartnerExceptionCallback())
+                .setAgentConfigManager(PartnerAgentConfigManager.class)
+                .setGateway(WebSocketGateway.class)
+                .setAgentExceptionCallback(PartnerExceptionCallback.class)
                 .launch();
     }
 }

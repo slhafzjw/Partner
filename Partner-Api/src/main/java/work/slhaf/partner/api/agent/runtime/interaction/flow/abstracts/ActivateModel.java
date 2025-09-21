@@ -88,9 +88,7 @@ public interface ActivateModel {
         ((Module) this).setModel(model);
     }
 
-    default String modelKey(){
-        return this.getClass().getAnnotation(AgentModule.class).name();
-    }
+    String modelKey();
 
     boolean withBasicPrompt();
 

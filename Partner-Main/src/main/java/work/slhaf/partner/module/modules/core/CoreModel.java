@@ -55,6 +55,11 @@ public class CoreModel extends CoreRunningModule implements ActivateModel {
     }
 
     @Override
+    public String modelKey() {
+        return "core_model";
+    }
+
+    @Override
     public boolean withBasicPrompt() {
         return true;
     }

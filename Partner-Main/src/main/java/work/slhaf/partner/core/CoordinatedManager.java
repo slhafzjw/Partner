@@ -44,10 +44,6 @@ public class CoordinatedManager implements Serializable {
     private PerceiveCore perceiveCore;
     private DispatchCore dispatchCore;
 
-    private CoordinatedManager() {
-    }
-
-
     public static CoordinatedManager getInstance() throws IOException, ClassNotFoundException {
         if (coordinatedManager == null) {
             synchronized (CoordinatedManager.class) {
