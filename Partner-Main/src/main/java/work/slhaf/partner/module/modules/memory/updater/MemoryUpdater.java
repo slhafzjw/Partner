@@ -96,7 +96,7 @@ public class MemoryUpdater extends PostRunningModule {
     }
 
     @Override
-    public void execute(PartnerRunningFlowContext context) {
+    public void doExecute(PartnerRunningFlowContext context) {
         if (context.isFinished()) {
             log.warn("[MemoryUpdater] 流程强制结束, 不触发记忆被动更新机制");
             return;

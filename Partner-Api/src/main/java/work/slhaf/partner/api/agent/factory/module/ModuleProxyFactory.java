@@ -1,5 +1,6 @@
 package work.slhaf.partner.api.agent.factory.module;
 
+import lombok.Getter;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.bind.annotation.*;
@@ -14,11 +15,13 @@ import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleInstanceGenerateFailedException;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleProxyGenerateFailedException;
+import work.slhaf.partner.api.agent.factory.module.exception.ProxiedModuleRunningException;
 import work.slhaf.partner.api.agent.factory.module.pojo.BaseMetaModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.Module;
 
 import java.lang.reflect.Method;
@@ -74,7 +77,8 @@ public class ModuleProxyFactory extends AgentBaseFactory {
 
     private void injectSubModule() {
         for (MetaModule module : moduleList) {
-            Arrays.stream(module.getClazz().getFields())
+            //因为实际上ByteBuddy生成的是module.getClazz()的子类，所以应当使用getDeclaredFields()获取字段
+            Arrays.stream(module.getClazz().getDeclaredFields())
                     .filter(field -> field.isAnnotationPresent(InjectModule.class))
                     .forEach(field -> {
                         try {
@@ -92,15 +96,14 @@ public class ModuleProxyFactory extends AgentBaseFactory {
     }
 
     private void createProxiedInstances() {
-        generateModuleProxy(moduleList);
-        generateModuleProxy(subModuleList);
+        generateModuleProxy(moduleList, AgentRunningModule.class);
+        generateModuleProxy(subModuleList, AgentRunningSubModule.class);
         updateInstanceMap(moduleInstances, moduleList);
         updateInstanceMap(subModuleInstances, subModuleList);
         updateCapabilityHolderInstances();
     }
 
     private void updateCapabilityHolderInstances() {
-        //TODO 扫描并添加所有与@CapabilityHolder相关的实例
         capabilityHolderInstances.putAll(moduleInstances);
         capabilityHolderInstances.putAll(subModuleInstances);
     }
@@ -112,29 +115,38 @@ public class ModuleProxyFactory extends AgentBaseFactory {
     }
 
 
-    private void generateModuleProxy(List<? extends BaseMetaModule> list) {
+    private void generateModuleProxy(List<? extends BaseMetaModule> list, Class<? extends Module> overrideSource) {
         for (BaseMetaModule module : list) {
             Class<?> clazz = module.getClazz();
             try {
                 MethodsListRecord record = collectHookMethods(clazz);
                 //生成实例
-                generateProxiedInstances(record, module);
+                generateProxiedInstances(record, module, overrideSource);
             } catch (Exception e) {
                 throw new ModuleProxyGenerateFailedException("创建代理对象失败: " + clazz.getSimpleName(), e);
             }
         }
     }
 
-    private void generateProxiedInstances(MethodsListRecord record, BaseMetaModule module) {
+    private void generateProxiedInstances(MethodsListRecord record, BaseMetaModule module, Class<? extends Module> overrideSource) {
         try {
             Class<? extends Module> clazz = module.getClazz();
             Class<? extends Module> proxyClass = new ByteBuddy()
                     .subclass(clazz)
-                    .method(ElementMatchers.isOverriddenFrom(AgentRunningModule.class))
+                    .method(ElementMatchers.isOverriddenFrom(overrideSource))
                     .intercept(MethodDelegation.to(new ModuleProxyInterceptor(record.post, record.pre)))
                     .make()
                     .load(ModuleProxyFactory.class.getClassLoader())
                     .getLoaded();
+
+//            new ByteBuddy()
+//                    .subclass(clazz)
+//                    .method(ElementMatchers.isOverriddenFrom(overrideSource))
+//                    .intercept(MethodDelegation.to(new ModuleProxyInterceptor(record.post, record.pre)))
+//
+//                    .make()
+//                    .saveIn(new File("./generated-classes"));
+
             module.setInstance(proxyClass.getConstructor().newInstance());
         } catch (Exception e) {
             throw new ModuleProxyGenerateFailedException("模块Hook代理生成失败! 代理失败的模块名: " + module.getClazz().getSimpleName(), e);
@@ -188,7 +200,7 @@ public class ModuleProxyFactory extends AgentBaseFactory {
 
 
     private void collectHookMethods(List<MetaMethod> post, List<MetaMethod> pre, Class<?> clazz) {
-        Method[] methods = clazz.getMethods();
+        Method[] methods = clazz.getDeclaredMethods();
         for (Method method : methods) {
             if (method.isAnnotationPresent(BeforeExecute.class)) {
                 MetaMethod metaMethod = new MetaMethod();
@@ -204,18 +216,38 @@ public class ModuleProxyFactory extends AgentBaseFactory {
         }
     }
 
-    public record ModuleProxyInterceptor(List<MetaMethod> postHookMethods, List<MetaMethod> preHookMethods) {
+    @Getter
+    @SuppressWarnings("ClassCanBeRecord")
+    public static class ModuleProxyInterceptor {
+
+        private final List<MetaMethod> postHookMethods;
+        private final List<MetaMethod> preHookMethods;
+
+        public ModuleProxyInterceptor(List<MetaMethod> postHookMethods, List<MetaMethod> preHookMethods) {
+            this.postHookMethods = postHookMethods;
+            this.preHookMethods = preHookMethods;
+        }
+
         @RuntimeType
         public Object intercept(@Origin Method method, @AllArguments Object[] allArguments, @SuperCall Callable<?> zuper, @This Object proxy) throws Exception {
-            for (MetaMethod metaMethod : preHookMethods) {
-                metaMethod.getMethod().invoke(proxy);
-            }
+            executeHookMethods(preHookMethods, proxy);
             Object res = zuper.call();
-            for (MetaMethod metaMethod : postHookMethods) {
-                metaMethod.getMethod().invoke(proxy);
-            }
+            executeHookMethods(postHookMethods, proxy);
             return res;
         }
+
+        private void executeHookMethods(List<MetaMethod> hookMethods, Object proxy) {
+            for (MetaMethod metaMethod : hookMethods) {
+                Method m = metaMethod.getMethod();
+                try {
+                    m.setAccessible(true);
+                    m.invoke(proxy);
+                } catch (Exception e) {
+                    throw new ProxiedModuleRunningException("hook方法执行异常: " + m.getDeclaringClass() + "#" + m.getName(), e);
+                }
+            }
+        }
+
     }
 
     record MethodsListRecord(List<MetaMethod> post, List<MetaMethod> pre) {

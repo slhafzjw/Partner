@@ -49,6 +49,7 @@ public final class AgentUtil {
     public static Set<Class<?>> collectExtendedClasses(Class<?> clazz, Class<?> targetClass) {
         Set<Class<?>> classes = new HashSet<>();
         collectExtendedClasses(classes, clazz, targetClass);
+        classes.add(clazz);
         return classes;
     }
 

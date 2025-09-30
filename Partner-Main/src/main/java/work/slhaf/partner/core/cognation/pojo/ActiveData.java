@@ -1,14 +1,21 @@
 package work.slhaf.partner.core.cognation.pojo;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.core.submodule.memory.pojo.EvaluatedSlice;
 
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class ActiveData {
-    private HashMap<String, List<EvaluatedSlice>> activatedSlices;
+public class ActiveData extends PersistableObject {
+    private HashMap<String, List<EvaluatedSlice>> activatedSlices = new HashMap<>();
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     public void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices) {
         activatedSlices.put(userId, memorySlices);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
-    <list size="13">
+    <list size="14">
       <item index="0" class="java.lang.String" itemvalue="lombok.Data" />
       <item index="1" class="java.lang.String" itemvalue="net.bytebuddy.implementation.bind.annotation.RuntimeType" />
       <item index="2" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.Capability" />
@@ -11,10 +11,11 @@
       <item index="6" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.Coordinated" />
       <item index="7" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute" />
       <item index="8" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AgentModule" />
-      <item index="9" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.Init" />
-      <item index="10" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CapabilityMethod" />
-      <item index="11" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CoordinateManager" />
-      <item index="12" class="java.lang.String" itemvalue="work.slhaf.partner.api.register.capability.annotation.Capability" />
+      <item index="9" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute" />
+      <item index="10" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.Init" />
+      <item index="11" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CapabilityMethod" />
+      <item index="12" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CoordinateManager" />
+      <item index="13" class="java.lang.String" itemvalue="work.slhaf.partner.api.register.capability.annotation.Capability" />
     </list>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />

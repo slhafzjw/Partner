@@ -94,6 +94,9 @@ public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningF
             }
             m.setText(fixTopicPath(m.getText()));
         });
+        if (extractorResult.getMatches().isEmpty()) {
+            return extractorResult;
+        }
         extractorResult.getMatches().removeIf(m -> m.getText().split("->")[0].isEmpty());
         return extractorResult;
     }

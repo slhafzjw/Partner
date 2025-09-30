@@ -8,6 +8,7 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -15,7 +16,6 @@ import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 import work.slhaf.partner.module.common.model.ModelConstant;
-import work.slhaf.partner.module.common.module.CoreRunningModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 import work.slhaf.partner.runtime.session.SessionManager;
 
@@ -30,7 +30,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 @Data
 @Slf4j
 @CoreModule
-public class CoreModel extends CoreRunningModule implements ActivateModel {
+public class CoreModel extends AgentRunningModule<PartnerRunningFlowContext> implements ActivateModel {
     
     @InjectCapability
     private CognationCapability cognationCapability;

@@ -67,6 +67,8 @@ public class ModuleCheckFactory extends AgentBaseFactory {
         moduleConstructorsCheck(annotatedModules.subModuleTypes());
         //检查实现了ActivateModel的模块数量、名称与prompt是否一致
         activateModelImplCheck();
+        //检查hook注解所在位置是否正确
+        hookLocationCheck();
     }
 
     private ExtendedModules getExtendedModules() {
@@ -128,17 +130,6 @@ public class ModuleCheckFactory extends AgentBaseFactory {
         preHookLocationCheck();
         //检查@Init注解
         initHookLocationCheck();
-        //检查@AgentModule注解是否只位于普通类上
-        agentModuleLocationCheck();
-    }
-
-    private void agentModuleLocationCheck() {
-        Set<Class<?>> types = reflections.getTypesAnnotatedWith(AgentModule.class);
-        for (Class<?> type : types) {
-            if (!ClassUtil.isNormalClass(type)) {
-                throw new ModuleCheckException("AgentModule 注解仅能位于普通类上! 异常类信息: " + type.getSimpleName());
-            }
-        }
     }
 
     private void initHookLocationCheck() {

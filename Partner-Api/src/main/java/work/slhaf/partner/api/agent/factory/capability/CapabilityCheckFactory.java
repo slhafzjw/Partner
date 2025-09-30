@@ -1,12 +1,10 @@
 package work.slhaf.partner.api.agent.factory.capability;
 
+import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.capability.annotation.*;
-import work.slhaf.partner.api.agent.factory.capability.exception.DuplicateCapabilityException;
-import work.slhaf.partner.api.agent.factory.capability.exception.UnMatchedCapabilityException;
-import work.slhaf.partner.api.agent.factory.capability.exception.UnMatchedCapabilityMethodException;
-import work.slhaf.partner.api.agent.factory.capability.exception.UnMatchedCoordinatedMethodException;
+import work.slhaf.partner.api.agent.factory.capability.exception.*;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
@@ -67,12 +65,27 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
 
     @Override
     protected void run() {
-        //TODO 对于CoordinateManager的所注类进行唯一性检验以及检测是否留有公开的无参构造方法
         loadCoresAndCapabilities();
         checkCountAndCapabilities();
         checkCapabilityMethods();
         checkCoordinatedMethods();
+        checkCoordinatedManager();
         checkInjectCapability();
+    }
+
+    private void checkCoordinatedManager() {
+        reflections.getTypesAnnotatedWith(CoordinateManager.class)
+                .stream()
+                .filter(ClassUtil::isNormalClass)
+                .forEach(managerClass -> {
+                    try {
+                        if (!managerClass.getDeclaredConstructor().canAccess(null)) {
+                            throw new CapabilityCheckFailedException("CoordinateManager 所注类的无参构造方法未公开!");
+                        }
+                    } catch (NoSuchMethodException e) {
+                        throw new CapabilityCheckFailedException("CoordinateManager 所注类缺少无参构造方法!");
+                    }
+                });
     }
 
     private void loadCoresAndCapabilities() {
@@ -86,8 +99,8 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
     private void checkInjectCapability() {
         reflections.getFieldsAnnotatedWith(InjectCapability.class).forEach(field -> {
             Class<?> declaringClass = field.getDeclaringClass();
-            if (!isAssignableFromAnnotation(declaringClass, CapabilityHolder.class)){
-                throw new UnMatchedCapabilityException("InjectCapability 注解只能用于 CapabilityHolder 注解所在类，检查该类是否使用了@CapabilityHolder注解或者受其标注的注解或父类: "+declaringClass);
+            if (!isAssignableFromAnnotation(declaringClass, CapabilityHolder.class)) {
+                throw new UnMatchedCapabilityException("InjectCapability 注解只能用于 CapabilityHolder 注解所在类，检查该类是否使用了@CapabilityHolder注解或者受其标注的注解或父类: " + declaringClass);
             }
         });
     }

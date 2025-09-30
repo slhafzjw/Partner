@@ -47,35 +47,35 @@ Partner 的目标不是复现某种单一能力，而是尝试在结构中形成
 ## 模块(已实现/正在实现)
 - 预处理模块: `PreprocessExecutor`
 - 后处理模块: `PostprocessExecutor`
+- 主对话模块: `CoreModel`
 - 记忆模块
   - 记忆选择模块: `MemorySelector`
     - 主题提取模块: `MemorySelectExtractor`
     - 切片评估模块: `SliceSelectEvaluator`
   - 记忆更新模块: `MemoryUpdater`
-    - 记忆总结模块: `MemorySummarizer`
-    - 静态记忆提取模块: `StaticMemoryExtractor`
+    - 记忆总结模块[多聊天对象]: `MultiSummarizer`
+    - 记忆总结模块[单聊天对象]: `SingleSummarizer`
+    - 记忆总结模块[汇总]：`TotalSummarizer`
 - 感知模块
   - 感知选择模块: `PerceiveSelector`
   - 感知更新模块: `PerceiveUpdater`
     - 关系提取模块: `RelationExtractor`
-    - 静态记忆提取模块: `StaticExtractor`
-- 任务调度模块
+    - 静态记忆提取模块: `StaticMemoryExtractor`
+- 任务调度模块(待实现)
   - 任务评估模块: `TaskEvaluator`
   - 任务执行模块: `TaskExecutor`
   - 任务规划模块: `TaskScheduler`
-- 主对话模块: `CoreModel`
 
 ## 当前问题
 - 系统的正常运作效果取决于各模块中大模型对于`prompt`的遵循能力，目前来看`qwen3`的遵循效果明显较好，但在轮次较多时，也容易出现不遵循的情况。
 
 ## 规划
-- [ ] 完成框架与本体的适配工作
 - [ ] 实现任务与主动调度模块，目前打算用 `时间轮算法` 实现定时操作
 - [ ] 完善具备‘记忆切片、实体图谱、向量召回’的三维记忆融合架构，包含 Episodic + Semantic + Fuzzy 三类记忆
 - [ ] 服务端与客户端的通信加上消息队列，防止消息因连接断开而丢失。
 - [ ] 实现流式输出，同时在各模块执行时可向客户端返回回调信息，优化使用体验。(现在用的是`websocket`与客户端通信, 应该实现这点会简单些)
 - [ ] 踩坑。
-- [ ] 实现角色演进机制
+- [ ] 实现演进机制
 
 ## License
 This project is not licensed for public use. All rights reserved.

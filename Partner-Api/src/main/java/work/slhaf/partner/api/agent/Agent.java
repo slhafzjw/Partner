@@ -1,5 +1,6 @@
 package work.slhaf.partner.api.agent;
 
+import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.AgentRegisterFactory;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
 import work.slhaf.partner.api.agent.runtime.exception.AgentExceptionCallback;
@@ -9,6 +10,7 @@ import work.slhaf.partner.api.agent.runtime.interaction.AgentGateway;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -16,6 +18,7 @@ import java.util.concurrent.Executors;
  * <h2>Agent 启动入口</h2>
  * 详细启动流程请参阅{@link AgentRegisterFactory}
  */
+@Slf4j
 public final class Agent {
 
     public static AgentConfigManagerStep newAgent(Class<?> clazz) {
@@ -38,7 +41,7 @@ public final class Agent {
 
         AgentStep addAfterLaunchRunners(Runnable... runners);
 
-        AgentStep setAgentExceptionCallback(Class<? extends  AgentExceptionCallback> agentExceptionCallback);
+        AgentStep setAgentExceptionCallback(Class<? extends AgentExceptionCallback> agentExceptionCallback);
 
         AgentStep addScanPackage(String packageName);
 
@@ -58,6 +61,8 @@ public final class Agent {
         private Class<? extends AgentConfigManager> agentConfigManagerClass;
         private Class<? extends AgentGateway> gatewayClass;
         private Class<? extends AgentExceptionCallback> agentExceptionCallbackClass;
+
+        private final CountDownLatch latch = new CountDownLatch(1);
 
         private AgentApp(Class<?> clazz) {
             this.applicationClass = clazz;
@@ -115,9 +120,15 @@ public final class Agent {
         private void afterLaunch() {
             try {
                 this.gateway = gatewayClass.getDeclaredConstructor().newInstance();
-                executorService.execute(() -> gateway.launch());
+                executorService.execute(() -> {
+                    gateway.launch();
+                    latch.countDown();
+                    log.info("Gateway 启动完毕: {}", gatewayClass.getSimpleName());
+                });
+                latch.await();
                 launchRunners(afterLaunchRunners);
-            }catch (Exception e){
+                log.info("后置任务启动完毕");
+            } catch (Exception e) {
                 throw new AgentLaunchFailedException("Agent 后置任务启动失败", e);
             }
         }
@@ -125,8 +136,11 @@ public final class Agent {
         private void beforeLaunch() {
             try {
                 AgentConfigManager.setINSTANCE(agentConfigManagerClass.getDeclaredConstructor().newInstance());
+                log.info("配置管理器设置完毕: {}",agentConfigManagerClass.getSimpleName());
                 GlobalExceptionHandler.setExceptionCallback(agentExceptionCallbackClass.getDeclaredConstructor().newInstance());
+                log.info("异常处理回调设置完毕: {}",agentExceptionCallbackClass.getSimpleName());
                 launchRunners(beforeLaunchRunners);
+                log.info("前置任务启动完毕");
             } catch (Exception e) {
                 throw new AgentLaunchFailedException("Agent 前置任务启动失败", e);
             }

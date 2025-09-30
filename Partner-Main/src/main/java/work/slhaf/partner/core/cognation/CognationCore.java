@@ -56,6 +56,7 @@ public class CognationCore extends PersistableObject {
         } else {
             FileUtils.createParentDirectories(filePath.toFile().getParentFile());
             connectCores(this);
+            this.activeData = new ActiveData();
             this.serialize();
         }
         setupHook(this);

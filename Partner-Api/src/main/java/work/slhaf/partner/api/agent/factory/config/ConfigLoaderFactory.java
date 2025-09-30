@@ -57,7 +57,7 @@ public class ConfigLoaderFactory extends AgentBaseFactory {
      * 对模型Config与Prompt分别进行检验,除了都必须包含default外，还需要确保数量、key一致，毕竟是模型配置与提示词
      */
     private void check() {
-        log.info("[ConfigLoaderFactory]: 执行config与prompt检测...");
+        log.info("执行config与prompt检测...");
         if (!modelConfigMap.containsKey("default")) {
             throw new ConfigNotExistException("缺少默认配置! 需确保存在一个模型配置的key为`default`");
         }
@@ -72,7 +72,6 @@ public class ConfigLoaderFactory extends AgentBaseFactory {
             log.warn("存在未被提示词包含的模型配置，该配置将无法生效!");
         }
         //检查提示词数量与`ActivateModel`的实现数量是否一致
-
-        log.info("[ConfigLoaderFactory]: 检测完毕.");
+        log.info("检测完毕.");
     }
 }

@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -59,6 +58,7 @@ public class MemorySelector extends PreRunningModule {
             List<EvaluatedSlice> evaluatedSlices = selectAndEvaluateMemory(runningFlowContext, extractorResult);
             cognationCapability.updateActivatedSlices(userId, evaluatedSlices);
         }
+        setModuleContextRecall(runningFlowContext);
     }
 
     private List<EvaluatedSlice> selectAndEvaluateMemory(PartnerRunningFlowContext runningFlowContext, ExtractorResult extractorResult) throws IOException, ClassNotFoundException {
@@ -79,7 +79,6 @@ public class MemorySelector extends PreRunningModule {
         return memorySlices;
     }
 
-    @AfterExecute(order = 1)
     private void setModuleContextRecall(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getUserId();
         boolean recall = cognationCapability.hasActivatedSlices(userId);

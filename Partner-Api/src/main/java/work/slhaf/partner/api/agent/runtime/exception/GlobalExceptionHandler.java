@@ -1,5 +1,8 @@
 package work.slhaf.partner.api.agent.runtime.exception;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class GlobalExceptionHandler {
 
     public static GlobalExceptionHandler INSTANCE = new GlobalExceptionHandler();
@@ -16,7 +19,7 @@ public class GlobalExceptionHandler {
                 exceptionCallback.onFailedException((AgentLaunchFailedException) e);
                 break;
             default:
-                throw new RuntimeException("未经处理的异常!", e);
+                log.error("未知异常: ", e);
         }
     }
 

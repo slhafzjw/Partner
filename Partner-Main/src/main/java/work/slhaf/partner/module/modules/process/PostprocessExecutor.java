@@ -5,8 +5,8 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.module.common.module.PostRunningModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.io.IOException;
 @Slf4j
 @Data
 @AgentModule(name = "postprocess_executor", order = 6)
-public class PostprocessExecutor extends PostRunningModule {
+public class PostprocessExecutor extends AgentRunningModule<PartnerRunningFlowContext> {
 
     private static final int POST_PROCESS_TRIGGER_ROLL_LIMIT = 36;
 

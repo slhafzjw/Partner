@@ -1,5 +1,6 @@
 package work.slhaf.partner.api.agent.factory.capability;
 
+import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.capability.annotation.*;
@@ -18,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
 
@@ -79,8 +81,28 @@ public class CapabilityRegisterFactory extends AgentBaseFactory {
 
     @Override
     protected void run() {
+        setCapabilityHolderInstances();
         setCoreInstances();
         generateRouterTable();
+    }
+
+    private void setCapabilityHolderInstances() {
+        Set<Class<?>> collect = reflections.getTypesAnnotatedWith(CapabilityHolder.class).stream()
+                .filter(ClassUtil::isNormalClass)
+                .filter(clazz -> !capabilityHolderInstances.containsKey(clazz))
+                .collect(Collectors.toSet());
+        for (Class<?> clazz : collect) {
+            try {
+                Constructor<?> constructor = clazz.getDeclaredConstructor();
+                if (constructor.canAccess(null)) {
+                    throw new CapabilityFactoryExecuteFailedException("缺少无参构造方法的类: " + clazz);
+                }
+                Object o = constructor.newInstance();
+                capabilityHolderInstances.put(clazz, o);
+            }catch (Exception e){
+                throw new CapabilityFactoryExecuteFailedException("创建代理对象失败: " + clazz, e);
+            }
+        }
     }
 
     /**

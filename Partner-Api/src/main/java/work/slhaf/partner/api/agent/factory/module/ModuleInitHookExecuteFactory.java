@@ -11,6 +11,8 @@ import work.slhaf.partner.api.agent.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
+import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.Module;
 import work.slhaf.partner.api.agent.util.AgentUtil;
 
 import java.lang.reflect.InvocationTargetException;
@@ -30,7 +32,7 @@ import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
  *
  * <ol>
  *     <li>
- *         <p>{@link ModuleInitHookExecuteFactory#collectInitHookMethods(Class)}</p>
+ *         <p>{@link ModuleInitHookExecuteFactory#collectInitHookMethods(Class, Class)}</p>
  *         分别遍历前置模块拿到的模块列表({@link ModuleInitHookExecuteFactory#moduleList}, {@link ModuleInitHookExecuteFactory#subModuleList})，通过 {@link AgentUtil#collectExtendedClasses(Class, Class)} 收集到当前模块类的继承链上的所有类后，收集其所有带有 {@link Init} 注解的方法
  *     </li>
  *     <li>
@@ -57,12 +59,12 @@ public class ModuleInitHookExecuteFactory extends AgentBaseFactory {
     protected void run() {
         //遍历模块列表，并向上查找@Init注解
         for (MetaSubModule metaSubModule : subModuleList) {
-            List<MetaMethod> initHookMethods = collectInitHookMethods(metaSubModule.getClazz());
+            List<MetaMethod> initHookMethods = collectInitHookMethods(metaSubModule.getClazz(),AgentRunningModule.class);
             proceedInitMethods(metaSubModule, initHookMethods);
         }
 
         for (MetaModule metaModule : moduleList) {
-            List<MetaMethod> initHookMethods = collectInitHookMethods(metaModule.getClazz());
+            List<MetaMethod> initHookMethods = collectInitHookMethods(metaModule.getClazz(), AgentRunningSubModule.class);
             proceedInitMethods(metaModule, initHookMethods);
         }
     }
@@ -77,8 +79,8 @@ public class ModuleInitHookExecuteFactory extends AgentBaseFactory {
         }
     }
 
-    private List<MetaMethod> collectInitHookMethods(Class<?> clazz) {
-        Set<Class<?>> classes = collectExtendedClasses(clazz, AgentRunningModule.class);
+    private List<MetaMethod> collectInitHookMethods(Class<?> clazz, Class<? extends Module> target) {
+        Set<Class<?>> classes = collectExtendedClasses(clazz, target);
         return classes.stream()
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
