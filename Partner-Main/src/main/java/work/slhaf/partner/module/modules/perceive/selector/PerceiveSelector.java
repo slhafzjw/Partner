@@ -4,8 +4,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
-import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.core.submodule.perceive.pojo.User;
+import work.slhaf.partner.core.perceive.PerceiveCapability;
+import work.slhaf.partner.core.perceive.pojo.User;
 import work.slhaf.partner.module.common.module.PreRunningModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 

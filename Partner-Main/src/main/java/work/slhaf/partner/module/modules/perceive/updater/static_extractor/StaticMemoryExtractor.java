@@ -10,8 +10,8 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateM
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.module.modules.perceive.updater.static_extractor.data.StaticMemoryExtractInput;
+import work.slhaf.partner.core.perceive.PerceiveCapability;
+import work.slhaf.partner.module.modules.perceive.updater.static_extractor.entity.StaticMemoryExtractInput;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.HashMap;

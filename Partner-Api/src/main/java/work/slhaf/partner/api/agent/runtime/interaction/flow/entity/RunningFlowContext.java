@@ -4,6 +4,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.common.entity.PersistableObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 流程上下文
  */
@@ -11,5 +14,5 @@ import work.slhaf.partner.api.common.entity.PersistableObject;
 @Data
 public abstract class RunningFlowContext extends PersistableObject {
     protected int ok;
-    protected String errMsg;
+    protected List<String> errMsg = new ArrayList<>();
 }

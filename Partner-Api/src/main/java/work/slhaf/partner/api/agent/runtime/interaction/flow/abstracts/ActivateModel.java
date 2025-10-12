@@ -87,6 +87,9 @@ public interface ActivateModel {
         ((Module) this).setModel(model);
     }
 
+    /**
+     * 对应调用的模型配置名称
+     */
     String modelKey();
 
     boolean withBasicPrompt();

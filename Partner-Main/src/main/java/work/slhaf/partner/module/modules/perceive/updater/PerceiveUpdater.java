@@ -9,11 +9,11 @@ import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.core.submodule.perceive.pojo.User;
+import work.slhaf.partner.core.perceive.PerceiveCapability;
+import work.slhaf.partner.core.perceive.pojo.User;
 import work.slhaf.partner.module.common.module.PostRunningModule;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.RelationExtractor;
-import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractResult;
+import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.entity.RelationExtractResult;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.StaticMemoryExtractor;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
-@AgentModule(name = "perceive_updater", order = 8)
+@AgentModule(name = "perceive_updater", order = 7)
 public class PerceiveUpdater extends PostRunningModule {
 
     private static volatile PerceiveUpdater perceiveUpdater;

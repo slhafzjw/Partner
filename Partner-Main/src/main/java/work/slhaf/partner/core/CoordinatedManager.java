@@ -5,16 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CoordinateManager;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Coordinated;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
-import work.slhaf.partner.common.exception.callback.GlobalExceptionHandler;
+import work.slhaf.partner.core.cache.CacheCore;
 import work.slhaf.partner.core.cognation.CognationCore;
-import work.slhaf.partner.core.submodule.cache.CacheCore;
-import work.slhaf.partner.core.submodule.dispatch.DispatchCore;
-import work.slhaf.partner.core.submodule.memory.MemoryCore;
-import work.slhaf.partner.core.submodule.memory.pojo.MemoryResult;
-import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.submodule.memory.pojo.MemorySliceResult;
-import work.slhaf.partner.core.submodule.perceive.PerceiveCore;
-import work.slhaf.partner.runtime.exception.pojo.GlobalException;
+import work.slhaf.partner.core.memory.MemoryCore;
+import work.slhaf.partner.core.memory.pojo.MemoryResult;
+import work.slhaf.partner.core.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.memory.pojo.MemorySliceResult;
+import work.slhaf.partner.core.perceive.PerceiveCore;
 
 import java.io.IOException;
 import java.io.Serial;
@@ -35,35 +32,13 @@ public class CoordinatedManager implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private static volatile CoordinatedManager coordinatedManager;
     private final Lock sliceInsertLock = new ReentrantLock();
 
+    //在框架将自动注入core,详见CapabilityRegistryFactory
     private CognationCore cognationCore;
     private CacheCore cacheCore;
     private MemoryCore memoryCore;
     private PerceiveCore perceiveCore;
-    private DispatchCore dispatchCore;
-
-    public static CoordinatedManager getInstance() throws IOException, ClassNotFoundException {
-        if (coordinatedManager == null) {
-            synchronized (CoordinatedManager.class) {
-                if (coordinatedManager == null) {
-                    coordinatedManager = new CoordinatedManager();
-                    coordinatedManager.setCognationCore(CognationCore.getInstance());
-                    coordinatedManager.setCores();
-                    log.info("[CoordinatedManager] MemoryManager注册完毕...");
-                }
-            }
-        }
-        return coordinatedManager;
-    }
-
-    private void setCores() {
-        this.setCacheCore(this.getCognationCore().getCacheCore());
-        this.setMemoryCore(this.getCognationCore().getMemoryCore());
-        this.setPerceiveCore(this.getCognationCore().getPerceiveCore());
-    }
-
 
     @Coordinated(capability = "memory")
     public MemoryResult selectMemory(String topicPathStr) {
@@ -89,7 +64,6 @@ public class CoordinatedManager implements Serializable {
             memoryResult = new MemoryResult();
             memoryResult.setRelatedMemorySliceResult(new ArrayList<>());
             memoryResult.setMemorySliceResult(new CopyOnWriteArrayList<>());
-            GlobalExceptionHandler.writeExceptionState(new GlobalException(e.getLocalizedMessage()));
         }
         return cacheFilter(memoryResult);
     }
@@ -127,7 +101,6 @@ public class CoordinatedManager implements Serializable {
             }
         } catch (Exception e) {
             log.error("[CoordinatedManager] 插入记忆时出错: ", e);
-            GlobalExceptionHandler.writeExceptionState(new GlobalException("插入记忆时出错: " + e.getLocalizedMessage()));
         }
         log.debug("[CoordinatedManager] 插入切片: {}, 路径: {}", memorySlice, topicPath);
         sliceInsertLock.unlock();

@@ -1,9 +1,8 @@
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.core.submodule.memory.MemoryCapability;
-import work.slhaf.partner.core.submodule.memory.pojo.MemoryResult;
+import work.slhaf.partner.core.memory.MemoryCapability;
+import work.slhaf.partner.core.memory.pojo.MemoryResult;
 
 import java.lang.reflect.Proxy;
-import java.util.function.Function;
 
 public class ReflectionTest {
 
@@ -21,9 +20,5 @@ public class ReflectionTest {
             return null;
         });
         memory.selectMemory("111");
-
-        Function<String, Integer> function = s -> {
-            return s.length();
-        };
     }
 }

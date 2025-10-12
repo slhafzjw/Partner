@@ -9,8 +9,7 @@ import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Data
@@ -23,7 +22,8 @@ public abstract class AgentConfigManager {
     protected HashMap<String, ModelConfig> modelConfigMap;
     protected HashMap<String, List<Message>> modelPromptMap;
     protected HashMap<String, Boolean> moduleEnabledStatus;
-    protected List<MetaModule> moduleList;
+    protected Map<Integer, List<MetaModule>> moduleOrderedMap = new LinkedHashMap<>();
+    protected Map<String, MetaModule> moduleMap = new HashMap<>();
 
     public void load() {
         modelConfigMap = loadModelConfig();
@@ -38,11 +38,24 @@ public abstract class AgentConfigManager {
 
     protected abstract void dumpModuleEnabledStatus();
 
-    protected abstract HashMap<String, Boolean> loadModuleEnabledStatusMap();
+    protected abstract HashMap<String, Boolean> loadModuleEnabledStatusMap(List<MetaModule> moduleList);
 
     public void moduleEnabledStatusFilterAndRecord(List<MetaModule> moduleList) {
-        this.moduleList = moduleList;
-        this.moduleEnabledStatus = loadModuleEnabledStatusMap();
+        updateModuleMap(moduleList);
+        updateModuleEnabledStatus(moduleList);
+    }
+
+    private void updateModuleMap(List<MetaModule> moduleList) {
+        //在ModuleRegisterFactory已进行过排序操作
+        for (MetaModule module : moduleList) {
+            int k = module.getOrder();
+            moduleOrderedMap.computeIfAbsent(k, order -> new ArrayList<>()).add(module);
+            moduleMap.put(module.getName(), module);
+        }
+    }
+
+    private void updateModuleEnabledStatus(List<MetaModule> moduleList) {
+        this.moduleEnabledStatus = loadModuleEnabledStatusMap(moduleList);
 
         boolean unmatch = false;
         for (MetaModule metaModule : moduleList) {
@@ -84,12 +97,7 @@ public abstract class AgentConfigManager {
         }
         moduleEnabledStatus.put(key, status);
         dumpModuleEnabledStatus();
-        for (MetaModule metaModule : moduleList) {
-            if (metaModule.getName().equals(key)) {
-                metaModule.setEnabled(status);
-                break;
-            }
-        }
+        moduleMap.get(key).setEnabled(status);
     }
 
 }

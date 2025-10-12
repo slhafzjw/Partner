@@ -5,14 +5,12 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.core.submodule.perceive.pojo.User;
+import work.slhaf.partner.core.perceive.PerceiveCapability;
+import work.slhaf.partner.core.perceive.pojo.User;
 import work.slhaf.partner.module.common.module.PreRunningModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 import work.slhaf.partner.runtime.interaction.data.context.subcontext.CoreContext;
-import work.slhaf.partner.runtime.session.SessionManager;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,12 +28,6 @@ public class PreprocessExecutor extends PreRunningModule {
     private CognationCapability cognationCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
-    private SessionManager sessionManager;
-
-    @Init
-    public void init() {
-        this.sessionManager = SessionManager.getInstance();
-    }
 
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
@@ -44,9 +36,9 @@ public class PreprocessExecutor extends PreRunningModule {
     }
 
     private void checkAndSetMemoryId() {
-        String currentMemoryId = sessionManager.getCurrentMemoryId();
+        String currentMemoryId = cognationCapability.getCurrentMemoryId();
         if (currentMemoryId == null || cognationCapability.getChatMessages().isEmpty()) {
-            sessionManager.refreshMemoryId();
+            cognationCapability.refreshMemoryId();
         }
     }
 

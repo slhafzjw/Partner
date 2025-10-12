@@ -10,12 +10,12 @@ public abstract class PostRunningModule extends AgentRunningModule<PartnerRunnin
     @Override
     public final void execute(PartnerRunningFlowContext context) throws IOException, ClassNotFoundException {
         boolean trigger = context.getModuleContext().getExtraContext().getBoolean("post_process_trigger");
-        if (!trigger){
+        if (!trigger) {
             return;
         }
         doExecute(context);
     }
 
-    protected void doExecute(PartnerRunningFlowContext context){}
+    public abstract void doExecute(PartnerRunningFlowContext context);
 
 }

@@ -13,6 +13,7 @@ import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -99,7 +100,7 @@ public class CapabilityRegisterFactory extends AgentBaseFactory {
                 }
                 Object o = constructor.newInstance();
                 capabilityHolderInstances.put(clazz, o);
-            }catch (Exception e){
+            } catch (Exception e) {
                 throw new CapabilityFactoryExecuteFailedException("创建代理对象失败: " + clazz, e);
             }
         }
@@ -149,7 +150,7 @@ public class CapabilityRegisterFactory extends AgentBaseFactory {
         for (Class<?> c : reflections.getTypesAnnotatedWith(CoordinateManager.class)) {
             Constructor<?> constructor = c.getDeclaredConstructor();
             Object instance = constructor.newInstance();
-
+            setCores(instance, c);
             Arrays.stream(c.getMethods())
                     .filter(method -> method.isAnnotationPresent(Coordinated.class))
                     .forEach(method -> {
@@ -158,6 +159,15 @@ public class CapabilityRegisterFactory extends AgentBaseFactory {
                     });
         }
         return map;
+    }
+
+    private void setCores(Object cmInstance, Class<?> cmClazz) throws IllegalAccessException {
+        for (Field field : cmClazz.getFields()) {
+            if (field.getType().isAnnotationPresent(CapabilityCore.class)) {
+                field.setAccessible(true);
+                field.set(cmInstance, coreInstances.get(field.getType()));
+            }
+        }
     }
 
     /**

@@ -10,8 +10,8 @@ import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
-import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeInput;
-import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeResult;
+import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeInput;
+import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeResult;
 
 import java.util.ArrayList;
 import java.util.List;

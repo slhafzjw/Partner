@@ -3,7 +3,7 @@ package work.slhaf.partner.core.cognation.pojo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.common.entity.PersistableObject;
-import work.slhaf.partner.core.submodule.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 
 import java.io.Serial;
 import java.util.HashMap;

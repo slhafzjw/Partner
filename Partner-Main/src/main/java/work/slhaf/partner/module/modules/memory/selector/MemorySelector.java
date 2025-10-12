@@ -7,20 +7,20 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
+import work.slhaf.partner.core.cache.CacheCapability;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.core.submodule.cache.CacheCapability;
-import work.slhaf.partner.core.submodule.memory.MemoryCapability;
-import work.slhaf.partner.core.submodule.memory.exception.UnExistedDateIndexException;
-import work.slhaf.partner.core.submodule.memory.exception.UnExistedTopicException;
-import work.slhaf.partner.core.submodule.memory.pojo.EvaluatedSlice;
-import work.slhaf.partner.core.submodule.memory.pojo.MemoryResult;
-import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.memory.MemoryCapability;
+import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
+import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
+import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.memory.pojo.MemoryResult;
+import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.module.common.module.PreRunningModule;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.SliceSelectEvaluator;
-import work.slhaf.partner.module.modules.memory.selector.evaluator.data.EvaluatorInput;
+import work.slhaf.partner.module.modules.memory.selector.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.memory.selector.extractor.MemorySelectExtractor;
-import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorMatchData;
-import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorResult;
+import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorMatchData;
+import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.io.IOException;
@@ -33,7 +33,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-@AgentModule(name="memory_selector",order=1)
+@AgentModule(name="memory_selector",order=2)
 public class MemorySelector extends PreRunningModule {
 
     @InjectCapability
@@ -54,9 +54,9 @@ public class MemorySelector extends PreRunningModule {
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(runningFlowContext);
         if (extractorResult.isRecall() || !extractorResult.getMatches().isEmpty()) {
-            cognationCapability.clearActivatedSlices(userId);
+            cacheCapability.clearActivatedSlices(userId);
             List<EvaluatedSlice> evaluatedSlices = selectAndEvaluateMemory(runningFlowContext, extractorResult);
-            cognationCapability.updateActivatedSlices(userId, evaluatedSlices);
+            cacheCapability.updateActivatedSlices(userId, evaluatedSlices);
         }
         setModuleContextRecall(runningFlowContext);
     }
@@ -81,10 +81,10 @@ public class MemorySelector extends PreRunningModule {
 
     private void setModuleContextRecall(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getUserId();
-        boolean recall = cognationCapability.hasActivatedSlices(userId);
+        boolean recall = cacheCapability.hasActivatedSlices(userId);
         runningFlowContext.getModuleContext().getExtraContext().put("recall", recall);
         if (recall) {
-            runningFlowContext.getModuleContext().getExtraContext().put("recall_count", cognationCapability.getActivatedSlicesSize(userId));
+            runningFlowContext.getModuleContext().getExtraContext().put("recall_count", cacheCapability.getActivatedSlicesSize(userId));
         }
     }
 
@@ -148,7 +148,7 @@ public class MemorySelector extends PreRunningModule {
             map.put("[用户记忆缓存] <与最新一条消息的发送者的近两天对话记忆印象, 可能与[记忆缓存]稍有重复>", userDialogMapStr);
         }
 
-        String sliceStr = cognationCapability.getActivatedSlicesStr(userId);
+        String sliceStr = cacheCapability.getActivatedSlicesStr(userId);
         if (sliceStr != null && !sliceStr.isEmpty()) {
             map.put("[记忆切片] <你与最新一条消息的发送者的相关回忆, 不会与[记忆缓存]重复, 如果有重复你也可以指出来()>", sliceStr);
         }

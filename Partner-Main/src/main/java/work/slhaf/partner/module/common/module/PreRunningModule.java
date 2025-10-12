@@ -13,7 +13,7 @@ import java.util.HashMap;
  */
 @Slf4j
 public abstract class PreRunningModule extends AgentRunningModule<PartnerRunningFlowContext> {
-    private void setAppendedPrompt(PartnerRunningFlowContext context) {
+    private synchronized void setAppendedPrompt(PartnerRunningFlowContext context) {
         AppendPromptData data = new AppendPromptData();
         data.setModuleName(moduleName());
         HashMap<String, String> map = getPromptDataMap(context.getUserId());
@@ -21,12 +21,15 @@ public abstract class PreRunningModule extends AgentRunningModule<PartnerRunning
         context.setAppendedPrompt(data);
     }
 
-    private void setActiveModule(PartnerRunningFlowContext context) {
+    private synchronized void setActiveModule(PartnerRunningFlowContext context) {
         context.getCoreContext().addActiveModule(moduleName());
     }
 
     protected abstract HashMap<String, String> getPromptDataMap(String userId);
 
+    /**
+     * 用于在CoreModule接收到的模块Prompt中标识模块名称
+     */
     protected abstract String moduleName();
 
     @Override

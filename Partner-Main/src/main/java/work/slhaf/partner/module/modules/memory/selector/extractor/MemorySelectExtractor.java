@@ -7,21 +7,18 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
-import work.slhaf.partner.common.exception.callback.GlobalExceptionHandler;
+import work.slhaf.partner.core.cache.CacheCapability;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.core.submodule.memory.MemoryCapability;
-import work.slhaf.partner.core.submodule.memory.pojo.EvaluatedSlice;
-import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorInput;
-import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorMatchData;
-import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorResult;
-import work.slhaf.partner.runtime.exception.pojo.GlobalException;
+import work.slhaf.partner.core.memory.MemoryCapability;
+import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorInput;
+import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorMatchData;
+import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
-import work.slhaf.partner.runtime.session.SessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,22 +37,18 @@ public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningF
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
+    @InjectCapability
+    private CacheCapability cacheCapability;
 
-    private SessionManager sessionManager;
-
-    @Init
-    public void init() {
-        sessionManager = SessionManager.getInstance();
-    }
 
     @Override
     public ExtractorResult execute(PartnerRunningFlowContext context) {
         log.debug("[MemorySelectExtractor] 主题提取模块开始...");
         // 结构化为指定格式
         List<Message> chatMessages = new ArrayList<>();
-        List<MetaMessage> metaMessages = sessionManager.getSingleMetaMessageMap().get(context.getUserId());
+        List<MetaMessage> metaMessages = cognationCapability.getSingleMetaMessageMap().get(context.getUserId());
         if (metaMessages == null) {
-            sessionManager.getSingleMetaMessageMap().put(context.getUserId(), new ArrayList<>());
+            cognationCapability.getSingleMetaMessageMap().put(context.getUserId(), new ArrayList<>());
         } else {
             for (MetaMessage metaMessage : metaMessages) {
                 chatMessages.add(metaMessage.getUserMessage());
@@ -65,7 +58,7 @@ public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningF
 
         ExtractorResult extractorResult;
         try {
-            List<EvaluatedSlice> activatedMemorySlices = cognationCapability.getActivatedSlices(context.getUserId());
+            List<EvaluatedSlice> activatedMemorySlices = cacheCapability.getActivatedSlices(context.getUserId());
             ExtractorInput extractorInput = ExtractorInput.builder()
                     .text(context.getInput())
                     .date(context.getDateTime().toLocalDate())
@@ -79,7 +72,6 @@ public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningF
             log.debug("[MemorySelectExtractor] 主题提取结果: {}", extractorResult);
         } catch (Exception e) {
             log.error("[MemorySelectExtractor] 主题提取出错: ", e);
-            GlobalExceptionHandler.writeExceptionState(new GlobalException(e.getLocalizedMessage()));
             extractorResult = new ExtractorResult();
             extractorResult.setRecall(false);
             extractorResult.setMatches(List.of());

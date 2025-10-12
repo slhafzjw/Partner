@@ -10,10 +10,18 @@ public class PartnerInteractionAdapter extends AgentInteractionAdapter<PartnerIn
     protected PartnerOutputData parseOutputData(PartnerRunningFlowContext outputContext) {
         PartnerOutputData outputData = new PartnerOutputData();
         outputData.setCode(outputContext.getOk());
-        outputData.setContent(outputContext.getCoreResponse().getString("text"));
+        outputData.setContent(getContent(outputContext));
         outputData.setUserInfo(outputContext.getUserInfo());
         outputData.setDateTime(outputContext.getDateTime());
         return outputData;
+    }
+
+    private String getContent(PartnerRunningFlowContext outputContext) {
+        StringBuilder str = new StringBuilder();
+        str.append(outputContext.getCoreResponse().getString("text")).append("\r\n")
+                .append("\r\n错误信息:\r\n")
+                .append(outputContext.getErrMsg().toString());
+        return str.toString();
     }
 
     @Override

@@ -8,14 +8,15 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.AgentRunningFlow;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class AgentInteractionAdapter<I extends AgentInputData, O extends AgentOutputData, C extends RunningFlowContext> {
 
     protected AgentRunningFlow<C> agentRunningFlow = new AgentRunningFlow<>();
-    protected List<MetaModule> moduleList = AgentConfigManager.INSTANCE.getModuleList();
+    protected Map<Integer, List<MetaModule>> moduleOrderedMap = AgentConfigManager.INSTANCE.getModuleOrderedMap();
 
     public C call(C finalInputData){
-        return agentRunningFlow.launch(moduleList, finalInputData);
+        return agentRunningFlow.launch(moduleOrderedMap, finalInputData);
     }
 
     protected abstract O parseOutputData(C outputContext);

@@ -17,7 +17,6 @@ import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 import work.slhaf.partner.module.common.model.ModelConstant;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
-import work.slhaf.partner.runtime.session.SessionManager;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,7 +33,6 @@ public class CoreModel extends AgentRunningModule<PartnerRunningFlowContext> imp
     
     @InjectCapability
     private CognationCapability cognationCapability;
-    private SessionManager sessionManager;
     private List<Message> appendedMessages;
 
     @Init
@@ -42,7 +40,6 @@ public class CoreModel extends AgentRunningModule<PartnerRunningFlowContext> imp
         List<Message> chatMessages = this.cognationCapability.getChatMessages();
         this.getModel().setChatMessages(chatMessages);
         this.appendedMessages = new ArrayList<>();
-        this.sessionManager = SessionManager.getInstance();
 
         updateChatClientSettings();
         log.info("[CoreModel] CoreModel注册完毕...");
@@ -181,7 +178,7 @@ public class CoreModel extends AgentRunningModule<PartnerRunningFlowContext> imp
         //区分单人聊天场景
         if (runningFlowContext.isSingle()) {
             MetaMessage metaMessage = new MetaMessage(primaryUserMessage, assistantMessage);
-            sessionManager.addMetaMessage(runningFlowContext.getUserId(), metaMessage);
+            cognationCapability.addMetaMessage(runningFlowContext.getUserId(), metaMessage);
         }
     }
 

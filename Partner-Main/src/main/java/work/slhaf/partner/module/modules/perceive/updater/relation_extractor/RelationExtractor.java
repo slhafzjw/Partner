@@ -10,10 +10,10 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunn
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
-import work.slhaf.partner.core.submodule.perceive.pojo.User;
-import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractInput;
-import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.pojo.RelationExtractResult;
+import work.slhaf.partner.core.perceive.PerceiveCapability;
+import work.slhaf.partner.core.perceive.pojo.User;
+import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.entity.RelationExtractInput;
+import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.entity.RelationExtractResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.ArrayList;

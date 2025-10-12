@@ -74,7 +74,7 @@ public class FileAgentConfigManager extends AgentConfigManager {
     }
 
     @Override
-    protected HashMap<String, Boolean> loadModuleEnabledStatusMap() {
+    protected HashMap<String, Boolean> loadModuleEnabledStatusMap(List<MetaModule> moduleList) {
         File file = new File(MODULE_ENABLED_STATUS_CONFIG_FILE);
         try {
             moduleEnabledStatus = new HashMap<>();

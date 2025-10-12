@@ -11,19 +11,18 @@ import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
+import work.slhaf.partner.core.cache.CacheCapability;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.core.submodule.cache.CacheCapability;
-import work.slhaf.partner.core.submodule.memory.MemoryCapability;
-import work.slhaf.partner.core.submodule.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.submodule.perceive.PerceiveCapability;
+import work.slhaf.partner.core.memory.MemoryCapability;
+import work.slhaf.partner.core.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.common.module.PostRunningModule;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.MultiSummarizer;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.SingleSummarizer;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.TotalSummarizer;
-import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeInput;
-import work.slhaf.partner.module.modules.memory.updater.summarizer.data.SummarizeResult;
+import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeInput;
+import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
-import work.slhaf.partner.runtime.session.SessionManager;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -57,7 +56,6 @@ public class MemoryUpdater extends PostRunningModule {
     @InjectModule
     private TotalSummarizer totalSummarizer;
 
-    private SessionManager sessionManager;
     private InteractionThreadPoolExecutor executor;
     /**
      * 用于临时存储完整对话记录，在MemoryManager的分离后
@@ -67,7 +65,6 @@ public class MemoryUpdater extends PostRunningModule {
     @Init
     public void init() {
         executor = InteractionThreadPoolExecutor.getInstance();
-        sessionManager = SessionManager.getInstance();
         setScheduledUpdater();
     }
 
@@ -77,13 +74,13 @@ public class MemoryUpdater extends PostRunningModule {
             while (!Thread.interrupted()) {
                 try {
                     long currentTime = System.currentTimeMillis();
-                    long lastUpdatedTime = sessionManager.getLastUpdatedTime();
+                    long lastUpdatedTime = cognationCapability.getLastUpdatedTime();
                     int chatCount = cognationCapability.getChatMessages().size();
                     if (lastUpdatedTime != 0 && currentTime - lastUpdatedTime > UPDATE_TRIGGER_INTERVAL && chatCount > 1) {
                         updateMemory();
                         cognationCapability.getChatMessages().clear();
                         // 重置MemoryId
-                        sessionManager.refreshMemoryId();
+                        cognationCapability.refreshMemoryId();
                         log.info("[MemoryUpdater] 记忆更新: 自动触发");
                     }
                     Thread.sleep(SCHEDULED_UPDATE_INTERVAL);
@@ -133,7 +130,7 @@ public class MemoryUpdater extends PostRunningModule {
         updateSingleChatSlices(singleMemorySummary);
         // 更新多人场景下的记忆及相关的确定性记忆
         updateMultiChatSlices(singleMemorySummary);
-        sessionManager.resetLastUpdatedTime();
+        cognationCapability.resetLastUpdatedTime();
         log.debug("[MemoryUpdater] 记忆更新流程结束...");
     }
 
@@ -219,12 +216,12 @@ public class MemoryUpdater extends PostRunningModule {
     private void updateSingleChatSlices(HashMap<String, String> singleMemorySummary) {
         log.debug("[MemoryUpdater] 单聊记忆更新流程开始...");
         // 更新单聊记忆，同时从chatMessages中去掉单聊记忆
-        Set<String> userIdSet = new HashSet<>(sessionManager.getSingleMetaMessageMap().keySet());
+        Set<String> userIdSet = new HashSet<>(cognationCapability.getSingleMetaMessageMap().keySet());
         List<Callable<Void>> tasks = new ArrayList<>();
         // 多人聊天？
         AtomicInteger count = new AtomicInteger(0);
         for (String id : userIdSet) {
-            List<Message> messages = sessionManager.unpackAndClear(id);
+            List<Message> messages = cognationCapability.unpackAndClear(id);
             tasks.add(() -> {
                 int thisCount = count.incrementAndGet();
                 log.debug("[MemoryUpdater] 单聊记忆[{}]更新: {}", thisCount, id);
@@ -262,7 +259,7 @@ public class MemoryUpdater extends PostRunningModule {
     private MemorySlice getMemorySlice(String userId, SummarizeResult summarizeResult, List<Message> chatMessages) {
         MemorySlice memorySlice = new MemorySlice();
         // 设置 memoryId,timestamp
-        memorySlice.setMemoryId(sessionManager.getCurrentMemoryId());
+        memorySlice.setMemoryId(cognationCapability.getCurrentMemoryId());
         memorySlice.setTimestamp(System.currentTimeMillis());
 
         // 补充信息

@@ -6,7 +6,7 @@ import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.util.ResourcesUtil;
 import work.slhaf.partner.module.common.model.ModelConstant;
-import work.slhaf.partner.module.modules.memory.selector.extractor.data.ExtractorInput;
+import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorInput;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
