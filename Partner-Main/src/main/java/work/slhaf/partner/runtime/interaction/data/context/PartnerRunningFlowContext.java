@@ -12,6 +12,7 @@ import java.io.Serial;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -34,6 +35,8 @@ public class PartnerRunningFlowContext extends RunningFlowContext {
     protected CoreContext coreContext = new CoreContext();
     protected ModuleContext moduleContext = new ModuleContext();
     protected JSONObject coreResponse = new JSONObject();
+
+    protected String uuid = UUID.randomUUID().toString();
 
     public PartnerRunningFlowContext() {
         activeContext.put(userId, this);

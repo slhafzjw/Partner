@@ -17,6 +17,10 @@
       <item index="12" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CoordinateManager" />
       <item index="13" class="java.lang.String" itemvalue="work.slhaf.partner.api.register.capability.annotation.Capability" />
     </list>
+    <writeAnnotations>
+      <writeAnnotation name="work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability" />
+      <writeAnnotation name="work.slhaf.partner.api.agent.factory.module.annotation.InjectModule" />
+    </writeAnnotations>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="MavenProjectsManager">

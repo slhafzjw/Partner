@@ -4,10 +4,12 @@ import lombok.Data;
 import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.ActionType;
 
+import java.time.LocalDateTime;
+
 @Data
 public class EvaluatorResult {
     private boolean ok;
     private ActionType type;
-    private String typeInfo;
+    private String scheduleContent;
     private ActionData actionData;
 }
