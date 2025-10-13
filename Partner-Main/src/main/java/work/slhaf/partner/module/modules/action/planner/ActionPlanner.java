@@ -50,10 +50,12 @@ public class ActionPlanner extends PreRunningModule {
     protected void doExecute(PartnerRunningFlowContext context) {
         ExtractorInput extractorInput = getExtractorInput(context);
         ExtractorResult extractorResult = actionExtractor.execute(extractorInput);
+        if (!extractorResult.isAction()){
+            return;
+        }
         EvaluatorInput evaluatorInput = getEvaluatorInput(extractorResult, context.getUserId());
         EvaluatorResult evaluatorResult = actionEvaluator.execute(evaluatorInput);
         setupPreparedActionInfo(evaluatorResult, context.getUuid());
-
     }
 
     private void setupPreparedActionInfo(EvaluatorResult evaluatorResult, String uuid) {
@@ -102,8 +104,11 @@ public class ActionPlanner extends PreRunningModule {
     protected HashMap<String, String> getPromptDataMap(String userId) {
         MetaActionInfo actionInfo = actionCapability.getPreparedAction(userId);
         HashMap<String, String> map = new HashMap<>();
+        if (actionInfo == null){
+            map.put("[行动状态] <是否存在行动>", "无");
+            return map;
+        }
         map.put("[行动确认原因] <生成行动的原因>", actionInfo.getActionData().getReason());
-
         if (actionInfo instanceof ImmediateActionInfo) {
             map.put("[行动类型] <将执行的行动类型，分为即时行动与计划行动>", "即时");
             map.put("[行动倾向] <你将要执行的动作>", actionInfo.getTendency());
