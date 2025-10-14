@@ -32,8 +32,6 @@ import java.util.concurrent.locks.ReentrantLock;
 @AgentModule(name = "perceive_updater", order = 7)
 public class PerceiveUpdater extends PostRunningModule {
 
-    private static volatile PerceiveUpdater perceiveUpdater;
-
     @InjectCapability
     private PerceiveCapability perceiveCapability;
     @InjectCapability

@@ -5,6 +5,7 @@ import lombok.Setter;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.core.PartnerCore;
+import work.slhaf.partner.core.action.entity.ActionCacheData;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
 import java.io.IOException;
@@ -26,6 +27,11 @@ public class ActionCore extends PartnerCore<ActionCore> {
      * 待确认任务，以userId区分不同用户，因为需要跨请求确认
      */
     private HashMap<String, List<MetaActionInfo>> pendingActions = new HashMap<>();
+
+    /**
+     * 语义缓存与行为倾向映射
+     */
+    private List<ActionCacheData> actionCache = new ArrayList<>();
 
     //TODO 添加语义缓存，可借由简单向量模型，设想以向量结果为键、行动倾向为值
     public ActionCore() throws IOException, ClassNotFoundException {
@@ -71,6 +77,14 @@ public class ActionCore extends PartnerCore<ActionCore> {
     @CapabilityMethod
     public List<MetaActionInfo> listPendingAction(String userId) {
         return pendingActions.get(userId);
+    }
+
+    @CapabilityMethod
+    public List<String> computeActionCache(String input){
+        //计算本次输入的向量
+
+        //与现有缓存比对，如果存在，则使缓存计数+1
+        return null;
     }
 
     @Override

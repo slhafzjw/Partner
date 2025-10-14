@@ -22,8 +22,6 @@ import java.util.HashMap;
 @AgentModule(name = "preprocess_executor", order = 1)
 public class PreprocessExecutor extends PreRunningModule {
 
-    private static volatile PreprocessExecutor preprocessExecutor;
-
     @InjectCapability
     private CognationCapability cognationCapability;
     @InjectCapability

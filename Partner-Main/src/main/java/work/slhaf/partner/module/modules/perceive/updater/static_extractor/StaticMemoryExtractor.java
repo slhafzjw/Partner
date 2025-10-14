@@ -21,8 +21,6 @@ import java.util.HashMap;
 @AgentSubModule
 public class StaticMemoryExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, HashMap<String, String>> implements ActivateModel {
 
-    private static volatile StaticMemoryExtractor staticMemoryExtractor;
-
     @InjectCapability
     private CognationCapability cognationCapability;
     @InjectCapability

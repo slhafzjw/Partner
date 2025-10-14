@@ -18,4 +18,6 @@ public interface ActionCapability {
     List<MetaActionInfo> listPendingAction(String userId);
 
     void putPendingActions(String userId, MetaActionInfo metaActionInfo);
+
+    List<String> computeActionCache(String input);
 }
