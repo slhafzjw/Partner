@@ -60,7 +60,7 @@ public class PreprocessExecutor extends PreRunningModule {
 
 
     @Override
-    protected HashMap<String, String> getPromptDataMap(String userId) {
+    protected HashMap<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
         map.put("text", "这部分才是真正的用户输入内容, 就像你之前收到过的输入一样。但...不会是'同一个人'。");
         map.put("datetime", "本次用户输入对应的当前时间");

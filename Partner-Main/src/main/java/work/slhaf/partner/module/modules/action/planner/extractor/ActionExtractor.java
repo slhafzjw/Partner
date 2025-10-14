@@ -11,6 +11,7 @@ public class ActionExtractor extends AgentRunningSubModule<ExtractorInput, Extra
 
     @Override
     public ExtractorResult execute(ExtractorInput data) {
+        //TODO 添加语义缓存判断
 
         return null;
     }

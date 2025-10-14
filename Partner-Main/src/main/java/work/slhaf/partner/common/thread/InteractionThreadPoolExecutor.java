@@ -1,14 +1,11 @@
 package work.slhaf.partner.common.thread;
 
-import lombok.Getter;
-
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-@Getter
 public class InteractionThreadPoolExecutor  {
 
     private static InteractionThreadPoolExecutor interactionThreadPoolExecutor;

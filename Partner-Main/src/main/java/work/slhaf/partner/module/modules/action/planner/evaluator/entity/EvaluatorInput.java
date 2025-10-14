@@ -12,5 +12,5 @@ public class EvaluatorInput {
     private List<Message> recentMessages;
     private User user;
     private List<EvaluatedSlice> activatedSlices;
-    private String tendency;
+    private List<String> tendencies;
 }

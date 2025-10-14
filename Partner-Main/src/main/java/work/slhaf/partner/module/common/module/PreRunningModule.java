@@ -16,7 +16,7 @@ public abstract class PreRunningModule extends AgentRunningModule<PartnerRunning
     private synchronized void setAppendedPrompt(PartnerRunningFlowContext context) {
         AppendPromptData data = new AppendPromptData();
         data.setModuleName(moduleName());
-        HashMap<String, String> map = getPromptDataMap(context.getUserId());
+        HashMap<String, String> map = getPromptDataMap(context);
         data.setAppendedPrompt(map);
         context.setAppendedPrompt(data);
     }
@@ -25,7 +25,7 @@ public abstract class PreRunningModule extends AgentRunningModule<PartnerRunning
         context.getCoreContext().addActiveModule(moduleName());
     }
 
-    protected abstract HashMap<String, String> getPromptDataMap(String userId);
+    protected abstract HashMap<String, String> getPromptDataMap(PartnerRunningFlowContext context);
 
     /**
      * 用于在CoreModule接收到的模块Prompt中标识模块名称

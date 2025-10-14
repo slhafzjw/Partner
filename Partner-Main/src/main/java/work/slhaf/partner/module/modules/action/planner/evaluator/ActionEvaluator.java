@@ -6,11 +6,13 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunn
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorResult;
 
+import java.util.List;
+
 @AgentSubModule
-public class ActionEvaluator extends AgentRunningSubModule<EvaluatorInput, EvaluatorResult> implements ActivateModel {
+public class ActionEvaluator extends AgentRunningSubModule<EvaluatorInput, List<EvaluatorResult>> implements ActivateModel {
 
     @Override
-    public EvaluatorResult execute(EvaluatorInput data) {
+    public List<EvaluatorResult> execute(EvaluatorInput data) {
 
         return null;
     }

@@ -2,10 +2,9 @@ package work.slhaf.partner.core.action.entity;
 
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 @Data
 public abstract class MetaActionInfo {
+    protected String uuid;
     protected String tendency;
     protected ActionStatus status;
     protected ActionData actionData;
