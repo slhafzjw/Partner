@@ -33,8 +33,9 @@ public final class PartnerAgentConfigManager extends FileAgentConfigManager {
         if (config == null || config.getAgentId() == null) {
             throw new ConfigLoadFailedException("Partner Config Load Failed: " + COMMON_CONFIG_FILE);
         }
-        if (config.getPort() <= 0 || config.getPort() > 65535) {
-            throw new ConfigLoadFailedException("Invalid Websocket port: " + config.getPort());
+        int port = config.getWebSocketConfig().getPort();
+        if (port <= 0 || port > 65535) {
+            throw new ConfigLoadFailedException("Invalid Websocket port: " + port);
         }
     }
 }

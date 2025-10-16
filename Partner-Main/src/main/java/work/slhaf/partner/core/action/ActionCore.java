@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.common.util.VectorUtil;
 import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.action.entity.ActionCacheData;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
@@ -82,8 +83,15 @@ public class ActionCore extends PartnerCore<ActionCore> {
     @CapabilityMethod
     public List<String> computeActionCache(String input){
         //计算本次输入的向量
-
+        float[] vector = VectorUtil.compute(input);
+        if (vector == null) return null;
         //与现有缓存比对，如果存在，则使缓存计数+1
+        actionCache.stream()
+                .filter(ActionCacheData::isActivated)
+                .forEach(data -> {
+                    double compared = VectorUtil.compare(vector, data.getInputVector());
+                });
+
         return null;
     }
 
