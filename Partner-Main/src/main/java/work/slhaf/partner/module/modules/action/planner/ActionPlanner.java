@@ -8,8 +8,8 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.*;
-import work.slhaf.partner.core.cache.CacheCapability;
 import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.common.module.PreRunningModule;
 import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
@@ -42,7 +42,7 @@ public class ActionPlanner extends PreRunningModule {
     @InjectCapability
     private PerceiveCapability perceiveCapability;
     @InjectCapability
-    private CacheCapability cacheCapability;
+    private MemoryCapability memoryCapability;
 
     @InjectModule
     private ActionEvaluator actionEvaluator;
@@ -197,7 +197,7 @@ public class ActionPlanner extends PreRunningModule {
             input.setTendencies(extractorResult.getTendencies());
             input.setUser(perceiveCapability.getUser(userId));
             input.setRecentMessages(cognationCapability.getChatMessages());
-            input.setActivatedSlices(cacheCapability.getActivatedSlices(userId));
+            input.setActivatedSlices(memoryCapability.getActivatedSlices(userId));
             return input;
         }
 

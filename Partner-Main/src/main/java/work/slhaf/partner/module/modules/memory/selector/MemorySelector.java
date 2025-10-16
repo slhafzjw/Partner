@@ -133,8 +133,10 @@ public class MemorySelector extends PreRunningModule {
         return "[记忆模块]";
     }
 
-    protected HashMap<String, String> getPromptDataMap(String userId) {
+    @Override
+    protected HashMap<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
+        String userId = context.getUserId();
         String dialogMapStr = memoryCapability.getDialogMapStr();
         if (!dialogMapStr.isEmpty()) {
             map.put("[记忆缓存] <你最近两日和所有聊天者的对话记忆印象>", dialogMapStr);
