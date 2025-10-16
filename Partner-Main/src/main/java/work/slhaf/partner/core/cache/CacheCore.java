@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.core.PartnerCore;
-import work.slhaf.partner.core.cognation.pojo.ActiveData;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.core.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
@@ -62,7 +61,7 @@ public class CacheCore extends PartnerCore<CacheCore> {
      */
     private Set<Long> selectedSlices = new HashSet<>();
 
-    private ActiveData activeData = new ActiveData();
+    private HashMap<String, List<EvaluatedSlice>> activatedSlices = new HashMap<>();
 
     public CacheCore() throws IOException, ClassNotFoundException {
     }
@@ -85,7 +84,7 @@ public class CacheCore extends PartnerCore<CacheCore> {
     }
 
     @CapabilityMethod
-    public HashMap<LocalDateTime, String> getDialogMap(){
+    public HashMap<LocalDateTime, String> getDialogMap() {
         return dialogMap;
     }
 
@@ -183,38 +182,48 @@ public class CacheCore extends PartnerCore<CacheCore> {
 
     @CapabilityMethod
     public void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices) {
-        activeData.updateActivatedSlices(userId, memorySlices);
+        activatedSlices.put(userId, memorySlices);
         log.debug("[CoordinatedManager] 已更新激活切片, userId: {}", userId);
     }
 
     @CapabilityMethod
     public String getActivatedSlicesStr(String userId) {
-        return activeData.getActivatedSlicesStr(userId);
+        if (activatedSlices.containsKey(userId)) {
+            StringBuilder str = new StringBuilder();
+            activatedSlices.get(userId).forEach(slice -> str.append("\n\n").append("[").append(slice.getDate()).append("]\n")
+                    .append(slice.getSummary()));
+            return str.toString();
+        } else {
+            return null;
+        }
     }
 
     @CapabilityMethod
     public HashMap<String, List<EvaluatedSlice>> getActivatedSlices() {
-        return activeData.getActivatedSlices();
+        return activatedSlices;
     }
 
     @CapabilityMethod
     public void clearActivatedSlices(String userId) {
-        activeData.clearActivatedSlices(userId);
+        activatedSlices.remove(userId);
     }
 
     @CapabilityMethod
     public boolean hasActivatedSlices(String userId) {
-        return activeData.hasActivatedSlices(userId);
+        if (!activatedSlices.containsKey(userId)) {
+            return false;
+        }
+        return !activatedSlices.get(userId).isEmpty();
     }
 
     @CapabilityMethod
     public int getActivatedSlicesSize(String userId) {
-        return activeData.getActivatedSlices().get(userId).size();
+        return activatedSlices.get(userId).size();
     }
 
     @CapabilityMethod
     public List<EvaluatedSlice> getActivatedSlices(String userId) {
-        return activeData.getActivatedSlices().get(userId);
+        return activatedSlices.get(userId);
     }
 
     @Override
