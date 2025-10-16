@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
-import work.slhaf.partner.core.cache.CacheCapability;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
@@ -37,8 +36,6 @@ import java.util.List;
 public class MemorySelector extends PreRunningModule {
 
     @InjectCapability
-    private CacheCapability cacheCapability;
-    @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
@@ -54,9 +51,9 @@ public class MemorySelector extends PreRunningModule {
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(runningFlowContext);
         if (extractorResult.isRecall() || !extractorResult.getMatches().isEmpty()) {
-            cacheCapability.clearActivatedSlices(userId);
+            memoryCapability.clearActivatedSlices(userId);
             List<EvaluatedSlice> evaluatedSlices = selectAndEvaluateMemory(runningFlowContext, extractorResult);
-            cacheCapability.updateActivatedSlices(userId, evaluatedSlices);
+            memoryCapability.updateActivatedSlices(userId, evaluatedSlices);
         }
         setModuleContextRecall(runningFlowContext);
     }
@@ -81,10 +78,10 @@ public class MemorySelector extends PreRunningModule {
 
     private void setModuleContextRecall(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getUserId();
-        boolean recall = cacheCapability.hasActivatedSlices(userId);
+        boolean recall = memoryCapability.hasActivatedSlices(userId);
         runningFlowContext.getModuleContext().getExtraContext().put("recall", recall);
         if (recall) {
-            runningFlowContext.getModuleContext().getExtraContext().put("recall_count", cacheCapability.getActivatedSlicesSize(userId));
+            runningFlowContext.getModuleContext().getExtraContext().put("recall_count", memoryCapability.getActivatedSlicesSize(userId));
         }
     }
 
@@ -119,7 +116,7 @@ public class MemorySelector extends PreRunningModule {
     }
 
     private void removeDuplicateSlice(MemoryResult memoryResult) {
-        Collection<String> values = cacheCapability.getDialogMap().values();
+        Collection<String> values = memoryCapability.getDialogMap().values();
         memoryResult.getRelatedMemorySliceResult().removeIf(m -> values.contains(m.getSummary()));
         memoryResult.getMemorySliceResult().removeIf(m -> values.contains(m.getMemorySlice().getSummary()));
     }
@@ -138,17 +135,17 @@ public class MemorySelector extends PreRunningModule {
 
     protected HashMap<String, String> getPromptDataMap(String userId) {
         HashMap<String, String> map = new HashMap<>();
-        String dialogMapStr = cacheCapability.getDialogMapStr();
+        String dialogMapStr = memoryCapability.getDialogMapStr();
         if (!dialogMapStr.isEmpty()) {
             map.put("[记忆缓存] <你最近两日和所有聊天者的对话记忆印象>", dialogMapStr);
         }
 
-        String userDialogMapStr = cacheCapability.getUserDialogMapStr(userId);
+        String userDialogMapStr = memoryCapability.getUserDialogMapStr(userId);
         if (userDialogMapStr != null && !userDialogMapStr.isEmpty() && !cognationCapability.isSingleUser()) {
             map.put("[用户记忆缓存] <与最新一条消息的发送者的近两天对话记忆印象, 可能与[记忆缓存]稍有重复>", userDialogMapStr);
         }
 
-        String sliceStr = cacheCapability.getActivatedSlicesStr(userId);
+        String sliceStr = memoryCapability.getActivatedSlicesStr(userId);
         if (sliceStr != null && !sliceStr.isEmpty()) {
             map.put("[记忆切片] <你与最新一条消息的发送者的相关回忆, 不会与[记忆缓存]重复, 如果有重复你也可以指出来()>", sliceStr);
         }

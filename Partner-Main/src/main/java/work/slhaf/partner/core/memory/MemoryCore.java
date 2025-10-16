@@ -3,11 +3,13 @@ package work.slhaf.partner.core.memory;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
+import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.core.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemorySliceResult;
@@ -17,14 +19,18 @@ import work.slhaf.partner.core.memory.pojo.node.TopicNode;
 import java.io.IOException;
 import java.io.Serial;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @EqualsAndHashCode(callSuper = true)
 @CapabilityCore(value = "memory")
 @Getter
 @Setter
+@Slf4j
 public class MemoryCore extends PartnerCore<MemoryCore> {
 
     @Serial
@@ -56,12 +62,17 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
      */
     private Set<Long> selectedSlices = new HashSet<>();
 
-    private HashMap<String,List<String>> userIndex = new HashMap<>();
+    private HashMap<String, List<String>> userIndex = new HashMap<>();
+
+    private MemoryCache cache = new MemoryCache();
+
+    private final Lock sliceInsertLock = new ReentrantLock();
 
     public MemoryCore() throws IOException, ClassNotFoundException {
     }
 
 
+    @CapabilityMethod
     public MemoryResult selectMemory(LocalDate date) throws IOException, ClassNotFoundException {
         MemoryResult memoryResult = new MemoryResult();
         CopyOnWriteArrayList<MemorySliceResult> targetSliceList = new CopyOnWriteArrayList<>();
@@ -79,7 +90,175 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
             }
         }
         memoryResult.setMemorySliceResult(targetSliceList);
-        return memoryResult;
+        return cacheFilter(memoryResult);
+    }
+
+    @CapabilityMethod
+    public void insertSlice(MemorySlice memorySlice, String topicPath) {
+        sliceInsertLock.lock();
+        List<String> topicPathList = Arrays.stream(topicPath.split("->")).toList();
+        try {
+            //检查是否存在当天对应的memorySlice并确定是否插入
+            //每日刷新缓存
+            checkCacheDate();
+            //如果topicPath在memorySliceCache中存在对应缓存，由于进行的插入操作，则需要移除该缓存，但不清除相关计数
+            clearCacheByTopicPath(topicPathList);
+            insertMemory(topicPathList, memorySlice);
+            if (!memorySlice.isPrivate()) {
+                updateUserDialogMap(memorySlice);
+            }
+        } catch (Exception e) {
+            log.error("[CoordinatedManager] 插入记忆时出错: ", e);
+        }
+        log.debug("[CoordinatedManager] 插入切片: {}, 路径: {}", memorySlice, topicPath);
+        sliceInsertLock.unlock();
+    }
+
+    @CapabilityMethod
+    public String getTopicTree() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Map.Entry<String, TopicNode> entry : topicNodes.entrySet()) {
+            String rootName = entry.getKey();
+            TopicNode rootNode = entry.getValue();
+            stringBuilder.append(rootName).append("[root]").append("\r\n");
+            printSubTopicsTreeFormat(rootNode, "", stringBuilder);
+        }
+        return stringBuilder.toString();
+    }
+
+    @CapabilityMethod
+    public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
+        List<LocalDateTime> keysToRemove = new ArrayList<>();
+        HashMap<LocalDateTime, String> dialogMap = cache.dialogMap;
+        dialogMap.forEach((k, v) -> {
+            if (dateTime.minusDays(2).isAfter(k)) {
+                keysToRemove.add(k);
+            }
+        });
+        for (LocalDateTime temp : keysToRemove) {
+            dialogMap.remove(temp);
+        }
+        keysToRemove.clear();
+        //放入新缓存
+        dialogMap.put(dateTime, newDialogCache);
+    }
+
+    @CapabilityMethod
+    public HashMap<LocalDateTime, String> getDialogMap() {
+        return cache.dialogMap;
+    }
+
+    @CapabilityMethod
+    public ConcurrentHashMap<LocalDateTime, String> getUserDialogMap(String userId) {
+        return cache.userDialogMap.get(userId);
+    }
+
+    @CapabilityMethod
+    public String getDialogMapStr() {
+        StringBuilder str = new StringBuilder();
+        this.getDialogMap().forEach((dateTime, dialog) -> str.append("\n\n").append("[").append(dateTime).append("]\n")
+                .append(dialog));
+        return str.toString();
+    }
+
+    @CapabilityMethod
+    public String getUserDialogMapStr(String userId) {
+        ConcurrentHashMap<String, ConcurrentHashMap<LocalDateTime, String>> userDialogMap = cache.userDialogMap;
+        if (userDialogMap.containsKey(userId)) {
+            StringBuilder str = new StringBuilder();
+            Collection<String> dialogMapValues = this.getDialogMap().values();
+            userDialogMap.get(userId).forEach((dateTime, dialog) -> {
+                if (dialogMapValues.contains(dialog)) {
+                    return;
+                }
+                str.append("\n\n").append("[").append(dateTime).append("]\n")
+                        .append(dialog);
+            });
+            return str.toString();
+        } else {
+            return null;
+        }
+    }
+
+    @CapabilityMethod
+    public MemoryResult selectMemory(String topicPathStr) {
+        MemoryResult memoryResult;
+        List<String> topicPath = List.of(topicPathStr.split("->"));
+        try {
+            List<String> path = new ArrayList<>(topicPath);
+            //每日刷新缓存
+            checkCacheDate();
+            //检测缓存并更新计数, 查看是否需要放入缓存
+            updateCacheCounter(path);
+            //查看是否存在缓存，如果存在，则直接返回
+            if ((memoryResult = selectCache(path)) != null) {
+                return memoryResult;
+            }
+            memoryResult = selectMemory(path);
+            //尝试更新缓存
+            updateCache(topicPath, memoryResult);
+        } catch (Exception e) {
+            log.error("[CoordinatedManager] selectMemory error: ", e);
+            log.error("[CoordinatedManager] 路径: {}", topicPathStr);
+            log.error("[CoordinatedManager] 主题树: {}", getTopicTree());
+            memoryResult = new MemoryResult();
+            memoryResult.setRelatedMemorySliceResult(new ArrayList<>());
+            memoryResult.setMemorySliceResult(new CopyOnWriteArrayList<>());
+        }
+        return cacheFilter(memoryResult);
+    }
+
+    @CapabilityMethod
+    public void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices) {
+        cache.activatedSlices.put(userId, memorySlices);
+        log.debug("[CoordinatedManager] 已更新激活切片, userId: {}", userId);
+    }
+
+    @CapabilityMethod
+    public String getActivatedSlicesStr(String userId) {
+        HashMap<String, List<EvaluatedSlice>> activatedSlices = cache.activatedSlices;
+        if (activatedSlices.containsKey(userId)) {
+            StringBuilder str = new StringBuilder();
+            activatedSlices.get(userId).forEach(slice -> str.append("\n\n").append("[").append(slice.getDate()).append("]\n")
+                    .append(slice.getSummary()));
+            return str.toString();
+        } else {
+            return null;
+        }
+    }
+
+    @CapabilityMethod
+    public HashMap<String, List<EvaluatedSlice>> getActivatedSlices() {
+        return cache.activatedSlices;
+    }
+
+    @CapabilityMethod
+    public void clearActivatedSlices(String userId) {
+        cache.activatedSlices.remove(userId);
+    }
+
+    @CapabilityMethod
+    public boolean hasActivatedSlices(String userId) {
+        HashMap<String, List<EvaluatedSlice>> activatedSlices = cache.activatedSlices;
+        if (!activatedSlices.containsKey(userId)) {
+            return false;
+        }
+        return !activatedSlices.get(userId).isEmpty();
+    }
+
+    @CapabilityMethod
+    public int getActivatedSlicesSize(String userId) {
+        return cache.activatedSlices.get(userId).size();
+    }
+
+    @CapabilityMethod
+    public List<EvaluatedSlice> getActivatedSlices(String userId) {
+        return cache.activatedSlices.get(userId);
+    }
+
+    @CapabilityMethod
+    public void cleanSelectedSliceFilter() {
+        this.selectedSlices.clear();
     }
 
     private List<List<MemorySlice>> loadSlicesByDate(LocalDate date) throws IOException, ClassNotFoundException {
@@ -95,18 +274,6 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
         return list;
     }
 
-    @CapabilityMethod
-    public String getTopicTree() {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (Map.Entry<String, TopicNode> entry : topicNodes.entrySet()) {
-            String rootName = entry.getKey();
-            TopicNode rootNode = entry.getValue();
-            stringBuilder.append(rootName).append("[root]").append("\r\n");
-            printSubTopicsTreeFormat(rootNode, "", stringBuilder);
-        }
-        return stringBuilder.toString();
-    }
-
     private void printSubTopicsTreeFormat(TopicNode node, String prefix, StringBuilder stringBuilder) {
         if (node.getTopicNodes() == null || node.getTopicNodes().isEmpty()) return;
 
@@ -119,7 +286,7 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
         }
     }
 
-    public void insertMemory(List<String> topicPath, MemorySlice slice) throws IOException, ClassNotFoundException {
+    private void insertMemory(List<String> topicPath, MemorySlice slice) throws IOException, ClassNotFoundException {
         LocalDate now = LocalDate.now();
         boolean hasSlice = false;
         MemoryNode node = null;
@@ -300,8 +467,6 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
         }
     }
 
-
-
     private TopicNode getTargetParentNode(List<String> topicPath, String targetTopic) {
         String topTopic = topicPath.getFirst();
         if (!existedTopics.containsKey(topTopic)) {
@@ -323,13 +488,126 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
         return targetParentNode;
     }
 
-    @CapabilityMethod
-    public void cleanSelectedSliceFilter() {
-        this.selectedSlices.clear();
+    public void updateCacheCounter(List<String> topicPath) {
+        ConcurrentHashMap<List<String>, Integer> memoryNodeCacheCounter = cache.memoryNodeCacheCounter;
+        if (memoryNodeCacheCounter.containsKey(topicPath)) {
+            Integer tempCount = memoryNodeCacheCounter.get(topicPath);
+            memoryNodeCacheCounter.put(topicPath, ++tempCount);
+        } else {
+            memoryNodeCacheCounter.put(topicPath, 1);
+        }
+    }
+
+    private void checkCacheDate() {
+        if (cache.cacheDate == null || cache.cacheDate.isBefore(LocalDate.now())) {
+            cache.memorySliceCache.clear();
+            cache.memoryNodeCacheCounter.clear();
+            cache.cacheDate = LocalDate.now();
+        }
+    }
+
+    private void updateCache(List<String> topicPath, MemoryResult memoryResult) {
+        ConcurrentHashMap<List<String>, Integer> memoryNodeCacheCounter = cache.memoryNodeCacheCounter;
+        Integer tempCount = memoryNodeCacheCounter.get(topicPath);
+        if (tempCount == null) {
+            log.warn("[CacheCore] tempCount为null? memoryNodeCacheCounter: {}; topicPath: {}", memoryNodeCacheCounter, topicPath);
+            return;
+        }
+        if (tempCount >= 5) {
+            cache.memorySliceCache.put(topicPath, memoryResult);
+        }
+    }
+
+    private void updateUserDialogMap(MemorySlice slice) {
+        String summary = slice.getSummary();
+        LocalDateTime now = LocalDateTime.now();
+        ConcurrentHashMap<String, ConcurrentHashMap<LocalDateTime, String>> userDialogMap = cache.userDialogMap;
+
+        //更新userDialogMap
+        //移除两天前上下文缓存(切片总结)
+        List<LocalDateTime> keysToRemove = new ArrayList<>();
+        userDialogMap.forEach((k, v) -> v.forEach((i, j) -> {
+            if (now.minusDays(2).isAfter(i)) {
+                keysToRemove.add(i);
+            }
+        }));
+        for (LocalDateTime dateTime : keysToRemove) {
+            userDialogMap.forEach((k, v) -> v.remove(dateTime));
+        }
+        //放入新缓存
+        userDialogMap
+                .computeIfAbsent(slice.getStartUserId(), k -> new ConcurrentHashMap<>())
+                .merge(now, summary, (oldVal, newVal) -> oldVal + " " + newVal);
+
+    }
+
+    private void clearCacheByTopicPath(List<String> topicPath) {
+        cache.memorySliceCache.remove(topicPath);
+    }
+
+    private MemoryResult selectCache(List<String> path) {
+        ConcurrentHashMap<List<String>, MemoryResult> memorySliceCache = cache.memorySliceCache;
+        if (memorySliceCache.containsKey(path)) {
+            return memorySliceCache.get(path);
+        }
+        return null;
     }
 
     @Override
     protected String getCoreKey() {
         return "memory-core";
+    }
+
+    public ConcurrentHashMap<String, ConcurrentHashMap<LocalDateTime, String>> getUserDialogMap() {
+        return cache.userDialogMap;
+    }
+
+
+    private MemoryResult cacheFilter(MemoryResult memoryResult) {
+        //过滤掉与缓存重复的切片
+        CopyOnWriteArrayList<MemorySliceResult> memorySliceResult = memoryResult.getMemorySliceResult();
+        List<MemorySlice> relatedMemorySliceResult = memoryResult.getRelatedMemorySliceResult();
+        cache.dialogMap.forEach((k, v) -> {
+            memorySliceResult.removeIf(m -> m.getMemorySlice().getSummary().equals(v));
+            relatedMemorySliceResult.removeIf(m -> m.getSummary().equals(v));
+        });
+        return memoryResult;
+    }
+
+    @SuppressWarnings("FieldMayBeFinal")
+    private static class MemoryCache {
+
+        /**
+         * 近两日的对话总结缓存, 用于为大模型提供必要的记忆补充, hashmap以切片的存储时间为键，总结为值
+         * 该部分作为'主LLM'system prompt常驻
+         * 该部分作为近两日的整体对话缓存, 不区分用户
+         */
+        private HashMap<LocalDateTime, String> dialogMap = new HashMap<>();
+
+        /**
+         * 近两日的区分用户的对话总结缓存，在prompt结构上比dialogMap层级深一层, dialogMap更具近两日整体对话的摘要性质
+         */
+        private ConcurrentHashMap<String/*userId*/, ConcurrentHashMap<LocalDateTime, String>> userDialogMap = new ConcurrentHashMap<>();
+
+        /**
+         * memorySliceCache计数器，每日清空
+         */
+        private ConcurrentHashMap<List<String> /*触发查询的主题列表*/, Integer> memoryNodeCacheCounter = new ConcurrentHashMap<>();
+
+        /**
+         * 记忆切片缓存，每日清空
+         * 用于记录作为终点节点调用次数最多的记忆节点的切片数据
+         */
+        private ConcurrentHashMap<List<String> /*主题路径*/, MemoryResult /*切片列表*/> memorySliceCache = new ConcurrentHashMap<>();
+
+        /**
+         * 缓存日期
+         */
+        private LocalDate cacheDate;
+
+        private HashMap<String, List<EvaluatedSlice>> activatedSlices = new HashMap<>();
+
+        private MemoryCache() {
+        }
     }
 }

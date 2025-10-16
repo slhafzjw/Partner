@@ -11,7 +11,6 @@ import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.core.cache.CacheCapability;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
@@ -44,8 +43,6 @@ public class MemoryUpdater extends PostRunningModule {
     private CognationCapability cognationCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
-    @InjectCapability
-    private CacheCapability cacheCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
 
@@ -160,11 +157,11 @@ public class MemoryUpdater extends PostRunningModule {
                 setInvolvedUserId(userId, memorySlice, chatMessages);
                 memoryCapability.insertSlice(memorySlice, summarizeResult.getTopicPath());
 
-                cacheCapability.updateDialogMap(LocalDateTime.now(), summarizeResult.getSummary());
+                memoryCapability.updateDialogMap(LocalDateTime.now(), summarizeResult.getSummary());
 
             } else {
                 log.debug("[MemoryUpdater] 不存在多人聊天记录, 将以单聊总结为对话缓存的主要输入: {}", singleMemorySummary);
-                cacheCapability.updateDialogMap(LocalDateTime.now(), totalSummarizer.execute(singleMemorySummary));
+                memoryCapability.updateDialogMap(LocalDateTime.now(), totalSummarizer.execute(singleMemorySummary));
             }
             log.debug("[MemoryUpdater] 对话缓存更新完毕");
             log.debug("[MemoryUpdater] 多人聊天记忆更新流程结束...");

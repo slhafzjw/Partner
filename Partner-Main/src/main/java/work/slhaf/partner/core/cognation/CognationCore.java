@@ -83,14 +83,14 @@ public class CognationCore extends PartnerCore<CognationCore> {
 
     @CapabilityMethod
     public void addMetaMessage(String userId, MetaMessage metaMessage) {
-        log.debug("[{}] 当前会话历史: {}", JSONObject.toJSONString(singleMetaMessageMap));
+        log.debug("[{}] 当前会话历史: {}", getCoreKey(), JSONObject.toJSONString(singleMetaMessageMap));
         if (singleMetaMessageMap.containsKey(userId)) {
             singleMetaMessageMap.get(userId).add(metaMessage);
         } else {
             singleMetaMessageMap.put(userId, new java.util.ArrayList<>());
             singleMetaMessageMap.get(userId).add(metaMessage);
         }
-        log.debug("[SessionManager] 会话历史更新: {}", JSONObject.toJSONString(singleMetaMessageMap));
+        log.debug("[{}] 会话历史更新: {}", getCoreKey(), JSONObject.toJSONString(singleMetaMessageMap));
     }
 
     @CapabilityMethod

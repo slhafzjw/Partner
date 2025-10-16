@@ -11,7 +11,6 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateM
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
-import work.slhaf.partner.core.cache.CacheCapability;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
@@ -37,8 +36,6 @@ public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningF
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
-    @InjectCapability
-    private CacheCapability cacheCapability;
 
 
     @Override
@@ -58,7 +55,7 @@ public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningF
 
         ExtractorResult extractorResult;
         try {
-            List<EvaluatedSlice> activatedMemorySlices = cacheCapability.getActivatedSlices(context.getUserId());
+            List<EvaluatedSlice> activatedMemorySlices = memoryCapability.getActivatedSlices(context.getUserId());
             ExtractorInput extractorInput = ExtractorInput.builder()
                     .text(context.getInput())
                     .date(context.getDateTime().toLocalDate())
