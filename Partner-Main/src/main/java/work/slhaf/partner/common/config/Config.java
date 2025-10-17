@@ -10,8 +10,11 @@ public class Config {
 
     @Data
     public static class VectorConfig {
+        private int type;
         private String ollamaEmbeddingUrl;
         private String ollamaEmbeddingModel;
+        private String tokenizerPath;
+        private String embeddingModelPath;
     }
 
     @Data
