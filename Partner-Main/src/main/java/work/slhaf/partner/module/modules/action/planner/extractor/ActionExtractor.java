@@ -1,20 +1,17 @@
 package work.slhaf.partner.module.modules.action.planner.extractor;
 
-import java.util.List;
-
 import com.alibaba.fastjson2.JSONObject;
-
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
-import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorInput;
 import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorResult;
+
+import java.util.List;
 
 @Slf4j
 @AgentSubModule
@@ -25,17 +22,17 @@ public class ActionExtractor extends AgentRunningSubModule<ExtractorInput, Extra
 
     @Override
     public ExtractorResult execute(ExtractorInput data) {
-        // TODO 添加语义缓存判断
-        List<String> tendencyCache = actionCapability.computeActionCache(data.getInput());
-        if ( tendencyCache == null || !tendencyCache.isEmpty()) {
-            ExtractorResult result = new ExtractorResult();
+        ExtractorResult result = new ExtractorResult();
+        List<String> tendencyCache = actionCapability.selectTendencyCache(data.getInput());
+        result.setCacheEnabled(tendencyCache != null);
+        if (tendencyCache != null && !tendencyCache.isEmpty()) {
+            result.setTendencies(tendencyCache);
             return result;
         }
 
         for (int i = 0; i < 3; i++) {
             try {
-                this.chatMessages().add(new Message(ChatConstant.Character.USER, JSONObject.toJSONString(data)));
-                ChatResponse response = this.chat();
+                ChatResponse response = this.singleChat(JSONObject.toJSONString(data));
                 return JSONObject.parseObject(response.getMessage(), ExtractorResult.class);
             } catch (Exception e) {
                 log.error("[ActionExtractor] 提取信息出错", e);

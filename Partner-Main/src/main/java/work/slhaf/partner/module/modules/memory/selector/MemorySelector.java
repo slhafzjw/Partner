@@ -22,7 +22,6 @@ import work.slhaf.partner.module.modules.memory.selector.extractor.entity.Extrac
 import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,7 +31,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-@AgentModule(name="memory_selector",order=2)
+@AgentModule(name = "memory_selector", order = 2)
 public class MemorySelector extends PreRunningModule {
 
     @InjectCapability
@@ -46,7 +45,7 @@ public class MemorySelector extends PreRunningModule {
     private MemorySelectExtractor memorySelectExtractor;
 
     @Override
-    public void doExecute(PartnerRunningFlowContext runningFlowContext) throws IOException, ClassNotFoundException {
+    public void doExecute(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getUserId();
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(runningFlowContext);
@@ -58,7 +57,7 @@ public class MemorySelector extends PreRunningModule {
         setModuleContextRecall(runningFlowContext);
     }
 
-    private List<EvaluatedSlice> selectAndEvaluateMemory(PartnerRunningFlowContext runningFlowContext, ExtractorResult extractorResult) throws IOException, ClassNotFoundException {
+    private List<EvaluatedSlice> selectAndEvaluateMemory(PartnerRunningFlowContext runningFlowContext, ExtractorResult extractorResult) {
         log.debug("[MemorySelector] 触发记忆回溯...");
         //查找切片
         String userId = runningFlowContext.getUserId();
@@ -86,7 +85,7 @@ public class MemorySelector extends PreRunningModule {
     }
 
 
-    private void setMemoryResultList(List<MemoryResult> memoryResultList, List<ExtractorMatchData> matches, String userId) throws IOException, ClassNotFoundException {
+    private void setMemoryResultList(List<MemoryResult> memoryResultList, List<ExtractorMatchData> matches, String userId) {
         for (ExtractorMatchData match : matches) {
             try {
                 MemoryResult memoryResult = switch (match.getType()) {

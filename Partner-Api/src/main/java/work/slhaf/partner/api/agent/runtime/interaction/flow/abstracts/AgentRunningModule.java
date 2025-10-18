@@ -7,14 +7,12 @@ import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext;
 
-import java.io.IOException;
-
 /**
  * 流程执行模块基类
  */
 @Slf4j
 public abstract class AgentRunningModule<C extends RunningFlowContext> extends Module {
-    public abstract void execute(C context) throws IOException, ClassNotFoundException;
+    public abstract void execute(C context);
 
     @BeforeExecute
     private void beforeLog() {

@@ -7,11 +7,19 @@ import java.util.List;
 
 @Data
 public class ActionCacheData {
+    private boolean activated;
+    private int inputMatchCount;
+
     private float[] inputVector;
     private float[] tendencyVector;
     private String tendency;
-    private int inputMatchCount;
-    private boolean activated;
-    private List<float[]> validSamples = new ArrayList<>();
     private double threshold;
+
+    private List<String> validSamples = new ArrayList<>();
+    private int failedCount;
+    private Type type;
+
+    enum Type {
+        PRIMARY, REBUILD_V1, REBUILD_V2, REBUILD_V3
+    }
 }

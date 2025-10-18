@@ -1,19 +1,18 @@
 package work.slhaf.partner.common.vector;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-
 import ai.djl.huggingface.tokenizers.Encoding;
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import work.slhaf.partner.common.vector.exception.VectorClientExecuteException;
 import work.slhaf.partner.common.vector.exception.VectorClientLoadFailedException;
 
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+
+@SuppressWarnings("FieldMayBeFinal")
 public class OnnxVectorClient extends VectorClient {
 
     private String tokenizerPath;
@@ -57,9 +56,9 @@ public class OnnxVectorClient extends VectorClient {
             long[] ids = encode.getIds();
             long[] attentionMask = encode.getAttentionMask();
 
-            long[][] inputIdsBatch = { ids };
-            long[][] attentionMaskBatch = { attentionMask };
-            long[][] tokenTypeIdsBatch = { new long[ids.length] }; // 初始化全 0
+            long[][] inputIdsBatch = {ids};
+            long[][] attentionMaskBatch = {attentionMask};
+            long[][] tokenTypeIdsBatch = {new long[ids.length]}; // 初始化全 0
             for (int i = 0; i < ids.length; i++)
                 tokenTypeIdsBatch[0][i] = 0;
 

@@ -82,10 +82,29 @@ public class ActionPlanner extends PreRunningModule {
                 return null;
             }
             EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult, context.getUserId());
-            List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput);
-            setupPreparedActionInfo(evaluatorResults, context);
+            List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); //并发操作均为访问
+            if (extractorResult.isCacheEnabled())
+                updateTendencyCache(evaluatorResults, context.getInput(), extractorResult);
+            setupActionInfo(evaluatorResults, context);
             return null;
         });
+    }
+
+    private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input, ExtractorResult extractorResult) {
+        executor.execute(() -> {
+            List<CacheAdjustData> list = new ArrayList<>();
+            List<String> hitTendencies = extractorResult.getTendencies();
+            for (EvaluatorResult result : evaluatorResults) {
+                CacheAdjustData data = new CacheAdjustData();
+                data.setTendency(result.getTendency());
+                data.setInput(input);
+                data.setPassed(result.isOk());
+                data.setHit(hitTendencies.contains(result.getTendency()));
+                list.add(data);
+            }
+            actionCapability.updateTendencyCache(list);
+        });
+
     }
 
     /**
@@ -119,13 +138,12 @@ public class ActionPlanner extends PreRunningModule {
     }
 
 
-    private void setupPreparedActionInfo(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
+    private void setupActionInfo(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
+            MetaActionInfo metaActionInfo = assemblyHelper.buildMetaActionInfo(evaluatorResult);
             if (evaluatorResult.isNeedConfirm()) {
-                MetaActionInfo metaActionInfo = assemblyHelper.buildMetaActionInfo(evaluatorResult);
                 actionCapability.putPendingActions(context.getUserId(), metaActionInfo);
             } else {
-                MetaActionInfo metaActionInfo = assemblyHelper.buildMetaActionInfo(evaluatorResult);
                 actionCapability.putPreparedAction(context.getUuid(), metaActionInfo);
             }
         }
@@ -192,7 +210,7 @@ public class ActionPlanner extends PreRunningModule {
             return input;
         }
 
-        public EvaluatorInput buildEvaluatorInput(ExtractorResult extractorResult, String userId) {
+        private EvaluatorInput buildEvaluatorInput(ExtractorResult extractorResult, String userId) {
             EvaluatorInput input = new EvaluatorInput();
             input.setTendencies(extractorResult.getTendencies());
             input.setUser(perceiveCapability.getUser(userId));
@@ -201,7 +219,7 @@ public class ActionPlanner extends PreRunningModule {
             return input;
         }
 
-        public MetaActionInfo buildMetaActionInfo(EvaluatorResult evaluatorResult) {
+        private MetaActionInfo buildMetaActionInfo(EvaluatorResult evaluatorResult) {
             return switch (evaluatorResult.getType()) {
                 case PLANNING -> {
                     ScheduledActionInfo actionInfo = new ScheduledActionInfo();
@@ -221,7 +239,7 @@ public class ActionPlanner extends PreRunningModule {
             };
         }
 
-        public ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
+        private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
             ConfirmerInput confirmerInput = new ConfirmerInput();
             confirmerInput.setInput(context.getInput());
             List<MetaActionInfo> pendingActions = actionCapability.listPendingAction(context.getUserId());

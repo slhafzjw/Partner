@@ -1,16 +1,15 @@
 package work.slhaf.partner.common.vector;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-
-import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
 import work.slhaf.partner.common.config.Config.VectorConfig;
+import work.slhaf.partner.common.config.PartnerAgentConfigManager;
 import work.slhaf.partner.common.exception.ServiceLoadFailedException;
 import work.slhaf.partner.common.vector.exception.VectorClientExecuteException;
 import work.slhaf.partner.common.vector.exception.VectorClientLoadFailedException;
-import work.slhaf.partner.common.config.PartnerAgentConfigManager;
 
 @Slf4j
 public abstract class VectorClient {

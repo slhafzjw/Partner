@@ -5,7 +5,6 @@ import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.core.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -45,7 +44,7 @@ public interface MemoryCapability {
 
     MemoryResult selectMemory(String topicPathStr);
 
-    MemoryResult selectMemory(LocalDate date) throws IOException, ClassNotFoundException;
+    MemoryResult selectMemory(LocalDate date);
 
     void insertSlice(MemorySlice memorySlice, String topicPath);
 

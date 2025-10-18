@@ -1,15 +1,13 @@
 package work.slhaf.partner.common.vector;
 
-import java.util.Map;
-
-import com.alibaba.fastjson2.JSONObject;
-
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.common.vector.exception.VectorClientExecuteException;
-import work.slhaf.partner.common.vector.exception.VectorClientLoadFailedException;
+
+import java.util.Map;
 
 @Slf4j
 public class OllamaVectorClient extends VectorClient {

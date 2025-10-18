@@ -11,4 +11,5 @@ public class EvaluatorResult {
     private ActionType type;
     private String scheduleContent;
     private ActionData actionData;
+    private String tendency;
 }

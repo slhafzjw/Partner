@@ -1,12 +1,10 @@
 package work.slhaf.partner.common.thread;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
-public class InteractionThreadPoolExecutor  {
+public class InteractionThreadPoolExecutor {
 
     private static InteractionThreadPoolExecutor interactionThreadPoolExecutor;
 
@@ -27,12 +25,32 @@ public class InteractionThreadPoolExecutor  {
             throw new RuntimeException(e);
         }
     }
-    
+
     public <T> void invokeAll(List<Callable<T>> tasks) {
         try {
-            executorService.invokeAll(tasks);
+            List<Future<T>> futures = executorService.invokeAll(tasks);
+            for (Future<T> future : futures) {
+                future.get();
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e.getCause());
+        }
+    }
+
+    public <T> List<T> invokeAllAndReturn(List<Callable<T>> tasks) {
+        try {
+            List<Future<T>> futures = executorService.invokeAll(tasks);
+            List<T> results = new ArrayList<>();
+            for (Future<T> future : futures) {
+                results.add(future.get());
+            }
+            return results;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e.getCause());
         }
     }
 

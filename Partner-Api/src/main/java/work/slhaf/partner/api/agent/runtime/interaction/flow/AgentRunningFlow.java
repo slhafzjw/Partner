@@ -25,11 +25,7 @@ public class AgentRunningFlow<C extends RunningFlowContext> {
                 List<MetaModule> moduleList = entry.getValue();
                 for (MetaModule module : moduleList) {
                     Future<?> future = executor.submit(() -> {
-                        try {
-                            module.getInstance().execute(interactionContext);
-                        } catch (Exception e) {
-                            throw new AgentRuntimeException("模块执行出错: " + module.getName(), e);
-                        }
+                        module.getInstance().execute(interactionContext);
                     });
                     futures.add(future);
                 }

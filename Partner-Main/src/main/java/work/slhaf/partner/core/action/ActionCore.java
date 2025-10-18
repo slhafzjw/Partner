@@ -1,21 +1,20 @@
 package work.slhaf.partner.core.action;
 
-import lombok.Getter;
-import lombok.Setter;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
-import work.slhaf.partner.common.util.VectorUtil;
+import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.action.entity.ActionCacheData;
+import work.slhaf.partner.core.action.entity.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Setter
-@Getter
+@SuppressWarnings("FieldMayBeFinal")
 @Capability(value = "action")
 public class ActionCore extends PartnerCore<ActionCore> {
 
@@ -34,7 +33,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
      */
     private List<ActionCacheData> actionCache = new ArrayList<>();
 
-    //TODO 添加语义缓存，可借由简单向量模型，设想以向量结果为键、行动倾向为值
     public ActionCore() throws IOException, ClassNotFoundException {
     }
 
@@ -80,19 +78,70 @@ public class ActionCore extends PartnerCore<ActionCore> {
         return pendingActions.get(userId);
     }
 
+    /**
+     * 计算输入内容的语义向量，根据与{@link ActionCacheData#getInputVector()}的相似度挑取缓存，后续将根据评估结果来更新计数
+     *
+     * @param input 本次输入内容
+     * @return 命中的行为倾向集合
+     */
     @CapabilityMethod
-    public List<String> computeActionCache(String input){
+    public List<String> selectTendencyCache(String input) {
+        if (!VectorClient.status) {
+            return null;
+        }
+        VectorClient vectorClient = VectorClient.INSTANCE;
         //计算本次输入的向量
-        float[] vector = VectorUtil.compute(input);
+        float[] vector = vectorClient.compute(input);
         if (vector == null) return null;
-        //与现有缓存比对，如果存在，则使缓存计数+1
-        actionCache.stream()
+        //与现有缓存比对，将匹配到的收集并返回
+        return actionCache.parallelStream()
                 .filter(ActionCacheData::isActivated)
-                .forEach(data -> {
-                    double compared = VectorUtil.compare(vector, data.getInputVector());
-                });
+                .filter(data -> {
+                    double compared = vectorClient.compare(vector, data.getInputVector());
+                    return compared > data.getThreshold();
+                })
+                .map(ActionCacheData::getTendency)
+                .collect(Collectors.toList());
+    }
 
-        return null;
+    @CapabilityMethod
+    public void updateTendencyCache(List<CacheAdjustData> list) {
+        List<CacheAdjustData> matchAndPassed = new ArrayList<>();
+        List<CacheAdjustData> matchNotPassed = new ArrayList<>();
+        List<CacheAdjustData> notMatchPassed = new ArrayList<>();
+
+        for (CacheAdjustData data : list) {
+            if (data.isHit() && data.isPassed()) {
+                matchAndPassed.add(data);
+            } else if (data.isHit()) {
+                matchNotPassed.add(data);
+            } else if (!data.isPassed()) {
+                notMatchPassed.add(data);
+            }
+        }
+
+        VectorClient vectorClient = VectorClient.INSTANCE;
+        adjustMatchAndPassed(matchAndPassed, vectorClient);
+        adjustMatchNotPassed(matchNotPassed, vectorClient);
+        adjustNotMatchPassed(notMatchPassed, vectorClient);
+    }
+
+    /**
+     * 命中缓存且评估通过时，根据输入内容的语义向量与现有的输入语义向量进行带权移动平均，以相似度为权重
+     *
+     * @param matchAndPassed 该类型的带调整缓存信息列表
+     * @param vectorClient   向量客户端
+     */
+    private void adjustMatchAndPassed(List<CacheAdjustData> matchAndPassed, VectorClient vectorClient) {
+
+    }
+
+    private void adjustMatchNotPassed(List<CacheAdjustData> matchNotPassed, VectorClient vectorClient) {
+
+    }
+
+    private void adjustNotMatchPassed(List<CacheAdjustData> notMatchPassed, VectorClient vectorClient) {
+
     }
 
     @Override

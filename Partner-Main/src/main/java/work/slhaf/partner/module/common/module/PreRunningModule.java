@@ -5,7 +5,6 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunn
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 /**
@@ -33,13 +32,13 @@ public abstract class PreRunningModule extends AgentRunningModule<PartnerRunning
     protected abstract String moduleName();
 
     @Override
-    public final void execute(PartnerRunningFlowContext context) throws IOException, ClassNotFoundException {
+    public final void execute(PartnerRunningFlowContext context) {
         doExecute(context); // 子类实现差异化逻辑
         setAppendedPrompt(context); // 通用逻辑
         setActiveModule(context);   // 通用逻辑
     }
 
-    protected abstract void doExecute(PartnerRunningFlowContext context) throws IOException, ClassNotFoundException;
+    protected abstract void doExecute(PartnerRunningFlowContext context);
 
 
 }

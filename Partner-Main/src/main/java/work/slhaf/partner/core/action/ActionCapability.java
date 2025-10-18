@@ -1,6 +1,7 @@
 package work.slhaf.partner.core.action;
 
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
+import work.slhaf.partner.core.action.entity.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
 import java.util.List;
@@ -19,5 +20,7 @@ public interface ActionCapability {
 
     void putPendingActions(String userId, MetaActionInfo metaActionInfo);
 
-    List<String> computeActionCache(String input);
+    List<String> selectTendencyCache(String input);
+
+    void updateTendencyCache(List<CacheAdjustData> list);
 }
