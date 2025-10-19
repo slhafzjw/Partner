@@ -24,7 +24,6 @@ public class ActionExtractor extends AgentRunningSubModule<ExtractorInput, Extra
     public ExtractorResult execute(ExtractorInput data) {
         ExtractorResult result = new ExtractorResult();
         List<String> tendencyCache = actionCapability.selectTendencyCache(data.getInput());
-        result.setCacheEnabled(tendencyCache != null);
         if (tendencyCache != null && !tendencyCache.isEmpty()) {
             result.setTendencies(tendencyCache);
             return result;

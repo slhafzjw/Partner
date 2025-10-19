@@ -64,4 +64,25 @@ public abstract class VectorClient {
             return Transforms.cosineSim(a1, a2);
         }
     }
+
+    public float[] weightedAverage(float[] newVector, float[] primaryVector) {
+        try (INDArray primary = Nd4j.create(primaryVector);
+             INDArray latest = Nd4j.create(newVector)) {
+
+            // 1️⃣ 计算余弦相似度
+            double similarity = Transforms.cosineSim(primary, latest);
+
+            // 2️⃣ 根据相似度决定更新比例 α（差异越大，新输入影响越强）
+            double alpha = (1.0 - similarity) * 0.5;
+            alpha = Math.max(0.05, Math.min(alpha, 0.5));
+
+            // 3️⃣ 按比例混合旧向量与新向量
+            INDArray updated = primary.mul(1 - alpha).add(latest.mul(alpha));
+
+            // 4️⃣ 归一化结果（保持方向空间一致）
+            updated = updated.div(updated.norm2Number());
+
+            return updated.toFloatVector();
+        }
+    }
 }

@@ -7,6 +7,5 @@ import java.util.List;
 
 @Data
 public class ExtractorResult {
-    private boolean cacheEnabled;
     private List<String> tendencies = new ArrayList<>();
 }

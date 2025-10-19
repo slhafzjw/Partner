@@ -22,5 +22,5 @@ public interface ActionCapability {
 
     List<String> selectTendencyCache(String input);
 
-    void updateTendencyCache(List<CacheAdjustData> list);
+    void updateTendencyCache(CacheAdjustData data);
 }

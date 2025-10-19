@@ -1,11 +1,13 @@
 package work.slhaf.partner.module.modules.action.planner;
 
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
+import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -83,26 +85,30 @@ public class ActionPlanner extends PreRunningModule {
             }
             EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult, context.getUserId());
             List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); //并发操作均为访问
-            if (extractorResult.isCacheEnabled())
-                updateTendencyCache(evaluatorResults, context.getInput(), extractorResult);
             setupActionInfo(evaluatorResults, context);
             return null;
         });
     }
 
+    @AfterExecute
     private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input, ExtractorResult extractorResult) {
+        if (!VectorClient.status) {
+            return;
+        }
         executor.execute(() -> {
-            List<CacheAdjustData> list = new ArrayList<>();
+            CacheAdjustData data = new CacheAdjustData();
+            List<CacheAdjustMetaData> list = new ArrayList<>();
             List<String> hitTendencies = extractorResult.getTendencies();
             for (EvaluatorResult result : evaluatorResults) {
-                CacheAdjustData data = new CacheAdjustData();
-                data.setTendency(result.getTendency());
-                data.setInput(input);
-                data.setPassed(result.isOk());
-                data.setHit(hitTendencies.contains(result.getTendency()));
-                list.add(data);
+                CacheAdjustMetaData metaData = new CacheAdjustMetaData();
+                metaData.setTendency(result.getTendency());
+                metaData.setPassed(result.isOk());
+                metaData.setHit(hitTendencies.contains(result.getTendency()));
+                list.add(metaData);
             }
-            actionCapability.updateTendencyCache(list);
+            data.setMetaDataList(list);
+            data.setInput(input);
+            actionCapability.updateTendencyCache(data);
         });
 
     }

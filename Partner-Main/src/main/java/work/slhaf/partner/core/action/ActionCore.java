@@ -1,21 +1,28 @@
 package work.slhaf.partner.core.action;
 
+import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.action.entity.ActionCacheData;
 import work.slhaf.partner.core.action.entity.CacheAdjustData;
+import work.slhaf.partner.core.action.entity.CacheAdjustMetaData;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("FieldMayBeFinal")
 @Capability(value = "action")
+@Slf4j
 public class ActionCore extends PartnerCore<ActionCore> {
 
     /**
@@ -32,6 +39,10 @@ public class ActionCore extends PartnerCore<ActionCore> {
      * 语义缓存与行为倾向映射
      */
     private List<ActionCacheData> actionCache = new ArrayList<>();
+
+    private Lock cacheLock = new ReentrantLock();
+
+    private Executor executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     public ActionCore() throws IOException, ClassNotFoundException {
     }
@@ -105,43 +116,116 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public void updateTendencyCache(List<CacheAdjustData> list) {
-        List<CacheAdjustData> matchAndPassed = new ArrayList<>();
-        List<CacheAdjustData> matchNotPassed = new ArrayList<>();
-        List<CacheAdjustData> notMatchPassed = new ArrayList<>();
+    public void updateTendencyCache(CacheAdjustData data) {
+        VectorClient vectorClient = VectorClient.INSTANCE;
+        List<CacheAdjustMetaData> list = data.getMetaDataList();
+        String input = data.getInput();
+        float[] inputVector = vectorClient.compute(input);
 
-        for (CacheAdjustData data : list) {
-            if (data.isHit() && data.isPassed()) {
-                matchAndPassed.add(data);
-            } else if (data.isHit()) {
-                matchNotPassed.add(data);
-            } else if (!data.isPassed()) {
-                notMatchPassed.add(data);
+        List<CacheAdjustMetaData> matchAndPassed = new ArrayList<>();
+        List<CacheAdjustMetaData> matchNotPassed = new ArrayList<>();
+        List<CacheAdjustMetaData> notMatchPassed = new ArrayList<>();
+
+        for (CacheAdjustMetaData metaData : list) {
+            if (metaData.isHit() && metaData.isPassed()) {
+                matchAndPassed.add(metaData);
+            } else if (metaData.isHit()) {
+                matchNotPassed.add(metaData);
+            } else if (!metaData.isPassed()) {
+                notMatchPassed.add(metaData);
             }
         }
 
-        VectorClient vectorClient = VectorClient.INSTANCE;
-        adjustMatchAndPassed(matchAndPassed, vectorClient);
-        adjustMatchNotPassed(matchNotPassed, vectorClient);
-        adjustNotMatchPassed(notMatchPassed, vectorClient);
+        executor.execute(() -> adjustMatchAndPassed(matchAndPassed, inputVector, input, vectorClient));
+        executor.execute(() -> adjustMatchNotPassed(matchNotPassed, vectorClient));
+        executor.execute(() -> adjustNotMatchPassed(notMatchPassed, inputVector, input, vectorClient));
     }
 
     /**
-     * 命中缓存且评估通过时，根据输入内容的语义向量与现有的输入语义向量进行带权移动平均，以相似度为权重
+     * 命中缓存且评估通过时
      *
      * @param matchAndPassed 该类型的带调整缓存信息列表
+     * @param inputVector    本次输入内容的语义向量
      * @param vectorClient   向量客户端
      */
-    private void adjustMatchAndPassed(List<CacheAdjustData> matchAndPassed, VectorClient vectorClient) {
-
+    private void adjustMatchAndPassed(List<CacheAdjustMetaData> matchAndPassed, float[] inputVector, String input, VectorClient vectorClient) {
+        matchAndPassed.forEach(adjustData -> {
+            //获取原始缓存条目
+            String tendency = adjustData.getTendency();
+            ActionCacheData primaryCacheData = selectCacheData(tendency);
+            if (primaryCacheData == null) {
+                return;
+            }
+            primaryCacheData.updateAfterMatchAndPassed(inputVector, vectorClient, input);
+        });
     }
 
-    private void adjustMatchNotPassed(List<CacheAdjustData> matchNotPassed, VectorClient vectorClient) {
+    /**
+     * 针对命中缓存、但评估未通过的条目与输入进行处理
+     *
+     * @param matchNotPassed 该类型的带调整缓存信息列表
+     * @param vectorClient   向量客户端
+     */
+    private void adjustMatchNotPassed(List<CacheAdjustMetaData> matchNotPassed, VectorClient vectorClient) {
+        List<ActionCacheData> toRemove = new ArrayList<>();
+        matchNotPassed.forEach(adjustData -> {
+            //获取原始缓存条目
+            String tendency = adjustData.getTendency();
+            ActionCacheData primaryCacheData = selectCacheData(tendency);
+            if (primaryCacheData == null) {
+                return;
+            }
+            boolean remove = primaryCacheData.updateAfterMatchNotPassed(vectorClient);
+            if (remove) {
+                toRemove.add(primaryCacheData);
+            }
 
+        });
+        cacheLock.lock();
+        actionCache.removeAll(toRemove);
+        cacheLock.unlock();
     }
 
-    private void adjustNotMatchPassed(List<CacheAdjustData> notMatchPassed, VectorClient vectorClient) {
+    /**
+     * 针对未命中但评估通过的缓存做出调整:
+     * <ol>
+     *     <h3>如果存在缓存条目</h3>
+     *     <li>
+     *         若已生效，但此时未匹配到则说明尚未生效或者阈值、向量{@link ActionCacheData#getInputVector()}存在问题，调低阈值，同时带权移动平均
+     *     </li>
+     *     <li>
+     *         若未生效，则只增加计数并带权移动平均
+     *     </li>
+     * </ol>
+     * 如果不存在缓存条目，则新增并填充字段
+     *
+     * @param notMatchPassed 该类型的带调整缓存信息列表
+     * @param inputVector    本次输入内容的语义向量
+     * @param input          本次输入内容
+     * @param vectorClient   向量客户端
+     */
+    private void adjustNotMatchPassed(List<CacheAdjustMetaData> notMatchPassed, float[] inputVector, String input, VectorClient vectorClient) {
+        notMatchPassed.forEach(adjustData -> {
+            //获取原始缓存条目
+            String tendency = adjustData.getTendency();
+            ActionCacheData primaryCacheData = selectCacheData(tendency);
+            float[] tendencyVector = vectorClient.compute(tendency);
+            if (primaryCacheData == null) {
+                actionCache.add(new ActionCacheData(tendency, tendencyVector, inputVector, input));
+                return;
+            }
+            primaryCacheData.updateAfterNotMatchPassed(input, inputVector, tendencyVector, vectorClient);
+        });
+    }
 
+    private ActionCacheData selectCacheData(String tendency) {
+        for (ActionCacheData actionCacheData : actionCache) {
+            if (actionCacheData.getTendency().equals(tendency)) {
+                return actionCacheData;
+            }
+        }
+        log.warn("[{}] 未找到行为倾向[{}]对应的缓存条目，可能是代码逻辑存在错误", getCoreKey(), tendency);
+        return null;
     }
 
     @Override
