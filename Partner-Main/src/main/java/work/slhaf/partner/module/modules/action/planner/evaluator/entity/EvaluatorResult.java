@@ -1,8 +1,10 @@
 package work.slhaf.partner.module.modules.action.planner.evaluator.entity;
 
 import lombok.Data;
-import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.ActionType;
+import work.slhaf.partner.core.action.entity.MetaAction;
+
+import java.util.List;
 
 @Data
 public class EvaluatorResult {
@@ -10,6 +12,6 @@ public class EvaluatorResult {
     private boolean needConfirm;
     private ActionType type;
     private String scheduleContent;
-    private ActionData actionData;
+    private List<MetaAction> actionChain;
     private String tendency;
 }
