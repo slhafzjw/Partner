@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.action.entity;
+package work.slhaf.partner.core.action.entity.cache;
 
 import lombok.Data;
 

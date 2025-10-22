@@ -5,5 +5,5 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class ImmediateActionInfo extends MetaActionInfo{
+public class ImmediateActionInfo extends ActionInfo {
 }

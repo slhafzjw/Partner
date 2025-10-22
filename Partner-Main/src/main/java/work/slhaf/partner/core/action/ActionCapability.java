@@ -1,24 +1,24 @@
 package work.slhaf.partner.core.action;
 
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
-import work.slhaf.partner.core.action.entity.CacheAdjustData;
-import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.entity.ActionInfo;
+import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 
 import java.util.List;
 
 @Capability(value = "action")
 public interface ActionCapability {
-    void putPreparedAction(String uuid, MetaActionInfo metaActionInfo);
+    void putPreparedAction(String uuid, ActionInfo actionInfo);
 
-    List<MetaActionInfo> popPreparedAction(String userId);
+    List<ActionInfo> popPreparedAction(String userId);
 
-    List<MetaActionInfo> popPendingAction(String userId);
+    List<ActionInfo> popPendingAction(String userId);
 
-    List<MetaActionInfo> listPreparedAction(String userId);
+    List<ActionInfo> listPreparedAction(String userId);
 
-    List<MetaActionInfo> listPendingAction(String userId);
+    List<ActionInfo> listPendingAction(String userId);
 
-    void putPendingActions(String userId, MetaActionInfo metaActionInfo);
+    void putPendingActions(String userId, ActionInfo actionInfo);
 
     List<String> selectTendencyCache(String input);
 

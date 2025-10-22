@@ -9,7 +9,12 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.action.ActionCapability;
-import work.slhaf.partner.core.action.entity.*;
+import work.slhaf.partner.core.action.entity.ActionInfo;
+import work.slhaf.partner.core.action.entity.ActionStatus;
+import work.slhaf.partner.core.action.entity.ImmediateActionInfo;
+import work.slhaf.partner.core.action.entity.ScheduledActionInfo;
+import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
+import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
@@ -129,14 +134,14 @@ public class ActionPlanner extends PreRunningModule {
     }
 
     private void setupPendingActionInfo(PartnerRunningFlowContext context, ConfirmerResult result) {
-        //TODO 需考虑未确认任务的失效或者拒绝时机
+        //TODO 需考虑未确认任务的失效或者拒绝时机，在action core中实现
         List<String> uuids = result.getUuids();
         if (uuids == null) {
             return;
         }
         String contextUuid = context.getUuid();
-        List<MetaActionInfo> pendingActions = actionCapability.popPendingAction(context.getUserId());
-        for (MetaActionInfo actionInfo : pendingActions) {
+        List<ActionInfo> pendingActions = actionCapability.popPendingAction(context.getUserId());
+        for (ActionInfo actionInfo : pendingActions) {
             if (uuids.contains(actionInfo.getUuid())) {
                 actionCapability.putPreparedAction(contextUuid, actionInfo);
             }
@@ -146,11 +151,11 @@ public class ActionPlanner extends PreRunningModule {
 
     private void setupActionInfo(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
-            MetaActionInfo metaActionInfo = assemblyHelper.buildMetaActionInfo(evaluatorResult);
+            ActionInfo actionInfo = assemblyHelper.buildMetaActionInfo(evaluatorResult);
             if (evaluatorResult.isNeedConfirm()) {
-                actionCapability.putPendingActions(context.getUserId(), metaActionInfo);
+                actionCapability.putPendingActions(context.getUserId(), actionInfo);
             } else {
-                actionCapability.putPreparedAction(context.getUuid(), metaActionInfo);
+                actionCapability.putPreparedAction(context.getUuid(), actionInfo);
             }
         }
     }
@@ -165,7 +170,7 @@ public class ActionPlanner extends PreRunningModule {
     }
 
     private void setupPendingActions(HashMap<String, String> map, String userId) {
-        List<MetaActionInfo> actionInfos = actionCapability.listPendingAction(userId);
+        List<ActionInfo> actionInfos = actionCapability.listPendingAction(userId);
         if (actionInfos == null || actionInfos.isEmpty()) {
             map.put("[待确认行动] <待确认行动信息>", "无待确认行动");
             return;
@@ -176,7 +181,7 @@ public class ActionPlanner extends PreRunningModule {
     }
 
     private void setupPreparedActions(HashMap<String, String> map, String uuid) {
-        List<MetaActionInfo> actionInfos = actionCapability.listPreparedAction(uuid);
+        List<ActionInfo> actionInfos = actionCapability.listPreparedAction(uuid);
         if (actionInfos == null || actionInfos.isEmpty()) {
             map.put("[预备行动] <预备行动信息>", "无预备行动");
             return;
@@ -186,11 +191,10 @@ public class ActionPlanner extends PreRunningModule {
         }
     }
 
-    private String generateActionStr(MetaActionInfo metaActionInfo) {
-        ActionData actionData = metaActionInfo.getActionData();
-        return "<行动倾向>" + " : " + metaActionInfo.getTendency() +
-                "<行动原因>" + " : " + actionData.getReason() +
-                "<工具描述>" + " : " + actionData.getDescription();
+    private String generateActionStr(ActionInfo actionInfo) {
+        return "<行动倾向>" + " : " + actionInfo.getTendency() +
+                "<行动原因>" + " : " + actionInfo.getReason() +
+                "<工具描述>" + " : " + actionInfo.getDescription();
     }
 
     @Override
@@ -225,11 +229,11 @@ public class ActionPlanner extends PreRunningModule {
             return input;
         }
 
-        private MetaActionInfo buildMetaActionInfo(EvaluatorResult evaluatorResult) {
+        private ActionInfo buildMetaActionInfo(EvaluatorResult evaluatorResult) {
             return switch (evaluatorResult.getType()) {
                 case PLANNING -> {
                     ScheduledActionInfo actionInfo = new ScheduledActionInfo();
-                    actionInfo.setActionData(evaluatorResult.getActionData());
+                    actionInfo.setActionChain(evaluatorResult.getActionChain());
                     actionInfo.setScheduleContent(evaluatorResult.getScheduleContent());
                     actionInfo.setStatus(ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
@@ -237,7 +241,7 @@ public class ActionPlanner extends PreRunningModule {
                 }
                 case IMMEDIATE -> {
                     ImmediateActionInfo actionInfo = new ImmediateActionInfo();
-                    actionInfo.setActionData(evaluatorResult.getActionData());
+                    actionInfo.setActionChain(evaluatorResult.getActionChain());
                     actionInfo.setStatus(ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
                     yield actionInfo;
@@ -248,7 +252,7 @@ public class ActionPlanner extends PreRunningModule {
         private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
             ConfirmerInput confirmerInput = new ConfirmerInput();
             confirmerInput.setInput(context.getInput());
-            List<MetaActionInfo> pendingActions = actionCapability.listPendingAction(context.getUserId());
+            List<ActionInfo> pendingActions = actionCapability.listPendingAction(context.getUserId());
             confirmerInput.setActionInfos(pendingActions);
             return confirmerInput;
         }
