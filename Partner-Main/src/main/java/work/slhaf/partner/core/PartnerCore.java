@@ -13,10 +13,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import static work.slhaf.partner.common.Constant.Path.MEMORY_DATA;
+
 @Slf4j
 public abstract class PartnerCore<T extends PartnerCore<T>> extends PersistableObject {
 
-    private static final String STORAGE_DIR = "./data/memory/";
     private final String id = ((PartnerAgentConfigManager) AgentConfigManager.INSTANCE).getConfig().getAgentId();
 
     public PartnerCore() throws IOException, ClassNotFoundException {
@@ -53,7 +54,7 @@ public abstract class PartnerCore<T extends PartnerCore<T>> extends PersistableO
     public void serialize() throws IOException {
         //先写入到临时文件，如果正常写入则覆盖原文件
         Path filePath = getFilePath(id + "-temp");
-        Files.createDirectories(Path.of(STORAGE_DIR));
+        Files.createDirectories(Path.of(MEMORY_DATA));
         try {
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath.toFile()));
             oos.writeObject(this);
@@ -78,12 +79,12 @@ public abstract class PartnerCore<T extends PartnerCore<T>> extends PersistableO
     }
 
     private Path getFilePath(String s) {
-        return Paths.get(STORAGE_DIR, s + "-" + getCoreKey() + ".memory");
+        return Paths.get(MEMORY_DATA, s + "-" + getCoreKey() + ".memory");
     }
 
     private void createStorageDirectory() {
         try {
-            Files.createDirectories(Paths.get(STORAGE_DIR));
+            Files.createDirectories(Paths.get(MEMORY_DATA));
         } catch (IOException e) {
             log.error("[{}]创建存储目录失败: {}", getCoreKey(), e.getMessage());
         }

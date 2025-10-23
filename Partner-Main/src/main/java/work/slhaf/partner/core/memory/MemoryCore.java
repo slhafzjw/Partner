@@ -198,9 +198,9 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
             //尝试更新缓存
             updateCache(topicPath, memoryResult);
         } catch (Exception e) {
-            log.error("[CoordinatedManager] selectMemory error: ", e);
-            log.error("[CoordinatedManager] 路径: {}", topicPathStr);
-            log.error("[CoordinatedManager] 主题树: {}", getTopicTree());
+            log.error("[{}] selectMemory error: ", getCoreKey(), e);
+            log.error("[{}] 路径: {}", getCoreKey(), topicPathStr);
+            log.error("[{}] 主题树: {}", getCoreKey(), getTopicTree());
             memoryResult = new MemoryResult();
             memoryResult.setRelatedMemorySliceResult(new ArrayList<>());
             memoryResult.setMemorySliceResult(new CopyOnWriteArrayList<>());
@@ -211,7 +211,7 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
     @CapabilityMethod
     public void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices) {
         cache.activatedSlices.put(userId, memorySlices);
-        log.debug("[CoordinatedManager] 已更新激活切片, userId: {}", userId);
+        log.debug("[{}] 已更新激活切片, userId: {}", getCoreKey(), userId);
     }
 
     @CapabilityMethod

@@ -1,7 +1,6 @@
 package work.slhaf.partner.module.modules.action.planner.evaluator.entity;
 
 import lombok.Data;
-import work.slhaf.partner.core.action.entity.ActionType;
 import work.slhaf.partner.core.action.entity.MetaAction;
 
 import java.util.List;
@@ -14,4 +13,8 @@ public class EvaluatorResult {
     private String scheduleContent;
     private List<MetaAction> actionChain;
     private String tendency;
+
+    public enum ActionType {
+        IMMEDIATE, PLANNING
+    }
 }
