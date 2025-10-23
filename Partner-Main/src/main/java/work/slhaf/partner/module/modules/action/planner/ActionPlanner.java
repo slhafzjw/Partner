@@ -9,10 +9,9 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.action.ActionCapability;
-import work.slhaf.partner.core.action.entity.ActionInfo;
-import work.slhaf.partner.core.action.entity.ActionStatus;
-import work.slhaf.partner.core.action.entity.ImmediateActionInfo;
-import work.slhaf.partner.core.action.entity.ScheduledActionInfo;
+import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.ImmediateActionData;
+import work.slhaf.partner.core.action.entity.ScheduledActionData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -140,10 +139,10 @@ public class ActionPlanner extends PreRunningModule {
             return;
         }
         String contextUuid = context.getUuid();
-        List<ActionInfo> pendingActions = actionCapability.popPendingAction(context.getUserId());
-        for (ActionInfo actionInfo : pendingActions) {
-            if (uuids.contains(actionInfo.getUuid())) {
-                actionCapability.putPreparedAction(contextUuid, actionInfo);
+        List<ActionData> pendingActions = actionCapability.popPendingAction(context.getUserId());
+        for (ActionData actionData : pendingActions) {
+            if (uuids.contains(actionData.getUuid())) {
+                actionCapability.putPreparedAction(contextUuid, actionData);
             }
         }
     }
@@ -151,11 +150,11 @@ public class ActionPlanner extends PreRunningModule {
 
     private void setupActionInfo(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
-            ActionInfo actionInfo = assemblyHelper.buildMetaActionInfo(evaluatorResult);
+            ActionData actionData = assemblyHelper.buildMetaActionInfo(evaluatorResult);
             if (evaluatorResult.isNeedConfirm()) {
-                actionCapability.putPendingActions(context.getUserId(), actionInfo);
+                actionCapability.putPendingActions(context.getUserId(), actionData);
             } else {
-                actionCapability.putPreparedAction(context.getUuid(), actionInfo);
+                actionCapability.putPreparedAction(context.getUuid(), actionData);
             }
         }
     }
@@ -170,31 +169,31 @@ public class ActionPlanner extends PreRunningModule {
     }
 
     private void setupPendingActions(HashMap<String, String> map, String userId) {
-        List<ActionInfo> actionInfos = actionCapability.listPendingAction(userId);
-        if (actionInfos == null || actionInfos.isEmpty()) {
+        List<ActionData> actionData = actionCapability.listPendingAction(userId);
+        if (actionData == null || actionData.isEmpty()) {
             map.put("[待确认行动] <待确认行动信息>", "无待确认行动");
             return;
         }
-        for (int i = 0; i < actionInfos.size(); i++) {
-            map.put("[待确认行动 " + (i + 1) + " ]", generateActionStr(actionInfos.get(i)));
+        for (int i = 0; i < actionData.size(); i++) {
+            map.put("[待确认行动 " + (i + 1) + " ]", generateActionStr(actionData.get(i)));
         }
     }
 
     private void setupPreparedActions(HashMap<String, String> map, String uuid) {
-        List<ActionInfo> actionInfos = actionCapability.listPreparedAction(uuid);
-        if (actionInfos == null || actionInfos.isEmpty()) {
+        List<ActionData> actionData = actionCapability.listPreparedAction(uuid);
+        if (actionData == null || actionData.isEmpty()) {
             map.put("[预备行动] <预备行动信息>", "无预备行动");
             return;
         }
-        for (int i = 0; i < actionInfos.size(); i++) {
-            map.put("[预备行动 " + (i + 1) + " ]", generateActionStr(actionInfos.get(i)));
+        for (int i = 0; i < actionData.size(); i++) {
+            map.put("[预备行动 " + (i + 1) + " ]", generateActionStr(actionData.get(i)));
         }
     }
 
-    private String generateActionStr(ActionInfo actionInfo) {
-        return "<行动倾向>" + " : " + actionInfo.getTendency() +
-                "<行动原因>" + " : " + actionInfo.getReason() +
-                "<工具描述>" + " : " + actionInfo.getDescription();
+    private String generateActionStr(ActionData actionData) {
+        return "<行动倾向>" + " : " + actionData.getTendency() +
+                "<行动原因>" + " : " + actionData.getReason() +
+                "<工具描述>" + " : " + actionData.getDescription();
     }
 
     @Override
@@ -229,20 +228,20 @@ public class ActionPlanner extends PreRunningModule {
             return input;
         }
 
-        private ActionInfo buildMetaActionInfo(EvaluatorResult evaluatorResult) {
+        private ActionData buildMetaActionInfo(EvaluatorResult evaluatorResult) {
             return switch (evaluatorResult.getType()) {
                 case PLANNING -> {
-                    ScheduledActionInfo actionInfo = new ScheduledActionInfo();
+                    ScheduledActionData actionInfo = new ScheduledActionData();
                     actionInfo.setActionChain(evaluatorResult.getActionChain());
                     actionInfo.setScheduleContent(evaluatorResult.getScheduleContent());
-                    actionInfo.setStatus(ActionStatus.PREPARE);
+                    actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
                     yield actionInfo;
                 }
                 case IMMEDIATE -> {
-                    ImmediateActionInfo actionInfo = new ImmediateActionInfo();
+                    ImmediateActionData actionInfo = new ImmediateActionData();
                     actionInfo.setActionChain(evaluatorResult.getActionChain());
-                    actionInfo.setStatus(ActionStatus.PREPARE);
+                    actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
                     yield actionInfo;
                 }
@@ -252,8 +251,8 @@ public class ActionPlanner extends PreRunningModule {
         private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
             ConfirmerInput confirmerInput = new ConfirmerInput();
             confirmerInput.setInput(context.getInput());
-            List<ActionInfo> pendingActions = actionCapability.listPendingAction(context.getUserId());
-            confirmerInput.setActionInfos(pendingActions);
+            List<ActionData> pendingActions = actionCapability.listPendingAction(context.getUserId());
+            confirmerInput.setActionData(pendingActions);
             return confirmerInput;
         }
     }
