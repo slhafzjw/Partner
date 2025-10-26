@@ -5,12 +5,12 @@ import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 @Capability(value = "action")
 public interface ActionCapability {
     void putPreparedAction(String uuid, ActionData actionData);
-
-    List<ActionData> popPreparedAction(String userId);
 
     List<ActionData> popPendingAction(String userId);
 
@@ -23,4 +23,8 @@ public interface ActionCapability {
     List<String> selectTendencyCache(String input);
 
     void updateTendencyCache(CacheAdjustData data);
+
+    ExecutorService getExecutor(ActionCore.ExecutorType type);
+
+    Set<String> getExistedMetaActions();
 }

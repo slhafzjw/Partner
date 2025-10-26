@@ -64,11 +64,6 @@ public class CognationCore extends PartnerCore<CognationCore> {
     }
 
     @CapabilityMethod
-    public void setChatMessages(List<Message> chatMessages) {
-        this.chatMessages = chatMessages;
-    }
-
-    @CapabilityMethod
     public void cleanMessage(List<Message> messages) {
         messageLock.lock();
         this.getChatMessages().removeAll(messages);

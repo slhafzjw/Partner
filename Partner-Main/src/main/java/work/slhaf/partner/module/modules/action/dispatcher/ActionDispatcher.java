@@ -42,7 +42,7 @@ public class ActionDispatcher extends PostRunningModule {
         //对于将触发的PLANNING action，理想做法是将执行工具做成执行链的形式，模型的自对话流程、是否通知用户都做成与普通工具同等的通用可选能力，避免绑定固定流程
         executor.execute(() -> {
             String userId = context.getUserId();
-            List<ActionData> preparedActions = actionCapability.popPreparedAction(userId);
+            List<ActionData> preparedActions = actionCapability.listPreparedAction(userId);
             //分类成PLANNING和IMMEDIATE两类
             List<ScheduledActionData> scheduledActions = new ArrayList<>();
             List<ImmediateActionData> immediateActions = new ArrayList<>();

@@ -13,7 +13,7 @@ public abstract class ActionData {
     protected String tendency;
     protected ActionStatus status;
     protected List<MetaAction> actionChain;
-    protected String Result;
+    protected String result;
     protected String reason;
     protected String description;
 

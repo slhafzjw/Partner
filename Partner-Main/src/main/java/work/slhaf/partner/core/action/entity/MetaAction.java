@@ -6,7 +6,6 @@ import work.slhaf.partner.common.Constant;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
 
 import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 
@@ -14,7 +13,7 @@ import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
  * 行动链中的单一元素，实现{@link Runnable}接口，封装了调用外部行动程序的必要信息，可被执行
  */
 @Data
-public class MetaAction implements Comparable<MetaAction>, Callable<Void> {
+public class MetaAction implements Comparable<MetaAction>, Runnable {
 
     /**
      * 行动key，用于标识与定位行动程序
@@ -47,13 +46,12 @@ public class MetaAction implements Comparable<MetaAction>, Callable<Void> {
     }
 
     @Override
-    public Void call() {
+    public void run() {
         File action = loadFromFile();
         if (!action.exists()) {
             result = new Result();
             result.setSuccess(false);
             result.setData("Action file not found: " + action.getAbsolutePath());
-            return null;
         }
         try {
             switch (type) {
@@ -66,7 +64,6 @@ public class MetaAction implements Comparable<MetaAction>, Callable<Void> {
             result.setSuccess(false);
             result.setData(e.getMessage());
         }
-        return null;
     }
 
     private File loadFromFile() {
