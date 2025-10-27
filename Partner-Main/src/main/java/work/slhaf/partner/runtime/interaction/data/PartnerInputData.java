@@ -7,7 +7,8 @@ import work.slhaf.partner.api.agent.runtime.interaction.data.AgentInputData;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class PartnerInputData extends AgentInputData {
-    private String userNickName;
-    private String platform;
-    private boolean single;
+    protected String userNickName;
+    protected String platform;
+    protected boolean single;
+    protected PartnerInputType inputType;
 }

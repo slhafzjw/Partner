@@ -11,6 +11,7 @@ import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.ImmediateActionData;
+import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.ScheduledActionData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
@@ -29,10 +30,7 @@ import work.slhaf.partner.module.modules.action.planner.extractor.entity.Extract
 import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 /**
@@ -163,8 +161,9 @@ public class ActionPlanner extends PreRunningModule {
     @Override
     protected HashMap<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
-        setupPendingActions(map, context.getUserId());
-        setupPreparedActions(map, context.getUuid());
+        String userId = context.getUserId();
+        setupPendingActions(map, userId);
+        setupPreparedActions(map, userId);
         return map;
     }
 
@@ -179,8 +178,8 @@ public class ActionPlanner extends PreRunningModule {
         }
     }
 
-    private void setupPreparedActions(HashMap<String, String> map, String uuid) {
-        List<ActionData> actionData = actionCapability.listPreparedAction(uuid);
+    private void setupPreparedActions(HashMap<String, String> map, String userId) {
+        List<ActionData> actionData = actionCapability.listPreparedAction(userId);
         if (actionData == null || actionData.isEmpty()) {
             map.put("[预备行动] <预备行动信息>", "无预备行动");
             return;
@@ -229,10 +228,14 @@ public class ActionPlanner extends PreRunningModule {
         }
 
         private ActionData buildMetaActionInfo(EvaluatorResult evaluatorResult) {
+            LinkedHashMap<Integer, List<MetaAction>> actionChain = new LinkedHashMap<>();
+            for (MetaAction metaAction : evaluatorResult.getActionChain()) {
+                actionChain.computeIfAbsent(metaAction.getOrder(), k -> new ArrayList<>()).add(metaAction);
+            }
             return switch (evaluatorResult.getType()) {
                 case PLANNING -> {
                     ScheduledActionData actionInfo = new ScheduledActionData();
-                    actionInfo.setActionChain(evaluatorResult.getActionChain());
+                    actionInfo.setActionChain(actionChain);
                     actionInfo.setScheduleContent(evaluatorResult.getScheduleContent());
                     actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
@@ -240,7 +243,7 @@ public class ActionPlanner extends PreRunningModule {
                 }
                 case IMMEDIATE -> {
                     ImmediateActionData actionInfo = new ImmediateActionData();
-                    actionInfo.setActionChain(evaluatorResult.getActionChain());
+                    actionInfo.setActionChain(actionChain);
                     actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
                     yield actionInfo;

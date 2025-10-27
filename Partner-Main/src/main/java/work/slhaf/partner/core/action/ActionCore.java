@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class ActionCore extends PartnerCore<ActionCore> {
 
     /**
-     * 对应本次交互即将执行或将要放置在行动池的预备任务，因此将以本次交互的uuid为键，其起到的作用相当于暂时的模块上下文
+     * 持久行动池，以用户id为键存储所有状态的任务
      */
     private HashMap<String, List<ActionData>> actionPool = new HashMap<>();
 
@@ -48,7 +48,25 @@ public class ActionCore extends PartnerCore<ActionCore> {
 
     public ActionCore() throws IOException, ClassNotFoundException {
         new ActionWatchService(existedMetaActions, virtualExecutor).launch();
+        setupShutdownHook();
     }
+
+    private void setupShutdownHook() {
+        // 将执行中的行动状态置为失败
+        List<ActionData> executingActionList = listExecutingAction();
+        for (ActionData actionData : executingActionList) {
+            actionData.setStatus(ActionData.ActionStatus.FAILED);
+            actionData.setResult("由于系统中断而失败");
+        }
+    }
+
+    private List<ActionData> listExecutingAction() {
+        return actionPool.values().stream()
+                .flatMap(Collection::stream)
+                .filter(action -> action.getStatus() == ActionData.ActionStatus.EXECUTING)
+                .collect(Collectors.toList());
+    }
+
 
     @CapabilityMethod
     public synchronized void putPendingActions(String userId, ActionData actionData) {

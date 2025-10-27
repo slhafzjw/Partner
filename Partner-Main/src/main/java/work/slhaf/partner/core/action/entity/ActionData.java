@@ -2,6 +2,7 @@ package work.slhaf.partner.core.action.entity;
 
 import lombok.Data;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -12,7 +13,7 @@ public abstract class ActionData {
     protected String uuid;
     protected String tendency;
     protected ActionStatus status;
-    protected List<MetaAction> actionChain;
+    protected LinkedHashMap<Integer, List<MetaAction>> actionChain;
     protected String result;
     protected String reason;
     protected String description;

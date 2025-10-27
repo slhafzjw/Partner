@@ -26,7 +26,7 @@ public class MetaAction implements Comparable<MetaAction>, Runnable {
     /**
      * 行动结果，包括执行状态和相应内容(执行结果或者错误信息)
      */
-    private Result result;
+    private Result result = new Result();
     /**
      * 执行顺序，升序排列
      */
@@ -88,7 +88,7 @@ public class MetaAction implements Comparable<MetaAction>, Runnable {
 
     @Data
     public static class Result {
-        private boolean success;
+        private boolean success = true;
         private String data;
     }
 

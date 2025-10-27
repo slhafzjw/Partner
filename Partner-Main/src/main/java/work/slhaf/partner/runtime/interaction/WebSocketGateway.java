@@ -13,8 +13,7 @@ import work.slhaf.partner.api.agent.runtime.interaction.AgentGateway;
 import work.slhaf.partner.api.agent.runtime.interaction.AgentInteractionAdapter;
 import work.slhaf.partner.common.config.PartnerAgentConfigManager;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.runtime.interaction.data.PartnerInputData;
-import work.slhaf.partner.runtime.interaction.data.PartnerOutputData;
+import work.slhaf.partner.runtime.interaction.data.*;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.net.InetSocketAddress;
@@ -141,7 +140,12 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<Pa
 
     @Override
     public void onMessage(WebSocket webSocket, String s) {
-        PartnerInputData inputData = JSONObject.parseObject(s, PartnerInputData.class);
+        JSONObject parsedObject = JSONObject.parseObject(s);
+        PartnerInputType inputType = parsedObject.getObject(SpecializedPayloadConstant.TYPE, PartnerInputType.class);
+        PartnerInputData inputData = switch (inputType) {
+            case NORMAL -> parsedObject.to(PartnerInputData.class);
+            case SYSTEM, ASSIST_REQUEST, REFLECTION -> parsedObject.to(SpecializedPartnerInputData.class);
+        };
         userSessions.put(inputData.getUserInfo(), webSocket); // 注册连接
         receive(inputData);
     }
