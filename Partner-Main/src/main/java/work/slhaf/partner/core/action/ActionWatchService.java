@@ -21,9 +21,9 @@ import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 @Slf4j
 class ActionWatchService {
 
-    private HashMap<Path, WatchKey> registeredPaths = new HashMap<>();
-    private LinkedHashMap<String, MetaActionInfo> existedMetaActions;
-    private ExecutorService virtualExecutor;
+    private final HashMap<Path, WatchKey> registeredPaths = new HashMap<>();
+    private final LinkedHashMap<String, MetaActionInfo> existedMetaActions;
+    private final ExecutorService virtualExecutor;
 
     public ActionWatchService(LinkedHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService virtualExecutor) {
         this.existedMetaActions = existedMetaActions;
@@ -114,7 +114,7 @@ class ActionWatchService {
     private boolean checkComplete(Path thisDir) {
         File[] files = thisDir.toFile().listFiles();
         if (files == null) {
-            log.error("[{}]当前目录无法访问: [{}]", thisDir);
+            log.error("当前目录无法访问: [{}]", thisDir);
             return false;
         }
         boolean existedAction = false;

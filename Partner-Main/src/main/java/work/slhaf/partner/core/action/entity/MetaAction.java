@@ -26,7 +26,7 @@ public class MetaAction implements Comparable<MetaAction>, Runnable {
     /**
      * 行动结果，包括执行状态和相应内容(执行结果或者错误信息)
      */
-    private Result result = new Result();
+    private final Result result = new Result();
     /**
      * 执行顺序，升序排列
      */
@@ -49,7 +49,6 @@ public class MetaAction implements Comparable<MetaAction>, Runnable {
     public void run() {
         File action = loadFromFile();
         if (!action.exists()) {
-            result = new Result();
             result.setSuccess(false);
             result.setData("Action file not found: " + action.getAbsolutePath());
         }
@@ -60,7 +59,6 @@ public class MetaAction implements Comparable<MetaAction>, Runnable {
                 case SCRIPT -> executeScript(action);
             }
         } catch (Exception e) {
-            result = new Result();
             result.setSuccess(false);
             result.setData(e.getMessage());
         }
@@ -89,7 +87,7 @@ public class MetaAction implements Comparable<MetaAction>, Runnable {
     @Data
     public static class Result {
         private boolean success = true;
-        private String data;
+        private String data = null;
     }
 
 }

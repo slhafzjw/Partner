@@ -1,20 +1,26 @@
 package work.slhaf.partner.core.action;
 
+import cn.hutool.core.bean.BeanUtil;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.cache.ActionCacheData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
+import work.slhaf.partner.core.action.exception.ActionDataNotFoundException;
+import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -44,7 +50,11 @@ public class ActionCore extends PartnerCore<ActionCore> {
     private final ExecutorService platformExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private final ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
+    /**
+     * 已存在的行动程序，键为目录名，值为从目录加载的行动程序元信息
+     */
     private final LinkedHashMap<String, MetaActionInfo> existedMetaActions = new LinkedHashMap<>();
+    private final List<PhaserRecord> phaserRecords = new ArrayList<>();
 
     public ActionCore() throws IOException, ClassNotFoundException {
         new ActionWatchService(existedMetaActions, virtualExecutor).launch();
@@ -66,7 +76,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
                 .filter(action -> action.getStatus() == ActionData.ActionStatus.EXECUTING)
                 .collect(Collectors.toList());
     }
-
 
     @CapabilityMethod
     public synchronized void putPendingActions(String userId, ActionData actionData) {
@@ -171,6 +180,48 @@ public class ActionCore extends PartnerCore<ActionCore> {
         return existedMetaActions.keySet();
     }
 
+    @CapabilityMethod
+    public synchronized void putPhaserRecord(Phaser phaser, ActionData actionData) {
+        phaserRecords.add(new PhaserRecord(phaser, actionData));
+    }
+
+    @CapabilityMethod
+    public synchronized void removePhaserRecord(Phaser phaser) {
+        PhaserRecord remove = null;
+        for (PhaserRecord record : phaserRecords) {
+            if (record.phaser.equals(phaser)) {
+                remove = record;
+            }
+        }
+
+        if (remove != null) {
+            phaserRecords.remove(remove);
+        }
+    }
+
+    @CapabilityMethod
+    public PhaserRecord getPhaserRecord(String tendency, String source) {
+        for (PhaserRecord record : phaserRecords) {
+            ActionData data = record.actionData;
+            if (data.getTendency().equals(tendency) && data.getSource().equals(source)) {
+                return record;
+            }
+        }
+        throw new ActionDataNotFoundException("未找到对应的 Phaser 记录: tendency=" + tendency + ", source=" + source);
+    }
+
+    @CapabilityMethod
+    public MetaAction loadMetaAction(@NonNull String actionKey) {
+        for (MetaActionInfo actionInfo : existedMetaActions.values()) {
+            if (actionInfo.getKey().equals(actionKey)) {
+                MetaAction metaAction = new MetaAction();
+                BeanUtil.copyProperties(actionInfo, metaAction);
+                return metaAction;
+            }
+        }
+        throw new MetaActionNotFoundException("未找到对应的行动程序信息" + actionKey);
+    }
+
     /**
      * 命中缓存且评估通过时
      *
@@ -267,5 +318,8 @@ public class ActionCore extends PartnerCore<ActionCore> {
 
     public enum ExecutorType {
         VIRTUAL, PLATFORM
+    }
+
+    public record PhaserRecord(Phaser phaser, ActionData actionData) {
     }
 }

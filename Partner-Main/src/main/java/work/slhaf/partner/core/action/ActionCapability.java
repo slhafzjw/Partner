@@ -1,12 +1,15 @@
 package work.slhaf.partner.core.action;
 
+import lombok.NonNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Phaser;
 
 @Capability(value = "action")
 public interface ActionCapability {
@@ -27,4 +30,13 @@ public interface ActionCapability {
     ExecutorService getExecutor(ActionCore.ExecutorType type);
 
     Set<String> getExistedMetaActions();
+
+    void putPhaserRecord(Phaser phaser, ActionData actionData);
+
+    void removePhaserRecord(Phaser phaser);
+
+    ActionCore.PhaserRecord getPhaserRecord(String tendency, String source);
+
+    MetaAction loadMetaAction(@NonNull String actionKey);
+
 }

@@ -10,5 +10,4 @@ public class PartnerInputData extends AgentInputData {
     protected String userNickName;
     protected String platform;
     protected boolean single;
-    protected PartnerInputType inputType;
 }

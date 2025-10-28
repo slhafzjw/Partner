@@ -3,7 +3,6 @@ package work.slhaf.partner.runtime.interaction;
 import work.slhaf.partner.api.agent.runtime.interaction.AgentInteractionAdapter;
 import work.slhaf.partner.runtime.interaction.data.PartnerInputData;
 import work.slhaf.partner.runtime.interaction.data.PartnerOutputData;
-import work.slhaf.partner.runtime.interaction.data.SpecializedPartnerInputData;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 public class PartnerInteractionAdapter extends AgentInteractionAdapter<PartnerInputData, PartnerOutputData, PartnerRunningFlowContext> {
@@ -34,10 +33,6 @@ public class PartnerInteractionAdapter extends AgentInteractionAdapter<PartnerIn
         context.setSingle(inputData.isSingle());
         context.setPlatform(inputData.getPlatform());
         context.setInput(inputData.getContent());
-        context.setType(inputData.getInputType());
-        if (inputData instanceof SpecializedPartnerInputData specializedData) {
-            context.setPayload(specializedData.getPayload());
-        }
         return context;
     }
 }

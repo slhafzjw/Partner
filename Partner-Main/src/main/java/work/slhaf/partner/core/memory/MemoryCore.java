@@ -488,7 +488,7 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
         return targetParentNode;
     }
 
-    public void updateCacheCounter(List<String> topicPath) {
+    private void updateCacheCounter(List<String> topicPath) {
         ConcurrentHashMap<List<String>, Integer> memoryNodeCacheCounter = cache.memoryNodeCacheCounter;
         if (memoryNodeCacheCounter.containsKey(topicPath)) {
             Integer tempCount = memoryNodeCacheCounter.get(topicPath);

@@ -17,6 +17,7 @@ public abstract class ActionData {
     protected String result;
     protected String reason;
     protected String description;
+    protected String source;
 
     public enum ActionStatus {
         SUCCESS, FAILED, EXECUTING, WAITING, PREPARE

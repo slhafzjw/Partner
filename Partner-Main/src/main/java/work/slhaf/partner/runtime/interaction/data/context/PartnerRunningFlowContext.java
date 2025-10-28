@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
-import work.slhaf.partner.runtime.interaction.data.PartnerInputType;
 import work.slhaf.partner.runtime.interaction.data.context.subcontext.CoreContext;
 import work.slhaf.partner.runtime.interaction.data.context.subcontext.ModuleContext;
 
@@ -13,7 +12,6 @@ import java.io.Serial;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @EqualsAndHashCode(callSuper = true)
@@ -31,9 +29,6 @@ public class PartnerRunningFlowContext extends RunningFlowContext {
     protected String platform;
     protected LocalDateTime dateTime;
     protected boolean single;
-
-    protected PartnerInputType type;
-    protected Map<String, String> payload;
 
     protected String input;
 
