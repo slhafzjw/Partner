@@ -35,6 +35,8 @@ public interface ActionCapability {
 
     void removePhaserRecord(Phaser phaser);
 
+    List<ActionCore.PhaserRecord> listPhaserRecords();
+
     ActionCore.PhaserRecord getPhaserRecord(String tendency, String source);
 
     MetaAction loadMetaAction(@NonNull String actionKey);

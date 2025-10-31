@@ -119,6 +119,11 @@ public class MemoryUpdater extends PostRunningModule {
         });
     }
 
+    @Override
+    protected boolean relyOnMessage() {
+        return true;
+    }
+
     private void updateMemory() {
         log.debug("[MemoryUpdater] 记忆更新流程开始...");
         tempMessage = new ArrayList<>(cognationCapability.getChatMessages());

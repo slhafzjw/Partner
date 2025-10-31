@@ -40,5 +40,4 @@ public abstract class PreRunningModule extends AgentRunningModule<PartnerRunning
 
     protected abstract void doExecute(PartnerRunningFlowContext context);
 
-
 }

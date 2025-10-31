@@ -222,6 +222,11 @@ public class ActionCore extends PartnerCore<ActionCore> {
         throw new MetaActionNotFoundException("未找到对应的行动程序信息" + actionKey);
     }
 
+    @CapabilityMethod
+    public List<PhaserRecord> listPhaserRecords() {
+        return phaserRecords;
+    }
+
     /**
      * 命中缓存且评估通过时
      *

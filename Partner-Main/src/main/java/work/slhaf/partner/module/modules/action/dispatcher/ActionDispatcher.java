@@ -58,4 +58,9 @@ public class ActionDispatcher extends PostRunningModule {
         });
     }
 
+    @Override
+    protected boolean relyOnMessage() {
+        return false;
+    }
+
 }

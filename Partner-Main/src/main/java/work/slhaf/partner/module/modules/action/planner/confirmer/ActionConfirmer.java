@@ -10,6 +10,7 @@ import work.slhaf.partner.module.modules.action.planner.confirmer.entity.Confirm
 public class ActionConfirmer extends AgentRunningSubModule<ConfirmerInput, ConfirmerResult> implements ActivateModel {
     @Override
     public ConfirmerResult execute(ConfirmerInput data) {
+        //TODO 完善确认逻辑
         return null;
     }
 

@@ -8,8 +8,7 @@ public class ChatConstant {
         public static final String ASSISTANT = "assistant";
     }
 
-    public static class Response {
-        public static final String SUCCESS = "success";
-        public static final String ERROR = "error";
+    public enum ResponseStatus {
+        SUCCESS, FAILED
     }
 }
