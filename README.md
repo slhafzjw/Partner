@@ -8,6 +8,53 @@
 Partner 的目标不是复现某种单一能力，而是尝试在结构中形成“**跨模块协同与记忆演化的可能性**”。如果“自我”是结构的涌现而非静态实体，那么这种多维度的结构系统，也可能拥有它自身的存在路径。
 
 ## 核心结构
+## 整体流程
+```mermaid
+---
+config:
+  layout: elk
+  elk:
+    nodePlacementStrategy: LINEAR_SEGMENTS
+---
+
+flowchart TD
+
+  Gate[Agent 网关]
+  Core[主模块]
+  Adapter[适配器]
+
+  Gate <--> Adapter
+
+  Adapter --> Mem.Pre
+  Adapter --> Per.Pre
+  Adapter --> Act.Pre
+
+  Mem.Pre --> Core
+  Per.Pre --> Core
+  Act.Pre --> Core
+
+  Core --> |异步| Mem.Post
+  Core --> |异步| Per.Post
+  Core --> |异步| Act.Post 
+
+  Core --> |异步响应| Adapter
+
+  subgraph Pre [前置流程.并发执行]
+    direction TB
+    Mem.Pre[记忆模块.选择]
+    Per.Pre[感知模块.选择]
+    Act.Pre[动作模块.规划]
+  end
+
+  subgraph Post [后置流程]
+    direction TB
+    Mem.Post[记忆模块.更新]
+    Per.Post[感知模块.更新]
+    Act.Post[动作模块.分发]
+  end
+
+
+```
 ### 主体部分
 #### 结构化记忆系统
 
