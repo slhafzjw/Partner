@@ -52,8 +52,6 @@ flowchart TD
     Per.Post[感知模块.更新]
     Act.Post[动作模块.分发]
   end
-
-
 ```
 ### 主体部分
 #### 结构化记忆系统
