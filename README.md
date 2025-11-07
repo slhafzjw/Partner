@@ -7,7 +7,8 @@
 ## 设计理念
 Partner 的目标不是复现某种单一能力，而是尝试在结构中形成“**跨模块协同与记忆演化的可能性**”。如果“自我”是结构的涌现而非静态实体，那么这种多维度的结构系统，也可能拥有它自身的存在路径。
 
-## 整体流程
+## 流程参考
+### 整体流程
 ```mermaid
 ---
 config:
@@ -52,6 +53,10 @@ flowchart TD
     Act.Post[动作模块.分发]
   end
 ```
+## 模块流程参考
+- [记忆模块](doc/architechture/memory.md)
+- [感知模块](doc/architechture/perceive.md)
+- [行动模块](doc/architechture/action.md)
 ## 核心结构
 ### 主体部分
 #### 结构化记忆系统
