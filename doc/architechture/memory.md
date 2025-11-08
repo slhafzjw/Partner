@@ -46,8 +46,48 @@ flowchart TD
 
 ### 后置
 ```mermaid
+---
+config:
+  layout: elk
+  elk:
+    nodePlacementStrategy: LINEAR_SEGMENTS
+---
+
 flowchart TD
+    direction TB
 
+    Trigger.Time[触发: 时间周期] --> MT
+    Trigger.Threshold[触发: 对话阈值] --> MT
 
+    CognationCore --> |读取| Messages
+    subgraph MT [对话分流]
+        Messages[对话记录] --> Single[单个主体对话]
+        Single --> Single1[主体1]
+        Single --> Single2[主体2]
+        Single --> Single3[主体3]
 
+        Messages[对话记录] --> Multi[多个主体对话]
+    end
+
+    subgraph MS [对话摘要]
+        Single1 --> |并发| SSum1[单主体摘要线程1] --> SSResult1[单主体摘要结果1]
+        Single2 --> |并发| SSum2[单主体摘要线程2] --> SSResult2[单主体摘要结果2]
+        Single3 --> |并发| SSum3[单主体摘要线程3] --> SSResult3[单主体摘要结果3]
+
+        Multi --> MSum[多主体摘要] --> MSResult[多主体摘要结果]
+    end
+
+    subgraph MU[记忆更新]
+        MemoryCore[记忆核心]
+        SSResult1 --> Slice1[记忆切片1] --> |更新| MemoryCore
+        SSResult2 --> Slice2[记忆切片2] --> |更新| MemoryCore
+        SSResult3 --> Slice3[记忆切片3] --> |更新| MemoryCore
+
+        MSResult --> Slice4[记忆切片4] --> |更新| MemoryCore
+
+    end
+
+    MU --> |滚动对话窗口| CognationCore
+
+    CognationCore[认知核心]
 ```
