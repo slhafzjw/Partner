@@ -23,10 +23,7 @@ import work.slhaf.partner.module.modules.memory.selector.extractor.entity.Extrac
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -133,7 +130,7 @@ public class MemorySelector extends PreRunningModule {
     }
 
     @Override
-    protected HashMap<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
+    protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
         String userId = context.getUserId();
         String dialogMapStr = memoryCapability.getDialogMapStr();
@@ -148,7 +145,7 @@ public class MemorySelector extends PreRunningModule {
 
         String sliceStr = memoryCapability.getActivatedSlicesStr(userId);
         if (sliceStr != null && !sliceStr.isEmpty()) {
-            map.put("[记忆切片] <你与最新一条消息的发送者的相关回忆, 不会与[记忆缓存]重复, 如果有重复你也可以指出来()>", sliceStr);
+            map.put("[记忆切片] <你与最新一条消息的发送者的相关回忆, 不会与[记忆缓存]重复, 如果有重复你也可以指出来>", sliceStr);
         }
         return map;
     }

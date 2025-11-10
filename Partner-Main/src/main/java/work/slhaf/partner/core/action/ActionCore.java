@@ -227,6 +227,20 @@ public class ActionCore extends PartnerCore<ActionCore> {
         return phaserRecords;
     }
 
+    @CapabilityMethod
+    public MetaActionInfo loadMetaActionInfo(@NonNull String actionKey) {
+        MetaActionInfo info = existedMetaActions.get(actionKey);
+        if (info == null) {
+            throw new MetaActionNotFoundException("未找到对应的行动程序描述信息: " + actionKey);
+        }
+        return info;
+    }
+
+    @CapabilityMethod
+    public boolean checkExists(String... actionKeys) {
+        return existedMetaActions.keySet().containsAll(Arrays.asList(actionKeys));
+    }
+
     /**
      * 命中缓存且评估通过时
      *

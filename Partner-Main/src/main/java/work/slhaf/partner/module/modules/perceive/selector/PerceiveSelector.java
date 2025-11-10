@@ -10,6 +10,7 @@ import work.slhaf.partner.module.common.module.PreRunningModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Setter
@@ -24,7 +25,7 @@ public class PerceiveSelector extends PreRunningModule {
     }
 
     @Override
-    protected HashMap<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
+    protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
         User user = perceiveCapability.getUser(context.getUserId());
         map.put("[关系] <你与最新聊天用户的关系>", user.getRelation());

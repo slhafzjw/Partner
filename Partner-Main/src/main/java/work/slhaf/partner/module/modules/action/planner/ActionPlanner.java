@@ -159,7 +159,7 @@ public class ActionPlanner extends PreRunningModule {
 
 
     @Override
-    protected HashMap<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
+    protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
         String userId = context.getUserId();
         setupPendingActions(map, userId);
@@ -170,22 +170,22 @@ public class ActionPlanner extends PreRunningModule {
     private void setupPendingActions(HashMap<String, String> map, String userId) {
         List<ActionData> actionData = actionCapability.listPendingAction(userId);
         if (actionData == null || actionData.isEmpty()) {
-            map.put("[待确认行动] <待确认行动信息>", "无待确认行动");
+            map.put("[待确认行动] <等待用户确认的行动信息>", "无待确认行动");
             return;
         }
         for (int i = 0; i < actionData.size(); i++) {
-            map.put("[待确认行动 " + (i + 1) + " ]", generateActionStr(actionData.get(i)));
+            map.put("[待确认行动 " + (i + 1) + " ] <等待用户确认的行动信息>", generateActionStr(actionData.get(i)));
         }
     }
 
     private void setupPreparedActions(HashMap<String, String> map, String userId) {
         List<ActionData> actionData = actionCapability.listPreparedAction(userId);
         if (actionData == null || actionData.isEmpty()) {
-            map.put("[预备行动] <预备行动信息>", "无预备行动");
+            map.put("[预备行动] <预备执行或放入计划池的行动信息>", "无预备行动");
             return;
         }
         for (int i = 0; i < actionData.size(); i++) {
-            map.put("[预备行动 " + (i + 1) + " ]", generateActionStr(actionData.get(i)));
+            map.put("[预备行动 " + (i + 1) + " ] <预备执行或放入计划池的行动信息>", generateActionStr(actionData.get(i)));
         }
     }
 

@@ -4,6 +4,7 @@ import lombok.NonNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.MetaAction;
+import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 
 import java.util.List;
@@ -41,4 +42,7 @@ public interface ActionCapability {
 
     MetaAction loadMetaAction(@NonNull String actionKey);
 
+    MetaActionInfo loadMetaActionInfo(@NonNull String actionKey);
+
+    boolean checkExists(String... actionKeys);
 }
