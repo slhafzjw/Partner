@@ -44,7 +44,7 @@ flowchart TD
     Throwed@{ shape: dbl-circ, label: "丢弃" }
 ```
 
-### 后置
+### 后置模块: [MemoryUpdater](../../Partner-Main/src/main/java/work/slhaf/partner/module/modules/memory/updater/MemoryUpdater.java)
 ```mermaid
 ---
 config:
