@@ -82,14 +82,12 @@ public class PerceiveCore extends PartnerCore<PerceiveCore> {
 
     @CapabilityMethod
     public void updateUser(User temp) {
-        usersLock.lock();
         User user = getUser(temp.getUuid());
         user.setRelation(temp.getRelation());
         user.setImpressions(temp.getImpressions());
         user.setAttitude(temp.getAttitude());
         user.setStaticMemory(temp.getStaticMemory());
         user.updateRelationChange(user.getRelationChange());
-        usersLock.unlock();
     }
 
     @Override
