@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.identifier;
+package work.slhaf.partner.module.modules.action.interventor;
 
 import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
@@ -10,16 +10,16 @@ import work.slhaf.partner.core.action.ActionCore.PhaserRecord;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.common.module.PreRunningModule;
-import work.slhaf.partner.module.modules.action.identifier.evaluator.InterventionEvaluator;
-import work.slhaf.partner.module.modules.action.identifier.evaluator.entity.EvaluatorInput;
-import work.slhaf.partner.module.modules.action.identifier.evaluator.entity.EvaluatorResult;
-import work.slhaf.partner.module.modules.action.identifier.evaluator.entity.EvaluatorResult.EvaluatedInterventionData;
-import work.slhaf.partner.module.modules.action.identifier.handler.InterventionHandler;
-import work.slhaf.partner.module.modules.action.identifier.handler.entity.HandlerInput;
-import work.slhaf.partner.module.modules.action.identifier.handler.entity.HandlerInput.HandlerInputData;
-import work.slhaf.partner.module.modules.action.identifier.recognizer.InterventionRecognizer;
-import work.slhaf.partner.module.modules.action.identifier.recognizer.entity.RecognizerInput;
-import work.slhaf.partner.module.modules.action.identifier.recognizer.entity.RecognizerResult;
+import work.slhaf.partner.module.modules.action.interventor.evaluator.InterventionEvaluator;
+import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorInput;
+import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorResult;
+import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorResult.EvaluatedInterventionData;
+import work.slhaf.partner.module.modules.action.interventor.handler.InterventionHandler;
+import work.slhaf.partner.module.modules.action.interventor.handler.entity.HandlerInput;
+import work.slhaf.partner.module.modules.action.interventor.handler.entity.HandlerInput.HandlerInputData;
+import work.slhaf.partner.module.modules.action.interventor.recognizer.InterventionRecognizer;
+import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerInput;
+import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.*;
@@ -60,23 +60,23 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
         String uuid = context.getUuid();
         String userId = context.getUserId();
         RecognizerResult recognizerResult = interventionRecognizer
-                .execute(buildRecognizerInput(userId, context.getInput()));
+                .execute(buildRecognizerInput(userId, context.getInput())); //此处的输入内容携带了所有 PhaserRecord
         if (!recognizerResult.isOk()) {
             // 设置相应prompt
             setupNoInterventionPrompt(uuid);
             return;
         }
         // 存在则进一步评估、评估通过则并直接添加行动程序至对应行动链
-        Map<String, PhaserRecord> recognizedInterventions = recognizerResult.getInterventions();
+        Map<String, PhaserRecord> recognizedInterventions = recognizerResult.getInterventions(); //这里的 PhaserRecord 已包含从 ActionCore 获取到的执行状态下的行动及其Phaser实例
         EvaluatorResult evaluatorResult = interventionEvaluator
-                .execute(buildEvaluatorInput(recognizedInterventions.keySet(), userId));
-        List<EvaluatedInterventionData> interventions = evaluatorResult.getDataList();
+                .execute(buildEvaluatorInput(recognizedInterventions, userId));
+        List<EvaluatedInterventionData> interventions = evaluatorResult.getDataList(); //这里的 EvaluatedInterventionData 中的 tendency 即为 recognizedInterventions 中的键
         if (evaluatorResult.isOk() && isActionKeysExist(interventions)) {
             setupErrorInterventionPrompt(uuid);
         } else if (evaluatorResult.isOk()) {
-            // 同步写入prompt，异步处理干预行为
+            // 同步写入prompt，异步处理干预行为，‘异步’在 interventionHandler 中体现
             setupInterventionPrompt(uuid, interventions);
-            interventionHandler.execute(buildHandlerInput(interventions));
+            interventionHandler.execute(buildHandlerInput(interventions, recognizedInterventions));
         } else {
             // 同步写入prompt
             setupInterventionIgnoredPrompt(uuid, interventions);
@@ -100,7 +100,7 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
         return true;
     }
 
-    private HandlerInput buildHandlerInput(List<EvaluatedInterventionData> interventions) {
+    private HandlerInput buildHandlerInput(List<EvaluatedInterventionData> interventions, Map<String,PhaserRecord> recognizedInterventions) {
         HandlerInput input = new HandlerInput();
         List<HandlerInputData> inputDataList = input.getData();
         for (EvaluatedInterventionData interventionData : interventions) {
@@ -109,6 +109,7 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
             inputData.setDescription(interventionData.getDescription());
             inputData.setType(interventionData.getType());
             inputData.setActions(interventionData.getActions());
+            inputData.setRecord(recognizedInterventions.get(interventionData.getTendency()));
             inputDataList.add(inputData);
         }
         return input;
@@ -166,9 +167,9 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
                 "[干预行动] <将对已存在行动做出的行为>", "无行动"));
     }
 
-    private EvaluatorInput buildEvaluatorInput(Set<String> interventionTendencies, String userId) {
+    private EvaluatorInput buildEvaluatorInput(Map<String,PhaserRecord> recognizedInterventions, String userId) {
         EvaluatorInput input = new EvaluatorInput();
-        input.setInterventionTendencies(interventionTendencies);
+        input.setInterventionTendencies(recognizedInterventions);
         input.setRecentMessages(cognationCapability.getChatMessages());
         input.setActivatedSlices(memoryCapability.getActivatedSlices(userId));
         return input;

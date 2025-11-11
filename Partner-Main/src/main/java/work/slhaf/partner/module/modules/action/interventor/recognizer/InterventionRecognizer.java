@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.identifier.recognizer;
+package work.slhaf.partner.module.modules.action.interventor.recognizer;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -10,9 +10,9 @@ import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ActionData;
-import work.slhaf.partner.module.modules.action.identifier.recognizer.entity.MetaRecognizerResult;
-import work.slhaf.partner.module.modules.action.identifier.recognizer.entity.RecognizerInput;
-import work.slhaf.partner.module.modules.action.identifier.recognizer.entity.RecognizerResult;
+import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.MetaRecognizerResult;
+import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerInput;
+import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerResult;
 
 import java.util.List;
 import java.util.Map;

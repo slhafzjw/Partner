@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.identifier.recognizer.entity;
+package work.slhaf.partner.module.modules.action.interventor.recognizer.entity;
 
 import lombok.Data;
 import work.slhaf.partner.api.chat.pojo.Message;

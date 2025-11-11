@@ -1,10 +1,11 @@
-package work.slhaf.partner.module.modules.action.identifier.handler.entity;
+package work.slhaf.partner.module.modules.action.interventor.handler.entity;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 import lombok.Data;
+import work.slhaf.partner.core.action.ActionCore.PhaserRecord;
 
 @Data
 public class HandlerInput {
@@ -17,5 +18,6 @@ public class HandlerInput {
         private String description;
         private InterventionType type;
         private LinkedHashMap<Integer,String> actions;
+        private PhaserRecord record;
     }
 }
