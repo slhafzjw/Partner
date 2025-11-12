@@ -53,10 +53,10 @@ flowchart TD
     Act.Post[动作模块.分发]
   end
 ```
-## 模块流程参考
+### 模块流程参考
 - [记忆模块](doc/architechture/memory.md)
 - [感知模块](doc/architechture/perceive.md)
-- [行动模块](doc/architechture/action.md)
+- [行动模块](doc/architechture/action.md) (尚未完工)
 ## 核心结构
 ### 主体部分
 #### 结构化记忆系统
