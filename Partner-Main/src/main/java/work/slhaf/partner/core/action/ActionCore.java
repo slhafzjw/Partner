@@ -33,7 +33,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
     /**
      * 持久行动池，以用户id为键存储所有状态的任务
      */
-    private HashMap<String, List<ActionData>> actionPool = new HashMap<>();
+    private HashMap<String, List<ActionData>> actionPool = new HashMap<>();//TODO 考虑是否取消用户分池
 
     /**
      * 待确认任务，以userId区分不同用户，因为需要跨请求确认

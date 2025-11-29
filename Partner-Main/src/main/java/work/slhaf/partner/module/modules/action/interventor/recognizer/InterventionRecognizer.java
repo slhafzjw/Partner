@@ -28,30 +28,21 @@ public class InterventionRecognizer extends AgentRunningSubModule<RecognizerInpu
 
     @Override
     public RecognizerResult execute(RecognizerInput input) {
-        //使用LLM进行快速意图识别
+        // 获取必须数据
         ExecutorService executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
-        RecognizerResult recognizerResult = new RecognizerResult();
-        Map<String, ActionCore.PhaserRecord> resultInterventionMap = recognizerResult.getInterventions();
         List<ActionCore.PhaserRecord> executingActions = input.getExecutingActions();
-        CountDownLatch countDownLatch = new CountDownLatch(executingActions.size());
-        for (ActionCore.PhaserRecord record : executingActions) {
-            executor.execute(() -> {
-                try {
-                    String prompt = buildPrompt(record, input);
-                    ChatResponse response = this.singleChat(prompt);
-                    MetaRecognizerResult result = JSONObject.parseObject(response.getMessage(), MetaRecognizerResult.class);
-                    if (result.isOk()) {
-                        synchronized (resultInterventionMap) {
-                            resultInterventionMap.put(result.getIntervention(), record);
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("LLM干预意图提取出错", e);
-                } finally {
-                    countDownLatch.countDown();
-                }
-            });
-        }
+        List<ActionData> preparedActions = input.getPreparedActions();
+        CountDownLatch countDownLatch = new CountDownLatch(executingActions.size() + preparedActions.size());
+
+        // 创建结果容器
+        RecognizerResult recognizerResult = new RecognizerResult();
+        Map<String, ActionCore.PhaserRecord> executingInterventions = recognizerResult.getExecutingInterventions();
+        Map<String, ActionData> preparedInterventions = recognizerResult.getPreparedInterventions();
+
+        // 执行识别操作
+        recognizeIntervention(executingInterventions, executingActions, executor, input, countDownLatch);
+        recognizeIntervention(preparedInterventions, preparedActions, executor, input, countDownLatch);
+
         try {
             countDownLatch.await();
         } catch (InterruptedException e) {
@@ -60,12 +51,40 @@ public class InterventionRecognizer extends AgentRunningSubModule<RecognizerInpu
         return recognizerResult;
     }
 
-    private String buildPrompt(ActionCore.PhaserRecord record, RecognizerInput input) {
-        ActionData actionData = record.actionData();
+    private <T> void recognizeIntervention(Map<String, T> interventionsMap, List<T> actions, ExecutorService executor, RecognizerInput input, CountDownLatch latch) {
+        for (T data : actions) {
+            executor.execute(() -> {
+                try {
+                    String prompt = buildPrompt(data, input);
+                    ChatResponse response = this.singleChat(prompt);
+                    MetaRecognizerResult result = JSONObject.parseObject(response.getMessage(), MetaRecognizerResult.class);
+                    if (result.isOk()) {
+                        synchronized (interventionsMap) {
+                            interventionsMap.put(result.getIntervention(), data);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("LLM干预意图提取出错", e);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+    }
+
+    private <T> String buildPrompt(T data, RecognizerInput input) {
+        ActionData actionData = switch (data) {
+            case ActionCore.PhaserRecord record -> record.actionData();
+            case ActionData tempData -> tempData;
+            default -> null;
+        };
+        if (actionData == null) {
+            return null;
+        }
         JSONObject json = new JSONObject();
 
         JSONObject actionInfo = json.putObject("行动信息");
-        actionInfo.put("行动倾向", actionData.getStatus());
+        actionInfo.put("行动倾向", actionData.getTendency());
         actionInfo.put("行动原因", actionData.getReason());
         actionInfo.put("行动描述", actionData.getDescription());
         actionInfo.put("行动状态", actionData.getStatus());

@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.interventor.handler.entity;
+package work.slhaf.partner.module.modules.action.interventor.entity;
 
 public enum InterventionType {
     /**

@@ -235,7 +235,7 @@ public class ActionPlanner extends PreRunningModule {
             return switch (evaluatorResult.getType()) {
                 case PLANNING -> {
                     ScheduledActionData actionInfo = new ScheduledActionData();
-                    actionInfo.setActionChain(actionChain);
+                    actionInfo.getActionChain().putAll(actionChain);
                     actionInfo.setScheduleContent(evaluatorResult.getScheduleContent());
                     actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
@@ -243,7 +243,7 @@ public class ActionPlanner extends PreRunningModule {
                 }
                 case IMMEDIATE -> {
                     ImmediateActionData actionInfo = new ImmediateActionData();
-                    actionInfo.setActionChain(actionChain);
+                    actionInfo.getActionChain().putAll(actionChain);
                     actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
                     yield actionInfo;
