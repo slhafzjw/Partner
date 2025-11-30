@@ -1,14 +1,15 @@
 package work.slhaf.partner.module.modules.action.planner;
 
+import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.action.ActionCapability;
+import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.ImmediateActionData;
 import work.slhaf.partner.core.action.entity.MetaAction;
@@ -32,10 +33,12 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 
 /**
  * 负责针对本次输入生成基础的行动计划，在主模型传达意愿后，执行行动或者放入计划池
  */
+@Slf4j
 @AgentModule(name = "action_planner", order = 2)
 public class ActionPlanner extends PreRunningModule {
 
@@ -55,21 +58,25 @@ public class ActionPlanner extends PreRunningModule {
     @InjectModule
     private ActionConfirmer actionConfirmer;
 
-    private InteractionThreadPoolExecutor executor;
-    private ActionAssemblyHelper assemblyHelper;
+    private ExecutorService executor;
+
+    private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
     @Init
     public void init() {
-        executor = InteractionThreadPoolExecutor.getInstance();
-        assemblyHelper = new ActionAssemblyHelper();
+        executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
     }
 
     @Override
     protected void doExecute(PartnerRunningFlowContext context) {
-        List<Callable<Void>> tasks = new ArrayList<>();
-        addConfirmTask(tasks, context);
-        addNewActionTask(tasks, context);
-        executor.invokeAll(tasks);
+        try {
+            List<Callable<Void>> tasks = new ArrayList<>();
+            addConfirmTask(tasks, context);
+            addNewActionTask(tasks, context);
+            executor.invokeAll(tasks);
+        } catch (Exception e) {
+            log.error("执行异常", e);
+        }
     }
 
     /**
@@ -200,7 +207,7 @@ public class ActionPlanner extends PreRunningModule {
         return "[行动模块]";
     }
 
-    private class ActionAssemblyHelper {
+    private final class ActionAssemblyHelper {
         private ActionAssemblyHelper() {
         }
 

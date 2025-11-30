@@ -55,6 +55,9 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
     @InjectCapability
     private MemoryCapability memoryCapability;
 
+    private final AssemblyHelper assemblyHelper = new AssemblyHelper();
+    private final PromptHelper promptHelper = new PromptHelper();
+
     /**
      * 键: 本次调用uuid；
      * 值：本次调用对应的prompt；
@@ -71,15 +74,15 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
         String uuid = context.getUuid();
         String userId = context.getUserId();
         RecognizerResult recognizerResult = interventionRecognizer
-                .execute(buildRecognizerInput(userId, context.getInput())); // 此处的输入内容携带了所有 PhaserRecord
+                .execute(assemblyHelper.buildRecognizerInput(userId, context.getInput())); // 此处的输入内容携带了所有 PhaserRecord
         if (!recognizerResult.isOk()) {
-            setupNoInterventionPrompt(uuid);
+            promptHelper.setupNoInterventionPrompt(uuid);
             return;
         }
 
         // 干预意图评估
         EvaluatorResult evaluatorResult = interventionEvaluator
-                .execute(buildEvaluatorInput(recognizerResult, userId));
+                .execute(assemblyHelper.buildEvaluatorInput(recognizerResult, userId));
         List<EvaluatedInterventionData> executingDataList = evaluatorResult.getExecutingDataList();
         List<EvaluatedInterventionData> preparedDataList = evaluatorResult.getPreparedDataList();
 
@@ -90,10 +93,10 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
             invalidActionKeysFilter(preparedDataList);
 
             // 同步写入prompt，异步处理干预行为，‘异步’在 interventionHandler 中体现
-            setupInterventionPrompt(uuid, executingDataList, preparedDataList);
-            interventionHandler.execute(buildHandlerInput(executingDataList, preparedDataList, recognizerResult));
+            promptHelper.setupInterventionPrompt(uuid, executingDataList, preparedDataList);
+            interventionHandler.execute(assemblyHelper.buildHandlerInput(executingDataList, preparedDataList, recognizerResult));
         } else {
-            setupInterventionIgnoredPrompt(uuid, executingDataList, preparedDataList);
+            promptHelper.setupInterventionIgnoredPrompt(uuid, executingDataList, preparedDataList);
         }
 
     }
@@ -136,137 +139,6 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
         return true;
     }
 
-    /**
-     * @param executingDataList 对应评估结果中的‘执行中行动’
-     * @param preparedDataList  对应评估结果中的‘待执行行动’
-     * @param recognizerResult  干预识别结果，包含‘执行中’‘待执行’两类评估结果各自对应的行动数据
-     * @return 处理器输入
-     */
-    private HandlerInput buildHandlerInput(List<EvaluatedInterventionData> executingDataList,
-                                           List<EvaluatedInterventionData> preparedDataList, RecognizerResult recognizerResult) {
-        HandlerInput input = new HandlerInput();
-        Map<String, PhaserRecord> executingInterventions = recognizerResult.getExecutingInterventions();
-        Map<String, ActionData> preparedInterventions = recognizerResult.getPreparedInterventions();
-
-        List<ExecutingInterventionData> executing = setupInputDataList(executingDataList, executingInterventions,
-                ExecutingInterventionData::new);
-        List<PreparedInterventionData> prepared = setupInputDataList(preparedDataList, preparedInterventions,
-                PreparedInterventionData::new);
-
-        input.setExecuting(executing);
-        input.setPrepared(prepared);
-
-        return input;
-    }
-
-    /**
-     * @param <I>               HandlerInput 中 List 对应的泛型
-     * @param evaluatedDataList 评估结果列表
-     * @param interventionMap   干预识别结果中的 tendency:data 映射
-     * @param factory           输入类型构建工厂
-     * @return 处理器输入(干预列表)
-     */
-    private <I> List<I> setupInputDataList(List<EvaluatedInterventionData> evaluatedDataList,
-                                           Map<String, ?> interventionMap, Supplier<I> factory) {
-
-        List<I> result = new ArrayList<>();
-
-        for (EvaluatedInterventionData interventionData : evaluatedDataList) {
-
-            I data = factory.get();
-
-            if (data instanceof InterventionData inputData) {
-                inputData.setTendency(interventionData.getTendency());
-                inputData.setDescription(interventionData.getDescription());
-                inputData.setInterventions(interventionData.getInterventionData());
-            }
-
-            if (data instanceof ExecutingInterventionData inputData) {
-                inputData.setRecord((PhaserRecord) interventionMap.get(interventionData.getTendency()));
-            } else if (data instanceof PreparedInterventionData inputData) {
-                inputData.setActionData((ActionData) interventionMap.get(interventionData.getTendency()));
-            }
-
-            result.add(data);
-        }
-
-        return result;
-    }
-
-    private void setupInterventionIgnoredPrompt(String uuid, List<EvaluatedInterventionData> executingDataList, List<EvaluatedInterventionData> preparedDataList) {
-        List<EvaluatedInterventionData> total = Stream.concat(executingDataList.stream(), preparedDataList.stream()).toList();
-
-        JSONArray reasons = new JSONArray();
-
-        for (EvaluatedInterventionData data : total) {
-            JSONObject reason = reasons.addObject();
-            reason.put("[干预倾向]", data.getTendency());
-            reason.put("[未采用原因]", data.getDescription());
-        }
-
-        synchronized (interventionPrompt) {
-            interventionPrompt.put(uuid, Map.of(
-                    "[识别状态] <是否识别到干预已存在行动的意图>", "识别到，但都未采用",
-                    "[忽略原因] <各个意图被忽略的原因>", reasons.toString(),
-                    "[干预行动] <将对已存在行动做出的行为>", "无行为"));
-        }
-    }
-
-    private void setupInterventionPrompt(String uuid, List<EvaluatedInterventionData> executingDataList,
-                                         List<EvaluatedInterventionData> preparedDataList) {
-        JSONArray contents = new JSONArray();
-        List<EvaluatedInterventionData> temp = Stream.concat(executingDataList.stream(), preparedDataList.stream()).toList();
-
-        for (EvaluatedInterventionData data : temp) {
-            if (!data.isOk()) {
-                continue;
-            }
-            String tendency = data.getTendency();
-            JSONObject newElement = contents.addObject();
-            newElement.put("[干预倾向]", tendency);
-            JSONArray changes = newElement.putArray("[行动链变动情况]");
-
-            for (MetaIntervention intervention : data.getInterventionData()) {
-                JSONObject change = changes.addObject();
-                change.put("[干预类型]", intervention.getType());
-                change.put("[干预序号]", intervention.getOrder());
-                change.putArray("[干预内容]").addAll(intervention.getActions());
-            }
-        }
-
-        synchronized (interventionPrompt) {
-            interventionPrompt.put(uuid, Map.of(
-                    "[识别状态] <是否识别到干预已存在行动的意图>", "识别到，将采用",
-                    "[干预内容] <将对已存在行动做出的行为>", contents.toString()));
-        }
-    }
-
-    private void setupNoInterventionPrompt(String uuid) {
-        interventionPrompt.put(uuid, Map.of(
-                "[识别状态] <是否识别到干预已存在行动的意图>", "未识别到干预意图",
-                "[干预行动] <将对已存在行动做出的行为>", "无行动"));
-    }
-
-    private EvaluatorInput buildEvaluatorInput(RecognizerResult recognizerResult, String userId) {
-        EvaluatorInput input = new EvaluatorInput();
-        input.setExecutingInterventions(recognizerResult.getExecutingInterventions());
-        input.setPreparedInterventions(recognizerResult.getPreparedInterventions());
-        input.setRecentMessages(cognationCapability.getChatMessages());
-        input.setActivatedSlices(memoryCapability.getActivatedSlices(userId));
-        return input;
-    }
-
-    private RecognizerInput buildRecognizerInput(String userId, String input) {
-        RecognizerInput recognizerInput = new RecognizerInput();
-        recognizerInput.setInput(input);
-        recognizerInput.setUserDialogMapStr(memoryCapability.getUserDialogMapStr(userId));
-        // 参考的对话列表大小或需调整
-        recognizerInput.setRecentMessages(cognationCapability.getChatMessages());
-        recognizerInput.setExecutingActions(actionCapability.listPhaserRecords());
-        recognizerInput.setPreparedActions(actionCapability.listPreparedAction(userId));
-        return recognizerInput;
-    }
-
     @Override
     public String modelKey() {
         return "action_identifier";
@@ -285,5 +157,147 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
     @Override
     protected String moduleName() {
         return "[行动干预识别模块]";
+    }
+
+    private final class AssemblyHelper {
+        private AssemblyHelper() {
+        }
+
+        /**
+         * @param executingDataList 对应评估结果中的‘执行中行动’
+         * @param preparedDataList  对应评估结果中的‘待执行行动’
+         * @param recognizerResult  干预识别结果，包含‘执行中’‘待执行’两类评估结果各自对应的行动数据
+         * @return 处理器输入
+         */
+        private HandlerInput buildHandlerInput(List<EvaluatedInterventionData> executingDataList,
+                                               List<EvaluatedInterventionData> preparedDataList, RecognizerResult recognizerResult) {
+            HandlerInput input = new HandlerInput();
+            Map<String, PhaserRecord> executingInterventions = recognizerResult.getExecutingInterventions();
+            Map<String, ActionData> preparedInterventions = recognizerResult.getPreparedInterventions();
+
+            List<ExecutingInterventionData> executing = setupInputDataList(executingDataList, executingInterventions,
+                    ExecutingInterventionData::new);
+            List<PreparedInterventionData> prepared = setupInputDataList(preparedDataList, preparedInterventions,
+                    PreparedInterventionData::new);
+
+            input.setExecuting(executing);
+            input.setPrepared(prepared);
+
+            return input;
+        }
+
+        /**
+         * @param <I>               HandlerInput 中 List 对应的泛型
+         * @param evaluatedDataList 评估结果列表
+         * @param interventionMap   干预识别结果中的 tendency:data 映射
+         * @param factory           输入类型构建工厂
+         * @return 处理器输入(干预列表)
+         */
+        private <I> List<I> setupInputDataList(List<EvaluatedInterventionData> evaluatedDataList,
+                                               Map<String, ?> interventionMap, Supplier<I> factory) {
+
+            List<I> result = new ArrayList<>();
+
+            for (EvaluatedInterventionData interventionData : evaluatedDataList) {
+
+                I data = factory.get();
+
+                if (data instanceof InterventionData inputData) {
+                    inputData.setTendency(interventionData.getTendency());
+                    inputData.setDescription(interventionData.getDescription());
+                    inputData.setInterventions(interventionData.getInterventionData());
+                }
+
+                if (data instanceof ExecutingInterventionData inputData) {
+                    inputData.setRecord((PhaserRecord) interventionMap.get(interventionData.getTendency()));
+                } else if (data instanceof PreparedInterventionData inputData) {
+                    inputData.setActionData((ActionData) interventionMap.get(interventionData.getTendency()));
+                }
+
+                result.add(data);
+            }
+
+            return result;
+        }
+
+
+        private RecognizerInput buildRecognizerInput(String userId, String input) {
+            RecognizerInput recognizerInput = new RecognizerInput();
+            recognizerInput.setInput(input);
+            recognizerInput.setUserDialogMapStr(memoryCapability.getUserDialogMapStr(userId));
+            // 参考的对话列表大小或需调整
+            recognizerInput.setRecentMessages(cognationCapability.getChatMessages());
+            recognizerInput.setExecutingActions(actionCapability.listPhaserRecords());
+            recognizerInput.setPreparedActions(actionCapability.listPreparedAction(userId));
+            return recognizerInput;
+        }
+
+        private EvaluatorInput buildEvaluatorInput(RecognizerResult recognizerResult, String userId) {
+            EvaluatorInput input = new EvaluatorInput();
+            input.setExecutingInterventions(recognizerResult.getExecutingInterventions());
+            input.setPreparedInterventions(recognizerResult.getPreparedInterventions());
+            input.setRecentMessages(cognationCapability.getChatMessages());
+            input.setActivatedSlices(memoryCapability.getActivatedSlices(userId));
+            return input;
+        }
+    }
+
+    private final class PromptHelper {
+        private PromptHelper() {
+        }
+
+        private void setupInterventionIgnoredPrompt(String uuid, List<EvaluatedInterventionData> executingDataList, List<EvaluatedInterventionData> preparedDataList) {
+            List<EvaluatedInterventionData> total = Stream.concat(executingDataList.stream(), preparedDataList.stream()).toList();
+
+            JSONArray reasons = new JSONArray();
+
+            for (EvaluatedInterventionData data : total) {
+                JSONObject reason = reasons.addObject();
+                reason.put("[干预倾向]", data.getTendency());
+                reason.put("[未采用原因]", data.getDescription());
+            }
+
+            synchronized (interventionPrompt) {
+                interventionPrompt.put(uuid, Map.of(
+                        "[识别状态] <是否识别到干预已存在行动的意图>", "识别到，但都未采用",
+                        "[忽略原因] <各个意图被忽略的原因>", reasons.toString(),
+                        "[干预行动] <将对已存在行动做出的行为>", "无行为"));
+            }
+        }
+
+        private void setupInterventionPrompt(String uuid, List<EvaluatedInterventionData> executingDataList,
+                                             List<EvaluatedInterventionData> preparedDataList) {
+            JSONArray contents = new JSONArray();
+            List<EvaluatedInterventionData> temp = Stream.concat(executingDataList.stream(), preparedDataList.stream()).toList();
+
+            for (EvaluatedInterventionData data : temp) {
+                if (!data.isOk()) {
+                    continue;
+                }
+                String tendency = data.getTendency();
+                JSONObject newElement = contents.addObject();
+                newElement.put("[干预倾向]", tendency);
+                JSONArray changes = newElement.putArray("[行动链变动情况]");
+
+                for (MetaIntervention intervention : data.getInterventionData()) {
+                    JSONObject change = changes.addObject();
+                    change.put("[干预类型]", intervention.getType());
+                    change.put("[干预序号]", intervention.getOrder());
+                    change.putArray("[干预内容]").addAll(intervention.getActions());
+                }
+            }
+
+            synchronized (interventionPrompt) {
+                interventionPrompt.put(uuid, Map.of(
+                        "[识别状态] <是否识别到干预已存在行动的意图>", "识别到，将采用",
+                        "[干预内容] <将对已存在行动做出的行为>", contents.toString()));
+            }
+        }
+
+        private void setupNoInterventionPrompt(String uuid) {
+            interventionPrompt.put(uuid, Map.of(
+                    "[识别状态] <是否识别到干预已存在行动的意图>", "未识别到干预意图",
+                    "[干预行动] <将对已存在行动做出的行为>", "无行动"));
+        }
     }
 }
