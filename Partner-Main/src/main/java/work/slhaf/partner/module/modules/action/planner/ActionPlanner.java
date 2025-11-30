@@ -2,7 +2,6 @@ package work.slhaf.partner.module.modules.action.planner;
 
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
@@ -95,11 +94,11 @@ public class ActionPlanner extends PreRunningModule {
             EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult, context.getUserId());
             List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); //并发操作均为访问
             setupActionInfo(evaluatorResults, context);
+            updateTendencyCache(evaluatorResults, context.getInput(), extractorResult);
             return null;
         });
     }
 
-    @AfterExecute
     private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input, ExtractorResult extractorResult) {
         if (!VectorClient.status) {
             return;
@@ -132,12 +131,12 @@ public class ActionPlanner extends PreRunningModule {
         tasks.add(() -> {
             ConfirmerInput confirmerInput = assemblyHelper.buildConfirmerInput(context);
             ConfirmerResult result = actionConfirmer.execute(confirmerInput);
-            setupPendingActionInfo(context, result);
+            setupConfirmedActionInfo(context, result);
             return null;
         });
     }
 
-    private void setupPendingActionInfo(PartnerRunningFlowContext context, ConfirmerResult result) {
+    private void setupConfirmedActionInfo(PartnerRunningFlowContext context, ConfirmerResult result) {
         //TODO 需考虑未确认任务的失效或者拒绝时机，在action core中实现
         List<String> uuids = result.getUuids();
         if (uuids == null) {
