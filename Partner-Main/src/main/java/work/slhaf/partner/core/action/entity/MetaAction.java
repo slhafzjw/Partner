@@ -2,7 +2,6 @@ package work.slhaf.partner.core.action.entity;
 
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
-import work.slhaf.partner.common.Constant;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -10,10 +9,10 @@ import java.nio.file.Path;
 import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 
 /**
- * 行动链中的单一元素，实现{@link Runnable}接口，封装了调用外部行动程序的必要信息，可被执行
+ * 行动链中的单一元素，封装了调用外部行动程序的必要信息与结果容器，可被{@link work.slhaf.partner.core.action.ActionCapability}执行
  */
 @Data
-public class MetaAction implements Comparable<MetaAction>, Runnable {
+public class MetaAction implements Comparable<MetaAction> {
 
     /**
      * 行动key，用于标识与定位行动程序
@@ -40,48 +39,23 @@ public class MetaAction implements Comparable<MetaAction>, Runnable {
      */
     private MetaActionType type;
 
-    @Override
-    public int compareTo(@NotNull MetaAction metaAction) {
-        return this.order - metaAction.order;
-    }
-
-    @Override
-    public void run() {
-        File action = loadFromFile();
+    public Path checkAndGetPath() {
+        Path path = switch (type) {
+            case PLUGIN -> Path.of(ACTION_PROGRAM, key, "action.jar");
+            case SCRIPT -> Path.of(ACTION_PROGRAM, key, "action.py");
+            case MCP -> Path.of(ACTION_PROGRAM, key, "action.json");
+        };
+        File action = path.toFile();
         if (!action.exists()) {
             result.setSuccess(false);
             result.setData("Action file not found: " + action.getAbsolutePath());
         }
-        try {
-            switch (type) {
-                case PLUGIN -> executePlugin(action);
-                case MCP -> executeMcp(action);
-                case SCRIPT -> executeScript(action);
-            }
-        } catch (Exception e) {
-            result.setSuccess(false);
-            result.setData(e.getMessage());
-        }
+        return path;
     }
 
-    private File loadFromFile() {
-        return switch (type) {
-            case PLUGIN -> Path.of(Constant.Path.ACTION_PROGRAM, key, "action.jar").toFile();
-            case SCRIPT -> Path.of(ACTION_PROGRAM, key, "action.py").toFile();
-            case MCP -> Path.of(ACTION_PROGRAM, key, "action.json").toFile();
-        };
-    }
-
-    private void executePlugin(File actionFile) {
-
-    }
-
-    private void executeMcp(File actionFile) {
-
-    }
-
-    private void executeScript(File actionFile) {
-
+    @Override
+    public int compareTo(@NotNull MetaAction metaAction) {
+        return this.order - metaAction.order;
     }
 
     @Data

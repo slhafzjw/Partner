@@ -55,6 +55,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
      */
     private final LinkedHashMap<String, MetaActionInfo> existedMetaActions = new LinkedHashMap<>();
     private final List<PhaserRecord> phaserRecords = new ArrayList<>();
+    private final SandboxRunnerClient sandboxRunnerClient = new SandboxRunnerClient();
 
     public ActionCore() throws IOException, ClassNotFoundException {
         new ActionWatchService(existedMetaActions, virtualExecutor).launch();
@@ -239,6 +240,11 @@ public class ActionCore extends PartnerCore<ActionCore> {
     @CapabilityMethod
     public boolean checkExists(String... actionKeys) {
         return existedMetaActions.keySet().containsAll(Arrays.asList(actionKeys));
+    }
+
+    @CapabilityMethod
+    public void execute(MetaAction metaAction) {
+        sandboxRunnerClient.run(metaAction);
     }
 
     /**

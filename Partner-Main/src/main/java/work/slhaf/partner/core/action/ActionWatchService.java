@@ -17,6 +17,7 @@ import java.util.concurrent.ExecutorService;
 
 import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 
+// TODO 后续需迁移至 SandboxRunner，作为容器内的监听逻辑
 @SuppressWarnings("unchecked")
 @Slf4j
 class ActionWatchService {

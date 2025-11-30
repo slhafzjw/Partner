@@ -51,9 +51,12 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
             Phaser phaser = new Phaser();
             phaser.register();
             actionCapability.putPhaserRecord(phaser, actionData);
+            List<Integer> orderList = new ArrayList<>(actionChain.keySet().stream().toList());
+            orderList.sort(Integer::compareTo);
             try {
-                actionChain.forEach((k, v) -> {
-                    for (MetaAction metaAction : v) {
+                for (Integer order : orderList) {
+                    List<MetaAction> metaActions = actionChain.get(order);
+                    for (MetaAction metaAction : metaActions) {
                         // 根据io类型放入合适的列表
                         if (metaAction.isIo()) {
                             virtual.add(metaAction);
@@ -65,7 +68,7 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
                     phaser.arriveAndAwaitAdvance();
                     virtual.clear();
                     platform.clear();
-                });
+                }
             } finally {
                 phaser.arriveAndDeregister();
                 actionCapability.removePhaserRecord(phaser);
@@ -97,9 +100,10 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
                             String input = getInput(result.getData());
                             // 执行时不可使用`for in`和`forEach`，因为在`Intervention`相关模块存在动态调整
                         }
-                        action.run();
+                        actionCapability.execute(action);
                     } while (!result.isSuccess());
                     // TODO 将执行结果写入特定对话角色记忆(cognationCore暴露方法)
+
                 } finally {
                     phaser.arriveAndDeregister();
                 }

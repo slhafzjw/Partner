@@ -45,4 +45,6 @@ public interface ActionCapability {
     MetaActionInfo loadMetaActionInfo(@NonNull String actionKey);
 
     boolean checkExists(String... actionKeys);
+
+    void execute(MetaAction metaAction);
 }
