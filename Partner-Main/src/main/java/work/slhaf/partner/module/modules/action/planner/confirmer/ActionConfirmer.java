@@ -59,7 +59,7 @@ public class ActionConfirmer extends AgentRunningSubModule<ConfirmerInput, Confi
         } catch (InterruptedException e) {
             log.warn("CountDownLatch阻塞已中断");
         }
-        return null;
+        return result;
     }
 
     private String buildPrompt(ActionData data, String input, List<Message> recentMessages) {

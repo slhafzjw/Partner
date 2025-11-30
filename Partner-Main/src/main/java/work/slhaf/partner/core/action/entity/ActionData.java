@@ -53,6 +53,21 @@ public abstract class ActionData {
     protected String source;
 
     public enum ActionStatus {
-        SUCCESS, FAILED, EXECUTING, PREPARE
+        /**
+         * 执行成功
+         */
+        SUCCESS,
+        /**
+         * 执行失败
+         */
+        FAILED,
+        /**
+         * 执行中
+         */
+        EXECUTING,
+        /**
+         * 预备执行
+         */
+        PREPARE
     }
 }
