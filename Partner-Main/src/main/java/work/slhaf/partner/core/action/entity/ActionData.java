@@ -4,8 +4,8 @@ import cn.hutool.json.JSONObject;
 import lombok.Data;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 行动模块传递的行动数据，包含行动uuid、倾向、状态、行动链、结果、发起原因、行动描述等信息。
@@ -28,7 +28,7 @@ public abstract class ActionData {
     /**
      * 行动链
      */
-    protected LinkedHashMap<Integer, List<MetaAction>> actionChain = new LinkedHashMap<>();
+    protected Map<Integer, List<MetaAction>> actionChain;
     /**
      * 行动阶段（当前阶段）
      */

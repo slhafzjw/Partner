@@ -8,7 +8,6 @@ import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 
@@ -30,8 +29,6 @@ public interface ActionCapability {
 
     ExecutorService getExecutor(ActionCore.ExecutorType type);
 
-    Set<String> getExistedMetaActions();
-
     void putPhaserRecord(Phaser phaser, ActionData actionData);
 
     void removePhaserRecord(Phaser phaser);
@@ -43,6 +40,8 @@ public interface ActionCapability {
     MetaAction loadMetaAction(@NonNull String actionKey);
 
     MetaActionInfo loadMetaActionInfo(@NonNull String actionKey);
+
+    List<MetaActionInfo> listAvailableActions();
 
     boolean checkExists(String... actionKeys);
 

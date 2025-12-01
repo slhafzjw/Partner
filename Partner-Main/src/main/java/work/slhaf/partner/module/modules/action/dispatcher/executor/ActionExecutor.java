@@ -13,8 +13,8 @@ import work.slhaf.partner.core.action.entity.ImmediateActionData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 
@@ -45,7 +45,7 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
     private void handleActionData(ImmediateActionData actionData) {
         virtualExecutor.execute(() -> {
             actionData.setStatus(ActionData.ActionStatus.EXECUTING);
-            LinkedHashMap<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
+            Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
             List<MetaAction> virtual = new ArrayList<>();
             List<MetaAction> platform = new ArrayList<>();
             Phaser phaser = new Phaser();
@@ -64,7 +64,7 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
                             platform.add(metaAction);
                         }
                     }
-                    runGroupAction(virtual, platform, actionChain, phaser);
+                    runGroupAction(virtual, platform, phaser);
                     phaser.arriveAndAwaitAdvance();
                     virtual.clear();
                     platform.clear();
@@ -79,7 +79,7 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
 
     // 使用phaser来承担同组的动态任务新增
     private void runGroupAction(List<MetaAction> virtual, List<MetaAction> platform,
-                                LinkedHashMap<Integer, List<MetaAction>> actionChain, Phaser phaser) {
+                                Phaser phaser) {
         runGroupAction(virtual, virtualExecutor, phaser);
         runGroupAction(platform, platformExecutor, phaser);
     }
@@ -89,6 +89,9 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
         for (MetaAction action : actions) {
             executor.execute(() -> {
                 try {
+                    //TODO 使用 LLM 填充行动参数信息
+
+                    actionCapability.execute(action);
                     MetaAction.Result result = action.getResult();
                     do {
                         // 该循环对应LLM的调整参数后重试
@@ -97,7 +100,7 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
                             // 若使用Phaser作为执行线程与反思、求助等调用流程的同步协调，应当需要额外维护Phaser全局字段，获取到反思结果或者用户反馈后，
                             // 调用对应的phaser注册任务，在ActionExecutor中动态添加任务至actionChain,同时启动异步执行
                             // 而且由于执行与放入的为同一个MetaAction对象，所以执行结果可被当前行动链获取，但virtual、executor两个列表似乎不行，需要重构执行模式，建议将行动链直接重构为LinkedHashMap，order为键
-                            String input = getInput(result.getData());
+                            String input = buildFixInput(result.getData());
                             // 执行时不可使用`for in`和`forEach`，因为在`Intervention`相关模块存在动态调整
                         }
                         actionCapability.execute(action);
@@ -111,7 +114,7 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
         }
     }
 
-    private String getInput(String data) {
+    private String buildFixInput(String data) {
 
         return null;
     }

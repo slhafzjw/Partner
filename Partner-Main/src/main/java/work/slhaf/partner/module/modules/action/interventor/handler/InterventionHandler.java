@@ -18,8 +18,8 @@ import work.slhaf.partner.module.modules.action.interventor.handler.entity.Handl
 import work.slhaf.partner.module.modules.action.interventor.handler.entity.HandlerInput.PreparedInterventionData;
 
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 
@@ -130,7 +130,7 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
 
         phaser.register();
         try {
-            LinkedHashMap<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
+            Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
             actionChain.put(order, actions);
 
             if (order == actionData.getExecutingStage()) {
@@ -159,7 +159,7 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
     private void handleDelete(ActionData actionData, int order, List<MetaAction> actions) {
         if (order <= actionData.getExecutingStage()) return;
 
-        LinkedHashMap<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
+        Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
         if (actionChain.containsKey(order)) {
             actionChain.get(order).removeAll(actions);
             if (actionChain.get(order).isEmpty()) {
@@ -174,7 +174,7 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
     }
 
     private void handleRebuild(ActionData actionData, int order, List<MetaAction> actions) {
-        LinkedHashMap<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
+        Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
         actionChain.put(order, actions);
     }
 

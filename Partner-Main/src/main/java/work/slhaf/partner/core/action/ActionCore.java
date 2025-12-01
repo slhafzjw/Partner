@@ -53,7 +53,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
     /**
      * 已存在的行动程序，键为目录名，值为从目录加载的行动程序元信息
      */
-    private final LinkedHashMap<String, MetaActionInfo> existedMetaActions = new LinkedHashMap<>();
+    private final Map<String, MetaActionInfo> existedMetaActions = new HashMap<>();
     private final List<PhaserRecord> phaserRecords = new ArrayList<>();
     private final SandboxRunnerClient sandboxRunnerClient = new SandboxRunnerClient();
 
@@ -177,8 +177,8 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public Set<String> getExistedMetaActions() {
-        return existedMetaActions.keySet();
+    public List<MetaActionInfo> listAvailableActions() {
+        return existedMetaActions.values().stream().toList();
     }
 
     @CapabilityMethod

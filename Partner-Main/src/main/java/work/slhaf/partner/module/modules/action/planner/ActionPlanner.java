@@ -1,6 +1,7 @@
 package work.slhaf.partner.module.modules.action.planner;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
@@ -9,10 +10,7 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
-import work.slhaf.partner.core.action.entity.ActionData;
-import work.slhaf.partner.core.action.entity.ImmediateActionData;
-import work.slhaf.partner.core.action.entity.MetaAction;
-import work.slhaf.partner.core.action.entity.ScheduledActionData;
+import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -33,6 +31,7 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 负责针对本次输入生成基础的行动计划，在主模型传达意愿后，执行行动或者放入计划池
@@ -92,14 +91,15 @@ public class ActionPlanner extends PreRunningModule {
                 return null;
             }
             EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult, context.getUserId());
-            List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); //并发操作均为访问
-            setupActionInfo(evaluatorResults, context);
+            List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); // 并发操作均为访问
+            putActionData(evaluatorResults, context);
             updateTendencyCache(evaluatorResults, context.getInput(), extractorResult);
             return null;
         });
     }
 
-    private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input, ExtractorResult extractorResult) {
+    private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input,
+                                     ExtractorResult extractorResult) {
         if (!VectorClient.status) {
             return;
         }
@@ -137,7 +137,7 @@ public class ActionPlanner extends PreRunningModule {
     }
 
     private void setupConfirmedActionInfo(PartnerRunningFlowContext context, ConfirmerResult result) {
-        //TODO 需考虑未确认任务的失效或者拒绝时机，在action core中实现
+        // TODO 需考虑未确认任务的失效或者拒绝时机，在action core中实现
         List<String> uuids = result.getUuids();
         if (uuids == null) {
             return;
@@ -151,10 +151,9 @@ public class ActionPlanner extends PreRunningModule {
         }
     }
 
-
-    private void setupActionInfo(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
+    private void putActionData(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
-            ActionData actionData = assemblyHelper.buildMetaActionInfo(evaluatorResult);
+            ActionData actionData = assemblyHelper.buildActionData(evaluatorResult);
             if (evaluatorResult.isNeedConfirm()) {
                 actionCapability.putPendingActions(context.getUserId(), actionData);
             } else {
@@ -162,7 +161,6 @@ public class ActionPlanner extends PreRunningModule {
             }
         }
     }
-
 
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
@@ -233,15 +231,12 @@ public class ActionPlanner extends PreRunningModule {
             return input;
         }
 
-        private ActionData buildMetaActionInfo(EvaluatorResult evaluatorResult) {
-            LinkedHashMap<Integer, List<MetaAction>> actionChain = new LinkedHashMap<>();
-            for (MetaAction metaAction : evaluatorResult.getActionChain()) {
-                actionChain.computeIfAbsent(metaAction.getOrder(), k -> new ArrayList<>()).add(metaAction);
-            }
+        private ActionData buildActionData(EvaluatorResult evaluatorResult) {
+            Map<Integer, List<MetaAction>> actionChain = getActionChain(evaluatorResult);
             return switch (evaluatorResult.getType()) {
                 case PLANNING -> {
                     ScheduledActionData actionInfo = new ScheduledActionData();
-                    actionInfo.getActionChain().putAll(actionChain);
+                    actionInfo.setActionChain(actionChain);
                     actionInfo.setScheduleContent(evaluatorResult.getScheduleContent());
                     actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
@@ -249,12 +244,88 @@ public class ActionPlanner extends PreRunningModule {
                 }
                 case IMMEDIATE -> {
                     ImmediateActionData actionInfo = new ImmediateActionData();
-                    actionInfo.getActionChain().putAll(actionChain);
+                    actionInfo.setActionChain(actionChain);
                     actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
                     actionInfo.setUuid(UUID.randomUUID().toString());
                     yield actionInfo;
                 }
             };
+        }
+
+        private @NotNull Map<Integer, List<MetaAction>> getActionChain(EvaluatorResult evaluatorResult) {
+            Map<Integer, List<MetaAction>> actionChain = new HashMap<>();
+            Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChain();
+            fixDependencies(primaryActionChain);
+            primaryActionChain.forEach((order, actionKeys) -> {
+                List<MetaAction> metaActions = actionKeys.stream()
+                        .map(actionKey -> actionCapability.loadMetaAction(actionKey))
+                        .toList();
+                actionChain.put(order, metaActions);
+            });
+            return actionChain;
+        }
+
+        private void fixDependencies(Map<Integer, List<String>> primaryActionChain) {
+            // 先将 primaryActionChain 的节点序号修正为从1开始依次增大
+            fixOrder(primaryActionChain);
+            List<Integer> fixedOrders = new ArrayList<>(primaryActionChain.keySet().stream().toList());
+            AtomicBoolean fixed = new AtomicBoolean(false);
+            do {
+                Set<Integer> tempOrders = new HashSet<>();
+                fixedOrders.sort(Integer::compareTo);
+                for (Integer fixedOrder : fixedOrders) {
+                    int lastOrder = fixedOrder - 1;
+                    List<String> actionKeys = primaryActionChain.get(fixedOrder);
+                    for (String actionKey : actionKeys) {
+                        // 根据 actionKey 加载行动信息,并检查是否存在必需前置依赖
+                        MetaActionInfo metaActionInfo = actionCapability.loadMetaActionInfo(actionKey);
+                        List<String> preActions = metaActionInfo.getPreActions();
+                        boolean preActionsExist = preActions != null && !preActions.isEmpty();
+                        if (!preActionsExist) {
+                            continue;
+                        }
+                        if (!metaActionInfo.isStrictDependencies()) {
+                            continue;
+                        }
+                        if (checkDependenciesExist(lastOrder, preActions, primaryActionChain)) {
+                            continue;
+                        }
+
+                        // 如果存在前置依赖,则将其放置在当前order之前的位置,
+                        // 放置位置优先选择已存在的上一节点,如果不存在(行动链的头节点时)则需要向行动链新增order
+                        // 不需要检查行动链的当前节点的已存在 Action 是否为新 Action 的依赖项,因为这些 Action 实际来自 LLM
+                        // 的评估结果,并非作为依赖项存在
+                        fixed.set(true);
+                        List<String> actionsInChain = primaryActionChain.computeIfAbsent(lastOrder,
+                                list -> new ArrayList<>());
+                        preActions = new ArrayList<>(preActions);
+                        preActions.removeAll(actionsInChain);
+                        actionsInChain.addAll(preActions);
+                        tempOrders.add(lastOrder);
+                    }
+                }
+                fixedOrders.clear();
+                fixedOrders.addAll(tempOrders);
+            } while (fixed.getAndSet(false));
+        }
+
+        private void fixOrder(Map<Integer, List<String>> primaryActionChain) {
+            Map<Integer, List<String>> tempChain = new HashMap<>(primaryActionChain);
+            primaryActionChain.clear();
+            int chainSize = tempChain.size();
+            for (int i = 0; i < chainSize; i++) {
+                primaryActionChain.put(i, tempChain.get(i));
+            }
+        }
+
+        private boolean checkDependenciesExist(int lastOrder, List<String> preActions,
+                                               Map<Integer, List<String>> primaryActionChain) {
+            if (!primaryActionChain.containsKey(lastOrder)) {
+                return false;
+            }
+            List<String> existActions = primaryActionChain.get(lastOrder);
+            //noinspection SlowListContainsAll
+            return existActions.containsAll(preActions);
         }
 
         private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {

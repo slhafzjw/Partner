@@ -11,8 +11,8 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
@@ -23,10 +23,10 @@ import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 class ActionWatchService {
 
     private final HashMap<Path, WatchKey> registeredPaths = new HashMap<>();
-    private final LinkedHashMap<String, MetaActionInfo> existedMetaActions;
+    private final Map<String, MetaActionInfo> existedMetaActions;
     private final ExecutorService virtualExecutor;
 
-    public ActionWatchService(LinkedHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService virtualExecutor) {
+    public ActionWatchService(Map<String, MetaActionInfo> existedMetaActions, ExecutorService virtualExecutor) {
         this.existedMetaActions = existedMetaActions;
         this.virtualExecutor = virtualExecutor;
     }
