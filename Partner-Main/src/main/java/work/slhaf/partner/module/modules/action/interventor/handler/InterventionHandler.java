@@ -96,6 +96,7 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
                     .map(actionKey -> actionCapability.loadMetaAction(actionKey))
                     .toList();
 
+            //TODO 需要将干预逻辑下放至 ActionCapability ，因为 ActionExecutor 中也存在干预操作
             switch (intervention.getType()) {
                 case InterventionType.APPEND -> handleAppend(actionData, intervention.getOrder(), actions);
                 case InterventionType.INSERT -> handleInsert(actionData, intervention.getOrder(), actions, phaser);

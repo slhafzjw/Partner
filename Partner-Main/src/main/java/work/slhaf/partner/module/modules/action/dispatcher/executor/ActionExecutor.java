@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
@@ -20,7 +19,7 @@ import java.util.concurrent.Phaser;
 
 @Slf4j
 @AgentSubModule
-public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionData>, Void> implements ActivateModel {
+public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionData>, Void> {
 
     @InjectCapability
     private ActionCapability actionCapability;
@@ -37,51 +36,41 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
     @Override
     public Void execute(List<ImmediateActionData> immediateActions) {
         for (ImmediateActionData actionData : immediateActions) {
-            handleActionData(actionData);
+            virtualExecutor.execute(() -> {
+                actionData.setStatus(ActionData.ActionStatus.EXECUTING);
+                Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
+                List<MetaAction> virtual = new ArrayList<>();
+                List<MetaAction> platform = new ArrayList<>();
+                Phaser phaser = new Phaser();
+                phaser.register();
+                actionCapability.putPhaserRecord(phaser, actionData);
+                List<Integer> orderList = new ArrayList<>(actionChain.keySet().stream().toList());
+                orderList.sort(Integer::compareTo);
+                try {
+                    for (Integer order : orderList) {
+                        List<MetaAction> metaActions = actionChain.get(order);
+                        for (MetaAction metaAction : metaActions) {
+                            // 根据io类型放入合适的列表
+                            if (metaAction.isIo()) {
+                                virtual.add(metaAction);
+                            } else {
+                                platform.add(metaAction);
+                            }
+                        }
+                        // 使用phaser来承担同组的动态任务新增
+                        runGroupAction(virtual, virtualExecutor, phaser);
+                        runGroupAction(platform, platformExecutor, phaser);
+                        phaser.arriveAndAwaitAdvance();
+                        virtual.clear();
+                        platform.clear();
+                    }
+                } finally {
+                    phaser.arriveAndDeregister();
+                    actionCapability.removePhaserRecord(phaser);
+                }
+            });
         }
         return null;
-    }
-
-    private void handleActionData(ImmediateActionData actionData) {
-        virtualExecutor.execute(() -> {
-            actionData.setStatus(ActionData.ActionStatus.EXECUTING);
-            Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
-            List<MetaAction> virtual = new ArrayList<>();
-            List<MetaAction> platform = new ArrayList<>();
-            Phaser phaser = new Phaser();
-            phaser.register();
-            actionCapability.putPhaserRecord(phaser, actionData);
-            List<Integer> orderList = new ArrayList<>(actionChain.keySet().stream().toList());
-            orderList.sort(Integer::compareTo);
-            try {
-                for (Integer order : orderList) {
-                    List<MetaAction> metaActions = actionChain.get(order);
-                    for (MetaAction metaAction : metaActions) {
-                        // 根据io类型放入合适的列表
-                        if (metaAction.isIo()) {
-                            virtual.add(metaAction);
-                        } else {
-                            platform.add(metaAction);
-                        }
-                    }
-                    runGroupAction(virtual, platform, phaser);
-                    phaser.arriveAndAwaitAdvance();
-                    virtual.clear();
-                    platform.clear();
-                }
-            } finally {
-                phaser.arriveAndDeregister();
-                actionCapability.removePhaserRecord(phaser);
-            }
-        });
-
-    }
-
-    // 使用phaser来承担同组的动态任务新增
-    private void runGroupAction(List<MetaAction> virtual, List<MetaAction> platform,
-                                Phaser phaser) {
-        runGroupAction(virtual, virtualExecutor, phaser);
-        runGroupAction(platform, platformExecutor, phaser);
     }
 
     private void runGroupAction(List<MetaAction> actions, ExecutorService executor, Phaser phaser) {
@@ -89,7 +78,7 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
         for (MetaAction action : actions) {
             executor.execute(() -> {
                 try {
-                    //TODO 使用 LLM 填充行动参数信息
+                    //TODO 使用 ParamsExtractor 填充行动参数信息，如果已知内容不足以满足参数需求，则进行行动链调整(ActionRepairer)
 
                     actionCapability.execute(action);
                     MetaAction.Result result = action.getResult();
@@ -117,16 +106,6 @@ public class ActionExecutor extends AgentRunningSubModule<List<ImmediateActionDa
     private String buildFixInput(String data) {
 
         return null;
-    }
-
-    @Override
-    public String modelKey() {
-        return "action_executor";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
     }
 
 }
