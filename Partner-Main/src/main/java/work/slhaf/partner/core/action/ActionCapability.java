@@ -5,6 +5,7 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 
 import java.util.List;
@@ -29,13 +30,13 @@ public interface ActionCapability {
 
     ExecutorService getExecutor(ActionCore.ExecutorType type);
 
-    void putPhaserRecord(Phaser phaser, ActionData actionData);
+    PhaserRecord putPhaserRecord(Phaser phaser, ActionData actionData);
 
     void removePhaserRecord(Phaser phaser);
 
-    List<ActionCore.PhaserRecord> listPhaserRecords();
+    List<PhaserRecord> listPhaserRecords();
 
-    ActionCore.PhaserRecord getPhaserRecord(String tendency, String source);
+    PhaserRecord getPhaserRecord(String tendency, String source);
 
     MetaAction loadMetaAction(@NonNull String actionKey);
 

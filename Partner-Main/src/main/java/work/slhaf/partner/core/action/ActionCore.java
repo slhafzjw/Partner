@@ -10,6 +10,7 @@ import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.action.entity.cache.ActionCacheData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
@@ -182,15 +183,17 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public synchronized void putPhaserRecord(Phaser phaser, ActionData actionData) {
-        phaserRecords.add(new PhaserRecord(phaser, actionData));
+    public synchronized PhaserRecord putPhaserRecord(Phaser phaser, ActionData actionData) {
+        PhaserRecord record = new PhaserRecord(phaser, actionData);
+        phaserRecords.add(record);
+        return record;
     }
 
     @CapabilityMethod
     public synchronized void removePhaserRecord(Phaser phaser) {
         PhaserRecord remove = null;
         for (PhaserRecord record : phaserRecords) {
-            if (record.phaser.equals(phaser)) {
+            if (record.phaser().equals(phaser)) {
                 remove = record;
             }
         }
@@ -203,7 +206,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
     @CapabilityMethod
     public PhaserRecord getPhaserRecord(String tendency, String source) {
         for (PhaserRecord record : phaserRecords) {
-            ActionData data = record.actionData;
+            ActionData data = record.actionData();
             if (data.getTendency().equals(tendency) && data.getSource().equals(source)) {
                 return record;
             }
@@ -345,6 +348,4 @@ public class ActionCore extends PartnerCore<ActionCore> {
         VIRTUAL, PLATFORM
     }
 
-    public record PhaserRecord(Phaser phaser, ActionData actionData) {
-    }
 }

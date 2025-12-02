@@ -1,8 +1,8 @@
 package work.slhaf.partner.module.modules.action.interventor.recognizer.entity;
 
 import lombok.Data;
-import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.PhaserRecord;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class RecognizerResult {
      * <br/>
      * value: 干预倾向将作用的 phaser 记录
      */
-    private Map<String, ActionCore.PhaserRecord> executingInterventions = new HashMap<>();
+    private Map<String, PhaserRecord> executingInterventions = new HashMap<>();
 
     /**
      * <h4>将被干预的‘等待中行动’</h4>

@@ -2,8 +2,8 @@ package work.slhaf.partner.module.modules.action.interventor.evaluator.entity;
 
 import lombok.Data;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.action.ActionCore.PhaserRecord;
 import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 
 import java.util.List;

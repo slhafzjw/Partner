@@ -10,6 +10,7 @@ import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.MetaRecognizerResult;
 import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerInput;
 import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerResult;
@@ -30,13 +31,13 @@ public class InterventionRecognizer extends AgentRunningSubModule<RecognizerInpu
     public RecognizerResult execute(RecognizerInput input) {
         // 获取必须数据
         ExecutorService executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
-        List<ActionCore.PhaserRecord> executingActions = input.getExecutingActions();
+        List<PhaserRecord> executingActions = input.getExecutingActions();
         List<ActionData> preparedActions = input.getPreparedActions();
         CountDownLatch countDownLatch = new CountDownLatch(executingActions.size() + preparedActions.size());
 
         // 创建结果容器
         RecognizerResult recognizerResult = new RecognizerResult();
-        Map<String, ActionCore.PhaserRecord> executingInterventions = recognizerResult.getExecutingInterventions();
+        Map<String, PhaserRecord> executingInterventions = recognizerResult.getExecutingInterventions();
         Map<String, ActionData> preparedInterventions = recognizerResult.getPreparedInterventions();
 
         // 执行识别操作
@@ -74,7 +75,7 @@ public class InterventionRecognizer extends AgentRunningSubModule<RecognizerInpu
 
     private <T> String buildPrompt(T data, RecognizerInput input) {
         ActionData actionData = switch (data) {
-            case ActionCore.PhaserRecord record -> record.actionData();
+            case PhaserRecord record -> record.actionData();
             case ActionData tempData -> tempData;
             default -> null;
         };

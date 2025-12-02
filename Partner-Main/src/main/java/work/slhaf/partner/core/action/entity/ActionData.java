@@ -66,6 +66,10 @@ public abstract class ActionData {
          */
         EXECUTING,
         /**
+         * 暂时中断
+         */
+        INTERRUPTED,
+        /**
          * 预备执行
          */
         PREPARE
