@@ -7,15 +7,15 @@ import java.nio.file.Path;
 /**
  * 基于 Http 与 WebSocket 的沙盒执行器客户端，负责:
  * <ul>
- *     <li>
- *         发送行动单元数据
- *     </li>
- *     <li>
- *         实时更新获取已存在行动列表
- *     </li>
- *     <li>
- *         向传入的 MetaAction 回写执行结果
- *     </li>
+ * <li>
+ * 发送行动单元数据
+ * </li>
+ * <li>
+ * 实时更新获取已存在行动列表
+ * </li>
+ * <li>
+ * 向传入的 MetaAction 回写执行结果
+ * </li>
  * </ul>
  */
 class SandboxRunnerClient {

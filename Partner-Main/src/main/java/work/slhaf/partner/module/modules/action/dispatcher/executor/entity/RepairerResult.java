@@ -2,6 +2,8 @@ package work.slhaf.partner.module.modules.action.dispatcher.executor.entity;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 行动修复结果，包含行动状态和修复后的参数
  */
@@ -9,7 +11,7 @@ import lombok.Data;
 public class RepairerResult {
 
     private RepairerStatus status;
-    private String[] params;
+    private List<String> fixedData;
 
     public enum RepairerStatus {
         /**

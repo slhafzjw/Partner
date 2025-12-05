@@ -34,7 +34,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
     /**
      * 持久行动池，以用户id为键存储所有状态的任务
      */
-    private HashMap<String, List<ActionData>> actionPool = new HashMap<>();//TODO 考虑是否取消用户分池
+    private HashMap<String, List<ActionData>> actionPool = new HashMap<>();// TODO 考虑是否取消用户分池
 
     /**
      * 待确认任务，以userId区分不同用户，因为需要跨请求确认
@@ -48,7 +48,8 @@ public class ActionCore extends PartnerCore<ActionCore> {
 
     private final Lock cacheLock = new ReentrantLock();
 
-    private final ExecutorService platformExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private final ExecutorService platformExecutor = Executors
+            .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private final ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
@@ -129,10 +130,11 @@ public class ActionCore extends PartnerCore<ActionCore> {
             return null;
         }
         VectorClient vectorClient = VectorClient.INSTANCE;
-        //计算本次输入的向量
+        // 计算本次输入的向量
         float[] vector = vectorClient.compute(input);
-        if (vector == null) return null;
-        //与现有缓存比对，将匹配到的收集并返回
+        if (vector == null)
+            return null;
+        // 与现有缓存比对，将匹配到的收集并返回
         return actionCache.parallelStream()
                 .filter(ActionCacheData::isActivated)
                 .filter(data -> {
@@ -257,10 +259,10 @@ public class ActionCore extends PartnerCore<ActionCore> {
      * @param inputVector    本次输入内容的语义向量
      * @param vectorClient   向量客户端
      */
-    private void adjustMatchAndPassed(List<CacheAdjustMetaData> matchAndPassed, float[] inputVector, String
-            input, VectorClient vectorClient) {
+    private void adjustMatchAndPassed(List<CacheAdjustMetaData> matchAndPassed, float[] inputVector, String input,
+                                      VectorClient vectorClient) {
         matchAndPassed.forEach(adjustData -> {
-            //获取原始缓存条目
+            // 获取原始缓存条目
             String tendency = adjustData.getTendency();
             ActionCacheData primaryCacheData = selectCacheData(tendency);
             if (primaryCacheData == null) {
@@ -279,7 +281,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
     private void adjustMatchNotPassed(List<CacheAdjustMetaData> matchNotPassed, VectorClient vectorClient) {
         List<ActionCacheData> toRemove = new ArrayList<>();
         matchNotPassed.forEach(adjustData -> {
-            //获取原始缓存条目
+            // 获取原始缓存条目
             String tendency = adjustData.getTendency();
             ActionCacheData primaryCacheData = selectCacheData(tendency);
             if (primaryCacheData == null) {
@@ -299,13 +301,13 @@ public class ActionCore extends PartnerCore<ActionCore> {
     /**
      * 针对未命中但评估通过的缓存做出调整:
      * <ol>
-     *     <h3>如果存在缓存条目</h3>
-     *     <li>
-     *         若已生效，但此时未匹配到则说明尚未生效或者阈值、向量{@link ActionCacheData#getInputVector()}存在问题，调低阈值，同时带权移动平均
-     *     </li>
-     *     <li>
-     *         若未生效，则只增加计数并带权移动平均
-     *     </li>
+     * <h3>如果存在缓存条目</h3>
+     * <li>
+     * 若已生效，但此时未匹配到则说明尚未生效或者阈值、向量{@link ActionCacheData#getInputVector()}存在问题，调低阈值，同时带权移动平均
+     * </li>
+     * <li>
+     * 若未生效，则只增加计数并带权移动平均
+     * </li>
      * </ol>
      * 如果不存在缓存条目，则新增并填充字段
      *
@@ -314,10 +316,10 @@ public class ActionCore extends PartnerCore<ActionCore> {
      * @param input          本次输入内容
      * @param vectorClient   向量客户端
      */
-    private void adjustNotMatchPassed(List<CacheAdjustMetaData> notMatchPassed, float[] inputVector, String
-            input, VectorClient vectorClient) {
+    private void adjustNotMatchPassed(List<CacheAdjustMetaData> notMatchPassed, float[] inputVector, String input,
+                                      VectorClient vectorClient) {
         notMatchPassed.forEach(adjustData -> {
-            //获取原始缓存条目
+            // 获取原始缓存条目
             String tendency = adjustData.getTendency();
             ActionCacheData primaryCacheData = selectCacheData(tendency);
             float[] tendencyVector = vectorClient.compute(tendency);

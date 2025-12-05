@@ -38,7 +38,10 @@ public abstract class ActionData {
      */
     protected String result;
     protected List<JSONObject> history = new ArrayList<>();
-
+    /**
+     * 修复上下文
+     */
+    protected Map<Integer, List<String>> additionalContext;
     /**
      * 行动原因
      */
