@@ -1,7 +1,13 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor.entity;
 
+import java.util.Map;
+
 import lombok.Data;
 
 @Data
 public class GeneratorInput {
+    private String key;
+    private Map<String, String> params;
+    private String description;
+    private Map<String, String> paramsDescription;
 }

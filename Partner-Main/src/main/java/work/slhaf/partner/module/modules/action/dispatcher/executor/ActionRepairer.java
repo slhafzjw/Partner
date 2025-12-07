@@ -63,7 +63,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
             RepairerData repairerData = JSONObject.parseObject(response.getMessage(), RepairerData.class);
             result = switch (repairerData.getRepairerType()) {
                 case ACTION_GENERATION ->
-                        handleActionGeneration(JSONObject.parseObject(repairerData.getData(), GeneratorInput.class));
+                    handleActionGeneration(JSONObject.parseObject(repairerData.getData(), GeneratorInput.class));
                 case ACTION_INVOCATION -> handleActionInvocation(
                         JSONObject.parseObject(repairerData.getData(), new TypeReference<List<String>>() {
                         }));
@@ -127,6 +127,11 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
                 }
             });
         }
+        try {
+            latch.await();
+        } catch (Exception e) {
+            log.warn("CountDownLatch 已中断");
+        }
         if (actionKeys.size() - failedCount.get() > 0) {
             result.setStatus(RepairerStatus.OK);
         } else {
@@ -144,7 +149,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
 
     @Override
     public String modelKey() {
-        return "";
+        return "action_repairer";
     }
 
     @Override

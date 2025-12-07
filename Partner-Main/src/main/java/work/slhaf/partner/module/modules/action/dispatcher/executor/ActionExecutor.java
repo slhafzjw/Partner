@@ -10,6 +10,7 @@ import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.ActionData.ActionStatus;
+import work.slhaf.partner.core.action.entity.MetaAction.ResultStatus;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.*;
@@ -110,8 +111,8 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
     }
 
     private void runGroupAction(List<MetaAction> actions, String userId, ActionData actionData,
-                                ExecutorService executor,
-                                PhaserRecord phaserRecord) {
+            ExecutorService executor,
+            PhaserRecord phaserRecord) {
         Phaser phaser = phaserRecord.phaser();
         phaser.bulkRegister(actions.size());
         // 不可替换为增强for，因为单组的行动单元集合数量是可以被外部干预的
@@ -130,7 +131,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                         actionCapability.execute(action);
                         MetaAction.Result result = action.getResult();
                         // 该循环对应LLM的调整参数后重试
-                        if (!result.isSuccess()) {
+                        if (!result.getStatus().equals(ResultStatus.SUCCESS)) {
                             // LLM决策是重构参数、执行自对话反思、还是选择向用户求助(通过cognationCore暴露方法，可能需要修改其他模块以进行适应)，仅重构参数时无需结束当前循环
                             // 若使用Phaser作为执行线程与反思、求助等调用流程的同步协调，应当需要额外维护Phaser全局字段，获取到反思结果或者用户反馈后，
                             // 调用对应的phaser注册任务，在ActionExecutor中动态添加任务至actionChain,同时启动异步执行
@@ -218,7 +219,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
         }
 
         private ExtractorInput buildExtractorInput(MetaAction action, String userId, ActionData actionData,
-                                                   List<String> additionalContext) {
+                List<String> additionalContext) {
             ExtractorInput input = new ExtractorInput();
             input.setEvaluatedSlices(memoryCapability.getActivatedSlices(userId));
             input.setRecentMessages(cognationCapability.getChatMessages());

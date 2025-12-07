@@ -1,12 +1,14 @@
 package work.slhaf.partner.core.action.entity;
 
-import lombok.Data;
-import org.jetbrains.annotations.NotNull;
+import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Map;
 
-import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
+import org.jetbrains.annotations.NotNull;
+
+import lombok.Data;
 
 /**
  * 行动链中的单一元素，封装了调用外部行动程序的必要信息与结果容器，可被{@link work.slhaf.partner.core.action.ActionCapability}执行
@@ -21,7 +23,7 @@ public class MetaAction implements Comparable<MetaAction> {
     /**
      * 行动程序可接受的参数，由调用处设置
      */
-    private String[] params;
+    private Map<String, String> params;
     /**
      * 行动结果，包括执行状态和相应内容(执行结果或者错误信息)
      */
@@ -36,18 +38,21 @@ public class MetaAction implements Comparable<MetaAction> {
     private boolean io;
     /**
      * 行动程序类型，可分为PLUGIN(jar文件)、SCRIPT(Python程序)、MCP(MCP服务)
+     * .
      */
     private MetaActionType type;
 
+    private Path path;
+
     public Path checkAndGetPath() {
-        Path path = switch (type) {
+        path = switch (type) {
             case PLUGIN -> Path.of(ACTION_PROGRAM, key, "action.jar");
             case SCRIPT -> Path.of(ACTION_PROGRAM, key, "action.py");
             case MCP -> Path.of(ACTION_PROGRAM, key, "action.json");
         };
         File action = path.toFile();
         if (!action.exists()) {
-            result.setSuccess(false);
+            result.setStatus(ResultStatus.FAILED);
             result.setData("Action file not found: " + action.getAbsolutePath());
         }
         return path;
@@ -60,8 +65,14 @@ public class MetaAction implements Comparable<MetaAction> {
 
     @Data
     public static class Result {
-        private boolean success = true;
+        private ResultStatus status = ResultStatus.WAITING;
         private String data = null;
+    }
+
+    public enum ResultStatus {
+        SUCCESS,
+        FAILED,
+        WAITING
     }
 
 }
