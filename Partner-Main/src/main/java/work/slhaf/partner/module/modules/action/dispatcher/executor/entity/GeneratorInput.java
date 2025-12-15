@@ -1,8 +1,8 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor.entity;
 
-import java.util.Map;
-
 import lombok.Data;
+
+import java.util.Map;
 
 @Data
 public class GeneratorInput {

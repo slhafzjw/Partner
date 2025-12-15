@@ -16,6 +16,8 @@ import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.action.exception.ActionDataNotFoundException;
 import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
+import work.slhaf.partner.core.action.runner.RunnerClient;
+import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
 
 import java.io.IOException;
 import java.util.*;
@@ -57,10 +59,11 @@ public class ActionCore extends PartnerCore<ActionCore> {
      */
     private final Map<String, MetaActionInfo> existedMetaActions = new HashMap<>();
     private final List<PhaserRecord> phaserRecords = new ArrayList<>();
-    private final SandboxRunnerClient sandboxRunnerClient = new SandboxRunnerClient();
+    private RunnerClient runnerClient;
 
     public ActionCore() throws IOException, ClassNotFoundException {
-        new ActionWatchService(existedMetaActions, virtualExecutor).launch();
+        // TODO 通过 AgentConfigManager指定
+        runnerClient = new SandboxRunnerClient(existedMetaActions, virtualExecutor);
         setupShutdownHook();
     }
 
@@ -248,8 +251,8 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public void execute(MetaAction metaAction) {
-        sandboxRunnerClient.run(metaAction);
+    public RunnerClient runnerClient() {
+        return runnerClient;
     }
 
     /**

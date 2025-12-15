@@ -1,14 +1,12 @@
 package work.slhaf.partner.core.action.entity;
 
-import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
+import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 
-import org.jetbrains.annotations.NotNull;
-
-import lombok.Data;
+import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 
 /**
  * 行动链中的单一元素，封装了调用外部行动程序的必要信息与结果容器，可被{@link work.slhaf.partner.core.action.ActionCapability}执行
@@ -27,7 +25,7 @@ public class MetaAction implements Comparable<MetaAction> {
     /**
      * 行动结果，包括执行状态和相应内容(执行结果或者错误信息)
      */
-    private final Result result = new Result();
+    private Result result = new Result();
     /**
      * 执行顺序，升序排列
      */
@@ -44,18 +42,12 @@ public class MetaAction implements Comparable<MetaAction> {
 
     private Path path;
 
-    public Path checkAndGetPath() {
+    public void resetPath() {
         path = switch (type) {
             case PLUGIN -> Path.of(ACTION_PROGRAM, key, "action.jar");
             case SCRIPT -> Path.of(ACTION_PROGRAM, key, "action.py");
             case MCP -> Path.of(ACTION_PROGRAM, key, "action.json");
         };
-        File action = path.toFile();
-        if (!action.exists()) {
-            result.setStatus(ResultStatus.FAILED);
-            result.setData("Action file not found: " + action.getAbsolutePath());
-        }
-        return path;
     }
 
     @Override

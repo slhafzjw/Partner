@@ -7,6 +7,7 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
+import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -46,5 +47,5 @@ public interface ActionCapability {
 
     boolean checkExists(String... actionKeys);
 
-    void execute(MetaAction metaAction);
+    SandboxRunnerClient runnerClient();
 }

@@ -1,11 +1,7 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor;
 
-import java.util.HashMap;
-import java.util.List;
-
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
@@ -15,6 +11,9 @@ import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ExtractorInput;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ExtractorResult;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.HistoryAction;
+
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * 负责依据输入内容进行行动单元的参数信息提取

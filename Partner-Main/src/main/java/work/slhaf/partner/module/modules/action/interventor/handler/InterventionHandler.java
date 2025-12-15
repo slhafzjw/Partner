@@ -3,6 +3,7 @@ package work.slhaf.partner.module.modules.action.interventor.handler;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
@@ -10,6 +11,7 @@ import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.ActionData.ActionStatus;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.PhaserRecord;
+import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
 import work.slhaf.partner.module.modules.action.interventor.entity.InterventionType;
 import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
 import work.slhaf.partner.module.modules.action.interventor.handler.entity.HandlerInput;
@@ -29,6 +31,13 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
 
     @InjectCapability
     private ActionCapability actionCapability;
+
+    private SandboxRunnerClient runnerClient;
+
+    @Init
+    void init() {
+        runnerClient = actionCapability.runnerClient();
+    }
 
     /**
      * 针对‘行动干预’做出处理
@@ -96,7 +105,7 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
                     .map(actionKey -> actionCapability.loadMetaAction(actionKey))
                     .toList();
 
-            //TODO 需要将干预逻辑下放至 ActionCapability ，因为 ActionExecutor 中也存在干预操作
+            // TODO 需要将干预逻辑下放至 ActionCapability ，因为 ActionExecutor 中也存在干预操作
             switch (intervention.getType()) {
                 case InterventionType.APPEND -> handleAppend(actionData, intervention.getOrder(), actions);
                 case InterventionType.INSERT -> handleInsert(actionData, intervention.getOrder(), actions, phaser);
@@ -118,7 +127,8 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
      * 在未进入执行阶段的行动单元组新增新的行动
      */
     private void handleAppend(ActionData actionData, int order, List<MetaAction> actions) {
-        if (order <= actionData.getExecutingStage()) return;
+        if (order <= actionData.getExecutingStage())
+            return;
 
         actionData.getActionChain().put(order, actions);
     }
@@ -127,7 +137,8 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
      * 在未进入执行阶段和正处于行动阶段的行动单元组插入新的行动, 如果插入位置正处于执行阶段, 则启动执行线程, 通过 Phaser 确保同步
      */
     private void handleInsert(ActionData actionData, int order, List<MetaAction> actions, Phaser phaser) {
-        if (order < actionData.getExecutingStage()) return;
+        if (order < actionData.getExecutingStage())
+            return;
 
         phaser.register();
         try {
@@ -144,7 +155,7 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
                     executor = action.isIo() ? virtualExecutor : platformExecutor;
                     executor.execute(() -> {
                         try {
-                            actionCapability.execute(action);
+                            runnerClient.run(action);
                         } finally {
                             phaser.arriveAndDeregister();
                         }
@@ -158,7 +169,8 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
     }
 
     private void handleDelete(ActionData actionData, int order, List<MetaAction> actions) {
-        if (order <= actionData.getExecutingStage()) return;
+        if (order <= actionData.getExecutingStage())
+            return;
 
         Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
         if (actionChain.containsKey(order)) {

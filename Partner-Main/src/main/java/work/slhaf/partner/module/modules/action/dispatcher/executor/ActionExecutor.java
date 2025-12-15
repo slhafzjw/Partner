@@ -11,6 +11,7 @@ import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.ActionData.ActionStatus;
 import work.slhaf.partner.core.action.entity.MetaAction.ResultStatus;
+import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.*;
@@ -43,6 +44,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
 
     private ExecutorService virtualExecutor;
     private ExecutorService platformExecutor;
+    private RunnerClient runnerClient;
 
     private final AssemblyHelper assemblyHelper = new AssemblyHelper();
 
@@ -50,6 +52,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
     public void init() {
         virtualExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
         platformExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM);
+        runnerClient = actionCapability.runnerClient();
     }
 
     @Override
@@ -128,7 +131,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     // 这个功能应该交给 PhaserRecord 实现，尽量确保功能一致性
                     setActionParams(action, phaserRecord, userId);
                     do {
-                        actionCapability.execute(action);
+                        runnerClient.run(action);
                         MetaAction.Result result = action.getResult();
                         // 该循环对应LLM的调整参数后重试
                         if (!result.getStatus().equals(ResultStatus.SUCCESS)) {
@@ -140,7 +143,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                         } else {
                             break;
                         }
-                        actionCapability.execute(action);
+                        runnerClient.run(action);
                     } while (true);
                     // TODO 执行结果不再需要写入特定位置，当前的 ActionCapability
                     // 内部的行动池已经足以承担这个功能，但这也就意味着行动池或许需要考虑特殊的序列化形式避免内存占用过高,

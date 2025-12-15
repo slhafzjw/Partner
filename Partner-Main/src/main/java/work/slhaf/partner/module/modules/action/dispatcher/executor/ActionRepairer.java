@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
@@ -14,6 +15,9 @@ import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
 import work.slhaf.partner.core.action.entity.MetaAction;
+import work.slhaf.partner.core.action.entity.MetaAction.Result;
+import work.slhaf.partner.core.action.entity.MetaAction.ResultStatus;
+import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorInput;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorResult;
@@ -53,6 +57,12 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
     private DynamicActionGenerator dynamicActionGenerator;
 
     private AssembleHelper assembleHelper = new AssembleHelper();
+    private SandboxRunnerClient runnerClient;
+
+    @Init
+    void init() {
+        runnerClient = actionCapability.runnerClient();
+    }
 
     @Override
     public RepairerResult execute(RepairerInput data) {
@@ -94,8 +104,21 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
         RepairerResult result = new RepairerResult();
         GeneratorResult generatorResult = dynamicActionGenerator.execute(generatorInput);
         MetaAction tempAction = generatorResult.getTempAction();
-        actionCapability.execute(tempAction);
-        result.getFixedData().add(tempAction.getResult().getData());
+        if (tempAction == null) {
+            result.setStatus(RepairerStatus.FAILED);
+            return result;
+        }
+
+        runnerClient.run(tempAction);
+        // 根据 tempAction 的执行状态设置修复结果
+        Result actionResult = tempAction.getResult();
+        if (actionResult.getStatus() != ResultStatus.SUCCESS) {
+            result.setStatus(RepairerStatus.FAILED);
+            return result;
+        }
+
+        result.setStatus(RepairerStatus.OK);
+        result.getFixedData().add(actionResult.getData());
         return result;
     }
 
@@ -117,7 +140,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
             executor = action.isIo() ? virtual : platform;
             executor.execute(() -> {
                 try {
-                    actionCapability.execute(action);
+                    runnerClient.run(action);
                     result.getFixedData().add(action.getResult().getData());
                 } catch (Exception e) {
                     log.error("行动单元执行失败: {}", key, e);
