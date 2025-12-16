@@ -114,29 +114,53 @@ public class LocalRunnerClient extends RunnerClient {
 
     private SystemExecResult exec(String... command) {
         SystemExecResult result = new SystemExecResult();
-
-        List<String> resultList = new ArrayList<>();
-        result.setResultList(resultList);
-        StringBuilder s = new StringBuilder();
+        List<String> output = new ArrayList<>();
+        List<String> error = new ArrayList<>();
 
         try {
-            Process process = Runtime.getRuntime().exec(command);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                s.append(line);
-                resultList.add(line);
-            }
+            Process process = new ProcessBuilder(command)
+                    .redirectErrorStream(false)  // 分开读
+                    .start();
+
+            Thread stdoutThread = new Thread(() -> {
+                try (BufferedReader r = new BufferedReader(
+                        new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        output.add(line);
+                    }
+                } catch (Exception ignored) {
+                }
+            });
+
+            Thread stderrThread = new Thread(() -> {
+                try (BufferedReader r = new BufferedReader(
+                        new InputStreamReader(process.getErrorStream()))) {
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        error.add(line);
+                    }
+                } catch (Exception ignored) {
+                }
+            });
+
+            stdoutThread.start();
+            stderrThread.start();
+
             int exitCode = process.waitFor();
+            stdoutThread.join();
+            stderrThread.join();
+
             result.setOk(exitCode == 0);
-            result.setTotal(s.toString().isEmpty() ? "响应为空" : s.toString());
+            result.setResultList(output.isEmpty() ? error : output);
+            result.setTotal(String.join("\n",
+                    output.isEmpty() ? error : output));
+
         } catch (Exception e) {
             result.setOk(false);
-            result.setTotal(e.getLocalizedMessage());
+            result.setTotal(e.getMessage());
         }
-        if (result.getTotal().isEmpty()) {
-            result.setOk(false);
-        }
+
         return result;
     }
 
