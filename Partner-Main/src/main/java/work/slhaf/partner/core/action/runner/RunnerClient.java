@@ -3,7 +3,7 @@ package work.slhaf.partner.core.action.runner;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.core.action.entity.GeneratedData;
+import work.slhaf.partner.core.action.entity.McpData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
 import work.slhaf.partner.core.action.entity.MetaAction.ResultStatus;
@@ -42,58 +42,13 @@ public abstract class RunnerClient {
         result.setStatus(response.isOk() ? ResultStatus.SUCCESS : ResultStatus.FAILED);
     }
 
-    //TODO 将执行划分为 MCP、OriginalScript两种类型，SCRIPT、PLUGIN、MCP的分类不再必要
     protected abstract RunnerResponse doRun(MetaAction metaAction);
 
-    /**
-     * 将临时行动程序放入等待队列，根据其是否需要持久序列化，监听其执行状态，执行成功则持久序列化
-     *
-     * @throws IOException
-     */
-    public Path getPathAndSerialize(MetaAction tempAction, GeneratedData generatedData) throws IOException {
-        String code = generatedData.getCode();
-        String codeType = generatedData.getCodeType();
+    public abstract Path buildTmpPath(MetaAction tempAction, String codeType);
 
-        Path path = doBuildTempPath(tempAction, codeType);
-        tempAction.setPath(path);
-        doSerialize(tempAction, code, codeType);
-        if (generatedData.isSerialize()) {
-            waitingSerialize(tempAction, code, codeType, generatedData.getResponseSchema());
-        }
-        return path;
-    }
+    public abstract void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException;
 
-    private void waitingSerialize(MetaAction tempAction, String code, String codeType, JSONObject jsonObject) {
-        executor.execute(() -> {
-            Result result = tempAction.getResult();
-            while (true) {
-                switch (result.getStatus()) {
-                    case ResultStatus.WAITING -> {
-                        try {
-                            Thread.sleep(300);
-                        } catch (InterruptedException ignored) {
-                        }
-                    }
-                    case ResultStatus.FAILED -> {
-                        break;
-                    }
-                    case ResultStatus.SUCCESS -> {
-                        tempAction.resetPath();
-                        try {
-                            doSerialize(tempAction, code, codeType);
-                        } catch (IOException e) {
-                            log.error("行动程序序列化出错: {}", tempAction.getKey(), e);
-                        }
-                    }
-                }
-            }
-        });
-
-    }
-
-    protected abstract Path doBuildTempPath(MetaAction tempAction, String codeType);
-
-    protected abstract void doSerialize(MetaAction tempAction, String code, String codeType) throws IOException;
+    public abstract void persistSerialize(MetaActionInfo metaActionInfo, McpData mcpData);
 
     /**
      * 列出执行环境下的系统依赖情况

@@ -5,6 +5,8 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+
+import work.slhaf.partner.core.action.entity.McpData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.MetaActionType;
@@ -52,35 +54,34 @@ public class LocalRunnerClient extends RunnerClient {
         return response;
     }
 
+    private RunnerResponse doRunWithOrigin(MetaAction metaAction) {
+        RunnerResponse response = new RunnerResponse();
+
+        return response;
+    }
+
     private RunnerResponse doRunWithMcp(MetaAction metaAction) {
         RunnerResponse response = new RunnerResponse();
 
         return response;
     }
 
-    private RunnerResponse doRunWithPlugin(MetaAction metaAction) {
-        RunnerResponse response = new RunnerResponse();
-
-        return response;
-    }
-
-    private RunnerResponse doRunWithScript(MetaAction metaAction) {
-        RunnerResponse response = new RunnerResponse();
-
-        return response;
-    }
-
     @Override
-    protected Path doBuildTempPath(MetaAction tempAction, String codeType) {
+    public Path buildTmpPath(MetaAction tempAction, String codeType) {
         return Path.of(TMP_ACTION_DIR_LOCAL, System.currentTimeMillis() + "-" + tempAction.getKey() + codeType);
     }
 
     @Override
-    protected void doSerialize(MetaAction tempAction, String code, String codeType) throws IOException {
+    public void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException {
         Path path = tempAction.getPath();
         File file = path.toFile();
         file.createNewFile();
         Files.writeString(path, code);
+    }
+
+    @Override
+    public void persistSerialize(MetaActionInfo metaActionInfo, McpData mcpData) {
+        throw new UnsupportedOperationException("Unimplemented method 'doPersistSerialize'");
     }
 
     @Override
@@ -252,7 +253,7 @@ public class LocalRunnerClient extends RunnerClient {
         }
 
         private void handleParentDirEvent(WatchEvent.Kind<Path> kind, Path thisDir, Path context,
-                                          WatchService watchService) {
+                WatchService watchService) {
             Path path = Path.of(thisDir.toString(), context.toString());
             // MODIFY 事件不进行处理
             if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
@@ -316,4 +317,5 @@ public class LocalRunnerClient extends RunnerClient {
         }
 
     }
+
 }

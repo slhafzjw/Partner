@@ -16,8 +16,6 @@ import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorInput;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorResult;
 
-import java.nio.file.Path;
-
 /**
  * 负责依据输入内容生成可执行的动态行动单元，并选择是否持久化至 SandboxRunner 容器内
  */
@@ -50,13 +48,20 @@ public class DynamicActionGenerator extends AgentRunningSubModule<GeneratorInput
             // 将临时行动单元序列化至临时文件夹，并设置程序路径、放置在队列中，等待执行状态变化，并根据序列化选项选择是否补充 MetaActionInfo 并持久序列化
             // 通过 ActionCapability 暴露的接口，序列化至临时文件夹，同时返回Path对象并设置。队列建议交给 SandboxRunner
             // 持有，包括监听与序列化线程
-            Path path = runnerClient.getPathAndSerialize(tempAction, generatorData);
-            tempAction.setPath(path);
+            tempAction.setPath(runnerClient.buildTmpPath(tempAction, generatorData.getCodeType()));
+            runnerClient.tmpSerialize(tempAction, generatorData.getCode(), generatorData.getCodeType());
+            if (generatorData.isSerialize()) {
+                waitingSerialize();
+            }
             result.setTempAction(tempAction);
         } catch (Exception e) {
             result.setTempAction(null);
         }
         return result;
+    }
+
+    private void waitingSerialize() {
+        throw new UnsupportedOperationException("Unimplemented method 'waitingSerialize'");
     }
 
     private MetaAction buildAction(GeneratorInput input) {

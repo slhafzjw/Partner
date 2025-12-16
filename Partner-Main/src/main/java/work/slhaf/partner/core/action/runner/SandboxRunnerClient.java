@@ -1,9 +1,12 @@
 package work.slhaf.partner.core.action.runner;
 
 import com.alibaba.fastjson2.JSONObject;
+
+import work.slhaf.partner.core.action.entity.McpData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -24,18 +27,6 @@ import java.util.concurrent.ExecutorService;
  */
 public class SandboxRunnerClient extends RunnerClient {
 
-    @Override
-    protected Path doBuildTempPath(MetaAction tempAction, String codeType) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    protected void doSerialize(MetaAction tempAction, String code, String codeType) {
-        // TODO Auto-generated method stub
-
-    }
-
     public SandboxRunnerClient(Map<String, MetaActionInfo> existedMetaActions, ExecutorService executor) { // 连接沙盒执行器(websocket)
         super(existedMetaActions, executor);
     }
@@ -47,8 +38,22 @@ public class SandboxRunnerClient extends RunnerClient {
 
     @Override
     public JSONObject listSysDependencies() {
-        // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public Path buildTmpPath(MetaAction tempAction, String codeType) {
+        throw new UnsupportedOperationException("Unimplemented method 'buildTmpPath'");
+    }
+
+    @Override
+    public void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException {
+        throw new UnsupportedOperationException("Unimplemented method 'tmpSerialize'");
+    }
+
+    @Override
+    public void persistSerialize(MetaActionInfo metaActionInfo, McpData mcpData) {
+        throw new UnsupportedOperationException("Unimplemented method 'persistSerialize'");
     }
 
 }
