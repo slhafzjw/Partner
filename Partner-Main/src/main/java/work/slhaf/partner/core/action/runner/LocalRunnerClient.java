@@ -1,5 +1,6 @@
 package work.slhaf.partner.core.action.runner;
 
+import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
@@ -57,8 +58,38 @@ public class LocalRunnerClient extends RunnerClient {
 
     private RunnerResponse doRunWithOrigin(MetaAction metaAction) {
         RunnerResponse response = new RunnerResponse();
-
+        File file = metaAction.getPath().toFile();
+        String ext = FileUtil.getSuffix(file);
+        if (ext == null || ext.isEmpty()) {
+            response.setOk(false);
+            response.setData("未知文件类型");
+            return response;
+        }
+        String[] commands = buildCommands(ext, metaAction.getParams(), file.getAbsolutePath());
+        SystemExecResult execResult = exec(commands);
+        response.setOk(execResult.isOk());
+        response.setData(execResult.getTotal());
         return response;
+    }
+
+    //TODO 后续需在加载时、或者通过配置文件获取可用命令并注册匹配
+    private String[] buildCommands(String ext, Map<String, String> params, String absolutePath) {
+        String command = switch (ext) {
+            case "py" -> "python";
+            case "sh" -> "bash";
+            default -> null;
+        };
+        if (command == null) {
+            return null;
+        }
+        String[] commands = new String[params.size() + 2];
+        commands[0] = command;
+        commands[1] = absolutePath;
+        AtomicInteger paramCount = new AtomicInteger(2);
+        params.forEach((param, value) -> {
+            commands[paramCount.getAndIncrement()] = "--" + param + "=" + value;
+        });
+        return commands;
     }
 
     private RunnerResponse doRunWithMcp(MetaAction metaAction) {
@@ -95,7 +126,7 @@ public class LocalRunnerClient extends RunnerClient {
         JSONObject sysDependencies = new JSONObject();
         sysDependencies.put("language", "Python");
         JSONArray dependencies = sysDependencies.putArray("dependencies");
-        SystemExecResult pyResult = exec("pip", "li", "--format=feeze");
+        SystemExecResult pyResult = exec("pip", "list", "--format=freeze");
         System.out.println(pyResult);
         if (pyResult.isOk()) {
             List<String> resultList = pyResult.getResultList();
@@ -283,7 +314,7 @@ public class LocalRunnerClient extends RunnerClient {
         }
 
         private void handleParentDirEvent(WatchEvent.Kind<Path> kind, Path thisDir, Path context,
-                WatchService watchService) {
+                                          WatchService watchService) {
             Path path = Path.of(thisDir.toString(), context.toString());
             // MODIFY 事件不进行处理
             if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
