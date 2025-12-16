@@ -5,7 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-
+import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.core.action.entity.McpData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 import static work.slhaf.partner.common.Constant.Path.TMP_ACTION_DIR_LOCAL;
@@ -31,9 +32,9 @@ import static work.slhaf.partner.common.Constant.Path.TMP_ACTION_DIR_LOCAL;
 @Slf4j
 public class LocalRunnerClient extends RunnerClient {
 
-    public LocalRunnerClient(Map<String, MetaActionInfo> existedMetaActions, ExecutorService executor) {
+    public LocalRunnerClient(Map<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String actionWatchPath) {
         super(existedMetaActions, executor);
-        ActionWatchService watchService = new ActionWatchService();
+        ActionWatchService watchService = new ActionWatchService(actionWatchPath);
         watchService.launch();
     }
 
@@ -149,9 +150,14 @@ public class LocalRunnerClient extends RunnerClient {
     private class ActionWatchService {
 
         private final HashMap<Path, WatchKey> registeredPaths = new HashMap<>();
+        private final String actionWatchPath;
+
+        private ActionWatchService(String actionWatchPath) {
+            this.actionWatchPath = actionWatchPath;
+        }
 
         private void launch() {
-            Path path = Path.of(ACTION_PROGRAM);
+            Path path = Path.of(actionWatchPath != null ? actionWatchPath : ACTION_PROGRAM);
             scanActions(path.toFile());
             launchActionDirectoryWatcher(path);
         }

@@ -41,7 +41,7 @@ public class SystemTest {
     void localRunnerClientTest() {
         Map<String, MetaActionInfo> existedMetaActions = new HashMap<>();
         ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-        RunnerClient client = new LocalRunnerClient(existedMetaActions, executor);
+        RunnerClient client = new LocalRunnerClient(existedMetaActions, executor, null);
         JSONObject res = client.listSysDependencies();
         System.out.println(res.toString());
     }
