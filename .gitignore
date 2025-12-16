@@ -55,3 +55,4 @@ build/
 /data/
 /generated-classes/
 /.idea/copilot.data.migration.ask2agent.xml
+/Partner-Main/data/
