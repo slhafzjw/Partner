@@ -44,8 +44,7 @@ public class MetaAction implements Comparable<MetaAction> {
 
     public void resetPath() {
         path = switch (type) {
-            case PLUGIN -> Path.of(ACTION_PROGRAM, key, "action.jar");
-            case SCRIPT -> Path.of(ACTION_PROGRAM, key, "action.py");
+            case ORIGIN -> path;
             case MCP -> Path.of(ACTION_PROGRAM, key, "action.json");
         };
     }

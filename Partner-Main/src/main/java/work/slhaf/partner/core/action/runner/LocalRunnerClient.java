@@ -41,9 +41,8 @@ public class LocalRunnerClient extends RunnerClient {
         try {
             // 由于三种方式返回的内容结构变化太大，所以选择油具体执行逻辑返回真正的 Response 对象
             response = switch (metaAction.getType()) {
-                case MetaActionType.SCRIPT -> doRunWithScript(metaAction);
                 case MetaActionType.MCP -> doRunWithMcp(metaAction);
-                case MetaActionType.PLUGIN -> doRunWithPlugin(metaAction);
+                case MetaActionType.ORIGIN -> doRunWithOrigin(metaAction);
             };
         } catch (Exception e) {
             response = new RunnerResponse();

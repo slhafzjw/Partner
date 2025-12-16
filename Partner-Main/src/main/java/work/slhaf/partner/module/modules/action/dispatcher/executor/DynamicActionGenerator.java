@@ -65,7 +65,7 @@ public class DynamicActionGenerator extends AgentRunningSubModule<GeneratorInput
         tempAction.setParams(input.getParams());
         tempAction.setIo(true);
         tempAction.setOrder(-1);
-        tempAction.setType(MetaActionType.SCRIPT);
+        tempAction.setType(MetaActionType.ORIGIN);
         return tempAction;
     }
 
