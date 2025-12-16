@@ -1,3 +1,5 @@
+package experimental;
+
 import cn.hutool.json.JSONUtil;
 import org.junit.jupiter.api.Test;
 import work.slhaf.partner.api.chat.ChatClient;
