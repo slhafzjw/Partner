@@ -35,8 +35,7 @@ public class MetaAction implements Comparable<MetaAction> {
      */
     private boolean io;
     /**
-     * 行动程序类型，可分为PLUGIN(jar文件)、SCRIPT(Python程序)、MCP(MCP服务)
-     * .
+     * 行动程序类型，可分为 MCP、ORIGIN 两种，前者对应读取到的 MCP Tool、后者对应生成的临时行动程序
      */
     private MetaActionType type;
 
