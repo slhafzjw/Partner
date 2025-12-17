@@ -43,7 +43,6 @@ public class LocalRunnerClient extends RunnerClient {
     protected RunnerResponse doRun(MetaAction metaAction) {
         RunnerResponse response;
         try {
-            // 由于三种方式返回的内容结构变化太大，所以选择油具体执行逻辑返回真正的 Response 对象
             response = switch (metaAction.getType()) {
                 case MetaActionType.MCP -> doRunWithMcp(metaAction);
                 case MetaActionType.ORIGIN -> doRunWithOrigin(metaAction);
