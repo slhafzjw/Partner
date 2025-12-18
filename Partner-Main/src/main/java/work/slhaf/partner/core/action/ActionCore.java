@@ -55,7 +55,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
     private final ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
-     * 已存在的行动程序，键为目录名，值为从目录加载的行动程序元信息
+     * 已存在的行动程序，键格式为‘<MCP-ServerName>::<Tool-Name>’，值为 MCP Server 通过 Resources 相关渠道传递的行动程序元信息
      */
     private final Map<String, MetaActionInfo> existedMetaActions = new HashMap<>();
     private final List<PhaserRecord> phaserRecords = new ArrayList<>();
