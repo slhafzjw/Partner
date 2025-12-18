@@ -282,7 +282,7 @@ public class LocalRunnerClient extends RunnerClient {
                 if (!complete)
                     return;
                 try {
-                    MetaActionInfo newActionInfo = new MetaActionInfo(thisDir.toFile());
+                    MetaActionInfo newActionInfo = new MetaActionInfo();
                     existedMetaActions.put(thisDir.toString(), newActionInfo);
                 } catch (ActionLoadFailedException e) {
                     log.warn("行动信息重新加载失败，触发行为: {}", kind.name());
@@ -366,7 +366,7 @@ public class LocalRunnerClient extends RunnerClient {
             }
             for (File f : files) {
                 try {
-                    MetaActionInfo actionInfo = new MetaActionInfo(f);
+                    MetaActionInfo actionInfo = new MetaActionInfo();
                     existedMetaActions.put(f.getName(), actionInfo);
                     log.info("行动程序[{}]已加载", actionInfo.getKey());
                 } catch (ActionLoadFailedException e) {
