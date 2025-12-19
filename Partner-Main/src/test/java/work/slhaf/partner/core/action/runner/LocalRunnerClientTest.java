@@ -32,7 +32,6 @@ public class LocalRunnerClientTest {
         metaAction.setIo(false);
         metaAction.setKey("hello_world");
         metaAction.setParams(Map.of("name", "origin_run"));
-        metaAction.setOrder(-1);
         metaAction.setType(MetaActionType.ORIGIN);
         metaAction.setPath(Path.of("/home/slhaf/Projects/IdeaProjects/Projects/Partner/Partner-Main/src/test/java/resources/action/tmp/hello_world.py"));
         return metaAction;
