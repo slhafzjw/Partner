@@ -17,7 +17,7 @@ public class MetaAction {
     /**
      * 行动程序可接受的参数，由调用处设置
      */
-    private Map<String, String> params;
+    private Map<String, Object> params;
     /**
      * 行动结果，包括执行状态和相应内容(执行结果或者错误信息)
      */

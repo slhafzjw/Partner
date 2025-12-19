@@ -11,7 +11,7 @@ public class MetaActionInfo {
     private boolean io;
     private MetaActionType type;
 
-    private Map<String, String> params;
+    private Map<String, Object> params;
     private String description;
     private List<String> tags;
 

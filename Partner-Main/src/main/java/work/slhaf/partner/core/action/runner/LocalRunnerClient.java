@@ -3,6 +3,8 @@ package work.slhaf.partner.core.action.runner;
 import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -72,7 +74,7 @@ public class LocalRunnerClient extends RunnerClient {
     }
 
     //TODO 后续需在加载时、或者通过配置文件获取可用命令并注册匹配
-    private String[] buildCommands(String ext, Map<String, String> params, String absolutePath) {
+    private String[] buildCommands(String ext, Map<String, Object> params, String absolutePath) {
         String command = switch (ext) {
             case "py" -> "python";
             case "sh" -> "bash";
@@ -86,14 +88,21 @@ public class LocalRunnerClient extends RunnerClient {
         commands[1] = absolutePath;
         AtomicInteger paramCount = new AtomicInteger(2);
         params.forEach((param, value) -> {
-            commands[paramCount.getAndIncrement()] = "--" + param + "=" + value;
+            commands[paramCount.getAndIncrement()] = "--" + param + "=" + value.toString();
         });
         return commands;
     }
 
     private RunnerResponse doRunWithMcp(MetaAction metaAction) {
         RunnerResponse response = new RunnerResponse();
-
+        McpSyncClient mcpClient = mcpClients.get(metaAction.getLocation());
+        McpSchema.CallToolRequest callToolRequest = McpSchema.CallToolRequest.builder()
+                .name(metaAction.getName())
+                .arguments(metaAction.getParams())
+                .build();
+        McpSchema.CallToolResult callToolResult = mcpClient.callTool(callToolRequest);
+        response.setOk(callToolResult.isError());
+        response.setData(callToolResult.structuredContent().toString());
         return response;
     }
 
