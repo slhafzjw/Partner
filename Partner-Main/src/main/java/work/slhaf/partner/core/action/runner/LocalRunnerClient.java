@@ -57,7 +57,7 @@ public class LocalRunnerClient extends RunnerClient {
 
     private RunnerResponse doRunWithOrigin(MetaAction metaAction) {
         RunnerResponse response = new RunnerResponse();
-        File file = metaAction.getPath().toFile();
+        File file = new File(metaAction.getLocation());
         String ext = FileUtil.getSuffix(file);
         if (ext == null || ext.isEmpty()) {
             response.setOk(false);
@@ -98,13 +98,13 @@ public class LocalRunnerClient extends RunnerClient {
     }
 
     @Override
-    public Path buildTmpPath(MetaAction tempAction, String codeType) {
-        return Path.of(TMP_ACTION_DIR_LOCAL, System.currentTimeMillis() + "-" + tempAction.getKey() + codeType);
+    public String buildTmpPath(MetaAction tempAction, String codeType) {
+        return Path.of(TMP_ACTION_DIR_LOCAL, System.currentTimeMillis() + "-" + tempAction.getKey() + codeType).toString();
     }
 
     @Override
     public void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException {
-        Path path = tempAction.getPath();
+        Path path = Path.of(tempAction.getLocation());
         File file = path.toFile();
         file.createNewFile();
         Files.writeString(path, code);

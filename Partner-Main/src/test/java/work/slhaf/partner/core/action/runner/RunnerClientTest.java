@@ -13,7 +13,6 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -86,7 +85,7 @@ public class RunnerClientTest {
         }
 
         @Override
-        public Path buildTmpPath(MetaAction tempAction, String codeType) {
+        public String buildTmpPath(MetaAction tempAction, String codeType) {
             return null;
         }
 

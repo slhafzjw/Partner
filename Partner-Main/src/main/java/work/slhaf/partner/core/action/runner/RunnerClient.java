@@ -27,7 +27,6 @@ import work.slhaf.partner.core.action.entity.MetaAction.ResultStatus;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -152,7 +151,7 @@ public abstract class RunnerClient {
 
     protected abstract RunnerResponse doRun(MetaAction metaAction);
 
-    public abstract Path buildTmpPath(MetaAction tempAction, String codeType);
+    public abstract String buildTmpPath(MetaAction tempAction, String codeType);
 
     public abstract void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException;
 

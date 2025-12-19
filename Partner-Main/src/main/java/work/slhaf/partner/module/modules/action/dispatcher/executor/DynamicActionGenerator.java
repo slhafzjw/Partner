@@ -48,7 +48,7 @@ public class DynamicActionGenerator extends AgentRunningSubModule<GeneratorInput
             // 将临时行动单元序列化至临时文件夹，并设置程序路径、放置在队列中，等待执行状态变化，并根据序列化选项选择是否补充 MetaActionInfo 并持久序列化
             // 通过 ActionCapability 暴露的接口，序列化至临时文件夹，同时返回Path对象并设置。队列建议交给 SandboxRunner
             // 持有，包括监听与序列化线程
-            tempAction.setPath(runnerClient.buildTmpPath(tempAction, generatorData.getCodeType()));
+            tempAction.setLocation(runnerClient.buildTmpPath(tempAction, generatorData.getCodeType()));
             runnerClient.tmpSerialize(tempAction, generatorData.getCode(), generatorData.getCodeType());
             if (generatorData.isSerialize()) {
                 waitingSerialize();
@@ -66,7 +66,7 @@ public class DynamicActionGenerator extends AgentRunningSubModule<GeneratorInput
 
     private MetaAction buildAction(GeneratorInput input) {
         MetaAction tempAction = new MetaAction();
-        tempAction.setKey(input.getKey());
+        tempAction.setName(input.getActionName());
         tempAction.setParams(input.getParams());
         tempAction.setIo(true);
         tempAction.setType(MetaActionType.ORIGIN);

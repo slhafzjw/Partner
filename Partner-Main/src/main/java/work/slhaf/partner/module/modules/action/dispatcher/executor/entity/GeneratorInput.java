@@ -6,7 +6,7 @@ import java.util.Map;
 
 @Data
 public class GeneratorInput {
-    private String key;
+    private String actionName;
     private Map<String, String> params;
     private String description;
     private Map<String, String> paramsDescription;

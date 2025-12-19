@@ -1,13 +1,11 @@
 package work.slhaf.partner.core.action.runner;
 
 import com.alibaba.fastjson2.JSONObject;
-
 import work.slhaf.partner.core.action.entity.McpData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
@@ -42,7 +40,7 @@ public class SandboxRunnerClient extends RunnerClient {
     }
 
     @Override
-    public Path buildTmpPath(MetaAction tempAction, String codeType) {
+    public String buildTmpPath(MetaAction tempAction, String codeType) {
         throw new UnsupportedOperationException("Unimplemented method 'buildTmpPath'");
     }
 

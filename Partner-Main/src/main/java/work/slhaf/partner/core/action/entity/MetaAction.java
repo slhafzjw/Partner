@@ -2,10 +2,7 @@ package work.slhaf.partner.core.action.entity;
 
 import lombok.Data;
 
-import java.nio.file.Path;
 import java.util.Map;
-
-import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 
 /**
  * 行动链中的单一元素，封装了调用外部行动程序的必要信息与结果容器，可被{@link work.slhaf.partner.core.action.ActionCapability}执行
@@ -14,9 +11,9 @@ import static work.slhaf.partner.common.Constant.Path.ACTION_PROGRAM;
 public class MetaAction {
 
     /**
-     * 行动key，用于标识与定位行动程序
+     * 行动name，用于标识行动程序
      */
-    private String key;
+    private String name;
     /**
      * 行动程序可接受的参数，由调用处设置
      */
@@ -34,13 +31,19 @@ public class MetaAction {
      */
     private MetaActionType type;
 
-    private Path path;
+    /**
+     * 当类型为 MCP 时，该字段对应相应 MCP Client 注册时生成的 id;
+     * 当类型为 ORIGIN 时，该字段对应相应的磁盘路径字符串
+     */
+    private String location;
 
-    public void resetPath() {
-        path = switch (type) {
-            case ORIGIN -> path;
-            case MCP -> Path.of(ACTION_PROGRAM, key, "action.json");
-        };
+    /**
+     * actionKey 将由 location+name 共同定位
+     *
+     * @return actionKey
+     */
+    public String getKey() {
+        return location + "::" + name;
     }
 
     @Data

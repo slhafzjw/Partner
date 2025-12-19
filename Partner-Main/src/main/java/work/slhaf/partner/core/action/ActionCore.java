@@ -228,6 +228,12 @@ public class ActionCore extends PartnerCore<ActionCore> {
         metaAction.setParams(metaActionInfo.getParams());
         metaAction.setType(metaActionInfo.getType());
         metaAction.setIo(metaActionInfo.isIo());
+        String[] split = actionKey.split("::");
+        if (split.length < 2) {
+            throw new MetaActionNotFoundException("未找到对应的行动程序，原因: 传入的 actionKey(" + actionKey + ") 存在异常");
+        }
+        metaAction.setLocation(split[0]);
+        metaAction.setName(split[1]);
         return metaAction;
     }
 
