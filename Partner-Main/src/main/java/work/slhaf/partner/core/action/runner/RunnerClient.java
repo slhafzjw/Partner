@@ -18,6 +18,8 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.UnknownNullability;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import work.slhaf.partner.core.action.entity.McpData;
@@ -88,25 +90,35 @@ public abstract class RunnerClient {
                 //       ResourcesChange 事件传递的 Resource 可以由 Client 读取内容
                 //       预计在 Server 侧，收到客户端发送的新的行动程序信息，该信息由客户端处补充后，将其放置在指定位置
                 //       并写入描述文件、发起 ResourcesChange 事件
-                .resourcesChangeConsumer(resources -> updateExistedMetaActions(id, resources))
+                .toolsChangeConsumer(tools -> updateExistedMetaActions(id, tools))
                 .build();
         mcpClients.put(id, client);
     }
 
-    private void updateExistedMetaActions(String id, List<McpSchema.Resource> resources) {
-        synchronized (existedMetaActions) {
-            McpSyncClient client = mcpClients.get(id);
-            for (McpSchema.Resource resource : resources) {
-                McpSchema.ReadResourceResult resourceResult = client.readResource(resource);
-                for (McpSchema.ResourceContents resourceContent : resourceResult.contents()) {
-                    // 忽略非文本类型，行动描述信息只会以文本形式存在
-                    if (resourceContent instanceof McpSchema.TextResourceContents content) {
-                        MetaActionInfo metaActionInfo = JSONObject.parseObject(content.text(), MetaActionInfo.class);
-                        existedMetaActions.put(id + "::" + resource.name(), metaActionInfo);
-                    }
-                }
+    private void updateExistedMetaActions(String id, @UnknownNullability List<McpSchema.Tool> tools) {
+        for (McpSchema.Tool tool : tools) {
+            MetaActionInfo info = buildMetaActionInfo(tool);
+            String actionKey = id + "::" + tool.name();
+            synchronized (existedMetaActions) {
+                existedMetaActions.put(actionKey, info);
             }
         }
+    }
+
+    private static @NotNull MetaActionInfo buildMetaActionInfo(McpSchema.Tool tool) {
+        MetaActionInfo info = new MetaActionInfo();
+        info.setDescription(tool.description());
+        Map<String, Object> outputSchema = tool.outputSchema();
+        info.setResponseSchema(outputSchema == null ? JSONObject.of() : JSONObject.from(outputSchema));
+        info.setParams(tool.inputSchema().properties());
+
+        JSONObject meta = JSONObject.from(tool.meta());
+        info.setIo(meta.getBoolean("io"));
+        info.setPreActions(meta.getList("pre", String.class));
+        info.setPostActions(meta.getList("post", String.class));
+        info.setStrictDependencies(meta.getBoolean("strict"));
+        info.setTags(meta.getList("tag", String.class));
+        return info;
     }
 
     private McpClientTransport createTransport(McpServerParams mcpServerParams) {

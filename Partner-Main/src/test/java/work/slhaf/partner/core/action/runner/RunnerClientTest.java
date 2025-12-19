@@ -47,6 +47,22 @@ public class RunnerClientTest {
     }
 
     @Test
+    void schemaTest() {
+        TestRunnerClient testClient = new TestRunnerClient();
+        RunnerClient.StdioMcpServerParams params = new RunnerClient.StdioMcpServerParams(20, "uvx", Map.of("http_proxy", "http://127.0.0.1:7897", "https_proxy", "http://127.0.0.1:7897"), List.of("mcp-server-fetch"));
+        testClient.registerMcpClient("test", params);
+        McpSyncClient client = testClient.mcpClients.values().stream().toList().getFirst();
+        List<McpSchema.Tool> tools = client.listTools().tools();
+        System.out.println("\r\n ------ \r\n");
+        McpSchema.Tool first = tools.getFirst();
+        Map<String, Object> paramsSchema = first.inputSchema().properties();
+        System.out.println(paramsSchema.toString());
+        System.out.println("\r\n ------ \r\n");
+        Map<String, Object> outputSchema = first.outputSchema();
+        System.out.println(outputSchema);
+    }
+
+    @Test
     void inProcessMcpTransportTest() {
         RunnerClient.InProcessMcpTransport.Pair pair = RunnerClient.InProcessMcpTransport.pair();
         RunnerClient.InProcessMcpTransport clientSide = pair.clientSide();
