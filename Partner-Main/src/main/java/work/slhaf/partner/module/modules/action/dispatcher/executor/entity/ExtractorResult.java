@@ -7,5 +7,5 @@ import java.util.Map;
 @Data
 public class ExtractorResult {
     private boolean ok;
-    private Map<String, String> params;
+    private Map<String, Object> params;
 }

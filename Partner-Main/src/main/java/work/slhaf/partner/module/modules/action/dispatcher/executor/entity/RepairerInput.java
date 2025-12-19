@@ -12,7 +12,7 @@ public class RepairerInput {
 
     private String userId;
     private List<Message> recentMessages;
-    private Map<String, String> params;
+    private Map<String, Object> params;
     private String actionDescription;
     private List<HistoryAction> historyActionResults;
     private PhaserRecord phaserRecord;
