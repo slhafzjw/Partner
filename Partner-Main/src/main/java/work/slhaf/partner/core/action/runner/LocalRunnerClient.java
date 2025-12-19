@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,7 +36,7 @@ import static work.slhaf.partner.common.Constant.Path.TMP_ACTION_DIR_LOCAL;
 @Slf4j
 public class LocalRunnerClient extends RunnerClient {
 
-    public LocalRunnerClient(Map<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String actionWatchPath) {
+    public LocalRunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String actionWatchPath) {
         super(existedMetaActions, executor);
         ActionWatchService watchService = new ActionWatchService(actionWatchPath);
         watchService.launch();

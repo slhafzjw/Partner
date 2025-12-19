@@ -15,6 +15,7 @@ import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 public class RunnerClientTest {
@@ -92,7 +93,7 @@ public class RunnerClientTest {
     private static class TestRunnerClient extends RunnerClient {
 
         public TestRunnerClient() {
-            super(Map.of(), Executors.newVirtualThreadPerTaskExecutor());
+            super(new ConcurrentHashMap<>(), Executors.newVirtualThreadPerTaskExecutor());
         }
 
         @Override

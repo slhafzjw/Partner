@@ -33,6 +33,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -41,7 +42,7 @@ import java.util.function.Function;
 @Slf4j
 public abstract class RunnerClient {
 
-    protected final Map<String, MetaActionInfo> existedMetaActions;
+    protected final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions;
     protected final ExecutorService executor;
     protected final Map<String, McpSyncClient> mcpClients = new HashMap<>();
     protected final Map<String, McpStatelessAsyncServer> localMcpServers = new HashMap<>();
@@ -49,7 +50,7 @@ public abstract class RunnerClient {
     /**
      * ActionCore 将注入虚拟线程池
      */
-    public RunnerClient(Map<String, MetaActionInfo> existedMetaActions, ExecutorService executor) {
+    public RunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor) {
         this.existedMetaActions = existedMetaActions;
         this.executor = executor;
         setupShutdownHook();
@@ -99,9 +100,7 @@ public abstract class RunnerClient {
         for (McpSchema.Tool tool : tools) {
             MetaActionInfo info = buildMetaActionInfo(tool);
             String actionKey = id + "::" + tool.name();
-            synchronized (existedMetaActions) {
-                existedMetaActions.put(actionKey, info);
-            }
+            existedMetaActions.put(actionKey, info);
         }
     }
 

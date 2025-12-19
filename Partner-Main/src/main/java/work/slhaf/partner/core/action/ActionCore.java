@@ -17,6 +17,7 @@ import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Phaser;
@@ -53,7 +54,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
     /**
      * 已存在的行动程序，键格式为‘<MCP-ServerName>::<Tool-Name>’，值为 MCP Server 通过 Resources 相关渠道传递的行动程序元信息
      */
-    private final Map<String, MetaActionInfo> existedMetaActions = new HashMap<>();
+    private final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
     private final List<PhaserRecord> phaserRecords = new ArrayList<>();
     private RunnerClient runnerClient;
 

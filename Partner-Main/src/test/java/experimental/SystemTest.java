@@ -7,8 +7,7 @@ import work.slhaf.partner.core.action.runner.LocalRunnerClient;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,7 +38,7 @@ public class SystemTest {
 
     @Test
     void localRunnerClientTest() {
-        Map<String, MetaActionInfo> existedMetaActions = new HashMap<>();
+        ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
         ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
         RunnerClient client = new LocalRunnerClient(existedMetaActions, executor, null);
         JSONObject res = client.listSysDependencies();

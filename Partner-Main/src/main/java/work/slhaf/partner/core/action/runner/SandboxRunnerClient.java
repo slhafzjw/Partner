@@ -6,7 +6,7 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutorService;
  */
 public class SandboxRunnerClient extends RunnerClient {
 
-    public SandboxRunnerClient(Map<String, MetaActionInfo> existedMetaActions, ExecutorService executor) { // 连接沙盒执行器(websocket)
+    public SandboxRunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor) { // 连接沙盒执行器(websocket)
         super(existedMetaActions, executor);
     }
 
