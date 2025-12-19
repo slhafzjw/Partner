@@ -6,10 +6,7 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.PartnerCore;
-import work.slhaf.partner.core.action.entity.ActionData;
-import work.slhaf.partner.core.action.entity.MetaAction;
-import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.entity.PhaserRecord;
+import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.cache.ActionCacheData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
@@ -226,7 +223,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
         }
         MetaAction metaAction = new MetaAction();
         metaAction.setParams(metaActionInfo.getParams());
-        metaAction.setType(metaActionInfo.getType());
+        metaAction.setType(MetaActionType.MCP);
         metaAction.setIo(metaActionInfo.isIo());
         String[] split = actionKey.split("::");
         if (split.length < 2) {

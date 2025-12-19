@@ -9,7 +9,6 @@ import java.util.Map;
 @Data
 public class MetaActionInfo {
     private boolean io;
-    private MetaActionType type;
 
     private Map<String, Object> params;
     private String description;
