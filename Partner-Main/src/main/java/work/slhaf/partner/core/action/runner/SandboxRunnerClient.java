@@ -29,7 +29,7 @@ public class SandboxRunnerClient extends RunnerClient {
         super(existedMetaActions, executor);
     }
 
-    public RunnerResponse doRun(MetaAction metaAction) {
+    protected RunnerResponse doRun(MetaAction metaAction) {
         // 调用沙盒执行器
         return null;
     }
