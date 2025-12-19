@@ -103,7 +103,7 @@ public abstract class RunnerClient {
                     // 忽略非文本类型，行动描述信息只会以文本形式存在
                     if (resourceContent instanceof McpSchema.TextResourceContents content) {
                         MetaActionInfo metaActionInfo = JSONObject.parseObject(content.text(), MetaActionInfo.class);
-                        existedMetaActions.put(id + "::" + metaActionInfo.getKey(), metaActionInfo);
+                        existedMetaActions.put(id + "::" + resource.name(), metaActionInfo);
                     }
                 }
             }

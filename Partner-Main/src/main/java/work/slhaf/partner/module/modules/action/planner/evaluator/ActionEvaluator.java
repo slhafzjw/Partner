@@ -11,7 +11,6 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunn
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.action.ActionCapability;
-import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorBatchInput;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorInput;
@@ -69,9 +68,7 @@ public class ActionEvaluator extends AgentRunningSubModule<EvaluatorInput, List<
             BeanUtil.copyProperties(data, temp);
             temp.setTendency(tendency);
             Map<String, String> availableActions = new HashMap<>();
-            for (MetaActionInfo metaActionInfo : actionCapability.listAvailableActions()) {
-                availableActions.put(metaActionInfo.getKey(), metaActionInfo.getDescription());
-            }
+            actionCapability.listAvailableActions().forEach((key, info) -> availableActions.put(key, info.getDescription()));
             temp.setAvailableActions(availableActions);
             list.add(temp);
         }

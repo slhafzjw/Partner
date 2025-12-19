@@ -8,7 +8,6 @@ import java.util.Map;
 
 @Data
 public class MetaActionInfo {
-    private String key;
     private boolean io;
     private MetaActionType type;
 

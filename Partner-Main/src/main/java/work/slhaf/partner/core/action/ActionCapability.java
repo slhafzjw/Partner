@@ -10,6 +10,7 @@ import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 
@@ -43,7 +44,7 @@ public interface ActionCapability {
 
     MetaActionInfo loadMetaActionInfo(@NonNull String actionKey);
 
-    List<MetaActionInfo> listAvailableActions();
+    Map<String, MetaActionInfo> listAvailableActions();
 
     boolean checkExists(String... actionKeys);
 

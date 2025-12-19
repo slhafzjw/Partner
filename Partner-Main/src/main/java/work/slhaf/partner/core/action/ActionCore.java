@@ -1,6 +1,5 @@
 package work.slhaf.partner.core.action;
 
-import cn.hutool.core.bean.BeanUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
@@ -183,8 +182,8 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public List<MetaActionInfo> listAvailableActions() {
-        return existedMetaActions.values().stream().toList();
+    public Map<String, MetaActionInfo> listAvailableActions() {
+        return existedMetaActions;
     }
 
     @CapabilityMethod
@@ -221,14 +220,15 @@ public class ActionCore extends PartnerCore<ActionCore> {
 
     @CapabilityMethod
     public MetaAction loadMetaAction(@NonNull String actionKey) {
-        for (MetaActionInfo actionInfo : existedMetaActions.values()) {
-            if (actionInfo.getKey().equals(actionKey)) {
-                MetaAction metaAction = new MetaAction();
-                BeanUtil.copyProperties(actionInfo, metaAction);
-                return metaAction;
-            }
+        MetaActionInfo metaActionInfo = existedMetaActions.get(actionKey);
+        if (metaActionInfo == null) {
+            throw new MetaActionNotFoundException("未找到对应的行动程序信息" + actionKey);
         }
-        throw new MetaActionNotFoundException("未找到对应的行动程序信息" + actionKey);
+        MetaAction metaAction = new MetaAction();
+        metaAction.setParams(metaActionInfo.getParams());
+        metaAction.setType(metaActionInfo.getType());
+        metaAction.setIo(metaActionInfo.isIo());
+        return metaAction;
     }
 
     @CapabilityMethod
