@@ -39,6 +39,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * 执行客户端抽象类
+ * <br/>
+ * 只负责暴露序列化、执行等相应接口，具体逻辑交给下游实现
+ * <br/>
+ * 默认存在两类实现，{@link LocalRunnerClient} 和 {@link SandboxRunnerClient}
+ * <ol>
+ *     LocalRunnerClient:
+ *     <li>
+ *         对应本地运行环境，可在本地启动 MCP 客户端将 RunnerClient 暴露的能力接口转发至本地 MCP Client 并执行
+ *     </li>
+ *     SandboxRunnerClient:
+ *     <li>
+ *         对应沙盒运行环境，该 Client 仅作为沙盒环境的客户端，不持有额外能力，仅保持远端连接已存在行动的内容更新
+ *     </li>
+ * </ol>
+ */
 @Slf4j
 public abstract class RunnerClient {
 
