@@ -239,15 +239,6 @@ public abstract class RunnerClient {
         }
     }
 
-    protected enum McpServerType {
-        HTTP,
-        STDIO,
-        /**
-         * 对应 Partner 内部的 Server 创建方式
-         */
-        SELF
-    }
-
     public static final class InProcessMcpTransport implements McpClientTransport, McpStatelessServerTransport {
 
         // 每个 transport 只处理一条 inbound 流
