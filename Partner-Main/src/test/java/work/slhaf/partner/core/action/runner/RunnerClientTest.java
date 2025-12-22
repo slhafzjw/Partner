@@ -1,94 +1,15 @@
 package work.slhaf.partner.core.action.runner;
 
 import com.alibaba.fastjson2.JSONObject;
-import io.modelcontextprotocol.client.McpClient;
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.McpStatelessServerFeatures;
-import io.modelcontextprotocol.server.McpStatelessSyncServer;
-import io.modelcontextprotocol.spec.McpSchema;
-import org.junit.jupiter.api.Test;
 import work.slhaf.partner.core.action.entity.McpData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 public class RunnerClientTest {
-
-    @Test
-    void httpMcpClientTest() {
-        TestRunnerClient testClient = new TestRunnerClient();
-        RunnerClient.HttpMcpServerParams params = new RunnerClient.HttpMcpServerParams(20, "https://dashscope.aliyuncs.com", "/api/v1/mcps/WebSearch/sse", Map.of("Authorization", "Bearer sk-xxx"));
-        testClient.registerMcpClient("test", params);
-        McpSyncClient client = testClient.mcpClients.values().stream().toList().getFirst();
-        List<McpSchema.Tool> tools = client.listTools().tools();
-        System.out.println(tools);
-        McpSchema.CallToolResult query = client.callTool(McpSchema.CallToolRequest.builder().name(tools.getFirst().name()).arguments(Map.of("query", "123")).build());
-        for (McpSchema.Content content : query.content()) {
-            System.out.println("\r\n---\r\n");
-            System.out.println(content);
-        }
-    }
-
-    @Test
-    void stdioMcpClientTest() {
-        TestRunnerClient testClient = new TestRunnerClient();
-        RunnerClient.StdioMcpServerParams params = new RunnerClient.StdioMcpServerParams(20, "uvx", Map.of("http_proxy", "http://127.0.0.1:7897", "https_proxy", "http://127.0.0.1:7897"), List.of("mcp-server-fetch"));
-        testClient.registerMcpClient("test", params);
-        McpSyncClient client = testClient.mcpClients.values().stream().toList().getFirst();
-        List<McpSchema.Tool> tools = client.listTools().tools();
-        System.out.println(tools);
-        McpSchema.CallToolResult query = client.callTool(McpSchema.CallToolRequest.builder().name(tools.getFirst().name()).arguments(Map.of("url", "https://gitea.slhaf.work")).build());
-        System.out.println(query.toString());
-    }
-
-    @Test
-    void schemaTest() {
-        TestRunnerClient testClient = new TestRunnerClient();
-        RunnerClient.StdioMcpServerParams params = new RunnerClient.StdioMcpServerParams(20, "uvx", Map.of("http_proxy", "http://127.0.0.1:7897", "https_proxy", "http://127.0.0.1:7897"), List.of("mcp-server-fetch"));
-        testClient.registerMcpClient("test", params);
-        McpSyncClient client = testClient.mcpClients.values().stream().toList().getFirst();
-        List<McpSchema.Tool> tools = client.listTools().tools();
-        System.out.println("\r\n ------ \r\n");
-        McpSchema.Tool first = tools.getFirst();
-        Map<String, Object> paramsSchema = first.inputSchema().properties();
-        System.out.println(paramsSchema.toString());
-        System.out.println("\r\n ------ \r\n");
-        Map<String, Object> outputSchema = first.outputSchema();
-        System.out.println(outputSchema);
-    }
-
-    @Test
-    void inProcessMcpTransportTest() {
-        RunnerClient.InProcessMcpTransport.Pair pair = RunnerClient.InProcessMcpTransport.pair();
-        RunnerClient.InProcessMcpTransport clientSide = pair.clientSide();
-        RunnerClient.InProcessMcpTransport serverSide = pair.serverSide();
-        McpStatelessSyncServer server = McpServer.sync(serverSide)
-                .capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-                .build();
-        server.addTool(McpStatelessServerFeatures.SyncToolSpecification.builder()
-                .tool(McpSchema.Tool.builder().name("111").build()).callHandler((mcpTransportContext, callToolRequest) -> {
-                    System.out.println(111);
-                    return McpSchema.CallToolResult.builder().addContent(new McpSchema.TextContent("111")).build();
-                }).build());
-        McpSyncClient client = McpClient.sync(clientSide)
-                .build();
-
-        List<McpSchema.Tool> tools = client.listTools().tools();
-        McpSchema.Tool tool = tools.getFirst();
-        System.out.println(tool.toString());
-
-        McpSchema.CallToolResult callToolResult = client.callTool(McpSchema.CallToolRequest.builder().name(tool.name()).build());
-        System.out.println(callToolResult.content().toString());
-
-        client.close();
-        server.close();
-    }
 
     private static class TestRunnerClient extends RunnerClient {
 
