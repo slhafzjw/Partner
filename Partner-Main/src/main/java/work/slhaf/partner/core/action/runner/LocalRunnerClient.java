@@ -220,12 +220,12 @@ public class LocalRunnerClient extends RunnerClient {
      * 该部分主要发生在扫描到新的MCP Server描述文件时出现的注册逻辑
      *
      * @param id              MCP Client 的 id
-     * @param mcpServerParams MCP Server 的参数
+     * @param mcpClientTransportParams MCP Server 的参数
      */
-    private void registerMcpClient(String id, McpServerParams mcpServerParams) {
-        McpClientTransport clientTransport = createTransport(mcpServerParams);
+    private void registerMcpClient(String id, McpClientTransportParams mcpClientTransportParams) {
+        McpClientTransport clientTransport = createTransport(mcpClientTransportParams);
         McpSyncClient client = McpClient.sync(clientTransport)
-                .requestTimeout(Duration.ofSeconds(mcpServerParams.timeout))
+                .requestTimeout(Duration.ofSeconds(mcpClientTransportParams.timeout))
                 .clientInfo(new McpSchema.Implementation(id, "PARTNER"))
                 // 行动程序(现 MCP Tool)的描述文本将直接由resources返回
                 // 原因: ToolChange 发送的内容侧重调用，缺少可承担描述文本的字段
@@ -261,16 +261,16 @@ public class LocalRunnerClient extends RunnerClient {
         return info;
     }
 
-    private McpClientTransport createTransport(McpServerParams mcpServerParams) {
-        return switch (mcpServerParams) {
-            case StdioMcpServerParams params -> {
+    private McpClientTransport createTransport(McpClientTransportParams mcpClientTransportParams) {
+        return switch (mcpClientTransportParams) {
+            case StdioMcpClientTransportParams params -> {
                 ServerParameters serverParameters = ServerParameters.builder(params.command)
                         .env(params.env)
                         .args(params.args)
                         .build();
                 yield new StdioClientTransport(serverParameters, McpJsonMapper.getDefault());
             }
-            case HttpMcpServerParams params -> {
+            case HttpMcpClientTransportParams params -> {
                 McpSyncHttpClientRequestCustomizer customizer = (builder, method, endpoint, body, context) -> {
                     params.headers.forEach(builder::setHeader);
                 };
@@ -289,20 +289,20 @@ public class LocalRunnerClient extends RunnerClient {
         });
     }
 
-    private sealed abstract static class McpServerParams permits HttpMcpServerParams, StdioMcpServerParams {
+    private sealed abstract static class McpClientTransportParams permits HttpMcpClientTransportParams, StdioMcpClientTransportParams {
         private final int timeout;
 
-        private McpServerParams(int timeout) {
+        private McpClientTransportParams(int timeout) {
             this.timeout = timeout;
         }
     }
 
-    private final static class HttpMcpServerParams extends McpServerParams {
+    private final static class HttpMcpClientTransportParams extends McpClientTransportParams {
         private final String baseUri;
         private final String endpoint;
         private final Map<String, String> headers;
 
-        private HttpMcpServerParams(int timeout, String baseUri, String endpoint, Map<String, String> header) {
+        private HttpMcpClientTransportParams(int timeout, String baseUri, String endpoint, Map<String, String> header) {
             super(timeout);
             this.baseUri = baseUri;
             this.endpoint = endpoint;
@@ -310,12 +310,12 @@ public class LocalRunnerClient extends RunnerClient {
         }
     }
 
-    private final static class StdioMcpServerParams extends McpServerParams {
+    private final static class StdioMcpClientTransportParams extends McpClientTransportParams {
         private final String command;
         private final Map<String, String> env;
         private final List<String> args;
 
-        private StdioMcpServerParams(int timeout, String command, Map<String, String> env, List<String> args) {
+        private StdioMcpClientTransportParams(int timeout, String command, Map<String, String> env, List<String> args) {
             super(timeout);
             this.command = command;
             this.env = env;
