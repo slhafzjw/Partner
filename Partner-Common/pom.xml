@@ -11,6 +11,14 @@
 
     <artifactId>Partner-Common</artifactId>
 
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/io.modelcontextprotocol.sdk/mcp -->
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp</artifactId>
+            <version>0.17.0</version>
+        </dependency>
+    </dependencies>
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>

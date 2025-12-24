@@ -50,6 +50,12 @@
             <artifactId>mcp</artifactId>
             <version>0.17.0</version>
         </dependency>
+        <dependency>
+            <groupId>work.slhaf</groupId>
+            <artifactId>Partner-Common</artifactId>
+            <version>0.5.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <properties>
