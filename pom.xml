@@ -13,6 +13,7 @@
         <module>Partner-Main</module>
         <module>Partner-Api</module>
         <module>Partner-SandboxRunner</module>
+        <module>Partner-Common</module>
     </modules>
 
     <properties>
