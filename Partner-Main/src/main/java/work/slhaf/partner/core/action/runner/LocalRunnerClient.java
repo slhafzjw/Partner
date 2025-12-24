@@ -10,6 +10,8 @@ import io.modelcontextprotocol.client.transport.ServerParameters;
 import io.modelcontextprotocol.client.transport.StdioClientTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.server.McpServer;
+import io.modelcontextprotocol.server.McpStatelessAsyncServer;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.Data;
@@ -17,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
+import work.slhaf.partner.common.mcp.InProcessMcpTransport;
 import work.slhaf.partner.core.action.entity.McpData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
@@ -29,7 +32,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,12 +48,30 @@ import static work.slhaf.partner.common.Constant.Path.TMP_ACTION_DIR_LOCAL;
 public class LocalRunnerClient extends RunnerClient {
 
     private final Map<String, McpSyncClient> mcpClients = new HashMap<>();
+    /**
+     * 动态生成的行动程序都将挂载至该 McpServer
+     */
+    private McpStatelessAsyncServer dynamicActionMcpServer;
 
     public LocalRunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String actionWatchPath) {
         super(existedMetaActions, executor);
         ActionWatchService watchService = new ActionWatchService(actionWatchPath);
         watchService.launch();
+        registerDynamicActionMcp();
         setupShutdownHook();
+    }
+
+    private void registerDynamicActionMcp() {
+        InProcessMcpTransport.Pair pair = InProcessMcpTransport.pair();
+        McpSchema.ServerCapabilities serverCapabilities = McpSchema.ServerCapabilities.builder()
+                .tools(true)
+                .resources(true, true)
+                .build();
+        dynamicActionMcpServer = McpServer.async(pair.serverSide())
+                .capabilities(serverCapabilities)
+                .jsonMapper(McpJsonMapper.getDefault())
+                .build();
+        registerMcpClient("dynamic-action", pair.clientSide(), 10);
     }
 
     @Override
@@ -219,13 +239,18 @@ public class LocalRunnerClient extends RunnerClient {
     /**
      * 该部分主要发生在扫描到新的MCP Server描述文件时出现的注册逻辑
      *
-     * @param id              MCP Client 的 id
+     * @param id                       MCP Client 的 id
      * @param mcpClientTransportParams MCP Server 的参数
      */
     private void registerMcpClient(String id, McpClientTransportParams mcpClientTransportParams) {
         McpClientTransport clientTransport = createTransport(mcpClientTransportParams);
+        int timeout = mcpClientTransportParams.timeout;
+        registerMcpClient(id, clientTransport, timeout);
+    }
+
+    private void registerMcpClient(String id, McpClientTransport clientTransport, int timeout) {
         McpSyncClient client = McpClient.sync(clientTransport)
-                .requestTimeout(Duration.ofSeconds(mcpClientTransportParams.timeout))
+                .requestTimeout(Duration.ofSeconds(timeout))
                 .clientInfo(new McpSchema.Implementation(id, "PARTNER"))
                 // 行动程序(现 MCP Tool)的描述文本将直接由resources返回
                 // 原因: ToolChange 发送的内容侧重调用，缺少可承担描述文本的字段
