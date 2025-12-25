@@ -270,7 +270,7 @@ public class LocalRunnerClient extends RunnerClient {
         }
     }
 
-    private static @NotNull MetaActionInfo buildMetaActionInfo(McpSchema.Tool tool) {
+    private @NotNull MetaActionInfo buildMetaActionInfo(McpSchema.Tool tool) {
         MetaActionInfo info = new MetaActionInfo();
         info.setDescription(tool.description());
         Map<String, Object> outputSchema = tool.outputSchema();
