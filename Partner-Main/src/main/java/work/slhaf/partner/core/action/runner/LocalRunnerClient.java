@@ -308,6 +308,7 @@ public class LocalRunnerClient extends RunnerClient {
     }
 
     private void setupShutdownHook() {
+        dynamicActionMcpServer.close();
         this.mcpClients.forEach((id, client) -> {
             client.close();
             log.info("[{}] MCP-Client 已关闭", id);
