@@ -1,8 +1,10 @@
 package work.slhaf.partner.core.action.runner;
 
 import com.alibaba.fastjson2.JSONObject;
+import io.modelcontextprotocol.server.McpStatelessAsyncServer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.core.action.entity.McpData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
@@ -12,6 +14,9 @@ import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+
+import static work.slhaf.partner.common.Constant.Path.DATA;
+import static work.slhaf.partner.common.util.PathUtil.buildPathStr;
 
 /**
  * 执行客户端抽象类
@@ -33,15 +38,19 @@ import java.util.concurrent.ExecutorService;
 @Slf4j
 public abstract class RunnerClient {
 
+    protected final String ACTION_PATH;
+
     protected final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions;
     protected final ExecutorService executor;
 
     /**
      * ActionCore 将注入虚拟线程池
      */
-    public RunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor) {
+    public RunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String baseActionPath) {
         this.existedMetaActions = existedMetaActions;
         this.executor = executor;
+        baseActionPath = baseActionPath == null ? DATA : baseActionPath;
+        this.ACTION_PATH = buildPathStr(baseActionPath, "action");
     }
 
     /**

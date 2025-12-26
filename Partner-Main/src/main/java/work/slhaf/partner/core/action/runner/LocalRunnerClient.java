@@ -40,10 +40,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static work.slhaf.partner.common.Constant.Path.TMP_ACTION_DIR_LOCAL;
+import static work.slhaf.partner.common.util.PathUtil.buildPathStr;
 
 @Slf4j
 public class LocalRunnerClient extends RunnerClient {
+
+    private final String TMP_ACTION_PATH = buildPathStr(ACTION_PATH, "tmp");
+    private final String DYNAMIC_ACTION_PATH = buildPathStr(ACTION_PATH, "dynamic");
+    private final String MCP_SERVER_PATH = buildPathStr(ACTION_PATH, "mcp");
+    private final String MCP_DESC_PATH = buildPathStr(MCP_SERVER_PATH, "desc");
 
     private final Map<String, McpSyncClient> mcpClients = new HashMap<>();
     /**
@@ -52,8 +57,8 @@ public class LocalRunnerClient extends RunnerClient {
     private McpStatelessAsyncServer dynamicActionMcpServer;
     private final WatchService watchService;
 
-    public LocalRunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String actionWatchPath) {
-        super(existedMetaActions, executor);
+    public LocalRunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String baseActionPath) {
+        super(existedMetaActions, executor, baseActionPath);
         try {
             watchService = FileSystems.getDefault().newWatchService();
         } catch (IOException e) {
@@ -143,7 +148,7 @@ public class LocalRunnerClient extends RunnerClient {
 
     @Override
     public String buildTmpPath(MetaAction tempAction, String codeType) {
-        return Path.of(TMP_ACTION_DIR_LOCAL, System.currentTimeMillis() + "-" + tempAction.getKey() + codeType).toString();
+        return Path.of(TMP_ACTION_PATH, System.currentTimeMillis() + "-" + tempAction.getKey() + codeType).toString();
     }
 
     @Override

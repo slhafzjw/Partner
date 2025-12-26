@@ -5,8 +5,6 @@ public final class Constant {
     public static final class Path {
         public static final String DATA = "data";
         public static final String MEMORY_DATA = DATA + "/memory";
-        public static final String ACTION_PROGRAM = DATA + "/action";
-        public static final String TMP_ACTION_DIR_LOCAL = ACTION_PROGRAM + "/tmp";
     }
 
 }
