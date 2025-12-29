@@ -272,118 +272,118 @@ public class LocalRunnerClient extends RunnerClient {
         }));
     }
 
-    private WatchServiceBuild registerWatchService(Path path) {
-        return new LocalWatchServiceRegistry(path, watchService, executor);
+    private LocalWatchServiceBuild registerWatchService(Path path) {
+        return new LocalWatchServiceBuild.BuildRegistry(path, watchService, executor);
     }
 
-    private interface WatchServiceBuild {
-        WatchServiceBuild registerCreate(WatchEventHandler handler);
+    private interface LocalWatchServiceBuild {
+        LocalWatchServiceBuild registerCreate(EventHandler handler);
 
-        WatchServiceBuild registerModify(WatchEventHandler handler);
+        LocalWatchServiceBuild registerModify(EventHandler handler);
 
-        WatchServiceBuild registerDelete(WatchEventHandler handler);
+        LocalWatchServiceBuild registerDelete(EventHandler handler);
 
-        WatchServiceBuild registerOverflow(WatchEventHandler handler);
+        LocalWatchServiceBuild registerOverflow(EventHandler handler);
 
-        WatchServiceBuild initialLoad(WatchInitLoader loader);
+        LocalWatchServiceBuild initialLoad(InitLoader loader);
 
         void commit();
-    }
 
-    private interface WatchEventHandler {
-        void handle(Path thisDir, Path context);
-    }
-
-    private interface WatchInitLoader {
-        void load(Path path);
-    }
-
-    private static class LocalWatchServiceRegistry implements WatchServiceBuild {
-
-        private final Map<WatchEvent.Kind<?>, WatchEventHandler> handlers = new HashMap<>();
-        private final Path path;
-        private final WatchService watchService;
-        private final ExecutorService executor;
-        private WatchInitLoader initLoader;
-
-        private LocalWatchServiceRegistry(Path path, WatchService watchService, ExecutorService executor) {
-            this.path = path;
-            this.watchService = watchService;
-            this.executor = executor;
+        interface EventHandler {
+            void handle(Path thisDir, Path context);
         }
 
-        @Override
-        public WatchServiceBuild registerCreate(WatchEventHandler handler) {
-            handlers.put(StandardWatchEventKinds.ENTRY_CREATE, handler);
-            return this;
+        interface InitLoader {
+            void load(Path path);
         }
 
-        @Override
-        public WatchServiceBuild registerModify(WatchEventHandler handler) {
-            handlers.put(StandardWatchEventKinds.ENTRY_MODIFY, handler);
-            return this;
-        }
+        class BuildRegistry implements LocalWatchServiceBuild {
 
-        @Override
-        public WatchServiceBuild registerDelete(WatchEventHandler handler) {
-            handlers.put(StandardWatchEventKinds.ENTRY_DELETE, handler);
-            return this;
-        }
+            private final Map<WatchEvent.Kind<?>, EventHandler> handlers = new HashMap<>();
+            private final Path path;
+            private final WatchService watchService;
+            private final ExecutorService executor;
+            private InitLoader initLoader;
 
-        @Override
-        public WatchServiceBuild registerOverflow(WatchEventHandler handler) {
-            handlers.put(StandardWatchEventKinds.OVERFLOW, handler);
-            return this;
-        }
+            private BuildRegistry(Path path, WatchService watchService, ExecutorService executor) {
+                this.path = path;
+                this.watchService = watchService;
+                this.executor = executor;
+            }
 
-        @Override
-        public WatchServiceBuild initialLoad(WatchInitLoader loader) {
-            initLoader = loader;
-            return this;
-        }
+            @Override
+            public LocalWatchServiceBuild registerCreate(EventHandler handler) {
+                handlers.put(StandardWatchEventKinds.ENTRY_CREATE, handler);
+                return this;
+            }
 
-        @Override
-        public void commit() {
-            if (initLoader != null) initLoader.load(path);
-            executor.execute(buildWatchTask());
-        }
+            @Override
+            public LocalWatchServiceBuild registerModify(EventHandler handler) {
+                handlers.put(StandardWatchEventKinds.ENTRY_MODIFY, handler);
+                return this;
+            }
 
-        private Runnable buildWatchTask() {
-            return () -> {
-                String pathStr = path.toString();
-                log.info("行动程序目录监听器已启动，监听目录: {}", pathStr);
-                while (true) {
-                    WatchKey key;
-                    try {
-                        key = watchService.take();
-                        List<WatchEvent<?>> events = key.pollEvents();
-                        for (WatchEvent<?> e : events) {
-                            WatchEvent.Kind<?> kind = e.kind();
-                            Object context = e.context();
-                            log.info("行动程序目录变更事件: {} - {} - {}", pathStr, kind.name(), context);
-                            Path thisDir = (Path) key.watchable();
-                            if (!thisDir.equals(path)) {
-                                // 若事件所在目录不为为 path，忽略并步入下一轮循环
-                                continue;
+            @Override
+            public LocalWatchServiceBuild registerDelete(EventHandler handler) {
+                handlers.put(StandardWatchEventKinds.ENTRY_DELETE, handler);
+                return this;
+            }
+
+            @Override
+            public LocalWatchServiceBuild registerOverflow(EventHandler handler) {
+                handlers.put(StandardWatchEventKinds.OVERFLOW, handler);
+                return this;
+            }
+
+            @Override
+            public LocalWatchServiceBuild initialLoad(InitLoader loader) {
+                initLoader = loader;
+                return this;
+            }
+
+            @Override
+            public void commit() {
+                if (initLoader != null) initLoader.load(path);
+                executor.execute(buildWatchTask());
+            }
+
+            private Runnable buildWatchTask() {
+                return () -> {
+                    String pathStr = path.toString();
+                    log.info("行动程序目录监听器已启动，监听目录: {}", pathStr);
+                    while (true) {
+                        WatchKey key;
+                        try {
+                            key = watchService.take();
+                            List<WatchEvent<?>> events = key.pollEvents();
+                            for (WatchEvent<?> e : events) {
+                                WatchEvent.Kind<?> kind = e.kind();
+                                Object context = e.context();
+                                log.info("行动程序目录变更事件: {} - {} - {}", pathStr, kind.name(), context);
+                                Path thisDir = (Path) key.watchable();
+                                if (!thisDir.equals(path)) {
+                                    // 若事件所在目录不为为 path，忽略并步入下一轮循环
+                                    continue;
+                                }
+                                EventHandler handler = handlers.get(kind);
+                                if (handler == null) {
+                                    continue;
+                                }
+                                handler.handle(thisDir, context instanceof Path ? (Path) context : null);
                             }
-                            WatchEventHandler handler = handlers.get(kind);
-                            if (handler == null) {
-                                continue;
-                            }
-                            handler.handle(thisDir, context instanceof Path ? (Path) context : null);
+                        } catch (InterruptedException e) {
+                            log.info("监听线程被中断，准备退出...");
+                            Thread.currentThread().interrupt(); // 恢复中断标志
+                            break;
+                        } catch (ClosedWatchServiceException e) {
+                            log.info("WatchService 已关闭，监听线程退出。");
+                            break;
                         }
-                    } catch (InterruptedException e) {
-                        log.info("监听线程被中断，准备退出...");
-                        Thread.currentThread().interrupt(); // 恢复中断标志
-                        break;
-                    } catch (ClosedWatchServiceException e) {
-                        log.info("WatchService 已关闭，监听线程退出。");
-                        break;
                     }
-                }
-            };
-        }
+                };
+            }
 
+        }
     }
 
     private sealed static abstract class LocalWatchServiceHelper permits LocalWatchServiceHelper.Dynamic, LocalWatchServiceHelper.Desc, LocalWatchServiceHelper.Common {
@@ -394,15 +394,15 @@ public class LocalRunnerClient extends RunnerClient {
             this.existedMetaActions = existedMetaActions;
         }
 
-        protected abstract @NotNull WatchInitLoader buildLoad();
+        protected abstract @NotNull LocalWatchServiceBuild.InitLoader buildLoad();
 
-        protected abstract @NotNull WatchEventHandler buildModify();
+        protected abstract @NotNull LocalWatchServiceBuild.EventHandler buildModify();
 
-        protected abstract @NotNull WatchEventHandler buildCreate();
+        protected abstract @NotNull LocalWatchServiceBuild.EventHandler buildCreate();
 
-        protected abstract @NotNull WatchEventHandler buildDelete();
+        protected abstract @NotNull LocalWatchServiceBuild.EventHandler buildDelete();
 
-        protected abstract @NotNull WatchEventHandler buildOverflow();
+        protected abstract @NotNull LocalWatchServiceBuild.EventHandler buildOverflow();
 
         private static final class Dynamic extends LocalWatchServiceHelper {
 
@@ -417,29 +417,31 @@ public class LocalRunnerClient extends RunnerClient {
             @NotNull
             protected WatchInitLoader buildLoad() {
                 return null;
+            protected LocalWatchServiceBuild.InitLoader buildLoad() {
             }
 
             @Override
             @NotNull
             protected WatchEventHandler buildModify() {
                 return null;
+            protected LocalWatchServiceBuild.EventHandler buildModify() {
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildCreate() {
+            protected LocalWatchServiceBuild.EventHandler buildCreate() {
+                return buildModify();
+            }
+
+            @Override
+            @NotNull
+            protected LocalWatchServiceBuild.EventHandler buildDelete() {
                 return null;
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildDelete() {
-                return null;
-            }
-
-            @Override
-            @NotNull
-            protected WatchEventHandler buildOverflow() {
+            protected LocalWatchServiceBuild.EventHandler buildOverflow() {
                 return null;
             }
         }
@@ -455,31 +457,31 @@ public class LocalRunnerClient extends RunnerClient {
 
             @Override
             @NotNull
-            protected WatchInitLoader buildLoad() {
+            protected LocalWatchServiceBuild.InitLoader buildLoad() {
                 return null;
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildModify() {
+            protected LocalWatchServiceBuild.EventHandler buildModify() {
                 return null;
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildCreate() {
+            protected LocalWatchServiceBuild.EventHandler buildCreate() {
                 return null;
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildDelete() {
+            protected LocalWatchServiceBuild.EventHandler buildDelete() {
                 return null;
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildOverflow() {
+            protected LocalWatchServiceBuild.EventHandler buildOverflow() {
                 return null;
             }
         }
@@ -495,31 +497,31 @@ public class LocalRunnerClient extends RunnerClient {
 
             @Override
             @NotNull
-            protected WatchInitLoader buildLoad() {
+            protected LocalWatchServiceBuild.InitLoader buildLoad() {
                 return null;
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildModify() {
+            protected LocalWatchServiceBuild.EventHandler buildModify() {
                 return null;
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildCreate() {
+            protected LocalWatchServiceBuild.EventHandler buildCreate() {
                 return null;
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildDelete() {
+            protected LocalWatchServiceBuild.EventHandler buildDelete() {
                 return null;
             }
 
             @Override
             @NotNull
-            protected WatchEventHandler buildOverflow() {
+            protected LocalWatchServiceBuild.EventHandler buildOverflow() {
                 return null;
             }
         }
