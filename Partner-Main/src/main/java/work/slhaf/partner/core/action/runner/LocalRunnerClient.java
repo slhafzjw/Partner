@@ -458,6 +458,145 @@ public class LocalRunnerClient extends RunnerClient {
 
     }
 
+    private sealed static abstract class LocalWatchServiceHelper permits LocalWatchServiceHelper.Dynamic, LocalWatchServiceHelper.Desc, LocalWatchServiceHelper.Common {
+
+        protected final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions;
+
+        private LocalWatchServiceHelper(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions) {
+            this.existedMetaActions = existedMetaActions;
+        }
+
+        protected abstract @NotNull WatchInitLoader buildLoad();
+
+        protected abstract @NotNull WatchEventHandler buildModify();
+
+        protected abstract @NotNull WatchEventHandler buildCreate();
+
+        protected abstract @NotNull WatchEventHandler buildDelete();
+
+        protected abstract @NotNull WatchEventHandler buildOverflow();
+
+        private static final class Dynamic extends LocalWatchServiceHelper {
+
+            private final McpStatelessAsyncServer dynamicActionMcpServer;
+
+            private Dynamic(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, McpStatelessAsyncServer dynamicActionMcpServer) {
+                super(existedMetaActions);
+                this.dynamicActionMcpServer = dynamicActionMcpServer;
+            }
+
+            @Override
+            @NotNull
+            protected WatchInitLoader buildLoad() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildModify() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildCreate() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildDelete() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildOverflow() {
+                return null;
+            }
+        }
+
+        private static final class Desc extends LocalWatchServiceHelper {
+
+            private final McpStatelessAsyncServer mcpDescServer;
+
+            private Desc(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, McpStatelessAsyncServer mcpDescServer) {
+                super(existedMetaActions);
+                this.mcpDescServer = mcpDescServer;
+            }
+
+            @Override
+            @NotNull
+            protected WatchInitLoader buildLoad() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildModify() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildCreate() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildDelete() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildOverflow() {
+                return null;
+            }
+        }
+
+        private static final class Common extends LocalWatchServiceHelper {
+
+            private final Map<String, McpSyncClient> mcpClients;
+
+            private Common(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, Map<String, McpSyncClient> mcpClients) {
+                super(existedMetaActions);
+                this.mcpClients = mcpClients;
+            }
+
+            @Override
+            @NotNull
+            protected WatchInitLoader buildLoad() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildModify() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildCreate() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildDelete() {
+                return null;
+            }
+
+            @Override
+            @NotNull
+            protected WatchEventHandler buildOverflow() {
+                return null;
+            }
+        }
+    }
+
     private sealed abstract static class McpClientTransportParams permits HttpMcpClientTransportParams, StdioMcpClientTransportParams {
         private final int timeout;
 
