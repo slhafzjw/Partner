@@ -1,6 +1,7 @@
 package work.slhaf.partner.core.action.runner;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import io.modelcontextprotocol.client.McpClient;
@@ -9,9 +10,11 @@ import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 import io.modelcontextprotocol.client.transport.StdioClientTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpStatelessAsyncServer;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.Data;
@@ -19,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnknownNullability;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import work.slhaf.partner.common.mcp.InProcessMcpTransport;
 import work.slhaf.partner.core.action.entity.McpData;
 import work.slhaf.partner.core.action.entity.MetaAction;
@@ -30,6 +35,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -39,6 +45,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 
 import static work.slhaf.partner.common.util.PathUtil.buildPathStr;
 
@@ -413,11 +420,93 @@ public class LocalRunnerClient extends RunnerClient {
                 this.dynamicActionMcpServer = dynamicActionMcpServer;
             }
 
+            private BiFunction<McpTransportContext, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> buildToolHandler(File finalProgram) {
+                return (mcpTransportContext, callToolRequest) -> {
+                    Map<String, Object> arguments = callToolRequest.arguments();
+                    if (arguments == null) {
+                        arguments = Map.of();
+                    }
+                    String ext = FileUtil.getSuffix(finalProgram);
+                    String[] commands = SystemExecHelper.buildCommands(ext, arguments, finalProgram.getAbsolutePath());
+                    if (commands == null) {
+                        return Mono.just(McpSchema.CallToolResult.builder()
+                                .addTextContent("未知文件类型: " + finalProgram.getName())
+                                .isError(true)
+                                .build());
+                    }
+
+                    return Mono.fromCallable(() -> {
+                        SystemExecHelper.Result execResult = SystemExecHelper.exec(commands);
+                        McpSchema.CallToolResult.Builder builder = McpSchema.CallToolResult.builder()
+                                .isError(!execResult.isOk());
+                        List<String> resultList = execResult.getResultList();
+                        if (resultList != null && !resultList.isEmpty()) {
+                            builder.textContent(resultList);
+                            builder.structuredContent(resultList);
+                        } else {
+                            builder.addTextContent(execResult.getTotal());
+                            builder.structuredContent(execResult.getTotal());
+                        }
+                        return builder.build();
+                    }).subscribeOn(Schedulers.boundedElastic());
+                };
+            }
+
             @Override
             @NotNull
-            protected WatchInitLoader buildLoad() {
-                return null;
             protected LocalWatchServiceBuild.InitLoader buildLoad() {
+                return path -> {
+                    // 从该路径列出已存在的目录，每个目录对应不同的行动程序及描述文件，从描述文件加载程序信息
+                    File file = path.toFile();
+                    if (file.isFile()) {
+                        throw new ActionInitFailedException("未找到目录: " + path);
+                    }
+                    File[] files = file.listFiles();
+                    if (files == null) {
+                        throw new ActionInitFailedException("未正常读取目录: " + path);
+                    }
+                    for (File dir : files) {
+                        if (!dir.isDirectory())
+                            continue;
+
+                        File[] fs = dir.listFiles();
+                        if (fs == null || fs.length != 2)
+                            continue;
+
+                        File meta = null;
+                        File program = null;
+                        for (File f : fs) {
+                            if (f.getName().endsWith(".meta.json"))
+                                meta = f;
+                            else
+                                program = f;
+                        }
+                        if (meta == null || program == null)
+                            continue;
+
+                        MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
+                        existedMetaActions.put("local::" + program.getName(), info);
+
+                        Map<String, Object> additional = Map.of("pre", info.getPreActions(),
+                                "post", info.getPostActions(),
+                                "strict_pre", info.isStrictDependencies(),
+                                "io", info.isIo());
+                        McpSchema.Tool tool = McpSchema.Tool.builder()
+                                .name(program.getName())
+                                .description(info.getDescription())
+                                .inputSchema(McpJsonMapper.getDefault(), JSONObject.toJSONString(info.getParams()))
+                                .outputSchema(info.getResponseSchema())
+                                .title("local::" + program.getName())
+                                .meta(additional)
+                                .build();
+                        File finalProgram = program;
+                        McpStatelessServerFeatures.AsyncToolSpecification specification = McpStatelessServerFeatures.AsyncToolSpecification.builder()
+                                .tool(tool)
+                                .callHandler(buildToolHandler(finalProgram))
+                                .build();
+                        dynamicActionMcpServer.addTool(specification).subscribe();
+                    }
+                };
             }
 
             @Override
