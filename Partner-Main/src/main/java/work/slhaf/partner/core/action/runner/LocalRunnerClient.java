@@ -55,6 +55,10 @@ public class LocalRunnerClient extends RunnerClient {
      * 动态生成的行动程序都将挂载至该 McpServer
      */
     private McpStatelessAsyncServer dynamicActionMcpServer;
+    /**
+     * 负责监听常规 MCP Server 的描述文件（描述文件主要用于添加原本 MCP Tools 不携带的信息，如前置依赖、后置依赖、是否 IO 密集等
+     */
+    private McpStatelessAsyncServer mcpDescServer;
     private final WatchService watchService;
 
     public LocalRunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String baseActionPath) {
@@ -64,8 +68,23 @@ public class LocalRunnerClient extends RunnerClient {
         } catch (IOException e) {
             throw new ActionInitFailedException("目录监听器启动失败", e);
         }
+        registerDescMcp();
         registerDynamicActionMcp();
         setupShutdownHook();
+    }
+
+    private void registerDescMcp() {
+        InProcessMcpTransport.Pair pair = InProcessMcpTransport.pair();
+        McpSchema.ServerCapabilities serverCapabilities = McpSchema.ServerCapabilities.builder()
+                .resources(true, true)
+                .build();
+        mcpDescServer = McpServer.async(pair.serverSide())
+                .capabilities(serverCapabilities)
+                .jsonMapper(McpJsonMapper.getDefault())
+                .build();
+
+        // TODO 完善加载与监听逻辑
+        registerMcpClient("mcp-desc", pair.clientSide(), 10);
     }
 
     private void registerDynamicActionMcp() {
@@ -317,6 +336,7 @@ public class LocalRunnerClient extends RunnerClient {
     private void setupShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             dynamicActionMcpServer.close();
+            mcpDescServer.close();
             this.mcpClients.forEach((id, client) -> {
                 client.close();
                 log.info("[{}] MCP-Client 已关闭", id);
