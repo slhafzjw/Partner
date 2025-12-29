@@ -325,7 +325,7 @@ public class LocalRunnerClient extends RunnerClient {
     }
 
     private WatchServiceBuild registerWatchService(Path path) {
-        return new LocalWatchServiceHelper(path, watchService, executor);
+        return new LocalWatchServiceRegistry(path, watchService, executor);
     }
 
     private interface WatchServiceBuild {
@@ -350,7 +350,7 @@ public class LocalRunnerClient extends RunnerClient {
         void load(Path path);
     }
 
-    private static class LocalWatchServiceHelper implements WatchServiceBuild {
+    private static class LocalWatchServiceRegistry implements WatchServiceBuild {
 
         private final Map<WatchEvent.Kind<?>, WatchEventHandler> handlers = new HashMap<>();
         private final Path path;
@@ -358,7 +358,7 @@ public class LocalRunnerClient extends RunnerClient {
         private final ExecutorService executor;
         private WatchInitLoader initLoader;
 
-        private LocalWatchServiceHelper(Path path, WatchService watchService, ExecutorService executor) {
+        private LocalWatchServiceRegistry(Path path, WatchService watchService, ExecutorService executor) {
             this.path = path;
             this.watchService = watchService;
             this.executor = executor;
