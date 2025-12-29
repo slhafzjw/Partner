@@ -126,7 +126,7 @@ public class LocalRunnerClient extends RunnerClient {
             return response;
         }
         String[] commands = SystemExecHelper.buildCommands(ext, metaAction.getParams(), file.getAbsolutePath());
-        SystemExecResult execResult = SystemExecHelper.exec(commands);
+        SystemExecHelper.Result execResult = SystemExecHelper.exec(commands);
         response.setOk(execResult.isOk());
         response.setData(execResult.getTotal());
         return response;
@@ -173,7 +173,7 @@ public class LocalRunnerClient extends RunnerClient {
         JSONObject sysDependencies = new JSONObject();
         sysDependencies.put("language", "Python");
         JSONArray dependencies = sysDependencies.putArray("dependencies");
-        SystemExecResult pyResult = SystemExecHelper.exec("pip", "list", "--format=freeze");
+        SystemExecHelper.Result pyResult = SystemExecHelper.exec("pip", "list", "--format=freeze");
         System.out.println(pyResult);
         if (pyResult.isOk()) {
             List<String> resultList = pyResult.getResultList();
@@ -584,8 +584,8 @@ public class LocalRunnerClient extends RunnerClient {
             return commands;
         }
 
-        private static SystemExecResult exec(String... command) {
-            SystemExecResult result = new SystemExecResult();
+        private static Result exec(String... command) {
+            Result result = new Result();
             List<String> output = new ArrayList<>();
             List<String> error = new ArrayList<>();
 
@@ -635,12 +635,13 @@ public class LocalRunnerClient extends RunnerClient {
 
             return result;
         }
+
+        @Data
+        private static class Result {
+            private boolean ok;
+            private String total;
+            private List<String> resultList;
+        }
     }
 
-    @Data
-    private static class SystemExecResult {
-        private boolean ok;
-        private String total;
-        private List<String> resultList;
-    }
 }
