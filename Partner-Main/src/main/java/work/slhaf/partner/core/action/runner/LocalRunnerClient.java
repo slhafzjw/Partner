@@ -125,31 +125,11 @@ public class LocalRunnerClient extends RunnerClient {
             response.setData("未知文件类型");
             return response;
         }
-        String[] commands = buildCommands(ext, metaAction.getParams(), file.getAbsolutePath());
-        SystemExecResult execResult = exec(commands);
+        String[] commands = SystemExecHelper.buildCommands(ext, metaAction.getParams(), file.getAbsolutePath());
+        SystemExecResult execResult = SystemExecHelper.exec(commands);
         response.setOk(execResult.isOk());
         response.setData(execResult.getTotal());
         return response;
-    }
-
-    //TODO 后续需在加载时、或者通过配置文件获取可用命令并注册匹配
-    private String[] buildCommands(String ext, Map<String, Object> params, String absolutePath) {
-        String command = switch (ext) {
-            case "py" -> "python";
-            case "sh" -> "bash";
-            default -> null;
-        };
-        if (command == null) {
-            return null;
-        }
-        String[] commands = new String[params.size() + 2];
-        commands[0] = command;
-        commands[1] = absolutePath;
-        AtomicInteger paramCount = new AtomicInteger(2);
-        params.forEach((param, value) -> {
-            commands[paramCount.getAndIncrement()] = "--" + param + "=" + value.toString();
-        });
-        return commands;
     }
 
     private RunnerResponse doRunWithMcp(MetaAction metaAction) {
@@ -193,7 +173,7 @@ public class LocalRunnerClient extends RunnerClient {
         JSONObject sysDependencies = new JSONObject();
         sysDependencies.put("language", "Python");
         JSONArray dependencies = sysDependencies.putArray("dependencies");
-        SystemExecResult pyResult = exec("pip", "list", "--format=freeze");
+        SystemExecResult pyResult = SystemExecHelper.exec("pip", "list", "--format=freeze");
         System.out.println(pyResult);
         if (pyResult.isOk()) {
             List<String> resultList = pyResult.getResultList();
@@ -208,58 +188,6 @@ public class LocalRunnerClient extends RunnerClient {
             element.put("error", pyResult.getTotal());
         }
         return sysDependencies;
-    }
-
-    private SystemExecResult exec(String... command) {
-        SystemExecResult result = new SystemExecResult();
-        List<String> output = new ArrayList<>();
-        List<String> error = new ArrayList<>();
-
-        try {
-            Process process = new ProcessBuilder(command)
-                    .redirectErrorStream(false)  // 分开读
-                    .start();
-
-            Thread stdoutThread = new Thread(() -> {
-                try (BufferedReader r = new BufferedReader(
-                        new InputStreamReader(process.getInputStream()))) {
-                    String line;
-                    while ((line = r.readLine()) != null) {
-                        output.add(line);
-                    }
-                } catch (Exception ignored) {
-                }
-            });
-
-            Thread stderrThread = new Thread(() -> {
-                try (BufferedReader r = new BufferedReader(
-                        new InputStreamReader(process.getErrorStream()))) {
-                    String line;
-                    while ((line = r.readLine()) != null) {
-                        error.add(line);
-                    }
-                } catch (Exception ignored) {
-                }
-            });
-
-            stdoutThread.start();
-            stderrThread.start();
-
-            int exitCode = process.waitFor();
-            stdoutThread.join();
-            stderrThread.join();
-
-            result.setOk(exitCode == 0);
-            result.setResultList(output.isEmpty() ? error : output);
-            result.setTotal(String.join("\n",
-                    output.isEmpty() ? error : output));
-
-        } catch (Exception e) {
-            result.setOk(false);
-            result.setTotal(e.getMessage());
-        }
-
-        return result;
     }
 
     /**
@@ -628,6 +556,82 @@ public class LocalRunnerClient extends RunnerClient {
             this.command = command;
             this.env = env;
             this.args = args;
+        }
+    }
+
+    private static class SystemExecHelper {
+
+        //TODO 后续需在加载时、或者通过配置文件获取可用命令并注册匹配
+        private static String[] buildCommands(String ext, Map<String, Object> params, String absolutePath) {
+            String command = switch (ext) {
+                case "py" -> "python";
+                case "sh" -> "bash";
+                default -> null;
+            };
+            if (command == null) {
+                return null;
+            }
+            int paramSize = params == null ? 0 : params.size();
+            String[] commands = new String[paramSize + 2];
+            commands[0] = command;
+            commands[1] = absolutePath;
+            AtomicInteger paramCount = new AtomicInteger(2);
+            if (params != null) {
+                params.forEach((param, value) -> commands[paramCount.getAndIncrement()] = "--" + param + "=" + value);
+            }
+            return commands;
+        }
+
+        private static SystemExecResult exec(String... command) {
+            SystemExecResult result = new SystemExecResult();
+            List<String> output = new ArrayList<>();
+            List<String> error = new ArrayList<>();
+
+            try {
+                Process process = new ProcessBuilder(command)
+                        .redirectErrorStream(false)  // 分开读
+                        .start();
+
+                Thread stdoutThread = new Thread(() -> {
+                    try (BufferedReader r = new BufferedReader(
+                            new InputStreamReader(process.getInputStream()))) {
+                        String line;
+                        while ((line = r.readLine()) != null) {
+                            output.add(line);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                });
+
+                Thread stderrThread = new Thread(() -> {
+                    try (BufferedReader r = new BufferedReader(
+                            new InputStreamReader(process.getErrorStream()))) {
+                        String line;
+                        while ((line = r.readLine()) != null) {
+                            error.add(line);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                });
+
+                stdoutThread.start();
+                stderrThread.start();
+
+                int exitCode = process.waitFor();
+                stdoutThread.join();
+                stderrThread.join();
+
+                result.setOk(exitCode == 0);
+                result.setResultList(output.isEmpty() ? error : output);
+                result.setTotal(String.join("\n",
+                        output.isEmpty() ? error : output));
+
+            } catch (Exception e) {
+                result.setOk(false);
+                result.setTotal(e.getMessage());
+            }
+
+            return result;
         }
     }
 
