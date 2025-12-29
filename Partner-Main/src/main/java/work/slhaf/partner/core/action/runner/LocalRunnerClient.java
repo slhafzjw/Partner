@@ -242,14 +242,14 @@ public class LocalRunnerClient extends RunnerClient {
 
     private McpClientTransport createTransport(McpClientTransportParams mcpClientTransportParams) {
         return switch (mcpClientTransportParams) {
-            case StdioMcpClientTransportParams params -> {
+            case McpClientTransportParams.Stdio params -> {
                 ServerParameters serverParameters = ServerParameters.builder(params.command)
                         .env(params.env)
                         .args(params.args)
                         .build();
                 yield new StdioClientTransport(serverParameters, McpJsonMapper.getDefault());
             }
-            case HttpMcpClientTransportParams params -> {
+            case McpClientTransportParams.Http params -> {
                 McpSyncHttpClientRequestCustomizer customizer = (builder, method, endpoint, body, context) -> {
                     params.headers.forEach(builder::setHeader);
                 };
@@ -527,37 +527,37 @@ public class LocalRunnerClient extends RunnerClient {
         }
     }
 
-    private sealed abstract static class McpClientTransportParams permits HttpMcpClientTransportParams, StdioMcpClientTransportParams {
+    private sealed abstract static class McpClientTransportParams permits McpClientTransportParams.Http, McpClientTransportParams.Stdio {
         private final int timeout;
 
         private McpClientTransportParams(int timeout) {
             this.timeout = timeout;
         }
-    }
 
-    private final static class HttpMcpClientTransportParams extends McpClientTransportParams {
-        private final String baseUri;
-        private final String endpoint;
-        private final Map<String, String> headers;
+        private final static class Http extends McpClientTransportParams {
+            private final String baseUri;
+            private final String endpoint;
+            private final Map<String, String> headers;
 
-        private HttpMcpClientTransportParams(int timeout, String baseUri, String endpoint, Map<String, String> header) {
-            super(timeout);
-            this.baseUri = baseUri;
-            this.endpoint = endpoint;
-            this.headers = header;
+            private Http(int timeout, String baseUri, String endpoint, Map<String, String> header) {
+                super(timeout);
+                this.baseUri = baseUri;
+                this.endpoint = endpoint;
+                this.headers = header;
+            }
         }
-    }
 
-    private final static class StdioMcpClientTransportParams extends McpClientTransportParams {
-        private final String command;
-        private final Map<String, String> env;
-        private final List<String> args;
+        private final static class Stdio extends McpClientTransportParams {
+            private final String command;
+            private final Map<String, String> env;
+            private final List<String> args;
 
-        private StdioMcpClientTransportParams(int timeout, String command, Map<String, String> env, List<String> args) {
-            super(timeout);
-            this.command = command;
-            this.env = env;
-            this.args = args;
+            private Stdio(int timeout, String command, Map<String, String> env, List<String> args) {
+                super(timeout);
+                this.command = command;
+                this.env = env;
+                this.args = args;
+            }
         }
     }
 
