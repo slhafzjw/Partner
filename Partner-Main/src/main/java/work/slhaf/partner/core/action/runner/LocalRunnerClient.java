@@ -485,7 +485,7 @@ public class LocalRunnerClient extends RunnerClient {
                             continue;
 
                         MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
-                        existedMetaActions.put("local::" + program.getName(), info);
+                        existedMetaActions.put("local::" + dir.getName(), info);
 
                         Map<String, Object> additional = Map.of("pre", info.getPreActions(),
                                 "post", info.getPostActions(),
