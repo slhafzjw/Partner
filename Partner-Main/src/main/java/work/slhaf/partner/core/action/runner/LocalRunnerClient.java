@@ -1,6 +1,7 @@
 package work.slhaf.partner.core.action.runner;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -420,6 +421,33 @@ public class LocalRunnerClient extends RunnerClient {
                 this.dynamicActionMcpServer = dynamicActionMcpServer;
             }
 
+            @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+            private boolean normalPath(Path path) {
+                File file = path.toFile();
+                if (file.isFile()) {
+                    return false;
+                }
+                File[] files = file.listFiles();
+                if (files == null) {
+                    return false;
+                }
+                if (files.length < 2) {
+                    return false;
+                }
+                boolean desc = false;
+                int run = 0;
+                for (File f : files) {
+                    String fileName = f.getName();
+                    if (fileName.equals("desc.json")) {
+                        desc = true;
+                    }
+                    if (fileName.startsWith("run.")) {
+                        run++;
+                    }
+                }
+                return run == 1 && desc;
+            }
+
             private BiFunction<McpTransportContext, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> buildToolHandler(File finalProgram) {
                 return (mcpTransportContext, callToolRequest) -> {
                     Map<String, Object> arguments = callToolRequest.arguments();
@@ -466,54 +494,93 @@ public class LocalRunnerClient extends RunnerClient {
                         throw new ActionInitFailedException("未正常读取目录: " + path);
                     }
                     for (File dir : files) {
-                        if (!dir.isDirectory())
+                        if (!normalPath(dir.toPath())) {
                             continue;
-
-                        File[] fs = dir.listFiles();
-                        if (fs == null || fs.length != 2)
-                            continue;
-
-                        File meta = null;
-                        File program = null;
-                        for (File f : fs) {
-                            if (f.getName().endsWith(".meta.json"))
-                                meta = f;
-                            else
-                                program = f;
                         }
-                        if (meta == null || program == null)
-                            continue;
+                        File meta = new File(dir, "desc.json");
+                        File program = null;
+                        //noinspection DataFlowIssue
+                        for (File f : dir.listFiles()) {
+                            if (f.getName().startsWith("run.")) {
+                                program = f;
+                            }
+                        }
 
                         MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
-                        existedMetaActions.put("local::" + dir.getName(), info);
+                        String actionKey = "local::" + dir.getName();
+                        existedMetaActions.put(actionKey, info);
 
-                        Map<String, Object> additional = Map.of("pre", info.getPreActions(),
-                                "post", info.getPostActions(),
-                                "strict_pre", info.isStrictDependencies(),
-                                "io", info.isIo());
-                        McpSchema.Tool tool = McpSchema.Tool.builder()
-                                .name(program.getName())
-                                .description(info.getDescription())
-                                .inputSchema(McpJsonMapper.getDefault(), JSONObject.toJSONString(info.getParams()))
-                                .outputSchema(info.getResponseSchema())
-                                .title("local::" + program.getName())
-                                .meta(additional)
-                                .build();
-                        File finalProgram = program;
-                        McpStatelessServerFeatures.AsyncToolSpecification specification = McpStatelessServerFeatures.AsyncToolSpecification.builder()
-                                .tool(tool)
-                                .callHandler(buildToolHandler(finalProgram))
-                                .build();
+                        McpStatelessServerFeatures.AsyncToolSpecification specification = buildAsyncToolSpecification(info, program, actionKey, dir.getName());
                         dynamicActionMcpServer.addTool(specification).subscribe();
                     }
                 };
             }
 
+            private McpStatelessServerFeatures.AsyncToolSpecification buildAsyncToolSpecification(MetaActionInfo info, File program, String actionKey, String name) {
+                Map<String, Object> additional = Map.of("pre", info.getPreActions(),
+                        "post", info.getPostActions(),
+                        "strict_pre", info.isStrictDependencies(),
+                        "io", info.isIo());
+                McpSchema.Tool tool = McpSchema.Tool.builder()
+                        .name(name)
+                        .description(info.getDescription())
+                        .inputSchema(McpJsonMapper.getDefault(), JSONObject.toJSONString(info.getParams()))
+                        .outputSchema(info.getResponseSchema())
+                        .title(actionKey)
+                        .meta(additional)
+                        .build();
+                return McpStatelessServerFeatures.AsyncToolSpecification.builder()
+                        .tool(tool)
+                        .callHandler(buildToolHandler(program))
+                        .build();
+            }
+
             @Override
             @NotNull
-            protected WatchEventHandler buildModify() {
-                return null;
             protected LocalWatchServiceBuild.EventHandler buildModify() {
+                return (thisDir, context) -> {
+                    // 查看当前目录是否为空或者能否正常读取
+                    if (!normalPath(thisDir)) {
+                        return;
+                    }
+                    // 对应本地程序或者描述文件的修改行为
+                    String fileName = context.getFileName().toString();
+                    if (fileName.equals("desc.json")) {
+                        handleMetaModify(thisDir, context);
+                    }
+                    if (fileName.startsWith("run.")) {
+                        handleProgramModify(thisDir, context);
+                    }
+                };
+            }
+
+            private void handleProgramModify(Path thisDir, Path context) {
+                String name = thisDir.getFileName().toString();
+                String actionKey = "local::" + name;
+                // 检查是否存在当前 program 对应的 Tool
+                if (existedMetaActions.containsKey(actionKey)) {
+                    return;
+                }
+                // 检查描述文件是否可读取，如果可以正常读取，则新增 Tool
+                File meta = Path.of(thisDir.toString(), "desc.json").toFile();
+                try {
+                    MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
+                    dynamicActionMcpServer.addTool(buildAsyncToolSpecification(info, context.toFile(), actionKey, name)).subscribe();
+                    existedMetaActions.put(actionKey, info);
+                } catch (IORuntimeException e) {
+                    log.warn("读取 desc.json 失败，请检查字段", e);
+                }
+            }
+
+            private void handleMetaModify(Path thisDir, Path context) {
+                // 检查是否除了描述文件外还存在别的可执行文件
+                File meta = Path.of(thisDir.toString(), context.toString()).toFile();
+                try {
+                    MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
+                    existedMetaActions.put("local::" + thisDir.getFileName().toString(), info);
+                } catch (Exception e) {
+                    log.warn("读取 desc 失败，可能处于写入中: {}", meta.getAbsolutePath(), e);
+                }
             }
 
             @Override
