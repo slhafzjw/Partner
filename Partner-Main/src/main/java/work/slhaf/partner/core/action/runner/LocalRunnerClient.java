@@ -448,6 +448,17 @@ public class LocalRunnerClient extends RunnerClient {
                 return run == 1 && desc;
             }
 
+            private void addAction(String name, MetaActionInfo info, File program) {
+                String actionKey = "local::" + name;
+                existedMetaActions.put(actionKey, info);
+                dynamicActionMcpServer.addTool(buildAsyncToolSpecification(info, program, actionKey, name)).subscribe();
+            }
+
+            private void removeAction(String name) {
+                existedMetaActions.remove("local::" + name);
+                dynamicActionMcpServer.removeTool(name).subscribe();
+            }
+
             private BiFunction<McpTransportContext, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> buildToolHandler(File finalProgram) {
                 return (mcpTransportContext, callToolRequest) -> {
                     Map<String, Object> arguments = callToolRequest.arguments();
@@ -507,11 +518,7 @@ public class LocalRunnerClient extends RunnerClient {
                         }
 
                         MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
-                        String actionKey = "local::" + dir.getName();
-                        existedMetaActions.put(actionKey, info);
-
-                        McpStatelessServerFeatures.AsyncToolSpecification specification = buildAsyncToolSpecification(info, program, actionKey, dir.getName());
-                        dynamicActionMcpServer.addTool(specification).subscribe();
+                        addAction(dir.getName(), info, program);
                     }
                 };
             }
@@ -565,9 +572,9 @@ public class LocalRunnerClient extends RunnerClient {
                 File meta = Path.of(thisDir.toString(), "desc.json").toFile();
                 try {
                     MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
-                    dynamicActionMcpServer.addTool(buildAsyncToolSpecification(info, context.toFile(), actionKey, name)).subscribe();
-                    existedMetaActions.put(actionKey, info);
+                    addAction(name, info, context.toFile());
                 } catch (IORuntimeException e) {
+                    removeAction(name);
                     log.warn("读取 desc.json 失败，请检查字段", e);
                 }
             }
@@ -575,10 +582,18 @@ public class LocalRunnerClient extends RunnerClient {
             private void handleMetaModify(Path thisDir, Path context) {
                 // 检查是否除了描述文件外还存在别的可执行文件
                 File meta = Path.of(thisDir.toString(), context.toString()).toFile();
+                String name = thisDir.getFileName().toString();
                 try {
                     MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
-                    existedMetaActions.put("local::" + thisDir.getFileName().toString(), info);
+                    File program = null;
+                    //noinspection DataFlowIssue
+                    for (File f : thisDir.toFile().listFiles()) {
+                        program = f;
+                    }
+                    addAction(name, info, program);
                 } catch (Exception e) {
+                    // 如果程序已经存在，此时针对 desc.json 的调整可能来自程序的调整，所以此时的失败读取最好将 tool 及对应的 action 移除
+                    removeAction(name);
                     log.warn("读取 desc 失败，可能处于写入中: {}", meta.getAbsolutePath(), e);
                 }
             }
@@ -598,9 +613,9 @@ public class LocalRunnerClient extends RunnerClient {
                     if (normalPath(thisDir)) {
                         return;
                     }
-                    // 未通过校验则删除对应的 action
+                    // 未通过校验则删除对应的 action，并在 DynamicActonMcpServer 中删除对应的工具
                     String name = thisDir.getFileName().toString();
-                    existedMetaActions.remove("local::" + name);
+                    removeAction(name);
                 };
             }
 
