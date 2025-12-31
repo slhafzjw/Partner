@@ -592,7 +592,16 @@ public class LocalRunnerClient extends RunnerClient {
             @Override
             @NotNull
             protected LocalWatchServiceBuild.EventHandler buildDelete() {
-                return null;
+                return (thisDir, context) -> {
+                    // 如果删除行为涉及 program 或者 desc.json，则移除对应的 action
+                    // 可直接使用 normalPath 校验
+                    if (normalPath(thisDir)) {
+                        return;
+                    }
+                    // 未通过校验则删除对应的 action
+                    String name = thisDir.getFileName().toString();
+                    existedMetaActions.remove("local::" + name);
+                };
             }
 
             @Override
