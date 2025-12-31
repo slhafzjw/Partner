@@ -309,7 +309,6 @@ public class LocalRunnerClient extends RunnerClient {
             private final Map<WatchEvent.Kind<?>, EventHandler> handlers = new HashMap<>();
             private InitLoader initLoader;
             private final WatchContext ctx;
-            List<WatchEvent.Kind<?>> kinds = new ArrayList<>();
             private boolean watchAll = false;
 
             private BuildRegistry(WatchContext ctx) {
@@ -318,28 +317,28 @@ public class LocalRunnerClient extends RunnerClient {
 
             @Override
             public LocalWatchServiceBuild registerCreate(EventHandler handler) {
-                kinds.add(StandardWatchEventKinds.ENTRY_CREATE);
+                ctx.kinds.add(StandardWatchEventKinds.ENTRY_CREATE);
                 handlers.put(StandardWatchEventKinds.ENTRY_CREATE, handler);
                 return this;
             }
 
             @Override
             public LocalWatchServiceBuild registerModify(EventHandler handler) {
-                kinds.add(StandardWatchEventKinds.ENTRY_MODIFY);
+                ctx.kinds.add(StandardWatchEventKinds.ENTRY_MODIFY);
                 handlers.put(StandardWatchEventKinds.ENTRY_MODIFY, handler);
                 return this;
             }
 
             @Override
             public LocalWatchServiceBuild registerDelete(EventHandler handler) {
-                kinds.add(StandardWatchEventKinds.ENTRY_DELETE);
+                ctx.kinds.add(StandardWatchEventKinds.ENTRY_DELETE);
                 handlers.put(StandardWatchEventKinds.ENTRY_DELETE, handler);
                 return this;
             }
 
             @Override
             public LocalWatchServiceBuild registerOverflow(EventHandler handler) {
-                kinds.add(StandardWatchEventKinds.OVERFLOW);
+                ctx.kinds.add(StandardWatchEventKinds.OVERFLOW);
                 handlers.put(StandardWatchEventKinds.OVERFLOW, handler);
                 return this;
             }
@@ -365,31 +364,31 @@ public class LocalRunnerClient extends RunnerClient {
             }
 
             private void registerPath() {
-                Path path = ctx.path;
+                Path root = ctx.root;
                 WatchService watchService = ctx.watchService;
                 Map<WatchKey, Path> watchKeys = ctx.watchKeys;
                 try {
-                    WatchEvent.Kind<?>[] kindsArray = kinds.toArray(WatchEvent.Kind[]::new);
-                    WatchKey root = path.register(watchService, kindsArray);
-                    watchKeys.put(root, path);
+                    WatchEvent.Kind<?>[] kindsArray = ctx.kinds.toArray(WatchEvent.Kind[]::new);
+                    WatchKey rootKey = root.register(watchService, kindsArray);
+                    watchKeys.put(rootKey, root);
                     if (!watchAll) {
                         return;
                     }
-                    Stream<Path> walk = Files.walk(path).filter(Files::isDirectory);
+                    Stream<Path> walk = Files.walk(root).filter(Files::isDirectory);
                     for (Path dir : walk.toList()) {
                         WatchKey key = dir.register(watchService, kindsArray);
                         watchKeys.put(key, dir);
                     }
                     walk.close();
                 } catch (IOException e) {
-                    log.error("监听目录注册失败: ");
+                    log.error("监听目录注册失败: ", e);
                 }
             }
 
             private Runnable buildWatchTask() {
                 return () -> {
-                    String pathStr = ctx.path.toString();
-                    log.info("行动程序目录监听器已启动，监听目录: {}", pathStr);
+                    String rootStr = ctx.root.toString();
+                    log.info("行动程序目录监听器已启动，监听目录: {}", rootStr);
                     while (true) {
                         WatchKey key;
                         try {
@@ -398,13 +397,13 @@ public class LocalRunnerClient extends RunnerClient {
                             for (WatchEvent<?> e : events) {
                                 WatchEvent.Kind<?> kind = e.kind();
                                 Object context = e.context();
-                                log.info("行动程序目录变更事件: {} - {} - {}", pathStr, kind.name(), context);
+                                log.info("行动程序目录变更事件: {} - {} - {}", rootStr, kind.name(), context);
                                 Path thisDir = (Path) key.watchable();
                                 EventHandler handler = handlers.get(kind);
                                 if (handler == null) {
                                     continue;
                                 }
-                                handler.handle(thisDir, context instanceof Path ? (Path) context : null);
+                                handler.handle(thisDir, context instanceof Path ? thisDir.resolve((Path) context) : null);
                             }
                         } catch (InterruptedException e) {
                             log.info("监听线程被中断，准备退出...");
@@ -421,9 +420,10 @@ public class LocalRunnerClient extends RunnerClient {
         }
     }
 
-    private record WatchContext(Path path, WatchService watchService, Map<WatchKey, Path> watchKeys) {
-        private WatchContext(Path path, WatchService watchService) {
-            this(path, watchService, new HashMap<>());
+    private record WatchContext(Path root, WatchService watchService, Map<WatchKey, Path> watchKeys,
+                                List<WatchEvent.Kind<?>> kinds) {
+        private WatchContext(Path root, WatchService watchService) {
+            this(root, watchService, new HashMap<>(), new ArrayList<>());
         }
     }
 
@@ -534,14 +534,14 @@ public class LocalRunnerClient extends RunnerClient {
             }
 
             private void load() {
-                Path path = ctx.path;
-                File file = path.toFile();
+                Path root = ctx.root;
+                File file = root.toFile();
                 if (file.isFile()) {
-                    throw new ActionInitFailedException("未找到目录: " + path);
+                    throw new ActionInitFailedException("未找到目录: " + root);
                 }
                 File[] files = file.listFiles();
                 if (files == null) {
-                    throw new ActionInitFailedException("未正常读取目录: " + path);
+                    throw new ActionInitFailedException("未正常读取目录: " + root);
                 }
                 for (File dir : files) {
                     if (!normalPath(dir.toPath())) {
@@ -589,14 +589,18 @@ public class LocalRunnerClient extends RunnerClient {
                         return;
                     }
                     // 对应本地程序或者描述文件的修改行为
-                    String fileName = context.getFileName().toString();
-                    if (fileName.equals("desc.json")) {
-                        handleMetaModify(thisDir, context);
-                    }
-                    if (fileName.startsWith("run.")) {
-                        handleProgramModify(thisDir, context);
-                    }
+                    modify(thisDir, context);
                 };
+            }
+
+            private void modify(Path thisDir, Path context) {
+                String fileName = context.getFileName().toString();
+                if (fileName.equals("desc.json")) {
+                    handleMetaModify(thisDir, context);
+                }
+                if (fileName.startsWith("run.")) {
+                    handleProgramModify(thisDir, context);
+                }
             }
 
             private void handleProgramModify(Path thisDir, Path context) {
@@ -619,7 +623,7 @@ public class LocalRunnerClient extends RunnerClient {
 
             private void handleMetaModify(Path thisDir, Path context) {
                 // 检查是否除了描述文件外还存在别的可执行文件
-                File meta = Path.of(thisDir.toString(), context.toString()).toFile();
+                File meta = context.toFile();
                 String name = thisDir.getFileName().toString();
                 try {
                     MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
@@ -639,7 +643,28 @@ public class LocalRunnerClient extends RunnerClient {
             @Override
             @NotNull
             protected LocalWatchServiceBuild.EventHandler buildCreate() {
-                return buildModify();
+                return (thisDir, context) -> {
+                    if (thisDir.equals(ctx.root) && Files.isDirectory(context)) {
+                        try {
+                            context.register(ctx.watchService, ctx.kinds.toArray(WatchEvent.Kind[]::new));
+                        } catch (IOException e) {
+                            log.error("监听目录注册失败: {}", context);
+                        }
+                    }
+                    if (normalPath(thisDir)) {
+                        modify(thisDir, context);
+                    }
+                    if (Files.isDirectory(context) && normalPath(context)) {
+                        File[] files = context.toFile().listFiles();
+                        if (files == null) {
+                            log.warn("目录无法访问: {}", context);
+                            return;
+                        }
+                        for (File f : files) {
+                            modify(context, f.toPath());
+                        }
+                    }
+                };
             }
 
             @Override
