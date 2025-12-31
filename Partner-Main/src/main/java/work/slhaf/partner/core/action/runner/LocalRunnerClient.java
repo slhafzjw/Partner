@@ -308,6 +308,9 @@ public class LocalRunnerClient extends RunnerClient {
 
             private final Map<WatchEvent.Kind<?>, EventHandler> handlers = new HashMap<>();
             private InitLoader initLoader;
+            private final WatchContext ctx;
+            List<WatchEvent.Kind<?>> kinds = new ArrayList<>();
+            private boolean watchAll = false;
 
             private BuildRegistry(WatchContext ctx) {
                 this.ctx = ctx;
@@ -315,24 +318,28 @@ public class LocalRunnerClient extends RunnerClient {
 
             @Override
             public LocalWatchServiceBuild registerCreate(EventHandler handler) {
+                kinds.add(StandardWatchEventKinds.ENTRY_CREATE);
                 handlers.put(StandardWatchEventKinds.ENTRY_CREATE, handler);
                 return this;
             }
 
             @Override
             public LocalWatchServiceBuild registerModify(EventHandler handler) {
+                kinds.add(StandardWatchEventKinds.ENTRY_MODIFY);
                 handlers.put(StandardWatchEventKinds.ENTRY_MODIFY, handler);
                 return this;
             }
 
             @Override
             public LocalWatchServiceBuild registerDelete(EventHandler handler) {
+                kinds.add(StandardWatchEventKinds.ENTRY_DELETE);
                 handlers.put(StandardWatchEventKinds.ENTRY_DELETE, handler);
                 return this;
             }
 
             @Override
             public LocalWatchServiceBuild registerOverflow(EventHandler handler) {
+                kinds.add(StandardWatchEventKinds.OVERFLOW);
                 handlers.put(StandardWatchEventKinds.OVERFLOW, handler);
                 return this;
             }
@@ -344,9 +351,39 @@ public class LocalRunnerClient extends RunnerClient {
             }
 
             @Override
-            public void commit() {
-                if (initLoader != null) initLoader.load(path);
+            public LocalWatchServiceBuild watchAll(boolean watchAll) {
+                this.watchAll = watchAll;
+                return this;
+            }
+
+            @Override
+            public void commit(ExecutorService executor) {
+                registerPath();
+                if (initLoader != null)
+                    initLoader.load();
                 executor.execute(buildWatchTask());
+            }
+
+            private void registerPath() {
+                Path path = ctx.path;
+                WatchService watchService = ctx.watchService;
+                Map<WatchKey, Path> watchKeys = ctx.watchKeys;
+                try {
+                    WatchEvent.Kind<?>[] kindsArray = kinds.toArray(WatchEvent.Kind[]::new);
+                    WatchKey root = path.register(watchService, kindsArray);
+                    watchKeys.put(root, path);
+                    if (!watchAll) {
+                        return;
+                    }
+                    Stream<Path> walk = Files.walk(path).filter(Files::isDirectory);
+                    for (Path dir : walk.toList()) {
+                        WatchKey key = dir.register(watchService, kindsArray);
+                        watchKeys.put(key, dir);
+                    }
+                    walk.close();
+                } catch (IOException e) {
+                    log.error("监听目录注册失败: ");
+                }
             }
 
             private Runnable buildWatchTask() {
@@ -363,10 +400,6 @@ public class LocalRunnerClient extends RunnerClient {
                                 Object context = e.context();
                                 log.info("行动程序目录变更事件: {} - {} - {}", pathStr, kind.name(), context);
                                 Path thisDir = (Path) key.watchable();
-                                if (!thisDir.equals(path)) {
-                                    // 若事件所在目录不为为 path，忽略并步入下一轮循环
-                                    continue;
-                                }
                                 EventHandler handler = handlers.get(kind);
                                 if (handler == null) {
                                     continue;
