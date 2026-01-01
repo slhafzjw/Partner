@@ -38,15 +38,13 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static work.slhaf.partner.common.util.PathUtil.buildPathStr;
@@ -548,26 +546,23 @@ public class LocalRunnerClient extends RunnerClient {
             @NotNull
             protected LocalWatchServiceBuild.InitLoader buildLoad() {
                 // 从该路径列出已存在的目录，每个目录对应不同的行动程序及描述文件，从描述文件加载程序信息
-                return this::load;
-            }
-
-            private void load() {
-                Path root = ctx.root;
-                File file = root.toFile();
-                if (file.isFile()) {
-                    throw new ActionInitFailedException("未找到目录: " + root);
-                }
-                File[] files = file.listFiles();
-                if (files == null) {
-                    throw new ActionInitFailedException("未正常读取目录: " + root);
-                }
-                for (File dir : files) {
-                    if (!normalPath(dir.toPath())) {
-                        continue;
+                return () -> {
+                    Path root = ctx.root;
+                    File file = root.toFile();
+                    if (file.isFile()) {
+                        throw new ActionInitFailedException("未找到目录: " + root);
                     }
-
-                    addAction(dir.getName(), dir.toPath());
-                }
+                    File[] files = file.listFiles();
+                    if (files == null) {
+                        throw new ActionInitFailedException("未正常读取目录: " + root);
+                    }
+                    for (File dir : files) {
+                        if (!normalPath(dir.toPath())) {
+                            continue;
+                        }
+                        addAction(dir.getName(), dir.toPath());
+                    }
+                };
             }
 
             private McpStatelessServerFeatures.AsyncToolSpecification buildAsyncToolSpecification(MetaActionInfo info, File program, String actionKey, String name) {
@@ -703,7 +698,56 @@ public class LocalRunnerClient extends RunnerClient {
             @Override
             @NotNull
             protected LocalWatchServiceBuild.EventHandler buildOverflow() {
-                return null;
+                return (thisDir, context) -> {
+                    // 直接从 existedMetaActions 中拿取现有的 key，上游也从这里发现可用工具
+                    Set<String> existed = existedMetaActions.keySet().stream().map(actionKey -> actionKey.split("::")[1]).collect(Collectors.toSet());
+                    Set<String> currentDirs = new HashSet<>();
+                    // 按照预期 root 目录下有效 path 只包括各个 action 目录
+                    // 排除非目录 path
+                    try (Stream<Path> stream = Files.list(ctx.root).filter(Files::isDirectory)) {
+                        stream.forEach(path -> {
+                            String name = path.getFileName().toString();
+                            currentDirs.add(name);
+
+                            boolean contains = existed.contains(name);
+                            boolean normal = normalPath(path);
+
+                            // 如果该目录对应 action 已被记录，且符合 action 目录要求，则无处理
+                            // 如果已被记录，但不符合，则移除行动
+                            // 此时必定被监听
+                            if (contains && !normal) {
+                                removeAction(name);
+                            }
+
+                            // 如果 action 没有记录，但符合要求，由于此时必定尚未被监听，则注册监听且添加新 action
+                            // 如果未被记录，且不符合要求，则只注册监听
+                            if (!contains) {
+                                boolean alreadyWatching = ctx.watchKeys.values().stream()
+                                        .anyMatch(p -> p.equals(path));
+                                if (!alreadyWatching) {
+                                    try {
+                                        WatchKey watchKey = path.register(ctx.watchService, ctx.kinds.toArray(WatchEvent.Kind[]::new));
+                                        ctx.watchKeys.put(watchKey, path);
+                                    } catch (IOException e) {
+                                        log.error("监听目录注册失败: {}", path);
+                                    }
+                                }
+
+                                if (normal) {
+                                    addAction(name, path);
+                                }
+                            }
+                        });
+                    } catch (IOException e) {
+                        log.error("目录无法读取: {}", ctx.root);
+                        return;
+                    }
+                    for (String existedName : existed) {
+                        if (!currentDirs.contains(existedName)) {
+                            removeAction(existedName);
+                        }
+                    }
+                };
             }
         }
 
