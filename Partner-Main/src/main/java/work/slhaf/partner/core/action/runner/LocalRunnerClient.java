@@ -1,7 +1,6 @@
 package work.slhaf.partner.core.action.runner;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -46,6 +45,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
@@ -483,10 +483,28 @@ public class LocalRunnerClient extends RunnerClient {
                 return run == 1 && desc;
             }
 
-            private void addAction(String name, MetaActionInfo info, File program) {
+            private boolean addAction(String name, Path dir) {
+                File program = null;
+                try (Stream<Path> stream = Files.list(dir)) {
+                    for (Path p : stream.toList()) {
+                        if (p.getFileName().toString().startsWith("run."))
+                            program = p.toFile();
+                    }
+                } catch (Exception e) {
+                    log.error("添加 action 失败", e);
+                    return false;
+                }
+                MetaActionInfo info;
+                try {
+                    info = JSONUtil.readJSONObject(dir.resolve("desc.json").toFile(), StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
+                } catch (Exception e) {
+                    log.error("desc.json 加载失败: {}", dir);
+                    return false;
+                }
                 String actionKey = "local::" + name;
                 existedMetaActions.put(actionKey, info);
                 dynamicActionMcpServer.addTool(buildAsyncToolSpecification(info, program, actionKey, name)).subscribe();
+                return true;
             }
 
             private void removeAction(String name) {
@@ -547,17 +565,8 @@ public class LocalRunnerClient extends RunnerClient {
                     if (!normalPath(dir.toPath())) {
                         continue;
                     }
-                    File meta = new File(dir, "desc.json");
-                    File program = null;
-                    //noinspection DataFlowIssue
-                    for (File f : dir.listFiles()) {
-                        if (f.getName().startsWith("run.")) {
-                            program = f;
-                        }
-                    }
 
-                    MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
-                    addAction(dir.getName(), info, program);
+                    addAction(dir.getName(), dir.toPath());
                 }
             }
 
@@ -596,47 +605,30 @@ public class LocalRunnerClient extends RunnerClient {
             private void modify(Path thisDir, Path context) {
                 String fileName = context.getFileName().toString();
                 if (fileName.equals("desc.json")) {
-                    handleMetaModify(thisDir, context);
+                    handleMetaModify(thisDir);
                 }
                 if (fileName.startsWith("run.")) {
-                    handleProgramModify(thisDir, context);
+                    handleProgramModify(thisDir);
                 }
             }
 
-            private void handleProgramModify(Path thisDir, Path context) {
+            private void handleProgramModify(Path thisDir) {
                 String name = thisDir.getFileName().toString();
                 String actionKey = "local::" + name;
                 // 检查是否存在当前 program 对应的 Tool
                 if (existedMetaActions.containsKey(actionKey)) {
                     return;
                 }
-                // 检查描述文件是否可读取，如果可以正常读取，则新增 Tool
-                File meta = Path.of(thisDir.toString(), "desc.json").toFile();
-                try {
-                    MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
-                    addAction(name, info, context.toFile());
-                } catch (IORuntimeException e) {
+                if (!addAction(name, thisDir)) {
                     removeAction(name);
-                    log.warn("读取 desc.json 失败，请检查字段", e);
                 }
             }
 
-            private void handleMetaModify(Path thisDir, Path context) {
+            private void handleMetaModify(Path thisDir) {
                 // 检查是否除了描述文件外还存在别的可执行文件
-                File meta = context.toFile();
                 String name = thisDir.getFileName().toString();
-                try {
-                    MetaActionInfo info = JSONUtil.readJSONObject(meta, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
-                    File program = null;
-                    //noinspection DataFlowIssue
-                    for (File f : thisDir.toFile().listFiles()) {
-                        program = f;
-                    }
-                    addAction(name, info, program);
-                } catch (Exception e) {
-                    // 如果程序已经存在，此时针对 desc.json 的调整可能来自程序的调整，所以此时的失败读取最好将 tool 及对应的 action 移除
+                if (!addAction(name, thisDir)) {
                     removeAction(name);
-                    log.warn("读取 desc 失败，可能处于写入中: {}", meta.getAbsolutePath(), e);
                 }
             }
 
