@@ -374,7 +374,7 @@ public class LocalRunnerClient extends RunnerClient {
                     if (!watchAll) {
                         return;
                     }
-                    Stream<Path> walk = Files.walk(root).filter(Files::isDirectory);
+                    Stream<Path> walk = Files.list(root).filter(Files::isDirectory);
                     for (Path dir : walk.toList()) {
                         WatchKey key = dir.register(watchService, kindsArray);
                         watchKeys.put(key, dir);
