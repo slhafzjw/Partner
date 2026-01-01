@@ -671,14 +671,40 @@ public class LocalRunnerClient extends RunnerClient {
             @NotNull
             protected LocalWatchServiceBuild.EventHandler buildDelete() {
                 return (thisDir, context) -> {
-                    // 如果删除行为涉及 program 或者 desc.json，则移除对应的 action
-                    // 可直接使用 normalPath 校验
-                    if (normalPath(thisDir)) {
+                    // 如果发生在 root，且context为目录，则需要移除对应的 action
+                    if (thisDir.equals(ctx.root)) {
+                        String name = context.getFileName().toString();
+                        Path candidate = ctx.root.resolve(name);
+
+                        // 如果 root 下仍然存在一个同名目录
+                        if (Files.isDirectory(candidate)) {
+                            // 说明删的是同名文件，不是 action 目录
+                            return;
+                        }
+
+                        removeAction(name);
+
+                        AtomicReference<WatchKey> toRemove = new AtomicReference<>();
+                        ctx.watchKeys.forEach((key, path) -> {
+                            if (path.getFileName().toString().equals(name)) {
+                                key.cancel();
+                                toRemove.set(key);
+                            }
+                        });
+                        if (toRemove.get() != null) {
+                            ctx.watchKeys.remove(toRemove.get());
+                        }
                         return;
                     }
-                    // 未通过校验则删除对应的 action，并在 DynamicActonMcpServer 中删除对应的工具
-                    String name = thisDir.getFileName().toString();
-                    removeAction(name);
+
+                    // 如果发生在非 root 目录内且 context 不符合 action 目录特征
+                    // 由于只会监听 root 目录与 action 目录
+                    // 所以此时则证明当前目录对应的行动已不可靠，需要移除
+                    if (!thisDir.equals(ctx.root) && !normalPath(thisDir)) {
+                        // 未通过校验则删除对应的 action，并在 DynamicActonMcpServer 中删除对应的工具
+                        String name = thisDir.getFileName().toString();
+                        removeAction(name);
+                    }
                 };
             }
 
