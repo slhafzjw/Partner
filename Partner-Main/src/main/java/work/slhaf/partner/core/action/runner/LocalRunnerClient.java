@@ -926,7 +926,29 @@ public class LocalRunnerClient extends RunnerClient {
             @Override
             @NotNull
             protected LocalWatchServiceBuild.EventHandler buildDelete() {
-                return null;
+                return (thisDir, context) -> {
+                    // 排除被删除文件名称不符合要求的事件
+                    String fileName = context.getFileName().toString();
+                    if (!normal(fileName)) {
+                        return;
+                    }
+
+                    // DELETE 事件发生后，需要移除对应的 descCache 条目;
+                    // 如果存在对应的 info,也需要将其中的额外信息进行重置，只保留 Tools 自身的信息
+                    descCache.remove(context.toUri().toString());
+                    String actionKey = fileName.replace(".desc.json", "");
+                    if (existedMetaActions.containsKey(actionKey)) {
+                        resetMetaActionInfo(existedMetaActions.get(actionKey));
+                    }
+                };
+            }
+
+            private void resetMetaActionInfo(MetaActionInfo info) {
+                info.setIo(false);
+                info.getTags().clear();
+                info.getPreActions().clear();
+                info.getPostActions().clear();
+                info.setStrictDependencies(false);
             }
 
             @Override
