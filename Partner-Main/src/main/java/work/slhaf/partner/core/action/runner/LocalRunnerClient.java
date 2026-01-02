@@ -901,6 +901,8 @@ public class LocalRunnerClient extends RunnerClient {
                     try {
                         info = JSONUtil.readJSONObject(context.toFile(), StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
                     } catch (Exception e) {
+                        // 加载失败也需要移除对应的 cache
+                        descCache.remove(context.toUri().toString());
                         log.warn("desc.json 加载失败: {}", context);
                         return;
                     }
