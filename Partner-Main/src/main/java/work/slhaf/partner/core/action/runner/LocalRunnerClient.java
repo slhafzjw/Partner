@@ -920,7 +920,7 @@ public class LocalRunnerClient extends RunnerClient {
             @Override
             @NotNull
             protected LocalWatchServiceBuild.EventHandler buildCreate() {
-                return null;
+                return buildModify();
             }
 
             @Override
