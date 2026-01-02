@@ -17,6 +17,7 @@ import io.modelcontextprotocol.server.McpStatelessAsyncServer;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import javassist.NotFoundException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -44,6 +45,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -798,16 +801,73 @@ public class LocalRunnerClient extends RunnerClient {
         private static final class Desc extends LocalWatchEventProcessor {
 
             private final McpStatelessAsyncServer mcpDescServer;
+            private final HashMap<String, String> descCache = new HashMap<>();
 
             private Desc(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, McpStatelessAsyncServer mcpDescServer, WatchContext ctx) {
                 super(existedMetaActions, ctx);
                 this.mcpDescServer = mcpDescServer;
             }
 
+            private McpStatelessServerFeatures.@NotNull AsyncResourceSpecification buildAsyncResourceSpecification(String name, String uri) {
+                McpSchema.Resource resource = McpSchema.Resource.builder()
+                        .name(name)
+                        .title(name)
+                        .description("Action descriptor for " + name)
+                        .mimeType("application/json")
+                        .uri(uri)
+                        .build();
+                BiFunction<McpTransportContext, McpSchema.ReadResourceRequest, Mono<McpSchema.ReadResourceResult>> readHandler = (context, request) -> {
+                    String requestUri = request.uri();
+                    String result = descCache.get(requestUri);
+                    if (result == null) {
+                        return Mono.error(new NotFoundException("未找到 Resource: " + requestUri));
+                    }
+                    return Mono.just(new McpSchema.ReadResourceResult(List.of(new McpSchema.TextResourceContents(requestUri, "application/json", result))));
+                };
+                return new McpStatelessServerFeatures.AsyncResourceSpecification(resource, readHandler);
+            }
+
+            @SuppressWarnings("UnusedReturnValue")
+            private boolean addResource(File file) {
+                String name = file.getName();
+                String pattern = "[a-z][A-Z]+::[a-z][A-Z]+.desk.json";
+                Pattern p = Pattern.compile(pattern);
+                Matcher matcher = p.matcher(name);
+                if (!matcher.find()) {
+                    log.error("文件名称不符合要求: {}", name);
+                    return false;
+                }
+                // 读取并解析为 MetaActionInfo，存入 resources
+                try {
+                    MetaActionInfo info = JSONUtil.readJSONObject(file, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
+                    String uri = ctx.root.resolve(name).toUri().toString();
+                    descCache.put(uri, JSONObject.toJSONString(info));
+                    mcpDescServer.addResource(buildAsyncResourceSpecification(name, uri)).subscribe();
+                } catch (Exception e) {
+                    log.error("desc.json 解析失败: {}", file.getAbsolutePath());
+                    return false;
+                }
+                return true;
+            }
+
             @Override
             @NotNull
             protected LocalWatchServiceBuild.InitLoader buildLoad() {
-                return null;
+                return () -> {
+                    // DescMcp 的加载逻辑只负责读取已有的 *.desc.json 并注册为 resources
+                    // 正常来讲 root 直接对应 MCP_DESC_PATH，先检查 root 是否为目录，否则拒绝启动
+                    Path root = ctx.root;
+                    if (!Files.isDirectory(root)) {
+                        throw new ActionInitFailedException("未找到目录: " + root);
+                    }
+                    File[] files = root.toFile().listFiles();
+                    if (files == null) {
+                        throw new ActionInitFailedException("目录无法正常读取: " + root);
+                    }
+                    for (File file : files) {
+                        addResource(file);
+                    }
+                };
             }
 
             @Override
