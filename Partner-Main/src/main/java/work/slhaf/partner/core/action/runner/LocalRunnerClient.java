@@ -78,7 +78,6 @@ public class LocalRunnerClient extends RunnerClient {
      * 每个action子目录下，除了相关的程序文件外，将额外提供一个 <program>.meta.json 文件来提供相关描述文件，
      * 该描述文件将携带 McpTools、MetaActionInfo 相关的所有信息，
      * 故 McpDescServer 将只负责 Common Mcp Servers 的额外描述文件
-     *
      */
     private McpStatelessAsyncServer dynamicActionMcpServer;
     /**
@@ -88,6 +87,7 @@ public class LocalRunnerClient extends RunnerClient {
      * <p>
      * MCP_DESC_PATH/server::toolName.desc.json
      * </p>
+     * 该 MCP Server-Client 的作用为: 与 CommonMcp Clients 配合，补齐第三方 MCP 服务的描述信息
      */
     private McpStatelessAsyncServer mcpDescServer;
     private final WatchService watchService;
