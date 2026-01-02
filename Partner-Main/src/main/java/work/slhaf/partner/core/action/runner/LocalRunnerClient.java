@@ -94,17 +94,43 @@ public class LocalRunnerClient extends RunnerClient {
         registerMcpClient("mcp-desc", pair.clientSide(), 10);
     }
 
+    /**
+     * 目录按照以下格式进行组织:
+     * <p>
+     * DYNAMIC_ACTION_PATH/action 名称/
+     * </p>
+     * 每个action子目录下，除了相关的程序文件外，将额外提供一个 <program>.meta.json 文件来提供相关描述文件，
+     * 该描述文件将携带 McpTools、MetaActionInfo 相关的所有信息，
+     * 故 McpDescServer 将只负责 Common Mcp Servers 的额外描述文件
+     */
     private void registerDynamicActionMcp() {
         InProcessMcpTransport.Pair pair = InProcessMcpTransport.pair();
         McpSchema.ServerCapabilities serverCapabilities = McpSchema.ServerCapabilities.builder()
                 .tools(true)
-                .resources(true, true)
                 .build();
         dynamicActionMcpServer = McpServer.async(pair.serverSide())
                 .capabilities(serverCapabilities)
                 .jsonMapper(McpJsonMapper.getDefault())
                 .build();
+        // Tools 的执行逻辑应当高度一致化，但仍需要独立为不同 Tool
+        // 初始的加载逻辑通过 initialLoad 加载
+        // 后续的动态更新通过对应的 event 事件触发
+        registerDynamicActionMcpWatch();
         registerMcpClient("dynamic-action", pair.clientSide(), 10);
+    }
+
+    private void registerDynamicActionMcpWatch() {
+        // MODIFY、CREATE、DELETE、OVERFLOW 都需要不同的处理方式
+        WatchContext ctx = new WatchContext(Path.of(DYNAMIC_ACTION_PATH), watchService);
+        LocalWatchEventProcessor.Dynamic dynamic = new LocalWatchEventProcessor.Dynamic(existedMetaActions, dynamicActionMcpServer, ctx);
+        new LocalWatchServiceBuild.BuildRegistry(ctx)
+                .initialLoad(dynamic.buildLoad())
+                .registerCreate(dynamic.buildCreate())
+                .registerModify(dynamic.buildModify())
+                .registerDelete(dynamic.buildDelete())
+                .registerOverflow(dynamic.buildOverflow())
+                .watchAll(true)
+                .commit(executor);
     }
 
     @Override
@@ -218,6 +244,7 @@ public class LocalRunnerClient extends RunnerClient {
                 //       ResourcesChange 事件传递的 Resource 可以由 Client 读取内容
                 //       预计在 Server 侧，收到客户端发送的新的行动程序信息，该信息由客户端处补充后，将其放置在指定位置
                 //       并写入描述文件、发起 ResourcesChange 事件
+                //TODO 更新触发应当遵循触发逻辑: ToolChange -> client.listResource -> 仅填写 tool 信息 | 根据查找到的 resource 文件修正信息
                 .toolsChangeConsumer(tools -> updateExistedMetaActions(id, tools))
                 .build();
         mcpClients.put(id, client);
@@ -445,6 +472,7 @@ public class LocalRunnerClient extends RunnerClient {
 
         protected abstract @NotNull LocalWatchServiceBuild.EventHandler buildOverflow();
 
+        @SuppressWarnings("LoggingSimilarMessage")
         private static final class Dynamic extends LocalWatchEventProcessor {
 
             private final McpStatelessAsyncServer dynamicActionMcpServer;
@@ -565,7 +593,8 @@ public class LocalRunnerClient extends RunnerClient {
                 };
             }
 
-            private McpStatelessServerFeatures.AsyncToolSpecification buildAsyncToolSpecification(MetaActionInfo info, File program, String actionKey, String name) {
+            private McpStatelessServerFeatures.AsyncToolSpecification buildAsyncToolSpecification(MetaActionInfo
+                                                                                                          info, File program, String actionKey, String name) {
                 Map<String, Object> additional = Map.of("pre", info.getPreActions(),
                         "post", info.getPostActions(),
                         "strict_pre", info.isStrictDependencies(),
