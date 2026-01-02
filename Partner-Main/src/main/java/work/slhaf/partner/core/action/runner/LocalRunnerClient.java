@@ -827,14 +827,30 @@ public class LocalRunnerClient extends RunnerClient {
                 return new McpStatelessServerFeatures.AsyncResourceSpecification(resource, readHandler);
             }
 
+            private boolean normal(String fileName) {
+                String pattern = "[a-z][A-Z]+::[a-z][A-Z]+.desk.json";
+                Pattern p = Pattern.compile(pattern);
+                Matcher matcher = p.matcher(fileName);
+                if (!matcher.find()) {
+                    log.error("文件名称不符合要求: {}", fileName);
+                    return false;
+                }
+                return true;
+            }
+
+            private boolean normal(File file) {
+                String name = file.getName();
+                return normal(name);
+            }
+
+            private boolean normal(Path path) {
+                return normal(path.toFile());
+            }
+
             @SuppressWarnings("UnusedReturnValue")
             private boolean addResource(File file) {
                 String name = file.getName();
-                String pattern = "[a-z][A-Z]+::[a-z][A-Z]+.desk.json";
-                Pattern p = Pattern.compile(pattern);
-                Matcher matcher = p.matcher(name);
-                if (!matcher.find()) {
-                    log.error("文件名称不符合要求: {}", name);
+                if (!normal(name)) {
                     return false;
                 }
                 // 读取并解析为 MetaActionInfo，存入 resources
@@ -873,7 +889,32 @@ public class LocalRunnerClient extends RunnerClient {
             @Override
             @NotNull
             protected LocalWatchServiceBuild.EventHandler buildModify() {
-                return null;
+                return (thisDir, context) -> {
+                    // 排除目录事件、名称不符合要求的文件
+                    String fileName = context.getFileName().toString();
+                    if (!Files.isDirectory(context) || !normal(fileName)) {
+                        return;
+                    }
+
+                    // 先尝试能否正常读取，再决定是否步入更新逻辑
+                    MetaActionInfo info;
+                    try {
+                        info = JSONUtil.readJSONObject(context.toFile(), StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
+                    } catch (Exception e) {
+                        log.warn("desc.json 加载失败: {}", context);
+                        return;
+                    }
+
+                    // 要处理的 MODIFY 上下文只有一种
+                    // *.desc.json 发生变更时，检查是否存在于 existedMetaActions 内部
+                    // 如果存在，则读取并更新对应的 info，同时更新 descCache
+                    // 如果不存在，则只更新 descCache
+                    String actionKey = fileName.replace(".desc.json", "");
+                    if (existedMetaActions.containsKey(actionKey)) {
+                        existedMetaActions.put(actionKey, info);
+                    }
+                    descCache.put(context.toUri().toString(), JSONObject.toJSONString(info));
+                };
             }
 
             @Override
