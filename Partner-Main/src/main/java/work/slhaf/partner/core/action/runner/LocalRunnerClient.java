@@ -57,13 +57,37 @@ public class LocalRunnerClient extends RunnerClient {
     private final String MCP_SERVER_PATH = buildPathStr(ACTION_PATH, "mcp");
     private final String MCP_DESC_PATH = buildPathStr(MCP_SERVER_PATH, "desc");
 
+    /**
+     * 存储包括 DescMcp、DynamicActionMcp、CommonMcp 在内的所有 MCP Server 对应的客户端
+     * <br/>
+     * 自身需要针对 CommonMcp 维护一个存储 McpServers.json 文件的目录
+     * <br/>
+     * 相关目录按照以下格式组织:
+     * <p>
+     * MCP_SERVER_PATH/mcp-server.json
+     * </p>
+     */
     private final Map<String, McpSyncClient> mcpClients = new HashMap<>();
     /**
      * 动态生成的行动程序都将挂载至该 McpServer
+     * <br/>
+     * 相关目录按照以下格式进行组织:
+     * <p>
+     * DYNAMIC_ACTION_PATH/action 名称/
+     * </p>
+     * 每个action子目录下，除了相关的程序文件外，将额外提供一个 <program>.meta.json 文件来提供相关描述文件，
+     * 该描述文件将携带 McpTools、MetaActionInfo 相关的所有信息，
+     * 故 McpDescServer 将只负责 Common Mcp Servers 的额外描述文件
+     *
      */
     private McpStatelessAsyncServer dynamicActionMcpServer;
     /**
      * 负责监听常规 MCP Server 的描述文件（描述文件主要用于添加原本 MCP Tools 不携带的信息，如前置依赖、后置依赖、是否 IO 密集等
+     * <br/>
+     * 目录按照以下格式组织:
+     * <p>
+     * MCP_DESC_PATH/server::toolName.desc.json
+     * </p>
      */
     private McpStatelessAsyncServer mcpDescServer;
     private final WatchService watchService;
@@ -94,15 +118,6 @@ public class LocalRunnerClient extends RunnerClient {
         registerMcpClient("mcp-desc", pair.clientSide(), 10);
     }
 
-    /**
-     * 目录按照以下格式进行组织:
-     * <p>
-     * DYNAMIC_ACTION_PATH/action 名称/
-     * </p>
-     * 每个action子目录下，除了相关的程序文件外，将额外提供一个 <program>.meta.json 文件来提供相关描述文件，
-     * 该描述文件将携带 McpTools、MetaActionInfo 相关的所有信息，
-     * 故 McpDescServer 将只负责 Common Mcp Servers 的额外描述文件
-     */
     private void registerDynamicActionMcp() {
         InProcessMcpTransport.Pair pair = InProcessMcpTransport.pair();
         McpSchema.ServerCapabilities serverCapabilities = McpSchema.ServerCapabilities.builder()
