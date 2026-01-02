@@ -115,9 +115,20 @@ public class LocalRunnerClient extends RunnerClient {
                 .capabilities(serverCapabilities)
                 .jsonMapper(McpJsonMapper.getDefault())
                 .build();
-
-        // TODO 完善加载与监听逻辑
+        registerDescMcpWatch();
         registerMcpClient("mcp-desc", pair.clientSide(), 10);
+    }
+
+    private void registerDescMcpWatch() {
+        WatchContext ctx = new WatchContext(Path.of(MCP_DESC_PATH), watchService);
+        LocalWatchEventProcessor.Desc desc = new LocalWatchEventProcessor.Desc(existedMetaActions, mcpDescServer, ctx);
+        new LocalWatchServiceBuild.BuildRegistry(ctx)
+                .initialLoad(desc.buildLoad())
+                .registerCreate(desc.buildCreate())
+                .registerDelete(desc.buildDelete())
+                .registerModify(desc.buildModify())
+                .registerOverflow(desc.buildOverflow())
+                .commit(executor);
     }
 
     private void registerDynamicActionMcp() {
