@@ -272,18 +272,8 @@ public class LocalRunnerClient extends RunnerClient {
                 //       ResourcesChange 事件传递的 Resource 可以由 Client 读取内容
                 //       预计在 Server 侧，收到客户端发送的新的行动程序信息，该信息由客户端处补充后，将其放置在指定位置
                 //       并写入描述文件、发起 ResourcesChange 事件
-                //TODO 更新触发应当遵循触发逻辑: ToolChange -> client.listResource -> 仅填写 tool 信息 | 根据查找到的 resource 文件修正信息
-                .toolsChangeConsumer(tools -> updateExistedMetaActions(id, tools))
                 .build();
         mcpClients.put(id, client);
-    }
-
-    private void updateExistedMetaActions(String id, @UnknownNullability List<McpSchema.Tool> tools) {
-        for (McpSchema.Tool tool : tools) {
-            MetaActionInfo info = buildMetaActionInfo(tool);
-            String actionKey = id + "::" + tool.name();
-            existedMetaActions.put(actionKey, info);
-        }
     }
 
     private @NotNull MetaActionInfo buildMetaActionInfo(McpSchema.Tool tool) {
