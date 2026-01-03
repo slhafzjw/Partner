@@ -14,7 +14,7 @@ public class RunnerClientTest {
     private static class TestRunnerClient extends RunnerClient {
 
         public TestRunnerClient() {
-            super(new ConcurrentHashMap<>(), Executors.newVirtualThreadPerTaskExecutor());
+            super(new ConcurrentHashMap<>(), Executors.newVirtualThreadPerTaskExecutor(), null);
         }
 
         @Override

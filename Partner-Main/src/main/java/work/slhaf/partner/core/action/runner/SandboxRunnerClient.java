@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 public class SandboxRunnerClient extends RunnerClient {
 
     public SandboxRunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor) { // 连接沙盒执行器(websocket)
-        super(existedMetaActions, executor);
+        super(existedMetaActions, executor, null);
     }
 
     protected RunnerResponse doRun(MetaAction metaAction) {
