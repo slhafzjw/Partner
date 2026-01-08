@@ -1031,28 +1031,7 @@ public class LocalRunnerClient extends RunnerClient {
                         if (!normalFile(file)) {
                             continue;
                         }
-
-                        val json = readJson(file);
-                        if (json == null) {
-                            return;
-                        }
-
-                        val newFileRecord = new McpConfigFileRecord(file.lastModified(), file.length());
-                        for (String id : json.keySet()) {
-                            val mcp = readMcp(json, id);
-                            if (mcp == null) {
-                                continue;
-                            }
-
-                            val params = readParams(mcp);
-                            if (params == null) {
-                                continue;
-                            }
-
-                            registerMcpClient(id, params);
-                            newFileRecord.paramsCacheMap().put(id, params);
-                        }
-                        mcpConfigFileCache.put(file, newFileRecord);
+                        loadAndRegisterMcpClientsFromFile(file);
                     }
                 };
             }
@@ -1226,7 +1205,38 @@ public class LocalRunnerClient extends RunnerClient {
             @Override
             @NotNull
             protected LocalWatchServiceBuild.EventHandler buildCreate() {
-                return null;
+                return (thisDir, context) -> {
+                    val file = context.toFile();
+                    if (!normalFile(file)) {
+                        return;
+                    }
+
+                    loadAndRegisterMcpClientsFromFile(file);
+                };
+            }
+
+            private void loadAndRegisterMcpClientsFromFile(File file) {
+                val mcpConfigJson = readJson(file);
+                if (mcpConfigJson == null) {
+                    return;
+                }
+
+                val newFileRecord = new McpConfigFileRecord(file.lastModified(), file.length());
+                for (String id : mcpConfigJson.keySet()) {
+                    val mcp = readMcp(mcpConfigJson, id);
+                    if (mcp == null) {
+                        continue;
+                    }
+
+                    val params = readParams(mcp);
+                    if (params == null) {
+                        continue;
+                    }
+
+                    registerMcpClient(id, params);
+                    newFileRecord.paramsCacheMap().put(id, params);
+                }
+                mcpConfigFileCache.put(file, newFileRecord);
             }
 
             @Override
