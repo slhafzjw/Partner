@@ -1025,7 +1025,28 @@ public class LocalRunnerClient extends RunnerClient {
                         if (!normalFile(file)) {
                             continue;
                         }
-                        registerMcpClients(file);
+
+                        val json = readJson(file);
+                        if (json == null) {
+                            return;
+                        }
+
+                        val newFileRecord = new McpConfigFileRecord(file.lastModified(), file.length());
+                        for (String id : json.keySet()) {
+                            val mcp = readMcp(json, id);
+                            if (mcp == null) {
+                                continue;
+                            }
+
+                            val params = readParams(mcp);
+                            if (params == null) {
+                                continue;
+                            }
+
+                            registerMcpClient(id, params);
+                            newFileRecord.paramsCacheMap().put(id, params);
+                        }
+                        mcpConfigFileCache.put(file, newFileRecord);
                     }
                 };
             }
@@ -1042,27 +1063,6 @@ public class LocalRunnerClient extends RunnerClient {
                 建议对于这种‘分布式’的配置存放方式，每个文件变更最好都触发全量加载
                 */
                 return (thisDir, context) -> checkAndReload(true);
-            }
-
-            private void registerMcpClients(File file) {
-                val json = readJson(file);
-                if (json == null) {
-                    return;
-                }
-
-                for (String id : json.keySet()) {
-                    val mcp = readMcp(json, id);
-                    if (mcp == null) {
-                        continue;
-                    }
-
-                    val params = readParams(mcp);
-                    if (params == null) {
-                        continue;
-                    }
-
-                    registerMcpClient(id, params);
-                }
             }
 
             private cn.hutool.json.JSONObject readJson(File file) {
@@ -1231,6 +1231,9 @@ public class LocalRunnerClient extends RunnerClient {
 
             private record McpConfigFileRecord(long lastModified, long length,
                                                Map<String, McpClientTransportParams> paramsCacheMap) {
+                public McpConfigFileRecord(long lastModified, long length) {
+                    this(lastModified, length, new HashMap<>());
+                }
             }
         }
     }
