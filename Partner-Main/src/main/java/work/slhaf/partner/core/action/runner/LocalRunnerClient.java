@@ -966,6 +966,12 @@ public class LocalRunnerClient extends RunnerClient {
         private static final class Common extends LocalWatchEventProcessor {
 
             private final Map<String, McpSyncClient> mcpClients;
+            private final Map<File, McpConfigFileRecord> mcpConfigFileCache = new HashMap<>();
+
+            @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+            private boolean normalFile(File file) {
+                return file.exists() && file.isFile() && file.getName().endsWith(".json");
+            }
 
             private Common(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, Map<String, McpSyncClient> mcpClients, WatchContext ctx) {
                 super(existedMetaActions, ctx);
@@ -1016,11 +1022,26 @@ public class LocalRunnerClient extends RunnerClient {
                     val files = loadFiles();
 
                     for (File file : files) {
-                        if (file.isFile() && file.getName().endsWith(".json")) {
-                            registerMcpClients(file);
+                        if (!normalFile(file)) {
+                            continue;
                         }
+                        registerMcpClients(file);
                     }
                 };
+            }
+
+            @Override
+            @NotNull
+            protected LocalWatchServiceBuild.EventHandler buildModify() {
+                /*
+                发现文件更改事件时，读取该文件中存放的mcp配置，与现有的 MCP 记录对比
+                根据其是否发生配置变动等，针对对应的 client 进行调整
+                如果额外维护一个 文件-clientIds 的映射，可以解决删除某一mcp的情况
+                但如果对于极端场景：从某一文件剪切并粘贴至另一文件，但后者先于前者保存
+                此时就会出现问题，重复client无法被注册
+                建议对于这种‘分布式’的配置存放方式，每个文件变更最好都触发全量加载
+                */
+                return (thisDir, context) -> checkAndReload(true);
             }
 
             private void registerMcpClients(File file) {
@@ -1099,10 +1120,101 @@ public class LocalRunnerClient extends RunnerClient {
                 return null;
             }
 
+            private void checkAndReload(boolean trustCache) {
+                /*
+                    for each file cannot present all mcp configurations,
+                    we need to load all at once, and then compare them with existed records.
+                    we will record existing mcp paramsCacheMap and id-params map for which is changed.
+
+                    recording changedMap only cannot figure out which mcp was deleted,
+                    so existingMcpIdSet attr is required
+                     */
+                val changedMap = new HashMap<String, McpClientTransportParams>();
+                val existingMcpIdSet = new HashSet<String>();
+
+                val files = loadFiles();
+                for (File file : files) {
+                    if (!normalFile(file)) {
+                        continue;
+                    }
+
+                    // check if necessary stats changed, null record is seen as file changed
+                    val fileRecord = mcpConfigFileCache.get(file);
+                    boolean fileRecordExists = fileRecord != null;
+                    if (fileRecordExists && !fileChanged(file, fileRecord) && trustCache) {
+                        existingMcpIdSet.addAll(fileRecord.paramsCacheMap().keySet());
+                        continue;
+                    }
+
+                    // if changed, read file and load mcp configurations
+                    val mcpConfigJson = readJson(file);
+                    if (mcpConfigJson == null) {
+                        // uses old records to avoid abnormal deletion
+                        if (fileRecordExists) {
+                            existingMcpIdSet.addAll(fileRecord.paramsCacheMap().keySet());
+                        }
+                        continue;
+                    }
+
+                    val newFileRecord = new McpConfigFileRecord(file.lastModified(), file.length(), new HashMap<>());
+                    for (String id : mcpConfigJson.keySet()) {
+                        val mcp = readMcp(mcpConfigJson, id);
+                        if (mcp == null) {
+                            continue;
+                        }
+
+                        val params = readParams(mcp);
+                        if (params == null) {
+                            continue;
+                        }
+
+                        existingMcpIdSet.add(id);
+                        newFileRecord.paramsCacheMap().put(id, params);
+
+                        if (fileRecordExists) {
+                            val paramsCache = fileRecord.paramsCacheMap().get(id);
+                            if (paramsCache != null && paramsCache.equals(params)) {
+                                continue;
+                            }
+                        }
+
+                        changedMap.put(id, params);
+                    }
+                    mcpConfigFileCache.put(file, newFileRecord);
+                }
+
+                updateMcpClients(changedMap, existingMcpIdSet);
+            }
+
+            private void updateMcpClients(HashMap<String, McpClientTransportParams> changedMap, HashSet<String> existingMcpIdSet) {
+                // following attr changedMap, update or insert mcp clients
+                changedMap.forEach((id, params) -> {
+                    // close outdated clients if exists
+                    val oldClient = mcpClients.get(id);
+                    if (oldClient != null) {
+                        oldClient.close();
+                    }
+                    // create new clients
+                    registerMcpClient(id, params);
+                });
+
+                // following attr existingMcpIdSet, align mcp clients
+                // new mcp clients and outdated clients has been updated in above logic
+                // this part focus on removing non-existing mcp
+                mcpClients.keySet().removeIf(id -> !existingMcpIdSet.contains(id));
+            }
+
+            private boolean fileChanged(File file, McpConfigFileRecord fileRecord) {
+                val lastModified = file.lastModified();
+                val length = file.length();
+
+                return fileRecord.lastModified() != lastModified || fileRecord.length() != length;
+            }
+
             @Override
             @NotNull
-            protected LocalWatchServiceBuild.EventHandler buildModify() {
-                return null;
+            protected LocalWatchServiceBuild.EventHandler buildOverflow() {
+                return (thisDir, context) -> checkAndReload(false);
             }
 
             @Override
@@ -1117,10 +1229,8 @@ public class LocalRunnerClient extends RunnerClient {
                 return null;
             }
 
-            @Override
-            @NotNull
-            protected LocalWatchServiceBuild.EventHandler buildOverflow() {
-                return null;
+            private record McpConfigFileRecord(long lastModified, long length,
+                                               Map<String, McpClientTransportParams> paramsCacheMap) {
             }
         }
     }
