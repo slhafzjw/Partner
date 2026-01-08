@@ -1242,7 +1242,35 @@ public class LocalRunnerClient extends RunnerClient {
             @Override
             @NotNull
             protected LocalWatchServiceBuild.EventHandler buildDelete() {
-                return null;
+                return (thisDir, context) -> {
+                    val file = context.toFile();
+                    if (file.isFile() && file.getName().endsWith(".json")) {
+                        return;
+                    }
+
+                    val fileRecord = mcpConfigFileCache.remove(file);
+                    if (fileRecord == null) {
+                        return;
+                    }
+
+                    // clear from existedMetaActions and mcpClients
+                    // client id comes from fileRecord.paramsCache
+                    // actionKey from `id::toolName`
+                    val clientIdSet = fileRecord.paramsCacheMap().keySet();
+                    for (String clientId : clientIdSet) {
+                        val client = mcpClients.remove(clientId);
+                        if (client == null) {
+                            continue;
+                        }
+
+                        val tools = client.listTools().tools();
+                        for (McpSchema.Tool tool : tools) {
+                            val actionKey = clientId + "::" + tool.name();
+                            existedMetaActions.remove(actionKey);
+                        }
+                        client.close();
+                    }
+                };
             }
 
             private record McpConfigFileRecord(long lastModified, long length,
