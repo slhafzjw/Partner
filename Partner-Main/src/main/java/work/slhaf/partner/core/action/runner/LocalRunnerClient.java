@@ -105,7 +105,20 @@ public class LocalRunnerClient extends RunnerClient {
         }
         registerDescMcp();
         registerDynamicActionMcp();
+        registerCommonMcp();
         setupShutdownHook();
+    }
+
+    private void registerCommonMcp() {
+        val ctx = new WatchContext(Path.of(MCP_SERVER_PATH), watchService);
+        val common = new LocalWatchEventProcessor.Common(existedMetaActions, mcpClients, ctx);
+        new LocalWatchServiceBuild.BuildRegistry(ctx)
+                .initialLoad(common.buildLoad())
+                .registerCreate(common.buildCreate())
+                .registerDelete(common.buildDelete())
+                .registerModify(common.buildModify())
+                .registerOverflow(common.buildOverflow())
+                .commit(executor);
     }
 
     private void registerDescMcp() {
