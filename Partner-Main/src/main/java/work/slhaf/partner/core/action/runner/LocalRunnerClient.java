@@ -266,22 +266,6 @@ public class LocalRunnerClient extends RunnerClient {
         mcpClients.put(id, client);
     }
 
-    private @NotNull MetaActionInfo buildMetaActionInfo(McpSchema.Tool tool) {
-        MetaActionInfo info = new MetaActionInfo();
-        info.setDescription(tool.description());
-        Map<String, Object> outputSchema = tool.outputSchema();
-        info.setResponseSchema(outputSchema == null ? JSONObject.of() : JSONObject.from(outputSchema));
-        info.setParams(tool.inputSchema().properties());
-
-        JSONObject meta = JSONObject.from(tool.meta());
-        info.setIo(meta.getBoolean("io"));
-        info.setPreActions(meta.getList("pre", String.class));
-        info.setPostActions(meta.getList("post", String.class));
-        info.setStrictDependencies(meta.getBoolean("strict"));
-        info.setTags(meta.getList("tag", String.class));
-        return info;
-    }
-
     private void setupShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             dynamicActionMcpServer.close();
@@ -992,6 +976,28 @@ public class LocalRunnerClient extends RunnerClient {
                         .clientInfo(new McpSchema.Implementation(id, "PARTNER"))
                         .build();
                 mcpClients.put(id, client);
+
+                for (McpSchema.Tool tool : client.listTools().tools()) {
+                    val metaActionInfo = buildMetaActionInfo(tool);
+                    existedMetaActions.put(id + "::" + tool.name(), metaActionInfo);
+                }
+            }
+
+
+            private @NotNull MetaActionInfo buildMetaActionInfo(McpSchema.Tool tool) {
+                MetaActionInfo info = new MetaActionInfo();
+                info.setDescription(tool.description());
+                Map<String, Object> outputSchema = tool.outputSchema();
+                info.setResponseSchema(outputSchema == null ? JSONObject.of() : JSONObject.from(outputSchema));
+                info.setParams(tool.inputSchema().properties());
+
+                JSONObject meta = JSONObject.from(tool.meta());
+                info.setIo(meta.getBoolean("io"));
+                info.setPreActions(meta.getList("pre", String.class));
+                info.setPostActions(meta.getList("post", String.class));
+                info.setStrictDependencies(meta.getBoolean("strict"));
+                info.setTags(meta.getList("tag", String.class));
+                return info;
             }
 
             private McpClientTransport createTransport(McpClientTransportParams mcpClientTransportParams) {
