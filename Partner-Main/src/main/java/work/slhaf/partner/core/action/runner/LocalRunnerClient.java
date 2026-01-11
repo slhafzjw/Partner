@@ -57,10 +57,10 @@ import static work.slhaf.partner.common.util.PathUtil.buildPathStr;
 @Slf4j
 public class LocalRunnerClient extends RunnerClient {
 
-    private final String TMP_ACTION_PATH = buildPathStr(ACTION_PATH, "tmp");
-    private final String DYNAMIC_ACTION_PATH = buildPathStr(ACTION_PATH, "dynamic");
-    private final String MCP_SERVER_PATH = buildPathStr(ACTION_PATH, "mcp");
-    private final String MCP_DESC_PATH = buildPathStr(MCP_SERVER_PATH, "desc");
+    private final String TMP_ACTION_PATH;
+    private final String DYNAMIC_ACTION_PATH;
+    private final String MCP_SERVER_PATH;
+    private final String MCP_DESC_PATH;
 
     /**
      * 存储包括 DescMcp、DynamicActionMcp、CommonMcp 在内的所有 MCP Server 对应的客户端
@@ -99,6 +99,13 @@ public class LocalRunnerClient extends RunnerClient {
 
     public LocalRunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String baseActionPath) {
         super(existedMetaActions, executor, baseActionPath);
+        this.TMP_ACTION_PATH = buildPathStr(ACTION_PATH, "tmp");
+        this.DYNAMIC_ACTION_PATH = buildPathStr(ACTION_PATH, "dynamic");
+        this.MCP_SERVER_PATH = buildPathStr(ACTION_PATH, "mcp");
+        this.MCP_DESC_PATH = buildPathStr(MCP_SERVER_PATH, "desc");
+
+        createPaths();
+
         try {
             watchService = FileSystems.getDefault().newWatchService();
         } catch (IOException e) {
@@ -108,6 +115,17 @@ public class LocalRunnerClient extends RunnerClient {
         registerDynamicActionMcp();
         registerCommonMcp();
         setupShutdownHook();
+    }
+
+    private void createPaths() {
+        try {
+            Files.createDirectory(Path.of(TMP_ACTION_PATH));
+            Files.createDirectory(Path.of(DYNAMIC_ACTION_PATH));
+            Files.createDirectory(Path.of(MCP_SERVER_PATH));
+            Files.createDirectory(Path.of(MCP_DESC_PATH));
+        } catch (IOException e) {
+            throw new ActionInitFailedException("目录创建失败: " + e);
+        }
     }
 
     private void registerCommonMcp() {

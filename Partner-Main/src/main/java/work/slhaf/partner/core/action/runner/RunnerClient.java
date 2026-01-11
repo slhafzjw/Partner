@@ -5,13 +5,16 @@ import io.modelcontextprotocol.server.McpStatelessAsyncServer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
-import work.slhaf.partner.core.action.entity.McpData;
+import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
 import work.slhaf.partner.core.action.entity.MetaAction.ResultStatus;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.exception.ActionInitFailedException;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -51,6 +54,12 @@ public abstract class RunnerClient {
         this.executor = executor;
         baseActionPath = baseActionPath == null ? DATA : baseActionPath;
         this.ACTION_PATH = buildPathStr(baseActionPath, "action");
+
+        try {
+            Files.createDirectory(Path.of(ACTION_PATH));
+        } catch (IOException e) {
+            throw new ActionInitFailedException("目录创建失败: " + ACTION_PATH, e);
+        }
     }
 
     /**
