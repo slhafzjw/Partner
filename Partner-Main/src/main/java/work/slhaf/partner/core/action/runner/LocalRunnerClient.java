@@ -104,7 +104,10 @@ public class LocalRunnerClient extends RunnerClient {
         this.MCP_SERVER_PATH = buildPathStr(ACTION_PATH, "mcp");
         this.MCP_DESC_PATH = buildPathStr(MCP_SERVER_PATH, "desc");
 
-        createPaths();
+        createPath(TMP_ACTION_PATH);
+        createPath(DYNAMIC_ACTION_PATH);
+        createPath(MCP_SERVER_PATH);
+        createPath(MCP_DESC_PATH);
 
         try {
             watchService = FileSystems.getDefault().newWatchService();
@@ -115,17 +118,6 @@ public class LocalRunnerClient extends RunnerClient {
         registerDynamicActionMcp();
         registerCommonMcp();
         setupShutdownHook();
-    }
-
-    private void createPaths() {
-        try {
-            Files.createDirectory(Path.of(TMP_ACTION_PATH));
-            Files.createDirectory(Path.of(DYNAMIC_ACTION_PATH));
-            Files.createDirectory(Path.of(MCP_SERVER_PATH));
-            Files.createDirectory(Path.of(MCP_DESC_PATH));
-        } catch (IOException e) {
-            throw new ActionInitFailedException("目录创建失败: " + e);
-        }
     }
 
     private void registerCommonMcp() {

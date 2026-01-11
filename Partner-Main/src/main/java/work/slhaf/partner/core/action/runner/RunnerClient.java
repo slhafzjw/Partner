@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import io.modelcontextprotocol.server.McpStatelessAsyncServer;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
@@ -55,11 +56,7 @@ public abstract class RunnerClient {
         baseActionPath = baseActionPath == null ? DATA : baseActionPath;
         this.ACTION_PATH = buildPathStr(baseActionPath, "action");
 
-        try {
-            Files.createDirectory(Path.of(ACTION_PATH));
-        } catch (IOException e) {
-            throw new ActionInitFailedException("目录创建失败: " + ACTION_PATH, e);
-        }
+        createPath(ACTION_PATH);
     }
 
     /**
@@ -82,7 +79,18 @@ public abstract class RunnerClient {
 
     public abstract void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException;
 
-    public abstract void persistSerialize(MetaActionInfo metaActionInfo, McpData mcpData);
+    public abstract void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData);
+
+    protected void createPath(String pathStr) {
+        val path = Path.of(pathStr);
+        try {
+            Files.createDirectory(path);
+        } catch (IOException e) {
+            if (!Files.exists(path)) {
+                throw new ActionInitFailedException("目录创建失败: " + pathStr, e);
+            }
+        }
+    }
 
     /**
      * 列出执行环境下的系统依赖情况
