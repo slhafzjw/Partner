@@ -27,11 +27,12 @@ import org.jetbrains.annotations.Nullable;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import work.slhaf.partner.common.mcp.InProcessMcpTransport;
-import work.slhaf.partner.core.action.entity.McpData;
+import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.MetaActionType;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
+import work.slhaf.partner.core.action.exception.ActionSerializeFailedException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -234,10 +235,79 @@ public class LocalRunnerClient extends RunnerClient {
         Files.writeString(path, code);
     }
 
-    @Override
-    public void persistSerialize(MetaActionInfo metaActionInfo, McpData mcpData) {
-        throw new UnsupportedOperationException("Unimplemented method 'doPersistSerialize'");
+    private static @NotNull Path createActionDir(String baseName, Path baseDir) {
+        Path actionDir = null;
+
+        // 原子地“抢占”目录名
+        for (int i = 0; ; i++) {
+            String dirName = (i == 0) ? baseName : baseName + "(" + i + ")";
+            Path candidate = baseDir.resolve(dirName);
+
+            try {
+                Files.createDirectory(candidate); // 原子操作
+                actionDir = candidate;
+                break;
+            } catch (FileAlreadyExistsException ignored) {
+                // 继续尝试下一个名字
+            } catch (IOException e) {
+                throw new ActionSerializeFailedException(
+                        "无法创建行动目录: " + candidate.toAbsolutePath(), e
+                );
+            }
+        }
+        return actionDir;
     }
+
+    @Override
+    public void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData) {
+        val baseDir = Path.of(DYNAMIC_ACTION_PATH);
+
+        if (!Files.isDirectory(baseDir)) {
+            throw new ActionSerializeFailedException(
+                    "目录不存在或不可用: " + baseDir.toAbsolutePath()
+            );
+        }
+
+        val baseName = fileMetaData.getName();
+        val ext = fileMetaData.getExt();
+
+        val actionDir = createActionDir(baseName, baseDir);
+
+        // 使用临时文件写入内容
+        val runTmp = actionDir.resolve("run." + ext + ".tmp");
+        val descTmp = actionDir.resolve("desc.json.tmp");
+
+        val runFinal = actionDir.resolve("run." + ext);
+        val descFinal = actionDir.resolve("desc.json");
+
+        try {
+            Files.writeString(runTmp, fileMetaData.getContent());
+            Files.writeString(descTmp, JSONObject.toJSONString(metaActionInfo));
+
+            // 原子提交
+            Files.move(runTmp, runFinal, StandardCopyOption.ATOMIC_MOVE);
+            Files.move(descTmp, descFinal, StandardCopyOption.ATOMIC_MOVE);
+
+        } catch (IOException e) {
+            // 失败清理
+            safeDelete(runTmp);
+            safeDelete(descTmp);
+            safeDelete(runFinal);
+            safeDelete(descFinal);
+            safeDelete(actionDir);
+            throw new ActionSerializeFailedException("行动文件写入失败", e);
+        }
+    }
+
+    private void safeDelete(Path path) {
+        try {
+            if (Files.exists(path)) {
+                Files.delete(path);
+            }
+        } catch (IOException ignored) {
+        }
+    }
+
 
     @Override
     public JSONObject listSysDependencies() {

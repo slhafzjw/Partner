@@ -1,7 +1,7 @@
 package work.slhaf.partner.core.action.runner;
 
 import com.alibaba.fastjson2.JSONObject;
-import work.slhaf.partner.core.action.entity.McpData;
+import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 
@@ -50,7 +50,7 @@ public class SandboxRunnerClient extends RunnerClient {
     }
 
     @Override
-    public void persistSerialize(MetaActionInfo metaActionInfo, McpData mcpData) {
+    public void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData) {
         throw new UnsupportedOperationException("Unimplemented method 'persistSerialize'");
     }
 
