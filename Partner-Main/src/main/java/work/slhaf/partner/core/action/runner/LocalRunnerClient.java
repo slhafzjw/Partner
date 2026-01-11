@@ -138,6 +138,7 @@ public class LocalRunnerClient extends RunnerClient {
                 .registerModify(common.buildModify())
                 .registerOverflow(common.buildOverflow())
                 .commit(executor);
+        log.info("CommonMcp 文件监听注册完毕");
     }
 
     private void registerDescMcp() {
@@ -150,7 +151,10 @@ public class LocalRunnerClient extends RunnerClient {
                 .jsonMapper(McpJsonMapper.getDefault())
                 .build();
         registerDescMcpWatch();
+        log.info("DescMcp 文件监听注册完毕");
         registerMcpClient("mcp-desc", pair.clientSide(), 10);
+        log.info("DescMcp 注册完毕");
+
     }
 
     private void registerDescMcpWatch() {
@@ -178,7 +182,9 @@ public class LocalRunnerClient extends RunnerClient {
         // 初始的加载逻辑通过 initialLoad 加载
         // 后续的动态更新通过对应的 event 事件触发
         registerDynamicActionMcpWatch();
+        log.info("DynamicActionMcp 文件监听注册完毕");
         registerMcpClient("dynamic-action", pair.clientSide(), 10);
+        log.info("DynamicActionMcp 注册完毕");
     }
 
     private void registerDynamicActionMcpWatch() {
@@ -197,6 +203,7 @@ public class LocalRunnerClient extends RunnerClient {
 
     @Override
     protected RunnerResponse doRun(MetaAction metaAction) {
+        log.debug("执行行动: {}", metaAction);
         RunnerResponse response;
         try {
             response = switch (metaAction.getType()) {
@@ -208,6 +215,7 @@ public class LocalRunnerClient extends RunnerClient {
             response.setOk(false);
             response.setData(e.getLocalizedMessage());
         }
+        log.debug("行动执行结果: {}", response);
         return response;
     }
 
@@ -247,10 +255,12 @@ public class LocalRunnerClient extends RunnerClient {
 
     @Override
     public void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException {
+        log.debug("行动程序临时序列化: {}", tempAction);
         Path path = Path.of(tempAction.getLocation());
         File file = path.toFile();
         file.createNewFile();
         Files.writeString(path, code);
+        log.debug("临时序列化完毕");
     }
 
     private static @NotNull Path createActionDir(String baseName, Path baseDir) {
@@ -278,6 +288,7 @@ public class LocalRunnerClient extends RunnerClient {
 
     @Override
     public void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData) {
+        log.debug("行动程序持久序列化: {}", metaActionInfo);
         val baseDir = Path.of(DYNAMIC_ACTION_PATH);
 
         if (!Files.isDirectory(baseDir)) {
@@ -305,7 +316,6 @@ public class LocalRunnerClient extends RunnerClient {
             // 原子提交
             Files.move(runTmp, runFinal, StandardCopyOption.ATOMIC_MOVE);
             Files.move(descTmp, descFinal, StandardCopyOption.ATOMIC_MOVE);
-
         } catch (IOException e) {
             // 失败清理
             safeDelete(runTmp);
@@ -315,6 +325,7 @@ public class LocalRunnerClient extends RunnerClient {
             safeDelete(actionDir);
             throw new ActionSerializeFailedException("行动文件写入失败", e);
         }
+        log.debug("持久序列化结束");
     }
 
     private void safeDelete(Path path) {
@@ -475,6 +486,7 @@ public class LocalRunnerClient extends RunnerClient {
                     for (Path dir : walk.toList()) {
                         WatchKey key = dir.register(watchService, kindsArray);
                         watchKeys.put(key, dir);
+                        log.debug("注册目录监听: {}", dir);
                     }
                     walk.close();
                 } catch (IOException e) {
@@ -494,7 +506,7 @@ public class LocalRunnerClient extends RunnerClient {
                             for (WatchEvent<?> e : events) {
                                 WatchEvent.Kind<?> kind = e.kind();
                                 Object context = e.context();
-                                log.info("行动程序目录变更事件: {} - {} - {}", rootStr, kind.name(), context);
+                                log.debug("文件目录监听事件: {} - {} - {}", rootStr, kind.name(), context);
                                 Path thisDir = (Path) key.watchable();
                                 EventHandler handler = handlers.get(kind);
                                 if (handler == null) {
