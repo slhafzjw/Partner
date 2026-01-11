@@ -556,8 +556,7 @@ public class LocalRunnerClient extends RunnerClient {
 
         protected abstract @NotNull LocalWatchServiceBuild.EventHandler buildOverflow();
 
-        protected File[] loadFiles() {
-            val root = ctx.root;
+        protected File[] loadFiles(Path root) {
             if (!Files.isDirectory(root)) {
                 throw new ActionInitFailedException("未找到目录: " + root);
             }
@@ -580,7 +579,7 @@ public class LocalRunnerClient extends RunnerClient {
 
             @SuppressWarnings("BooleanMethodIsAlwaysInverted")
             private boolean normalPath(Path path) {
-                val files = loadFiles();
+                val files = loadFiles(path);
                 if (files.length < 2) {
                     return false;
                 }
@@ -950,7 +949,7 @@ public class LocalRunnerClient extends RunnerClient {
                 return () -> {
                     // DescMcp 的加载逻辑只负责读取已有的 *.desc.json 并注册为 resources
                     // 正常来讲 root 直接对应 MCP_DESC_PATH，先检查 root 是否为目录，否则拒绝启动
-                    val files = loadFiles();
+                    val files = loadFiles(ctx.root);
                     for (File file : files) {
                         addResource(file);
                     }
@@ -1138,7 +1137,7 @@ public class LocalRunnerClient extends RunnerClient {
                     // For CommonMcp, we need to list all files in MCP_SERVER_PATH,
                     // and search for files with extend name .json,
                     // and then reading them as JSONObject to get McpClientTransportParams.
-                    val files = loadFiles();
+                    val files = loadFiles(ctx.root);
 
                     for (File file : files) {
                         if (!normalFile(file)) {
@@ -1230,7 +1229,7 @@ public class LocalRunnerClient extends RunnerClient {
                 val changedMap = new HashMap<String, McpClientTransportParams>();
                 val existingMcpIdSet = new HashSet<String>();
 
-                val files = loadFiles();
+                val files = loadFiles(ctx.root);
                 for (File file : files) {
                     if (!normalFile(file)) {
                         continue;
