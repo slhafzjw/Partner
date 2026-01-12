@@ -556,14 +556,11 @@ public class LocalRunnerClient extends RunnerClient {
         protected abstract @NotNull LocalWatchServiceBuild.EventHandler buildOverflow();
 
         protected File[] loadFiles(Path root) {
+            // 在批量删除场景下，在接收到事件时目录等内容可能已被删除，此时不应该报错，而是返回一个‘异常值’
             if (!Files.isDirectory(root)) {
-                throw new ActionInitFailedException("未找到目录: " + root);
+                return null;
             }
-            val files = root.toFile().listFiles();
-            if (files == null) {
-                throw new ActionInitFailedException("目录无法正常读取: " + root);
-            }
-            return files;
+            return root.toFile().listFiles();
         }
 
         @SuppressWarnings("LoggingSimilarMessage")
@@ -579,7 +576,7 @@ public class LocalRunnerClient extends RunnerClient {
             @SuppressWarnings("BooleanMethodIsAlwaysInverted")
             private boolean normalPath(Path path) {
                 val files = loadFiles(path);
-                if (files.length < 2) {
+                if (files == null || files.length < 2) {
                     return false;
                 }
                 boolean desc = false;
