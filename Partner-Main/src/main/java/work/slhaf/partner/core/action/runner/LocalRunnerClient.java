@@ -95,7 +95,6 @@ public class LocalRunnerClient extends RunnerClient {
      * 该 MCP Server-Client 的作用为: 与 CommonMcp Clients 配合，补齐第三方 MCP 服务的描述信息
      */
     private McpStatelessAsyncServer mcpDescServer;
-    private final WatchService watchService;
 
     public LocalRunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String baseActionPath) {
         super(existedMetaActions, executor, baseActionPath);
@@ -110,18 +109,17 @@ public class LocalRunnerClient extends RunnerClient {
         createPath(MCP_DESC_PATH);
 
         try {
-            watchService = FileSystems.getDefault().newWatchService();
+            registerDescMcp();
+            registerDynamicActionMcp();
+            registerCommonMcp();
         } catch (IOException e) {
             throw new ActionInitFailedException("目录监听器启动失败", e);
         }
-        registerDescMcp();
-        registerDynamicActionMcp();
-        registerCommonMcp();
         setupShutdownHook();
     }
 
-    private void registerCommonMcp() {
-        val ctx = new WatchContext(Path.of(MCP_SERVER_PATH), watchService);
+    private void registerCommonMcp() throws IOException {
+        val ctx = new WatchContext(Path.of(MCP_SERVER_PATH), FileSystems.getDefault().newWatchService());
         val common = new LocalWatchEventProcessor.Common(existedMetaActions, mcpClients, ctx);
         new LocalWatchServiceBuild.BuildRegistry(ctx)
                 .initialLoad(common.buildLoad())
@@ -133,7 +131,7 @@ public class LocalRunnerClient extends RunnerClient {
         log.info("CommonMcp 文件监听注册完毕");
     }
 
-    private void registerDescMcp() {
+    private void registerDescMcp() throws IOException {
         InProcessMcpTransport.Pair pair = InProcessMcpTransport.pair();
         McpSchema.ServerCapabilities serverCapabilities = McpSchema.ServerCapabilities.builder()
                 .resources(true, true)
@@ -149,8 +147,8 @@ public class LocalRunnerClient extends RunnerClient {
 
     }
 
-    private void registerDescMcpWatch() {
-        WatchContext ctx = new WatchContext(Path.of(MCP_DESC_PATH), watchService);
+    private void registerDescMcpWatch() throws IOException {
+        WatchContext ctx = new WatchContext(Path.of(MCP_DESC_PATH), FileSystems.getDefault().newWatchService());
         LocalWatchEventProcessor.Desc desc = new LocalWatchEventProcessor.Desc(existedMetaActions, mcpDescServer, ctx);
         new LocalWatchServiceBuild.BuildRegistry(ctx)
                 .initialLoad(desc.buildLoad())
@@ -158,10 +156,11 @@ public class LocalRunnerClient extends RunnerClient {
                 .registerDelete(desc.buildDelete())
                 .registerModify(desc.buildModify())
                 .registerOverflow(desc.buildOverflow())
+                .watchAll(true)
                 .commit(executor);
     }
 
-    private void registerDynamicActionMcp() {
+    private void registerDynamicActionMcp() throws IOException {
         InProcessMcpTransport.Pair pair = InProcessMcpTransport.pair();
         McpSchema.ServerCapabilities serverCapabilities = McpSchema.ServerCapabilities.builder()
                 .tools(true)
@@ -179,9 +178,9 @@ public class LocalRunnerClient extends RunnerClient {
         log.info("DynamicActionMcp 注册完毕");
     }
 
-    private void registerDynamicActionMcpWatch() {
+    private void registerDynamicActionMcpWatch() throws IOException {
         // MODIFY、CREATE、DELETE、OVERFLOW 都需要不同的处理方式
-        WatchContext ctx = new WatchContext(Path.of(DYNAMIC_ACTION_PATH), watchService);
+        WatchContext ctx = new WatchContext(Path.of(DYNAMIC_ACTION_PATH), FileSystems.getDefault().newWatchService());
         LocalWatchEventProcessor.Dynamic dynamic = new LocalWatchEventProcessor.Dynamic(existedMetaActions, dynamicActionMcpServer, ctx);
         new LocalWatchServiceBuild.BuildRegistry(ctx)
                 .initialLoad(dynamic.buildLoad())
@@ -491,7 +490,7 @@ public class LocalRunnerClient extends RunnerClient {
                     String rootStr = ctx.root.toString();
                     log.info("行动程序目录监听器已启动，监听目录: {}", rootStr);
                     while (true) {
-                        WatchKey key;
+                        WatchKey key = null;
                         try {
                             key = ctx.watchService.take();
                             List<WatchEvent<?>> events = key.pollEvents();
@@ -513,6 +512,14 @@ public class LocalRunnerClient extends RunnerClient {
                         } catch (ClosedWatchServiceException e) {
                             log.info("WatchService 已关闭，监听线程退出。");
                             break;
+                        } finally {
+                            if (key != null) {
+                                // reset 返回 false 表示该 key 已失效（目录被删、不可访问等）
+                                boolean valid = key.reset();
+                                if (!valid) {
+                                    log.info("WatchKey 已失效，停止监听该目录: {}", key.watchable());
+                                }
+                            }
                         }
                     }
                 };
