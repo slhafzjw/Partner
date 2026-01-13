@@ -1077,6 +1077,12 @@ public class LocalRunnerClient extends RunnerClient {
              * @param mcpClientTransportParams MCP Server 的参数
              */
             private void registerMcpClient(String id, McpClientTransportParams mcpClientTransportParams) {
+                // 如果已存在同名 client，则需要先获取并关闭
+                val old = mcpClients.get(id);
+                if (old != null) {
+                    old.close();
+                }
+
                 val clientTransport = createTransport(mcpClientTransportParams);
                 val timeout = mcpClientTransportParams.timeout;
                 val client = McpClient.sync(clientTransport)
