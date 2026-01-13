@@ -1352,7 +1352,7 @@ public class LocalRunnerClient extends RunnerClient {
             protected LocalWatchServiceBuild.EventHandler buildDelete() {
                 return (thisDir, context) -> {
                     val file = context.toFile();
-                    if (file.isFile() && file.getName().endsWith(".json")) {
+                    if (!file.isFile() || !file.getName().endsWith(".json")) {
                         return;
                     }
 
