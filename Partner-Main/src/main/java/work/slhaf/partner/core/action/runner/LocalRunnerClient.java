@@ -517,6 +517,17 @@ public class LocalRunnerClient extends RunnerClient {
                                 boolean valid = key.reset();
                                 if (!valid) {
                                     log.info("WatchKey 已失效，停止监听该目录: {}", key.watchable());
+                                    ctx.watchKeys.remove(key);
+                                    if (key.watchable().equals(ctx.root)) {
+                                        try {
+                                            Files.createDirectories(ctx.root);
+                                            registerPath();
+                                            if (initLoader != null)
+                                                initLoader.load();
+                                        } catch (IOException e) {
+                                            log.error("重建根目录并重新注册监听失败: {}", ctx.root, e);
+                                        }
+                                    }
                                 }
                             }
                         }

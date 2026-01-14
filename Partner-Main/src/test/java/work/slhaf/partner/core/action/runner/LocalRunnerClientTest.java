@@ -11,7 +11,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,6 +56,28 @@ public class LocalRunnerClientTest {
                     + "  \"responseSchema\": {}\n"
                     + "}\n";
             Files.writeString(descPath, json);
+        }
+
+        static void writeDescMcpJson(Path descDir, String actionKey, String description) throws IOException {
+            Path descPath = descDir.resolve(actionKey + ".desc.json");
+            log.debug("写入路径: {}", descPath);
+            String json = "{\n"
+                    + "  \"io\": true,\n"
+                    + "  \"params\": {},\n"
+                    + "  \"description\": \"" + description + "\",\n"
+                    + "  \"tags\": [\"tag\"],\n"
+                    + "  \"preActions\": [\"pre\"],\n"
+                    + "  \"postActions\": [\"post\"],\n"
+                    + "  \"strictDependencies\": true,\n"
+                    + "  \"responseSchema\": {}\n"
+                    + "}\n";
+            Files.writeString(descPath, json);
+        }
+
+        static void writeInvalidDescMcpJson(Path descDir, String actionKey) throws IOException {
+            Path descPath = descDir.resolve(actionKey + ".desc.json");
+            log.debug("写入路径: {}", descPath);
+            Files.writeString(descPath, "{ invalid json");
         }
 
         @SuppressWarnings("SameParameterValue")
@@ -115,6 +140,18 @@ public class LocalRunnerClientTest {
         static boolean hasActionKey(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions,
                                     Predicate<String> predicate) {
             return existedMetaActions.keySet().stream().anyMatch(predicate);
+        }
+
+        static MetaActionInfo buildMetaActionInfo(String description) {
+            MetaActionInfo info = new MetaActionInfo();
+            info.setIo(true);
+            info.setParams(new HashMap<>());
+            info.setDescription(description);
+            info.setTags(new ArrayList<>(List.of("tag")));
+            info.setPreActions(new ArrayList<>(List.of("pre")));
+            info.setPostActions(new ArrayList<>(List.of("post")));
+            info.setStrictDependencies(true);
+            return info;
         }
 
         static String buildCommonMcpConfig(String... serverEntries) {
@@ -326,6 +363,277 @@ public class LocalRunnerClientTest {
                 writeDescJson(actionDir, "fixed");
                 waitForCondition(() -> existedMetaActions.containsKey("local::demo_action_invalid"), 2000);
                 Assertions.assertTrue(existedMetaActions.containsKey("local::demo_action_invalid"));
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+    }
+
+    @Nested
+    class DescMcpTest {
+
+        @Test
+        void testDescMcpWatchCreateModifyDelete(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            String actionKey = "local::desc_action";
+            existedMetaActions.put(actionKey, buildMetaActionInfo("base"));
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path descDir = tempDir.resolve("action").resolve("mcp").resolve("desc");
+                Files.createDirectories(descDir);
+
+                writeDescMcpJson(descDir, actionKey, "v1");
+                waitForCondition(() -> {
+                    MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                    return info != null && "v1".equals(info.getDescription());
+                }, 2000);
+                MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                Assertions.assertNotNull(info);
+                Assertions.assertEquals("v1", info.getDescription());
+                Assertions.assertTrue(info.isIo());
+                Assertions.assertTrue(info.isStrictDependencies());
+                Assertions.assertFalse(info.getTags().isEmpty());
+
+                writeDescMcpJson(descDir, actionKey, "v2");
+                waitForCondition(() -> {
+                    MetaActionInfo current = getMetaActionInfo(existedMetaActions, actionKey);
+                    return current != null && "v2".equals(current.getDescription());
+                }, 2000);
+                info = getMetaActionInfo(existedMetaActions, actionKey);
+                Assertions.assertNotNull(info);
+                Assertions.assertEquals("v2", info.getDescription());
+
+                Files.deleteIfExists(descDir.resolve(actionKey + ".desc.json"));
+                waitForCondition(() -> {
+                    MetaActionInfo current = getMetaActionInfo(existedMetaActions, actionKey);
+                    return current != null
+                            && !current.isIo()
+                            && !current.isStrictDependencies()
+                            && current.getTags().isEmpty()
+                            && current.getPreActions().isEmpty()
+                            && current.getPostActions().isEmpty();
+                }, 2000);
+                info = getMetaActionInfo(existedMetaActions, actionKey);
+                Assertions.assertNotNull(info);
+                Assertions.assertFalse(info.isIo());
+                Assertions.assertFalse(info.isStrictDependencies());
+                Assertions.assertTrue(info.getTags().isEmpty());
+                Assertions.assertTrue(info.getPreActions().isEmpty());
+                Assertions.assertTrue(info.getPostActions().isEmpty());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDescMcpInvalidJsonRecovery(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            String actionKey = "local::desc_invalid";
+            existedMetaActions.put(actionKey, buildMetaActionInfo("base"));
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path descDir = tempDir.resolve("action").resolve("mcp").resolve("desc");
+                Files.createDirectories(descDir);
+
+                writeInvalidDescMcpJson(descDir, actionKey);
+                waitForCondition(() -> {
+                    MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                    return info != null
+                            && !info.isIo()
+                            && !info.isStrictDependencies()
+                            && info.getTags().isEmpty()
+                            && info.getPreActions().isEmpty()
+                            && info.getPostActions().isEmpty();
+                }, 2000);
+                MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                Assertions.assertNotNull(info);
+                Assertions.assertFalse(info.isIo());
+                Assertions.assertFalse(info.isStrictDependencies());
+                Assertions.assertTrue(info.getTags().isEmpty());
+                Assertions.assertTrue(info.getPreActions().isEmpty());
+                Assertions.assertTrue(info.getPostActions().isEmpty());
+
+                writeDescMcpJson(descDir, actionKey, "fixed");
+                waitForCondition(() -> {
+                    MetaActionInfo current = getMetaActionInfo(existedMetaActions, actionKey);
+                    return current != null && "fixed".equals(current.getDescription());
+                }, 2000);
+                info = getMetaActionInfo(existedMetaActions, actionKey);
+                Assertions.assertNotNull(info);
+                Assertions.assertEquals("fixed", info.getDescription());
+                Assertions.assertTrue(info.isIo());
+                Assertions.assertTrue(info.isStrictDependencies());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDescMcpIgnoreInvalidFileName(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            String actionKey = "local::desc_ignore";
+            existedMetaActions.put(actionKey, buildMetaActionInfo("base"));
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path descDir = tempDir.resolve("action").resolve("mcp").resolve("desc");
+                Files.createDirectories(descDir);
+
+                Files.writeString(descDir.resolve("local-desc.desc.json"), "{ \"description\": \"bad\" }");
+                Files.writeString(descDir.resolve(actionKey + ".json"), "{ \"description\": \"bad\" }");
+                waitForCondition(() -> existedMetaActions.size() > 1, 500);
+
+                MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                Assertions.assertNotNull(info);
+                Assertions.assertEquals("base", info.getDescription());
+                Assertions.assertTrue(info.isIo());
+                Assertions.assertEquals(1, existedMetaActions.size());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDescMcpNoActionKeyPresent(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path descDir = tempDir.resolve("action").resolve("mcp").resolve("desc");
+                Files.createDirectories(descDir);
+
+                String actionKey = "local::missing_action";
+                writeDescMcpJson(descDir, actionKey, "desc");
+                waitForCondition(() -> existedMetaActions.containsKey(actionKey), 500);
+                Assertions.assertFalse(existedMetaActions.containsKey(actionKey));
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDescMcpRapidCreateDelete(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            String actionKey = "local::desc_rapid";
+            existedMetaActions.put(actionKey, buildMetaActionInfo("base"));
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path descDir = tempDir.resolve("action").resolve("mcp").resolve("desc");
+                Files.createDirectories(descDir);
+
+                writeDescMcpJson(descDir, actionKey, "v1");
+                Files.deleteIfExists(descDir.resolve(actionKey + ".desc.json"));
+
+                waitForCondition(() -> {
+                    MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                    return info != null
+                            && !info.isIo()
+                            && !info.isStrictDependencies()
+                            && info.getTags().isEmpty()
+                            && info.getPreActions().isEmpty()
+                            && info.getPostActions().isEmpty();
+                }, 2000);
+                MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                Assertions.assertNotNull(info);
+                Assertions.assertFalse(info.isIo());
+                Assertions.assertFalse(info.isStrictDependencies());
+                Assertions.assertTrue(info.getTags().isEmpty());
+                Assertions.assertTrue(info.getPreActions().isEmpty());
+                Assertions.assertTrue(info.getPostActions().isEmpty());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDescMcpRapidDeleteCreate(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            String actionKey = "local::desc_rapid_restore";
+            existedMetaActions.put(actionKey, buildMetaActionInfo("base"));
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path descDir = tempDir.resolve("action").resolve("mcp").resolve("desc");
+                Files.createDirectories(descDir);
+
+                writeDescMcpJson(descDir, actionKey, "v1");
+                waitForCondition(() -> {
+                    MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                    return info != null && "v1".equals(info.getDescription());
+                }, 2000);
+
+                Files.deleteIfExists(descDir.resolve(actionKey + ".desc.json"));
+                waitForCondition(() -> {
+                    MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                    return info != null
+                            && !info.isIo()
+                            && !info.isStrictDependencies()
+                            && info.getTags().isEmpty()
+                            && info.getPreActions().isEmpty()
+                            && info.getPostActions().isEmpty();
+                }, 2000);
+
+                writeDescMcpJson(descDir, actionKey, "v2");
+                waitForCondition(() -> {
+                    MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                    return info != null && "v2".equals(info.getDescription());
+                }, 2000);
+                MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                Assertions.assertNotNull(info);
+                Assertions.assertEquals("v2", info.getDescription());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDescMcpDirDeleteRecreate(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            String actionKey = "local::desc_dir_restore";
+            existedMetaActions.put(actionKey, buildMetaActionInfo("base"));
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path descDir = tempDir.resolve("action").resolve("mcp").resolve("desc");
+                Files.createDirectories(descDir);
+
+                writeDescMcpJson(descDir, actionKey, "v1");
+                waitForCondition(() -> {
+                    MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                    return info != null && "v1".equals(info.getDescription());
+                }, 2000);
+
+                Files.deleteIfExists(descDir.resolve(actionKey + ".desc.json"));
+                deleteDirectory(descDir);
+                waitForCondition(() -> {
+                    MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                    return info != null
+                            && !info.isIo()
+                            && !info.isStrictDependencies()
+                            && info.getTags().isEmpty()
+                            && info.getPreActions().isEmpty()
+                            && info.getPostActions().isEmpty();
+                }, 2000);
+
+                Files.createDirectories(descDir);
+                writeDescMcpJson(descDir, actionKey, "v2");
+                waitForCondition(() -> {
+                    MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                    return info != null && "v2".equals(info.getDescription());
+                }, 2000);
+                MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
+                Assertions.assertNotNull(info);
+                Assertions.assertEquals("v2", info.getDescription());
             } finally {
                 executor.shutdownNow();
             }
