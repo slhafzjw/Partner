@@ -1,7 +1,6 @@
 package work.slhaf.partner.core.action.runner;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -1079,22 +1078,28 @@ public class LocalRunnerClient extends RunnerClient {
             private void registerMcpClient(String id, McpClientTransportParams mcpClientTransportParams) {
                 // 如果已存在同名 client，则需要先获取并关闭
                 val old = mcpClients.get(id);
-                if (old != null) {
-                    old.close();
-                }
-
                 val clientTransport = createTransport(mcpClientTransportParams);
                 val timeout = mcpClientTransportParams.timeout;
                 val client = McpClient.sync(clientTransport)
                         .requestTimeout(Duration.ofSeconds(timeout))
                         .clientInfo(new McpSchema.Implementation(id, "PARTNER"))
                         .build();
-                mcpClients.put(id, client);
 
-                for (McpSchema.Tool tool : client.listTools().tools()) {
-                    val metaActionInfo = buildMetaActionInfo(tool);
-                    existedMetaActions.put(id + "::" + tool.name(), metaActionInfo);
+                try {
+                    for (McpSchema.Tool tool : client.listTools().tools()) {
+                        val metaActionInfo = buildMetaActionInfo(tool);
+                        existedMetaActions.put(id + "::" + tool.name(), metaActionInfo);
+                    }
+                    mcpClients.put(id, client);
+
+                    if (old != null) {
+                        old.close();
+                    }
+                } catch (Exception e) {
+                    log.warn("[{}] MCP client init failed, skipped (probably non-stdio-safe)", id, e);
+                    client.close();
                 }
+
             }
 
 
@@ -1105,12 +1110,15 @@ public class LocalRunnerClient extends RunnerClient {
                 info.setResponseSchema(outputSchema == null ? JSONObject.of() : JSONObject.from(outputSchema));
                 info.setParams(tool.inputSchema().properties());
 
-                JSONObject meta = JSONObject.from(tool.meta());
-                info.setIo(meta.getBoolean("io"));
-                info.setPreActions(meta.getList("pre", String.class));
-                info.setPostActions(meta.getList("post", String.class));
-                info.setStrictDependencies(meta.getBoolean("strict"));
-                info.setTags(meta.getList("tag", String.class));
+                val meta = tool.meta();
+                if (meta != null) {
+                    JSONObject metaJson = JSONObject.from(meta);
+                    info.setIo(metaJson.getBoolean("io"));
+                    info.setPreActions(metaJson.getList("pre", String.class));
+                    info.setPostActions(metaJson.getList("post", String.class));
+                    info.setStrictDependencies(metaJson.getBoolean("strict"));
+                    info.setTags(metaJson.getList("tag", String.class));
+                }
                 return info;
             }
 
@@ -1167,7 +1175,7 @@ public class LocalRunnerClient extends RunnerClient {
             private cn.hutool.json.JSONObject readJson(File file) {
                 try {
                     return JSONUtil.readJSONObject(file, StandardCharsets.UTF_8);
-                } catch (IORuntimeException ignored) {
+                } catch (Exception ignored) {
                     return null;
                 }
             }
@@ -1358,7 +1366,7 @@ public class LocalRunnerClient extends RunnerClient {
             protected LocalWatchServiceBuild.EventHandler buildDelete() {
                 return (thisDir, context) -> {
                     val file = context.toFile();
-                    if (!file.isFile() || !file.getName().endsWith(".json")) {
+                    if (!file.getName().endsWith(".json")) {
                         return;
                     }
 

@@ -16,9 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 import static work.slhaf.partner.core.action.runner.LocalRunnerClientTest.Await.waitForCondition;
-import static work.slhaf.partner.core.action.runner.LocalRunnerClientTest.Common.getMetaActionInfo;
+import static work.slhaf.partner.core.action.runner.LocalRunnerClientTest.Common.*;
 import static work.slhaf.partner.core.action.runner.LocalRunnerClientTest.Fs.*;
 
 @Slf4j
@@ -86,6 +87,10 @@ public class LocalRunnerClientTest {
             }
         }
 
+        static void writeCommonMcpConfig(Path filePath, String content) throws IOException {
+            Files.writeString(filePath, content);
+        }
+
     }
 
     @SuppressWarnings("BusyWait")
@@ -105,6 +110,35 @@ public class LocalRunnerClientTest {
         static MetaActionInfo getMetaActionInfo(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions,
                                                 String actionKey) {
             return existedMetaActions.get(actionKey);
+        }
+
+        static boolean hasActionKey(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions,
+                                    Predicate<String> predicate) {
+            return existedMetaActions.keySet().stream().anyMatch(predicate);
+        }
+
+        static String buildCommonMcpConfig(String... serverEntries) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("{\n");
+            for (int i = 0; i < serverEntries.length; i++) {
+                builder.append(serverEntries[i]);
+                if (i < serverEntries.length - 1) {
+                    builder.append(",\n");
+                }
+            }
+            builder.append("\n}\n");
+            return builder.toString();
+        }
+
+        static String buildStdioServerEntry(String id, String packageName) {
+            return "  \"" + id + "\": {\n"
+                    + "    \"command\": \"npx\",\n"
+                    + "    \"args\": [\n"
+                    + "      \"-y\",\n"
+                    + "      \"" + packageName + "\"\n"
+                    + "    ],\n"
+                    + "    \"env\": {}\n"
+                    + "  }";
         }
     }
 
@@ -292,6 +326,94 @@ public class LocalRunnerClientTest {
                 writeDescJson(actionDir, "fixed");
                 waitForCondition(() -> existedMetaActions.containsKey("local::demo_action_invalid"), 2000);
                 Assertions.assertTrue(existedMetaActions.containsKey("local::demo_action_invalid"));
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+    }
+
+    @Nested
+    class CommonMcpTest {
+
+        @Test
+        void testCommonMcpInitialLoad(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+
+            Path mcpDir = tempDir.resolve("action").resolve("mcp");
+            Files.createDirectories(mcpDir);
+            Path configFile = mcpDir.resolve("servers.json");
+            String config = buildCommonMcpConfig(
+                    buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest")
+            );
+            writeCommonMcpConfig(configFile, config);
+
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 20000);
+                Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testCommonMcpCreateModifyDelete(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path mcpDir = tempDir.resolve("action").resolve("mcp");
+                Files.createDirectories(mcpDir);
+                Path configFile = mcpDir.resolve("servers.json");
+
+                String config = buildCommonMcpConfig(
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest")
+                );
+                writeCommonMcpConfig(configFile, config);
+                waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 20000);
+                Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
+
+                String updatedConfig = buildCommonMcpConfig(
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest"),
+                        buildStdioServerEntry("playwright", "@playwright/mcp@latest")
+                );
+                writeCommonMcpConfig(configFile, updatedConfig);
+                waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")), 20000);
+                Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")));
+
+                Files.deleteIfExists(configFile);
+                waitForCondition(() -> !hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 20000);
+                Assertions.assertFalse(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
+                Assertions.assertFalse(hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")));
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testCommonMcpInvalidJsonRecovery(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path mcpDir = tempDir.resolve("action").resolve("mcp");
+                Files.createDirectories(mcpDir);
+                Path configFile = mcpDir.resolve("servers.json");
+
+                writeCommonMcpConfig(configFile, "{ invalid json");
+                waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 2000);
+                Assertions.assertFalse(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
+
+                String config = buildCommonMcpConfig(
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest")
+                );
+                writeCommonMcpConfig(configFile, config);
+                waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 20000);
+                Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
             } finally {
                 executor.shutdownNow();
             }
