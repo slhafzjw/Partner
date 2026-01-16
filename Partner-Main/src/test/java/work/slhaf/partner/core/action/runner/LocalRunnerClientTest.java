@@ -5,16 +5,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.entity.MetaActionType;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -176,6 +175,15 @@ public class LocalRunnerClientTest {
                     + "    ],\n"
                     + "    \"env\": {}\n"
                     + "  }";
+        }
+
+        static MetaAction buildMetaAction(MetaActionType type, String location, String name, Map<String, Object> params) {
+            MetaAction metaAction = new MetaAction();
+            metaAction.setType(type);
+            metaAction.setLocation(location);
+            metaAction.setName(name);
+            metaAction.setParams(params);
+            return metaAction;
         }
     }
 
@@ -756,6 +764,91 @@ public class LocalRunnerClientTest {
                 writeCommonMcpConfig(configFile, config);
                 waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 20000);
                 Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+    }
+
+    @Nested
+    class DoRunTest {
+
+        @Test
+        void testDoRunWithOriginUnknownExt(@TempDir Path tempDir) throws IOException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path script = tempDir.resolve("run");
+                Files.writeString(script, "echo ok\n");
+                MetaAction metaAction = buildMetaAction(MetaActionType.ORIGIN, script.toString(), "run", Map.of());
+                RunnerClient.RunnerResponse response = client.doRun(metaAction);
+                Assertions.assertNotNull(response);
+                Assertions.assertFalse(response.isOk());
+                Assertions.assertEquals("未知文件类型", response.getData());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDoRunWithOriginScriptSuccess(@TempDir Path tempDir) throws IOException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path script = tempDir.resolve("run.sh");
+                Files.writeString(script, "echo ok\n");
+                MetaAction metaAction = buildMetaAction(MetaActionType.ORIGIN, script.toString(), "run", Map.of());
+                RunnerClient.RunnerResponse response = client.doRun(metaAction);
+                Assertions.assertNotNull(response);
+                Assertions.assertTrue(response.isOk());
+                Assertions.assertTrue(response.getData().contains("ok"));
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDoRunWithMcpMissingClient(@TempDir Path tempDir) {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                MetaAction metaAction = buildMetaAction(MetaActionType.MCP, "missing-client", "missing-tool", Map.of());
+                RunnerClient.RunnerResponse response = client.doRun(metaAction);
+                Assertions.assertNotNull(response);
+                Assertions.assertFalse(response.isOk());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDoRunWithMcpLoadedFromCommonConfig(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+
+            Path mcpDir = tempDir.resolve("action").resolve("mcp");
+            Files.createDirectories(mcpDir);
+            Path configFile = mcpDir.resolve("servers.json");
+            String config = buildCommonMcpConfig(
+                    buildStdioServerEntry("playwright", "@playwright/mcp@latest")
+            );
+            writeCommonMcpConfig(configFile, config);
+
+            LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")), 20000);
+                Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")));
+
+                MetaAction metaAction = buildMetaAction(MetaActionType.MCP, "playwright", "browser_navigate", Map.of("url", "https://deepwiki.com/microsoft/vscode"));
+                client.run(metaAction);
+                Assertions.assertNotEquals(MetaAction.ResultStatus.WAITING, metaAction.getResult().getStatus());
             } finally {
                 executor.shutdownNow();
             }

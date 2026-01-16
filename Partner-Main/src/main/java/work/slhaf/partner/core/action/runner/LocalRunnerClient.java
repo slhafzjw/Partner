@@ -222,6 +222,10 @@ public class LocalRunnerClient extends RunnerClient {
             return response;
         }
         String[] commands = SystemExecHelper.buildCommands(ext, metaAction.getParams(), file.getAbsolutePath());
+        if (commands == null || commands.length == 0) {
+            response.setOk(false);
+            response.setData("不支持的文件类型: " + file.getName());
+        }
         SystemExecHelper.Result execResult = SystemExecHelper.exec(commands);
         response.setOk(execResult.isOk());
         response.setData(execResult.getTotal());
@@ -236,7 +240,12 @@ public class LocalRunnerClient extends RunnerClient {
                 .arguments(metaAction.getParams())
                 .build();
         McpSchema.CallToolResult callToolResult = mcpClient.callTool(callToolRequest);
-        response.setOk(callToolResult.isError());
+        val callToolResultError = callToolResult.isError();
+        if (callToolResultError == null) {
+            response.setOk(false);
+        } else {
+            response.setOk(!callToolResultError);
+        }
         response.setData(callToolResult.structuredContent().toString());
         return response;
     }
@@ -1234,7 +1243,7 @@ public class LocalRunnerClient extends RunnerClient {
                 val httpKeys = Set.of("uri", "endpoint", "headers");
                 val httpKey = Set.of("url");
                 val keys = mcp.keySet();
-                val timeout = mcp.getInt("timeout", 10);
+                val timeout = mcp.getInt("timeout", 30);
 
                 if (keys.equals(stdioKeys)) {
                     val command = mcp.getStr("command");
