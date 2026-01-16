@@ -702,6 +702,40 @@ public class LocalRunnerClientTest {
         }
 
         @Test
+        void testCommonMcpRemoveEntryFromConfig(@TempDir Path tempDir) throws IOException, InterruptedException {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                Path mcpDir = tempDir.resolve("action").resolve("mcp");
+                Files.createDirectories(mcpDir);
+                Path configFile = mcpDir.resolve("servers.json");
+
+                String config = buildCommonMcpConfig(
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest"),
+                        buildStdioServerEntry("playwright", "@playwright/mcp@latest")
+                );
+                writeCommonMcpConfig(configFile, config);
+                waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 20000);
+                waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")), 20000);
+                Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
+                Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")));
+
+                String updatedConfig = buildCommonMcpConfig(
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest")
+                );
+                writeCommonMcpConfig(configFile, updatedConfig);
+
+                waitForCondition(() -> !hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")), 20000);
+                Assertions.assertFalse(hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")));
+                Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
         void testCommonMcpInvalidJsonRecovery(@TempDir Path tempDir) throws IOException, InterruptedException {
             ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();

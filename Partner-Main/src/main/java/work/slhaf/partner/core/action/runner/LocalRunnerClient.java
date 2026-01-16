@@ -1269,13 +1269,13 @@ public class LocalRunnerClient extends RunnerClient {
 
             private void checkAndReload(boolean trustCache) {
                 /*
-                    for each file cannot present all mcp configurations,
-                    we need to load all at once, and then compare them with existed records.
-                    we will record existing mcp paramsCacheMap and id-params map for which is changed.
+                for each file cannot present all mcp configurations,
+                we need to load all at once, and then compare them with existed records.
+                we will record existing mcp paramsCacheMap and id-params map for which is changed.
 
-                    recording changedMap only cannot figure out which mcp was deleted,
-                    so existingMcpIdSet attr is required
-                     */
+                recording changedMap only cannot figure out which mcp was deleted,
+                so existingMcpIdSet attr is required
+                */
                 val changedMap = new HashMap<String, McpClientTransportParams>();
                 val existingMcpIdSet = new HashSet<String>();
 
@@ -1349,6 +1349,8 @@ public class LocalRunnerClient extends RunnerClient {
                 // new mcp clients and outdated clients has been updated in above logic
                 // this part focus on removing non-existing mcp
                 mcpClients.keySet().removeIf(id -> !existingMcpIdSet.contains(id));
+                // clear relevant tools' action info
+                existedMetaActions.keySet().removeIf(id -> !existingMcpIdSet.contains(id.split("::")[0]));
             }
 
             private boolean fileChanged(File file, McpConfigFileRecord fileRecord) {
