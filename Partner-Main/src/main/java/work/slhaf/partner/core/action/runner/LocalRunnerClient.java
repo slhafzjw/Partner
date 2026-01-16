@@ -61,6 +61,9 @@ public class LocalRunnerClient extends RunnerClient {
     private final String MCP_SERVER_PATH;
     private final String MCP_DESC_PATH;
 
+    private final String MCP_NAME_DESC = "mcp-desc";
+    private final String MCP_NAME_DYNAMIC = "mcp-dynamic";
+
     /**
      * 存储包括 DescMcp、DynamicActionMcp、CommonMcp 在内的所有 MCP Server 对应的客户端
      * <br/>
@@ -119,7 +122,7 @@ public class LocalRunnerClient extends RunnerClient {
 
     private void registerCommonMcp() throws IOException {
         val ctx = new WatchContext(Path.of(MCP_SERVER_PATH), FileSystems.getDefault().newWatchService());
-        val common = new LocalWatchEventProcessor.Common(existedMetaActions, mcpClients, ctx);
+        val common = new LocalWatchEventProcessor.Common(existedMetaActions, mcpClients, mcpClients.get(MCP_NAME_DESC), ctx);
         new LocalWatchServiceBuild.BuildRegistry(ctx)
                 .initialLoad(common.buildLoad())
                 .registerCreate(common.buildCreate())
@@ -141,7 +144,7 @@ public class LocalRunnerClient extends RunnerClient {
                 .build();
         registerDescMcpWatch();
         log.info("DescMcp 文件监听注册完毕");
-        registerMcpClient("mcp-desc", pair.clientSide(), 10);
+        registerMcpClient(MCP_NAME_DESC, pair.clientSide(), 10);
         log.info("DescMcp 注册完毕");
 
     }
@@ -173,7 +176,7 @@ public class LocalRunnerClient extends RunnerClient {
         // 后续的动态更新通过对应的 event 事件触发
         registerDynamicActionMcpWatch();
         log.info("DynamicActionMcp 文件监听注册完毕");
-        registerMcpClient("dynamic-action", pair.clientSide(), 10);
+        registerMcpClient(MCP_NAME_DYNAMIC, pair.clientSide(), 10);
         log.info("DynamicActionMcp 注册完毕");
     }
 
@@ -1069,15 +1072,17 @@ public class LocalRunnerClient extends RunnerClient {
 
             private final Map<String, McpSyncClient> mcpClients;
             private final Map<File, McpConfigFileRecord> mcpConfigFileCache = new HashMap<>();
+            private final McpSyncClient descClient;
 
             @SuppressWarnings("BooleanMethodIsAlwaysInverted")
             private boolean normalFile(File file) {
                 return file.exists() && file.isFile() && file.getName().endsWith(".json");
             }
 
-            private Common(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, Map<String, McpSyncClient> mcpClients, WatchContext ctx) {
+            private Common(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, Map<String, McpSyncClient> mcpClients, McpSyncClient descClient, WatchContext ctx) {
                 super(existedMetaActions, ctx);
                 this.mcpClients = mcpClients;
+                this.descClient = descClient;
             }
 
             /**
@@ -1098,7 +1103,7 @@ public class LocalRunnerClient extends RunnerClient {
 
                 try {
                     for (McpSchema.Tool tool : client.listTools().tools()) {
-                        val metaActionInfo = buildMetaActionInfo(tool);
+                        val metaActionInfo = buildMetaActionInfo(id, tool);
                         existedMetaActions.put(id + "::" + tool.name(), metaActionInfo);
                     }
                     mcpClients.put(id, client);
@@ -1113,8 +1118,32 @@ public class LocalRunnerClient extends RunnerClient {
 
             }
 
+            /**
+             * 构建 MetaActionInfo
+             *
+             * @param id   MCP Client id
+             * @param tool 待构建 MetaActionInfo 的 MCP Tool
+             * @return MetaActionInfo 信息
+             */
+            private @NotNull MetaActionInfo buildMetaActionInfo(String id, McpSchema.Tool tool) {
+                // 先检查是否存在对应的描述文件
+                val toolName = tool.name(); //格式: mcpName::toolName
+                for (McpSchema.Resource resource : descClient.listResources().resources()) {
+                    val resourceName = resource.name();
+                    if (resourceName.equals(toolName) && resourceName.split("::")[0].equals(id)) {
+                        val resourceContent = descClient.readResource(resource).contents().getFirst();
+                        if (resourceContent instanceof McpSchema.TextResourceContents r) {
+                            try {
+                                return JSONObject.parseObject(r.text(), MetaActionInfo.class);
+                            } catch (Exception e) {
+                                log.error("序列化描述文件资源失败", e);
+                                log.error("序列化描述文件资源失败, uri: {}", r.uri());
+                                log.error("序列化描述文件资源失败, text: {}", r.text());
+                            }
+                        }
+                    }
+                }
 
-            private @NotNull MetaActionInfo buildMetaActionInfo(McpSchema.Tool tool) {
                 MetaActionInfo info = new MetaActionInfo();
                 info.setDescription(tool.description());
                 Map<String, Object> outputSchema = tool.outputSchema();
