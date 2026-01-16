@@ -98,7 +98,7 @@ public abstract class RunnerClient {
     public abstract JSONObject listSysDependencies();
 
     @Data
-    protected static class RunnerResponse {
+    public static class RunnerResponse {
         private boolean ok;
         private String data;
     }
