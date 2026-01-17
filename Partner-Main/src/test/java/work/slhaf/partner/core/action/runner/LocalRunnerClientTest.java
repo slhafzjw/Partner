@@ -828,6 +828,21 @@ public class LocalRunnerClientTest {
         }
 
         @Test
+        void testDoRunViaRunnerClient(@TempDir Path tempDir) {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            RunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                MetaAction metaAction = buildMetaAction(MetaActionType.MCP, "missing-client", "missing-tool", Map.of());
+                client.run(metaAction);
+                Assertions.assertNotNull(metaAction.getResult().getData());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
         void testDoRunWithMcpLoadedFromCommonConfig(@TempDir Path tempDir) throws IOException, InterruptedException {
             ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
