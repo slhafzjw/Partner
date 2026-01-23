@@ -55,6 +55,12 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
         runnerClient = actionCapability.runnerClient();
     }
 
+    /**
+     * 执行行动
+     *
+     * @param input ActionExecutor 输入内容
+     * @return 无返回，执行结果回写至 input 内部携带的 actionData 中
+     */
     @Override
     public Void execute(ActionExecutorInput input) {
         List<ImmediateActionData> immediateActions = input.getImmediateActions();
@@ -82,14 +88,14 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                         }
                         List<MetaAction> metaActions = actionChain.get(order);
                         for (MetaAction metaAction : metaActions) {
-                            // 根据io类型放入合适的列表
+                            // 根据 io 类型放入合适的列表
                             if (metaAction.isIo()) {
                                 virtual.add(metaAction);
                             } else {
                                 platform.add(metaAction);
                             }
                         }
-                        // 使用phaser来承担同组的动态任务新增
+                        // 使用 phaser 来承担同组的动态任务新增
                         runGroupAction(virtual, userId, actionData, virtualExecutor, phaserRecord);
                         runGroupAction(platform, userId, actionData, platformExecutor, phaserRecord);
                         phaser.arriveAndAwaitAdvance();
@@ -133,7 +139,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     do {
                         runnerClient.run(action);
                         MetaAction.Result result = action.getResult();
-                        // 该循环对应LLM的调整参数后重试
+                        // 该循环对应 LLM 的调整参数后重试
                         if (!result.getStatus().equals(ResultStatus.SUCCESS)) {
                             // LLM决策是重构参数、执行自对话反思、还是选择向用户求助(通过cognationCore暴露方法，可能需要修改其他模块以进行适应)，仅重构参数时无需结束当前循环
                             // 若使用Phaser作为执行线程与反思、求助等调用流程的同步协调，应当需要额外维护Phaser全局字段，获取到反思结果或者用户反馈后，
