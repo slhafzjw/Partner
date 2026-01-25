@@ -2,7 +2,6 @@ package work.slhaf.partner.module.modules.action.dispatcher.executor.entity;
 
 import lombok.Data;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.action.entity.PhaserRecord;
 
 import java.util.List;
 import java.util.Map;
@@ -15,5 +14,4 @@ public class RepairerInput {
     private Map<String, Object> params;
     private String actionDescription;
     private List<HistoryAction> historyActionResults;
-    private PhaserRecord phaserRecord;
 }

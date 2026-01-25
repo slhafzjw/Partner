@@ -835,7 +835,7 @@ public class LocalRunnerClientTest {
 
             try {
                 MetaAction metaAction = buildMetaAction(MetaActionType.MCP, "missing-client", "missing-tool", Map.of());
-                client.run(metaAction);
+                client.submit(metaAction);
                 Assertions.assertNotNull(metaAction.getResult().getData());
             } finally {
                 executor.shutdownNow();
@@ -862,7 +862,7 @@ public class LocalRunnerClientTest {
                 Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")));
 
                 MetaAction metaAction = buildMetaAction(MetaActionType.MCP, "playwright", "browser_navigate", Map.of("url", "https://deepwiki.com/microsoft/vscode"));
-                client.run(metaAction);
+                client.submit(metaAction);
                 Assertions.assertNotEquals(MetaAction.ResultStatus.WAITING, metaAction.getResult().getStatus());
             } finally {
                 executor.shutdownNow();

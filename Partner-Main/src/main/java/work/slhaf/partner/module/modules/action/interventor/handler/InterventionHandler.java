@@ -155,7 +155,7 @@ public class InterventionHandler extends AgentRunningSubModule<HandlerInput, Voi
                     executor = action.isIo() ? virtualExecutor : platformExecutor;
                     executor.execute(() -> {
                         try {
-                            runnerClient.run(action);
+                            runnerClient.submit(action);
                         } finally {
                             phaser.arriveAndDeregister();
                         }

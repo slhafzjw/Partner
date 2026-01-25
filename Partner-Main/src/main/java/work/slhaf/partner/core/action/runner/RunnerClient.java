@@ -46,6 +46,8 @@ public abstract class RunnerClient {
 
     protected final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions;
     protected final ExecutorService executor;
+    //TODO 仍可提供内部 MCP，但调用方式需要结合 AgentContext来获取，否则生命周期不合
+    protected McpStatelessAsyncServer innerMcpServer;
 
     /**
      * ActionCore 将注入虚拟线程池
@@ -62,7 +64,7 @@ public abstract class RunnerClient {
     /**
      * 执行行动程序
      */
-    public void run(MetaAction metaAction) {
+    public void submit(MetaAction metaAction) {
         // 获取已存在行动列表
         Result result = metaAction.getResult();
         if (!result.getStatus().equals(ResultStatus.WAITING)) {

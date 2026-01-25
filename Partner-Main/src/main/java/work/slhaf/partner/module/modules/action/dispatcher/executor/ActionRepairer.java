@@ -109,7 +109,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
             return result;
         }
 
-        runnerClient.run(tempAction);
+        runnerClient.submit(tempAction);
         // 根据 tempAction 的执行状态设置修复结果
         Result actionResult = tempAction.getResult();
         if (actionResult.getStatus() != ResultStatus.SUCCESS) {
@@ -140,7 +140,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
             executor = action.isIo() ? virtual : platform;
             executor.execute(() -> {
                 try {
-                    runnerClient.run(action);
+                    runnerClient.submit(action);
                     result.getFixedData().add(action.getResult().getData());
                 } catch (Exception e) {
                     log.error("行动单元执行失败: {}", key, e);
