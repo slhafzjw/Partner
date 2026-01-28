@@ -1,9 +1,9 @@
 package work.slhaf.partner.core.action.entity;
 
-import cn.hutool.json.JSONObject;
 import lombok.Data;
+import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.HistoryAction;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +37,7 @@ public abstract class ActionData {
      * 行动结果
      */
     protected String result;
-    protected List<JSONObject> history = new ArrayList<>();
+    protected Map<Integer, List<HistoryAction>> history = new HashMap<>();
     /**
      * 修复上下文
      */

@@ -112,6 +112,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
 
     private Runnable buildMataActionTask(MetaAction metaAction, PhaserRecord phaserRecord, String userId) {
         return () -> {
+            val actionKey = metaAction.getKey();
             try {
                 val result = metaAction.getResult();
                 do {
@@ -124,6 +125,13 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     if (extractorResult.isOk()) {
                         metaAction.setParams(extractorResult.getParams());
                         runnerClient.submit(metaAction);
+                        val historyAction = new HistoryAction();
+                        historyAction.setActionKey(actionKey);
+                        historyAction.setDescription(actionCapability.loadMetaActionInfo(actionKey).getDescription());
+                        historyAction.setResult(metaAction.getResult().getData());
+                        actionData.getHistory()
+                                .computeIfAbsent(actionData.getExecutingStage(), integer -> new ArrayList<>())
+                                .add(historyAction);
                     } else {
                         val repairerInput = assemblyHelper.buildRepairerInput(historyActionResults, metaAction, userId);
                         val repairerResult = actionRepairer.execute(repairerInput);
@@ -150,7 +158,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                 // 内部的行动池已经足以承担这个功能，但这也就意味着行动池或许需要考虑特殊的序列化形式避免内存占用过高,
                 // 同时也需要在某些模块执行时加上行动结果的挑取作为输入内容
             } catch (Exception e) {
-                log.error("Action executing failed: {}", metaAction.getKey(), e);
+                log.error("Action executing failed: {}", actionKey, e);
             } finally {
                 phaserRecord.phaser().arriveAndDeregister();
             }
