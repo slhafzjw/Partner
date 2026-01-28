@@ -18,7 +18,6 @@ import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 
@@ -92,8 +91,8 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     }
                     phaser.awaitAdvance(phase);
 
-                    // TODO 进行行动链修正
-                    val correctorInput = assemblyHelper.buildCorrectorInput();
+                    // 针对行动链进行修正，修正需要传入执行历史、行动目标等内容
+                    val correctorInput = assemblyHelper.buildCorrectorInput(actionData, userId);
                     actionCorrector.execute(correctorInput);
                 } while (actionChain.size() > ++stageCount);
 
@@ -194,8 +193,17 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
             return input;
         }
 
-        private CorrectorInput buildCorrectorInput() {
-            return null;
+        private CorrectorInput buildCorrectorInput(ImmediateActionData actionData, String userId) {
+            return CorrectorInput.builder()
+                    .tendency(actionData.getTendency())
+                    .source(actionData.getSource())
+                    .reason(actionData.getReason())
+                    .description(actionData.getDescription())
+                    .history(actionData.getHistory().get(actionData.getExecutingStage()))
+                    .status(actionData.getStatus())
+                    .recentMessages(cognationCapability.getChatMessages())
+                    .activatedSlices(memoryCapability.getActivatedSlices(userId))
+                    .build();
         }
     }
 
