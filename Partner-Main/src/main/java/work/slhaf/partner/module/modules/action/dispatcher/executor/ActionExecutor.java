@@ -85,11 +85,12 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     actionData.setExecutingStage(executingStage);
 
                     val metaActions = actionChain.get(executingStage);
-                    phaser.bulkRegister(metaActions.size());
+                    val phase = phaser.bulkRegister(metaActions.size());
                     for (MetaAction metaAction : metaActions) {
                         val executor = metaAction.isIo() ? virtualExecutor : platformExecutor;
                         executor.execute(buildMataActionTask(metaAction, phaserRecord, userId));
                     }
+                    phaser.awaitAdvance(phase);
 
                     // TODO 进行行动链修正
                     val correctorInput = assemblyHelper.buildCorrectorInput();
