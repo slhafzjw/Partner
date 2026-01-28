@@ -117,8 +117,9 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                 val result = metaAction.getResult();
                 do {
                     val actionData = phaserRecord.actionData();
-                    val historyActionResults = assemblyHelper.getHistoryActionResults(actionData);
-                    val additionalContext = actionData.getAdditionalContext().get(actionData.getExecutingStage());
+                    val executingStage = actionData.getExecutingStage();
+                    val historyActionResults = actionData.getHistory().get(executingStage);
+                    val additionalContext = actionData.getAdditionalContext().get(executingStage);
                     val extractorInput = assemblyHelper.buildExtractorInput(metaAction, userId, historyActionResults, additionalContext);
                     val extractorResult = paramsExtractor.execute(extractorInput);
 
@@ -130,7 +131,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                         historyAction.setDescription(actionCapability.loadMetaActionInfo(actionKey).getDescription());
                         historyAction.setResult(metaAction.getResult().getData());
                         actionData.getHistory()
-                                .computeIfAbsent(actionData.getExecutingStage(), integer -> new ArrayList<>())
+                                .computeIfAbsent(executingStage, integer -> new ArrayList<>())
                                 .add(historyAction);
                     } else {
                         val repairerInput = assemblyHelper.buildRepairerInput(historyActionResults, metaAction, userId);
@@ -191,25 +192,6 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
             input.setHistoryActionResults(historyActionResults);
             input.setAdditionalContext(additionalContext);
             return input;
-        }
-
-        private List<HistoryAction> getHistoryActionResults(ActionData actionData) {
-            int executingStage = actionData.getExecutingStage();
-            if (executingStage <= 0) {
-                return new ArrayList<>();
-            }
-            Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
-            // executingStage 是当前正在执行的阶段，所以只需要获取到前一阶段的结果
-            return actionChain.get(executingStage - 1).stream()
-                    .map(metaAction -> {
-                        HistoryAction historyAction = new HistoryAction();
-                        historyAction.setActionKey(metaAction.getKey());
-                        historyAction
-                                .setDescription(
-                                        actionCapability.loadMetaActionInfo(metaAction.getKey()).getDescription());
-                        historyAction.setResult(metaAction.getResult().getData());
-                        return historyAction;
-                    }).toList();
         }
 
         private CorrectorInput buildCorrectorInput() {
