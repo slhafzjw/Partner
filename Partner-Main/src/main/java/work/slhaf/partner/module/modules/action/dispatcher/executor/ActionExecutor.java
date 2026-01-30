@@ -94,7 +94,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     // 针对行动链进行修正，修正需要传入执行历史、行动目标等内容
                     val correctorInput = assemblyHelper.buildCorrectorInput(actionData, userId);
                     val correctorResult = actionCorrector.execute(correctorInput);
-                    // TODO 修正内容如何生效？以何种形式生效？
+                    actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), phaserRecord);
                 } while (actionChain.size() > ++stageCount);
 
                 // 结束
