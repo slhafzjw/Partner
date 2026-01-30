@@ -1,5 +1,7 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor;
 
+import com.alibaba.fastjson2.JSONObject;
+import lombok.val;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
@@ -13,13 +15,33 @@ import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.Corre
 public class ActionCorrector extends AgentRunningSubModule<CorrectorInput, CorrectorResult> implements ActivateModel {
 
     @Override
-    public CorrectorResult execute(CorrectorInput data) {
-        return null;
+    public CorrectorResult execute(CorrectorInput input) {
+        val prompt = buildPrompt(input);
+        val chatResponse = singleChat(prompt);
+        return JSONObject.parseObject(chatResponse.getMessage(), CorrectorResult.class);
+    }
+
+    private String buildPrompt(CorrectorInput input) {
+        val prompt = new JSONObject();
+        prompt.put("[行动来源]", input.getSource());
+        prompt.put("[行动倾向]", input.getTendency());
+        prompt.put("[行动描述]", input.getDescription());
+        prompt.put("[行动原因]", input.getReason());
+
+        val messages = prompt.putArray("[近期对话]");
+        messages.addAll(input.getRecentMessages());
+
+        val memory = prompt.putArray("[已激活记忆]");
+        memory.addAll(input.getActivatedSlices());
+
+        val history = prompt.putArray("[已执行情况]");
+        history.addAll(input.getHistory());
+        return prompt.toJSONString();
     }
 
     @Override
     public String modelKey() {
-        return "";
+        return "action_corrector";
     }
 
     @Override
