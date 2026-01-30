@@ -28,6 +28,6 @@ public class EvaluatorResult {
          * 描述信息(包括通过、失败原因)
          */
         private String description;
-        private List<MetaIntervention> interventionData;
+        private List<MetaIntervention> metaInterventionList;
     }
 }
