@@ -56,7 +56,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
     @InjectModule
     private DynamicActionGenerator dynamicActionGenerator;
 
-    private AssembleHelper assembleHelper = new AssembleHelper();
+    private final AssemblyHelper assemblyHelper = new AssemblyHelper();
     private SandboxRunnerClient runnerClient;
 
     @Init
@@ -68,7 +68,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
     public RepairerResult execute(RepairerInput data) {
         RepairerResult result;
         try {
-            String prompt = assembleHelper.buildPrompt(data, null);
+            String prompt = assemblyHelper.buildPrompt(data, null);
             ChatResponse response = this.singleChat(prompt);
             RepairerData repairerData = JSONObject.parseObject(response.getMessage(), RepairerData.class);
             result = switch (repairerData.getRepairerType()) {
@@ -82,7 +82,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
             if (!repairerData.getRepairerType().equals(RepairerType.USER_INTERACTION)
                     && result.getStatus().equals(RepairerResult.RepairerStatus.FAILED)) {
                 log.warn("常规行动修复失败，将尝试自对话通道");
-                prompt = assembleHelper.buildPrompt(data, "常规行动修复失败，请尝试通过自对话通道获取必要的信息以完成行动参数的修复");
+                prompt = assemblyHelper.buildPrompt(data, "常规行动修复失败，请尝试通过自对话通道获取必要的信息以完成行动参数的修复");
                 response = this.singleChat(prompt);
                 repairerData = JSONObject.parseObject(response.getMessage(), RepairerData.class);
                 handleUserInteraction(repairerData.getData());
@@ -194,8 +194,8 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
     }
 
     @SuppressWarnings("InnerClassMayBeStatic")
-    private class AssembleHelper {
-        private AssembleHelper() {
+    private class AssemblyHelper {
+        private AssemblyHelper() {
         }
 
         private String buildPrompt(RepairerInput data, String specialInstruction) {
