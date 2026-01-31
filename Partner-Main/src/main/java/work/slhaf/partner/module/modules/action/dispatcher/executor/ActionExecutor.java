@@ -155,9 +155,6 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                         }
                     }
                 } while (result.getStatus().equals(MetaAction.ResultStatus.WAITING));
-                // TODO 执行结果不再需要写入特定位置，当前的 ActionCapability
-                // 内部的行动池已经足以承担这个功能，但这也就意味着行动池或许需要考虑特殊的序列化形式避免内存占用过高,
-                // 同时也需要在某些模块执行时加上行动结果的挑取作为输入内容
             } catch (Exception e) {
                 log.error("Action executing failed: {}", actionKey, e);
             } finally {
