@@ -17,7 +17,7 @@ import work.slhaf.partner.core.action.ActionCore.ExecutorType;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
 import work.slhaf.partner.core.action.entity.MetaAction.ResultStatus;
-import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
+import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorInput;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorResult;
@@ -57,7 +57,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
     private DynamicActionGenerator dynamicActionGenerator;
 
     private final AssemblyHelper assemblyHelper = new AssemblyHelper();
-    private SandboxRunnerClient runnerClient;
+    private RunnerClient runnerClient;
 
     @Init
     void init() {

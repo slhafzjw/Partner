@@ -7,7 +7,7 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
-import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
+import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
 
 import java.util.List;
@@ -49,7 +49,7 @@ public interface ActionCapability {
 
     boolean checkExists(String... actionKeys);
 
-    SandboxRunnerClient runnerClient();
+    RunnerClient runnerClient();
 
     <T> void handleInterventions(List<MetaIntervention> interventions, T data);
 }
