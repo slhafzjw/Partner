@@ -18,8 +18,12 @@ import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @AgentSubModule
@@ -70,35 +74,77 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                 }
                 // 注册执行中行动
                 val phaser = new Phaser();
-                phaser.register();
                 val phaserRecord = actionCapability.putPhaserRecord(phaser, actionData);
                 actionData.setStatus(ActionData.ActionStatus.EXECUTING);
 
                 // 开始执行
-                val actionChain = actionData.getActionChain();
-                int stageCount = 0;
-                do {
-                    val orderList = new ArrayList<>(actionChain.keySet());
-                    orderList.sort(Integer::compareTo);
-                    val executingStage = orderList.get(stageCount);
-                    actionData.setExecutingStage(executingStage);
+                val stageCursor = new Object() {
+                    final Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
+                    int stageCount;
+                    boolean executingStageUpdated;
+                    boolean stageCountUpdated;
 
-                    val metaActions = actionChain.get(executingStage);
-                    val phase = phaser.bulkRegister(metaActions.size());
-                    for (MetaAction metaAction : metaActions) {
-                        val executor = metaAction.isIo() ? virtualExecutor : platformExecutor;
-                        executor.execute(buildMataActionTask(metaAction, phaserRecord, userId));
+                    void init() {
+                        stageCount = 0;
+                        executingStageUpdated = false;
+                        stageCountUpdated = false;
+                        update();
                     }
-                    phaser.awaitAdvance(phase);
+
+                    void requestAdvance() {
+                        if (!stageCountUpdated) {
+                            stageCount++;
+                            stageCountUpdated = true;
+                        }
+
+                        if (stageCount < actionChain.size() && !executingStageUpdated) {
+                            update();
+                            executingStageUpdated = true;
+                        }
+                    }
+
+                    boolean next() {
+                        executingStageUpdated = false;
+                        stageCountUpdated = false;
+                        return stageCount < actionChain.size();
+                    }
+
+                    void update() {
+                        val orderList = new ArrayList<>(actionChain.keySet());
+                        orderList.sort(Integer::compareTo);
+                        actionData.setExecutingStage(orderList.get(stageCount));
+                    }
+                };
+
+                stageCursor.init();
+                do {
+                    val actionChain = actionData.getActionChain();
+                    val metaActions = actionChain.get(actionData.getExecutingStage());
+
+                    val listeningRecord = executeAndListening(metaActions, phaserRecord, userId);
+                    phaser.awaitAdvance(listeningRecord.phase());
+
+                    // synchronized 同步防止 accepting 循环间、phase guard 判定后发生 stage 推进
+                    // 导致新行动的 phaser 投放阶段错乱无法阻塞的场景
+                    // 该 synchronized 将阶段推进与 accepting 监听 loop 捆绑为互斥的原子事件，避免了细粒度的 phaser 阶段竞态问题
+                    synchronized (listeningRecord.accepting()) {
+                        listeningRecord.accepting().set(false);
+
+                        // 立即尝试推进，本次推进中，如果前方仍有未执行 stage，将执行一次阶段推进
+                        stageCursor.requestAdvance();
+                    }
 
                     // 针对行动链进行修正，修正需要传入执行历史、行动目标等内容
                     val correctorInput = assemblyHelper.buildCorrectorInput(actionData, userId);
                     val correctorResult = actionCorrector.execute(correctorInput);
-                    actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), phaserRecord);
-                } while (actionChain.size() > ++stageCount);
+                    actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), actionData);
+
+                    // 第二次尝试进行阶段推进，本次负责补充上一次在不存在 stage时，但 corrector 执行期间发生了 actionChain 的插入事件
+                    // 如果第一次已经推进完毕，本次将会跳过
+                    stageCursor.requestAdvance();
+                } while (stageCursor.next());
 
                 // 结束
-                phaser.arriveAndDeregister();
                 actionCapability.removePhaserRecord(phaser);
                 if (actionData.getStatus() != ActionData.ActionStatus.FAILED) {
                     actionData.setStatus(ActionStatus.SUCCESS);
@@ -110,7 +156,58 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
 
     }
 
+    private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, PhaserRecord phaserRecord, String userId) {
+        AtomicBoolean accepting = new AtomicBoolean(true);
+        AtomicInteger cursor = new AtomicInteger();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        val phaser = phaserRecord.phaser();
+        val phase = phaser.register();
+        platformExecutor.execute(() -> {
+            boolean first = true;
+            while (accepting.get()) {
+                synchronized (accepting) {
+                    MetaAction next = null;
+
+                    synchronized (metaActions) {
+                        if (cursor.get() < metaActions.size()) {
+                            next = metaActions.get(cursor.getAndIncrement());
+                        }
+                    }
+
+                    if (next == null) {
+                        Thread.onSpinWait();
+                        continue;
+                    }
+
+                    if (phaser.getPhase() != phase) {
+                        metaActions.remove(next);
+                        log.warn("行动阶段已推进，丢弃该行动: {}", next);
+                        continue;
+                    }
+
+                    ExecutorService executor = next.isIo() ? virtualExecutor : platformExecutor;
+                    executor.execute(buildMataActionTask(next, phaserRecord, userId));
+
+                    if (first) {
+                        phaser.arriveAndDeregister();
+                        latch.countDown();
+                        first = false;
+                    }
+                }
+            }
+        });
+        try {
+            // 确保执行一次，防止没来得及注册任务就已经结束
+            latch.await();
+        } catch (InterruptedException ignored) {
+        }
+        return new MetaActionsListeningRecord(accepting, phase);
+    }
+
     private Runnable buildMataActionTask(MetaAction metaAction, PhaserRecord phaserRecord, String userId) {
+        val phaser = phaserRecord.phaser();
+        phaser.register();
         return () -> {
             val actionKey = metaAction.getKey();
             try {
@@ -158,9 +255,12 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
             } catch (Exception e) {
                 log.error("Action executing failed: {}", actionKey, e);
             } finally {
-                phaserRecord.phaser().arriveAndDeregister();
+                phaser.arriveAndDeregister();
             }
         };
+    }
+
+    private record MetaActionsListeningRecord(AtomicBoolean accepting, int phase) {
     }
 
     @SuppressWarnings("InnerClassMayBeStatic")

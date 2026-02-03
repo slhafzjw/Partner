@@ -9,6 +9,7 @@ import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
+import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.common.module.PreRunningModule;
@@ -94,7 +95,7 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
 
     }
 
-    private void handleInterventions(List<EvaluatedInterventionData> interventionDataList, Map<String, ?> interventionDataMap) {
+    private void handleInterventions(List<EvaluatedInterventionData> interventionDataList, Map<String, ActionData> interventionDataMap) {
         val executor = actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM);
         executor.execute(() -> {
             for (EvaluatedInterventionData interventionData : interventionDataList) {

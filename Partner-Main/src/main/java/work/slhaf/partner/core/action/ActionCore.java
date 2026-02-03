@@ -278,12 +278,12 @@ public class ActionCore extends PartnerCore<ActionCore> {
         }
 
         // 加锁确保同步
-        synchronized (actionData) {
-            applyInterventions(interventions, actionData, phaser);
+        synchronized (actionData.getStatus()) {
+            applyInterventions(interventions, actionData);
         }
     }
 
-    private void applyInterventions(List<MetaIntervention> interventions, ActionData actionData, Phaser phaser) {
+    private void applyInterventions(List<MetaIntervention> interventions, ActionData actionData) {
         boolean rebuildCleanTag = false;
 
         interventions.sort(Comparator.comparingInt(MetaIntervention::getOrder));
@@ -296,7 +296,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
 
             switch (intervention.getType()) {
                 case InterventionType.APPEND -> handleAppend(actionData, intervention.getOrder(), actions);
-                case InterventionType.INSERT -> handleInsert(actionData, intervention.getOrder(), actions, phaser);
+                case InterventionType.INSERT -> handleInsert(actionData, intervention.getOrder(), actions);
                 case InterventionType.DELETE -> handleDelete(actionData, intervention.getOrder(), actions);
                 case InterventionType.CANCEL -> handleCancel(actionData);
                 case InterventionType.REBUILD -> {
@@ -322,38 +322,13 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     /**
-     * 在未进入执行阶段和正处于行动阶段的行动单元组插入新的行动, 如果插入位置正处于执行阶段, 则启动执行线程, 通过 Phaser 确保同步
+     * 在未进入执行阶段和正处于行动阶段的行动单元组插入新的行动
      */
-    private void handleInsert(ActionData actionData, int order, List<MetaAction> actions, Phaser phaser) {
+    private void handleInsert(ActionData actionData, int order, List<MetaAction> actions) {
         if (order < actionData.getExecutingStage())
             return;
 
-        phaser.register();
-        try {
-            Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
-            actionChain.put(order, actions);
-
-            if (order == actionData.getExecutingStage()) {
-                ExecutorService virtualExecutor = this.getExecutor(ExecutorType.VIRTUAL);
-                ExecutorService platformExecutor = this.getExecutor(ExecutorType.PLATFORM);
-                ExecutorService executor;
-                phaser.bulkRegister(actions.size());
-
-                for (MetaAction action : actions) {
-                    executor = action.isIo() ? virtualExecutor : platformExecutor;
-                    executor.execute(() -> {
-                        try {
-                            runnerClient.submit(action);
-                        } finally {
-                            phaser.arriveAndDeregister();
-                        }
-                    });
-                }
-
-            }
-        } finally {
-            phaser.arriveAndDeregister();
-        }
+        actionData.getActionChain().computeIfAbsent(order, k -> new ArrayList<>()).addAll(actions);
     }
 
     private void handleDelete(ActionData actionData, int order, List<MetaAction> actions) {
