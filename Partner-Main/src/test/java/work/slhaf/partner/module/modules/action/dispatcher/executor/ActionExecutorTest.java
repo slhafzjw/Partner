@@ -190,8 +190,9 @@ class ActionExecutorTest {
     // 场景6：B7.2(失败) -> repairer OK -> B7(成功)。目的：验证修复后成功与上下文追加。
     @Test
     void execute_extractorFail_thenRepairOk_thenSuccess() {
-        ExecutorService directExecutor = new DirectExecutorService();
-        stubExecutors(directExecutor, directExecutor);
+        ExecutorService platformExecutor = Executors.newFixedThreadPool(4);
+        ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateActionData actionData = buildActionData(singleStageChain(false));
         ActionExecutorInput input = buildInput("u1", actionData);
@@ -216,8 +217,12 @@ class ActionExecutorTest {
         actionExecutor.init();
         actionExecutor.execute(input);
 
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ignored) {
+        }
         assertEquals(1, actionData.getAdditionalContext().get(0).size());
-        verify(runnerClient, times(1)).submit(any(MetaAction.class));
+        verify(runnerClient, timeout(5000).times(1)).submit(any(MetaAction.class));
     }
 
     // 场景7：B7.2(失败) -> repairer FAILED。目的：验证失败分支不提交外部执行。
