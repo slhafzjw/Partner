@@ -67,11 +67,11 @@ class ActionExecutorTest {
 
     @BeforeEach
     void setUp() {
-        when(cognationCapability.getChatMessages()).thenReturn(Collections.emptyList());
-        when(memoryCapability.getActivatedSlices(anyString())).thenReturn(Collections.emptyList());
-        when(actionCapability.putPhaserRecord(any(Phaser.class), any(ActionData.class)))
+        lenient().when(cognationCapability.getChatMessages()).thenReturn(Collections.emptyList());
+        lenient().when(memoryCapability.getActivatedSlices(anyString())).thenReturn(Collections.emptyList());
+        lenient().when(actionCapability.putPhaserRecord(any(Phaser.class), any(ActionData.class)))
                 .thenAnswer(inv -> new PhaserRecord(inv.getArgument(0), inv.getArgument(1)));
-        when(actionCapability.loadMetaActionInfo(anyString())).thenAnswer(inv -> {
+        lenient().when(actionCapability.loadMetaActionInfo(anyString())).thenAnswer(inv -> {
             MetaActionInfo info = new MetaActionInfo();
             info.setDescription("desc");
             info.setParams(Collections.emptyMap());
@@ -79,8 +79,8 @@ class ActionExecutorTest {
         });
         CorrectorResult correctorResult = new CorrectorResult();
         correctorResult.setMetaInterventionList(Collections.emptyList());
-        when(actionCorrector.execute(any())).thenReturn(correctorResult);
-        doNothing().when(actionCapability).handleInterventions(any(), any());
+        lenient().when(actionCorrector.execute(any())).thenReturn(correctorResult);
+        lenient().doNothing().when(actionCapability).handleInterventions(any(), any());
     }
 
     // 场景1：B1 -> B3 -> B4 -> B7(成功) -> B10。目的：验证正常主路径与资源清理。
