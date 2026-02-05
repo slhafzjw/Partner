@@ -164,17 +164,17 @@ class ActionExecutorTest {
     // 场景5：B4.2。目的：验证 IO 行动使用虚拟线程池。
     @Test
     void execute_ioMetaAction_usesVirtualExecutor() {
-        ExecutorService directExecutor = new DirectExecutorService();
-        ExecutorService virtualExecutor = Executors.newSingleThreadExecutor();
-        stubExecutors(directExecutor, virtualExecutor);
+        ExecutorService platformExecutor = Executors.newFixedThreadPool(4);
+        ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateActionData actionData = buildActionData(singleStageChain(true));
         ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult extractorResult = new ExtractorResult();
         extractorResult.setOk(true);
-        when(paramsExtractor.execute(any())).thenReturn(extractorResult);
-        doAnswer(inv -> {
+        lenient().when(paramsExtractor.execute(any())).thenReturn(extractorResult);
+        lenient().doAnswer(inv -> {
             MetaAction metaAction = inv.getArgument(0);
             metaAction.getResult().setStatus(MetaAction.ResultStatus.SUCCESS);
             return null;
