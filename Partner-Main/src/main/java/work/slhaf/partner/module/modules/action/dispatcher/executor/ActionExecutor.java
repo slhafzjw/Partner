@@ -134,10 +134,14 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                         stageCursor.requestAdvance();
                     }
 
-                    // 针对行动链进行修正，修正需要传入执行历史、行动目标等内容
-                    val correctorInput = assemblyHelper.buildCorrectorInput(actionData, userId);
-                    val correctorResult = actionCorrector.execute(correctorInput);
-                    actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), actionData);
+                    try {
+                        // 针对行动链进行修正，修正需要传入执行历史、行动目标等内容
+                        // 如果后续运行 corrector 触发频率较高，可考虑增加重试机制
+                        val correctorInput = assemblyHelper.buildCorrectorInput(actionData, userId);
+                        val correctorResult = actionCorrector.execute(correctorInput);
+                        actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), actionData);
+                    } catch (Exception ignored) {
+                    }
 
                     // 第二次尝试进行阶段推进，本次负责补充上一次在不存在 stage时，但 corrector 执行期间发生了 actionChain 的插入事件
                     // 如果第一次已经推进完毕，本次将会跳过

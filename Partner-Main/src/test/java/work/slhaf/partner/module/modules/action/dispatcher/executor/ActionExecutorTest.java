@@ -309,31 +309,36 @@ class ActionExecutorTest {
     }
 
     // 场景11：B4.4 异常 -> 资源未清理（已知缺陷）。目的：暴露当前行为。
-    @Disabled("known-issue: corrector 抛异常时未清理 phaser 记录")
-    @Tag("known-issue")
+    // @Disabled("known-issue: corrector 抛异常时未清理 phaser 记录")
+    // @Tag("known-issue")
     @Test
     void execute_correctorThrows_shouldLeakPhaserRecord() {
-        ExecutorService directExecutor = new DirectExecutorService();
-        stubExecutors(directExecutor, directExecutor);
+        ExecutorService platformExecutor = Executors.newCachedThreadPool();
+        ExecutorService virtualExecutor = Executors.newCachedThreadPool();
+        stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateActionData actionData = buildActionData(singleStageChain(false));
         ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult ok = new ExtractorResult();
         ok.setOk(true);
-        when(paramsExtractor.execute(any())).thenReturn(ok);
-        doAnswer(inv -> {
+        lenient().when(paramsExtractor.execute(any())).thenReturn(ok);
+        lenient().doAnswer(inv -> {
             MetaAction metaAction = inv.getArgument(0);
             metaAction.getResult().setStatus(MetaAction.ResultStatus.SUCCESS);
             return null;
         }).when(runnerClient).submit(any(MetaAction.class));
 
-        doThrow(new RuntimeException("boom")).when(actionCorrector).execute(any());
+        lenient().doThrow(new RuntimeException("boom")).when(actionCorrector).execute(any());
 
         actionExecutor.init();
         actionExecutor.execute(input);
 
-        verify(actionCapability, never()).removePhaserRecord(any(Phaser.class));
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ignored) {
+        }
+        verify(actionCapability).removePhaserRecord(any(Phaser.class));
     }
 
     // 场景12：B4.1 actionChain 为空导致异常（已知缺陷）。目的：暴露当前行为。
