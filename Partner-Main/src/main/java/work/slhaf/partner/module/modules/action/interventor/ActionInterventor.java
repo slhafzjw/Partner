@@ -10,6 +10,7 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateM
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.common.module.PreRunningModule;
@@ -174,7 +175,7 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
             recognizerInput.setUserDialogMapStr(memoryCapability.getUserDialogMapStr(userId));
             // 参考的对话列表大小或需调整
             recognizerInput.setRecentMessages(cognationCapability.getChatMessages());
-            recognizerInput.setExecutingActions(actionCapability.listPhaserRecords());
+            recognizerInput.setExecutingActions(actionCapability.listPhaserRecords().stream().map(PhaserRecord::actionData).toList());
             recognizerInput.setPreparedActions(actionCapability.listPreparedAction(userId));
             return recognizerInput;
         }

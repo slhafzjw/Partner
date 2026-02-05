@@ -11,7 +11,6 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
 import work.slhaf.partner.core.action.entity.ActionData;
-import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorResult;
@@ -37,7 +36,7 @@ public class InterventionEvaluator extends AgentRunningSubModule<EvaluatorInput,
     public EvaluatorResult execute(EvaluatorInput input) {
         // 获取必须数据
         ExecutorService executor = actionCapability.getExecutor(ExecutorType.VIRTUAL);
-        Map<String, PhaserRecord> executingInterventions = input.getExecutingInterventions();
+        Map<String, ActionData> executingInterventions = input.getExecutingInterventions();
         Map<String, ActionData> preparedInterventions = input.getPreparedInterventions();
         CountDownLatch latch = new CountDownLatch(executingInterventions.size() + preparedInterventions.size());
 
@@ -59,30 +58,23 @@ public class InterventionEvaluator extends AgentRunningSubModule<EvaluatorInput,
         return result;
     }
 
-    private <T> void evaluateIntervention(List<EvaluatedInterventionData> evaluatedDataList, Map<String, T> interventionMap, EvaluatorInput input, ExecutorService executor, CountDownLatch latch) {
-        interventionMap.forEach((tendency, data) -> {
-            executor.execute(() -> {
-                try {
-                    ActionData actionData = switch (data) {
-                        case PhaserRecord record -> record.actionData();
-                        case ActionData tempData -> tempData;
-                        default -> null;
-                    };
-                    String prompt = buildPrompt(input.getRecentMessages(), input.getActivatedSlices(), actionData, tendency);
+    private void evaluateIntervention(List<EvaluatedInterventionData> evaluatedDataList, Map<String, ActionData> interventionMap, EvaluatorInput input, ExecutorService executor, CountDownLatch latch) {
+        interventionMap.forEach((tendency, actionData) -> executor.execute(() -> {
+            try {
+                String prompt = buildPrompt(input.getRecentMessages(), input.getActivatedSlices(), actionData, tendency);
 
-                    ChatResponse response = this.singleChat(prompt);
-                    EvaluatedInterventionData evaluatedData = JSONObject.parseObject(response.getMessage(),
-                            EvaluatedInterventionData.class);
-                    synchronized (evaluatedDataList) {
-                        evaluatedDataList.add(evaluatedData);
-                    }
-                } catch (Exception e) {
-                    log.error("干预意图评估出错: {}", tendency, e);
-                } finally {
-                    latch.countDown();
+                ChatResponse response = this.singleChat(prompt);
+                EvaluatedInterventionData evaluatedData = JSONObject.parseObject(response.getMessage(),
+                        EvaluatedInterventionData.class);
+                synchronized (evaluatedDataList) {
+                    evaluatedDataList.add(evaluatedData);
                 }
-            });
-        });
+            } catch (Exception e) {
+                log.error("干预意图评估出错: {}", tendency, e);
+            } finally {
+                latch.countDown();
+            }
+        }));
     }
 
     private String buildPrompt(List<Message> recentMessages, List<EvaluatedSlice> activatedSlices,
