@@ -18,7 +18,6 @@ import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
@@ -72,6 +71,12 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                 if (actionData.getStatus() != ActionData.ActionStatus.PREPARE) {
                     return;
                 }
+                val actionChain = actionData.getActionChain();
+                if (actionChain.isEmpty()) {
+                    actionData.setStatus(ActionStatus.FAILED);
+                    actionData.setResult("行动链为空");
+                    return;
+                }
                 // 注册执行中行动
                 val phaser = new Phaser();
                 val phaserRecord = actionCapability.putPhaserRecord(phaser, actionData);
@@ -79,7 +84,6 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
 
                 // 开始执行
                 val stageCursor = new Object() {
-                    final Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
                     int stageCount;
                     boolean executingStageUpdated;
                     boolean stageCountUpdated;
@@ -118,7 +122,6 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
 
                 stageCursor.init();
                 do {
-                    val actionChain = actionData.getActionChain();
                     val metaActions = actionChain.get(actionData.getExecutingStage());
 
                     val listeningRecord = executeAndListening(metaActions, phaserRecord, userId);
