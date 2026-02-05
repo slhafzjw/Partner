@@ -228,8 +228,9 @@ class ActionExecutorTest {
     // 场景7：B7.2(失败) -> repairer FAILED。目的：验证失败分支不提交外部执行。
     @Test
     void execute_extractorFail_thenRepairFailed() {
-        ExecutorService directExecutor = new DirectExecutorService();
-        stubExecutors(directExecutor, directExecutor);
+        ExecutorService platformExecutor = Executors.newFixedThreadPool(4);
+        ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateActionData actionData = buildActionData(singleStageChain(false));
         ActionExecutorInput input = buildInput("u1", actionData);
@@ -245,6 +246,10 @@ class ActionExecutorTest {
         actionExecutor.init();
         actionExecutor.execute(input);
 
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ignored) {
+        }
         MetaAction metaAction = actionData.getActionChain().get(0).get(0);
         assertEquals(MetaAction.ResultStatus.FAILED, metaAction.getResult().getStatus());
         verify(runnerClient, never()).submit(any(MetaAction.class));
