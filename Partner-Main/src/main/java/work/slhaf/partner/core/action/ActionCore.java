@@ -49,8 +49,9 @@ public class ActionCore extends PartnerCore<ActionCore> {
 
     private final Lock cacheLock = new ReentrantLock();
 
+    // 由于当前的执行器逻辑实现，平台线程池大小不得小于 2，这里规定为最小为 4
     private final ExecutorService platformExecutor = Executors
-            .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            .newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors(), 4));
     private final ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     /**

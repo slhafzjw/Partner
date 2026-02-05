@@ -1,5 +1,6 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,6 +45,7 @@ import static org.mockito.Mockito.*;
  * 18) 同 stage 多 metaAction 并发完成顺序不固定（未覆盖：更适合集成/压测）
  */
 @SuppressWarnings("unused")
+@Slf4j
 @ExtendWith(MockitoExtension.class)
 class ActionExecutorTest {
 
@@ -130,8 +132,9 @@ class ActionExecutorTest {
     // 场景4：B1 -> B3 -> B4(两轮) -> B7(成功) -> B10。目的：验证多阶段顺序执行。
     @Test
     void execute_multiStage_success() {
-        ExecutorService directExecutor = new DirectExecutorService();
-        stubExecutors(directExecutor, directExecutor);
+        ExecutorService platformExecutor = Executors.newFixedThreadPool(4);
+        ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        stubExecutors(platformExecutor, virtualExecutor);
 
         Map<Integer, List<MetaAction>> chain = new HashMap<>();
         chain.put(0, List.of(buildMetaAction("a1", false)));
@@ -145,14 +148,15 @@ class ActionExecutorTest {
         doAnswer(inv -> {
             MetaAction metaAction = inv.getArgument(0);
             metaAction.getResult().setStatus(MetaAction.ResultStatus.SUCCESS);
+            log.info("metaAction result:{}", metaAction.getResult().getStatus());
             return null;
         }).when(runnerClient).submit(any(MetaAction.class));
 
         actionExecutor.init();
         actionExecutor.execute(input);
 
-        verify(runnerClient, times(2)).submit(any(MetaAction.class));
-        verify(actionCorrector, times(2)).execute(any());
+        verify(runnerClient, timeout(5000).times(2)).submit(any(MetaAction.class));
+        verify(actionCorrector, timeout(5000).times(2)).execute(any());
         assertEquals(2, actionData.getHistory().size());
         assertEquals(ActionData.ActionStatus.SUCCESS, actionData.getStatus());
     }
