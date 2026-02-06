@@ -68,7 +68,7 @@ public class ActionEvaluator extends AgentRunningSubModule<EvaluatorInput, List<
             BeanUtil.copyProperties(data, temp);
             temp.setTendency(tendency);
             Map<String, String> availableActions = new HashMap<>();
-            actionCapability.listAvailableActions().forEach((key, info) -> availableActions.put(key, info.getDescription()));
+            actionCapability.listAvailableMetaActions().forEach((key, info) -> availableActions.put(key, info.getDescription()));
             temp.setAvailableActions(availableActions);
             list.add(temp);
         }

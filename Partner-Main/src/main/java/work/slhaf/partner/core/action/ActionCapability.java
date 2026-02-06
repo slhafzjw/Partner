@@ -45,7 +45,7 @@ public interface ActionCapability {
 
     MetaActionInfo loadMetaActionInfo(@NonNull String actionKey);
 
-    Map<String, MetaActionInfo> listAvailableActions();
+    Map<String, MetaActionInfo> listAvailableMetaActions();
 
     boolean checkExists(String... actionKeys);
 
