@@ -2,6 +2,8 @@ package work.slhaf.partner.core.action;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.common.vector.VectorClient;
@@ -30,9 +32,9 @@ import java.util.stream.Collectors;
 public class ActionCore extends PartnerCore<ActionCore> {
 
     /**
-     * 持久行动池，以用户id为键存储所有状态的任务
+     * 持久行动池
      */
-    private HashMap<String, List<ActionData>> actionPool = new HashMap<>();// TODO 考虑是否取消用户分池
+    private CopyOnWriteArraySet<ActionData> actionPool = new CopyOnWriteArraySet<>();
 
     /**
      * 待确认任务，以userId区分不同用户，因为需要跨请求确认
@@ -66,18 +68,24 @@ public class ActionCore extends PartnerCore<ActionCore> {
 
     private void setupShutdownHook() {
         // 将执行中的行动状态置为失败
-        List<ActionData> executingActionList = listExecutingAction();
-        for (ActionData actionData : executingActionList) {
+        val executingActionSet = listActions(ActionData.ActionStatus.EXECUTING, null);
+        for (ActionData actionData : executingActionSet) {
             actionData.setStatus(ActionData.ActionStatus.FAILED);
             actionData.setResult("由于系统中断而失败");
         }
     }
 
-    private List<ActionData> listExecutingAction() {
-        return actionPool.values().stream()
-                .flatMap(Collection::stream)
-                .filter(action -> action.getStatus() == ActionData.ActionStatus.EXECUTING)
-                .collect(Collectors.toList());
+    @CapabilityMethod
+    public void putAction(@NonNull ActionData actionData) {
+        actionPool.add(actionData);
+    }
+
+    @CapabilityMethod
+    public Set<ActionData> listActions(@Nullable ActionData.ActionStatus actionStatus, @Nullable String source) {
+        return actionPool.stream()
+                .filter(actionData -> actionStatus == null || actionData.getStatus().equals(actionStatus))
+                .filter(actionData -> source == null || actionData.getSource().equals(source))
+                .collect(Collectors.toSet());
     }
 
     @CapabilityMethod
@@ -94,23 +102,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
         List<ActionData> infos = pendingActions.get(userId);
         pendingActions.remove(userId);
         return infos;
-    }
-
-    @CapabilityMethod
-    public synchronized void putPreparedAction(String uuid, ActionData actionData) {
-        actionPool.computeIfAbsent(uuid, k -> {
-            List<ActionData> temp = new ArrayList<>();
-            temp.add(actionData);
-            return temp;
-        });
-    }
-
-    @CapabilityMethod
-    public List<ActionData> listPreparedAction(String userId) {
-        List<ActionData> actions = actionPool.get(userId);
-        return actions.stream()
-                .filter(actionData -> actionData.getStatus().equals(ActionData.ActionStatus.PREPARE))
-                .toList();
     }
 
     @CapabilityMethod

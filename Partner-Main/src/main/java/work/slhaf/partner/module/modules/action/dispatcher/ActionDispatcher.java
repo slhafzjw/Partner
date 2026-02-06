@@ -1,5 +1,6 @@
 package work.slhaf.partner.module.modules.action.dispatcher;
 
+import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
@@ -46,7 +47,7 @@ public class ActionDispatcher extends PostRunningModule {
         // action，理想做法是将执行工具做成执行链的形式，模型的自对话流程、是否通知用户都做成与普通工具同等的通用可选能力，避免绑定固定流程
         executor.execute(() -> {
             String userId = context.getUserId();
-            List<ActionData> preparedActions = actionCapability.listPreparedAction(userId);
+            val preparedActions = actionCapability.listActions(ActionData.ActionStatus.PREPARE, userId);
             // 分类成PLANNING和IMMEDIATE两类
             List<ScheduledActionData> scheduledActions = new ArrayList<>();
             List<ImmediateActionData> immediateActions = new ArrayList<>();

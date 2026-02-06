@@ -1,6 +1,7 @@
 package work.slhaf.partner.core.action;
 
 import lombok.NonNull;
+import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.MetaAction;
@@ -12,16 +13,18 @@ import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervent
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
 
 @Capability(value = "action")
 public interface ActionCapability {
-    void putPreparedAction(String uuid, ActionData actionData);
+
+    void putAction(@NonNull ActionData actionData);
+
+    Set<ActionData> listActions(@Nullable ActionData.ActionStatus actionStatus, @Nullable String source);
 
     List<ActionData> popPendingAction(String userId);
-
-    List<ActionData> listPreparedAction(String userId);
 
     List<ActionData> listPendingAction(String userId);
 
@@ -52,4 +55,5 @@ public interface ActionCapability {
     RunnerClient runnerClient();
 
     void handleInterventions(List<MetaIntervention> interventions, ActionData data);
+
 }

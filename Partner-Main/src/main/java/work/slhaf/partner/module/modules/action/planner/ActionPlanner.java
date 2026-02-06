@@ -1,6 +1,7 @@
 package work.slhaf.partner.module.modules.action.planner;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
@@ -142,11 +143,10 @@ public class ActionPlanner extends PreRunningModule {
         if (uuids == null) {
             return;
         }
-        String contextUuid = context.getUuid();
         List<ActionData> pendingActions = actionCapability.popPendingAction(context.getUserId());
         for (ActionData actionData : pendingActions) {
             if (uuids.contains(actionData.getUuid())) {
-                actionCapability.putPreparedAction(contextUuid, actionData);
+                actionCapability.putAction(actionData);
             }
         }
     }
@@ -157,7 +157,7 @@ public class ActionPlanner extends PreRunningModule {
             if (evaluatorResult.isNeedConfirm()) {
                 actionCapability.putPendingActions(context.getUserId(), actionData);
             } else {
-                actionCapability.putPreparedAction(context.getUuid(), actionData);
+                actionCapability.putAction(actionData);
             }
         }
     }
@@ -183,13 +183,13 @@ public class ActionPlanner extends PreRunningModule {
     }
 
     private void setupPreparedActions(HashMap<String, String> map, String userId) {
-        List<ActionData> actionData = actionCapability.listPreparedAction(userId);
-        if (actionData == null || actionData.isEmpty()) {
+        val preparedActions = actionCapability.listActions(ActionData.ActionStatus.PREPARE, userId).stream().toList();
+        if (preparedActions.isEmpty()) {
             map.put("[预备行动] <预备执行或放入计划池的行动信息>", "无预备行动");
             return;
         }
-        for (int i = 0; i < actionData.size(); i++) {
-            map.put("[预备行动 " + (i + 1) + " ] <预备执行或放入计划池的行动信息>", generateActionStr(actionData.get(i)));
+        for (int i = 0; i < preparedActions.size(); i++) {
+            map.put("[预备行动 " + (i + 1) + " ] <预备执行或放入计划池的行动信息>", generateActionStr(preparedActions.get(i)));
         }
     }
 

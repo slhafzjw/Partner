@@ -176,7 +176,7 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
             // 参考的对话列表大小或需调整
             recognizerInput.setRecentMessages(cognationCapability.getChatMessages());
             recognizerInput.setExecutingActions(actionCapability.listPhaserRecords().stream().map(PhaserRecord::actionData).toList());
-            recognizerInput.setPreparedActions(actionCapability.listPreparedAction(userId));
+            recognizerInput.setPreparedActions(actionCapability.listActions(ActionData.ActionStatus.PREPARE, userId).stream().toList());
             return recognizerInput;
         }
 
