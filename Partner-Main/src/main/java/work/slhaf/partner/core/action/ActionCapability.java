@@ -51,5 +51,5 @@ public interface ActionCapability {
 
     RunnerClient runnerClient();
 
-    <T> void handleInterventions(List<MetaIntervention> interventions, T data);
+    void handleInterventions(List<MetaIntervention> interventions, ActionData data);
 }

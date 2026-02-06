@@ -19,10 +19,7 @@ import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervent
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Phaser;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -263,17 +260,8 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public <T> void handleInterventions(List<MetaIntervention> interventions, T data) {
+    public void handleInterventions(List<MetaIntervention> interventions, ActionData actionData) {
         // 加载数据
-        Phaser phaser = null;
-        ActionData actionData = switch (data) {
-            case PhaserRecord record -> {
-                phaser = record.phaser();
-                yield record.actionData();
-            }
-            case ActionData tempData -> tempData;
-            default -> null;
-        };
         if (actionData == null) {
             return;
         }
