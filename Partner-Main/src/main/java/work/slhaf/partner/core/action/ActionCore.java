@@ -62,7 +62,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
     private RunnerClient runnerClient;
 
     public ActionCore() throws IOException, ClassNotFoundException {
-        // TODO 通过 AgentConfigManager指定
+        // TODO 通过 AgentConfigManager指定采用何种 runnerClient 
         runnerClient = new SandboxRunnerClient(existedMetaActions, virtualExecutor);
         setupShutdownHook();
     }
