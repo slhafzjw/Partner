@@ -369,10 +369,10 @@ class ActionExecutorTest {
     }
 
     private ActionExecutorInput buildInput(String userId, ImmediateActionData actionData) {
-        ActionExecutorInput input = new ActionExecutorInput();
-        input.setUserId(userId);
-        input.setImmediateActions(List.of(actionData));
-        return input;
+        return ActionExecutorInput.builder()
+                .userId(userId)
+                .actions(Set.of(actionData))
+                .build();
     }
 
     private ImmediateActionData buildActionData(Map<Integer, List<MetaAction>> actionChain) {

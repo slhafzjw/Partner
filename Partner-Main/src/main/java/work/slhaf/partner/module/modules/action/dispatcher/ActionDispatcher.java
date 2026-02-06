@@ -16,8 +16,8 @@ import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.Actio
 import work.slhaf.partner.module.modules.action.dispatcher.scheduler.ActionScheduler;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 @AgentModule(name = "action_dispatcher", order = 7)
@@ -32,7 +32,6 @@ public class ActionDispatcher extends PostRunningModule {
     private ActionScheduler actionScheduler;
 
     private ExecutorService executor;
-    private final AssemblyHelper assemblyHelper = new AssemblyHelper();
 
     @Init
     public void init() {
@@ -49,8 +48,8 @@ public class ActionDispatcher extends PostRunningModule {
             String userId = context.getUserId();
             val preparedActions = actionCapability.listActions(ActionData.ActionStatus.PREPARE, userId);
             // 分类成PLANNING和IMMEDIATE两类
-            List<ScheduledActionData> scheduledActions = new ArrayList<>();
-            List<ImmediateActionData> immediateActions = new ArrayList<>();
+            Set<ScheduledActionData> scheduledActions = new HashSet<>();
+            Set<ImmediateActionData> immediateActions = new HashSet<>();
             for (ActionData preparedAction : preparedActions) {
                 if (preparedAction instanceof ScheduledActionData actionInfo) {
                     scheduledActions.add(actionInfo);
@@ -58,7 +57,11 @@ public class ActionDispatcher extends PostRunningModule {
                     immediateActions.add(actionInfo);
                 }
             }
-            actionExecutor.execute(assemblyHelper.buildExecutorInput(immediateActions, userId));
+            val actionExecutorInput = ActionExecutorInput.builder()
+                    .userId(userId)
+                    .actions(immediateActions)
+                    .build();
+            actionExecutor.execute(actionExecutorInput);
             actionScheduler.execute(scheduledActions);
         });
     }
@@ -68,15 +71,4 @@ public class ActionDispatcher extends PostRunningModule {
         return false;
     }
 
-    @SuppressWarnings("InnerClassMayBeStatic")
-    private class AssemblyHelper {
-
-        public ActionExecutorInput buildExecutorInput(List<ImmediateActionData> immediateActions, String userId) {
-            ActionExecutorInput input = new ActionExecutorInput();
-            input.setImmediateActions(immediateActions);
-            input.setUserId(userId);
-            return input;
-        }
-
-    }
 }

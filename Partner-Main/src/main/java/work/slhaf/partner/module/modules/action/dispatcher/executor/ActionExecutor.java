@@ -9,8 +9,11 @@ import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
-import work.slhaf.partner.core.action.entity.*;
+import work.slhaf.partner.core.action.entity.ActionData;
 import work.slhaf.partner.core.action.entity.ActionData.ActionStatus;
+import work.slhaf.partner.core.action.entity.MetaAction;
+import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
@@ -63,10 +66,10 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
      */
     @Override
     public Void execute(ActionExecutorInput input) {
-        val immediateActions = input.getImmediateActions();
+        val immediateActions = input.getActions();
         val userId = input.getUserId();
         // 异步执行所有行动
-        for (ImmediateActionData actionData : immediateActions) {
+        for (ActionData actionData : immediateActions) {
             platformExecutor.execute(() -> {
                 if (actionData.getStatus() != ActionData.ActionStatus.PREPARE) {
                     return;
@@ -298,7 +301,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
             return input;
         }
 
-        private CorrectorInput buildCorrectorInput(ImmediateActionData actionData, String userId) {
+        private CorrectorInput buildCorrectorInput(ActionData actionData, String userId) {
             return CorrectorInput.builder()
                     .tendency(actionData.getTendency())
                     .source(actionData.getSource())

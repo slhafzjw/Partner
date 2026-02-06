@@ -1,18 +1,20 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor.entity;
 
+import lombok.Builder;
 import lombok.Data;
-import work.slhaf.partner.core.action.entity.ImmediateActionData;
+import work.slhaf.partner.core.action.entity.ActionData;
 
-import java.util.List;
+import java.util.Set;
 
 @Data
+@Builder
 public class ActionExecutorInput {
     /**
      * 用户ID
      */
     private String userId;
     /**
-     * 即时行动数据列表
+     * 将执行的行动数据列表
      */
-    private List<ImmediateActionData> immediateActions;
+    private Set<? extends ActionData> actions;
 }
