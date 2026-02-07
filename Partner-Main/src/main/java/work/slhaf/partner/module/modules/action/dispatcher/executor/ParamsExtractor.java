@@ -50,9 +50,9 @@ public class ParamsExtractor extends AgentRunningSubModule<ExtractorInput, Extra
         List<HistoryAction> historyActions = input.getHistoryActionResults();
         for (HistoryAction historyAction : historyActions) {
             JSONObject historyItem = new JSONObject();
-            historyItem.put("[行动Key]", historyAction.getActionKey());
-            historyItem.put("[行动描述]", historyAction.getDescription());
-            historyItem.put("[行动结果]", historyAction.getResult());
+            historyItem.put("[行动Key]", historyAction.actionKey());
+            historyItem.put("[行动描述]", historyAction.description());
+            historyItem.put("[行动结果]", historyAction.result());
             historyData.add(historyItem);
         }
 

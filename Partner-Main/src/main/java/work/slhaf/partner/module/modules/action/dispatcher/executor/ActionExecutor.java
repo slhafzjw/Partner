@@ -9,11 +9,8 @@ import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
-import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.ActionData.ActionStatus;
-import work.slhaf.partner.core.action.entity.MetaAction;
-import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
@@ -157,7 +154,12 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                 // 结束
                 actionCapability.removePhaserRecord(phaser);
                 if (actionData.getStatus() != ActionData.ActionStatus.FAILED) {
-                    actionData.setStatus(ActionStatus.SUCCESS);
+                    // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
+                    if (actionData instanceof ScheduledActionData scheduledActionData) {
+                        scheduledActionData.recordAndReset();
+                    } else {
+                        actionData.setStatus(ActionStatus.SUCCESS);
+                    }
                 }
             });
 
@@ -233,10 +235,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     if (extractorResult.isOk()) {
                         metaAction.setParams(extractorResult.getParams());
                         runnerClient.submit(metaAction);
-                        val historyAction = new HistoryAction();
-                        historyAction.setActionKey(actionKey);
-                        historyAction.setDescription(actionCapability.loadMetaActionInfo(actionKey).getDescription());
-                        historyAction.setResult(metaAction.getResult().getData());
+                        val historyAction = new HistoryAction(actionKey, actionCapability.loadMetaActionInfo(actionKey).getDescription(), metaAction.getResult().getData());
                         actionData.getHistory()
                                 .computeIfAbsent(executingStage, integer -> new ArrayList<>())
                                 .add(historyAction);

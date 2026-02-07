@@ -209,9 +209,9 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
             JSONArray historyData = prompt.putArray("[历史行动执行结果]");
             data.getHistoryActionResults().forEach(historyAction -> {
                 JSONObject historyItem = new JSONObject();
-                historyItem.put("[行动Key]", historyAction.getActionKey());
-                historyItem.put("[行动描述]", historyAction.getDescription());
-                historyItem.put("[行动结果]", historyAction.getResult());
+                historyItem.put("[行动Key]", historyAction.actionKey());
+                historyItem.put("[行动描述]", historyAction.description());
+                historyItem.put("[行动结果]", historyAction.result());
                 historyData.add(historyItem);
             });
 
