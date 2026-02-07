@@ -71,6 +71,11 @@
             <artifactId>mockito-inline</artifactId>
             <version>5.2.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.cronutils</groupId>
+            <artifactId>cron-utils</artifactId>
+            <version>9.2.1</version>
+        </dependency>
     </dependencies>
 
     <properties>
