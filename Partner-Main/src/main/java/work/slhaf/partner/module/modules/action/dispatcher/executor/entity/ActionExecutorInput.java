@@ -10,10 +10,6 @@ import java.util.Set;
 @Builder
 public class ActionExecutorInput {
     /**
-     * 用户ID
-     */
-    private String userId;
-    /**
      * 将执行的行动数据列表
      */
     private Set<? extends ActionData> actions;

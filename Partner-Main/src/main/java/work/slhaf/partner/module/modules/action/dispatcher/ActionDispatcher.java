@@ -58,7 +58,6 @@ public class ActionDispatcher extends PostRunningModule {
                 }
             }
             val actionExecutorInput = ActionExecutorInput.builder()
-                    .userId(userId)
                     .actions(immediateActions)
                     .build();
             actionExecutor.execute(actionExecutorInput);

@@ -370,7 +370,6 @@ class ActionExecutorTest {
 
     private ActionExecutorInput buildInput(String userId, ImmediateActionData actionData) {
         return ActionExecutorInput.builder()
-                .userId(userId)
                 .actions(Set.of(actionData))
                 .build();
     }

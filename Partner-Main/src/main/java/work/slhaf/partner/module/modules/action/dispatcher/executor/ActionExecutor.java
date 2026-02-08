@@ -64,11 +64,11 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
     @Override
     public Void execute(ActionExecutorInput input) {
         val actions = input.getActions();
-        val userId = input.getUserId();
         // 异步执行所有行动
         for (ActionData actionData : actions) {
             platformExecutor.execute(() -> {
-                if (actionData.getStatus() != ActionData.ActionStatus.PREPARE) {
+                val source = actionData.getSource();
+                if (actionData.getStatus() != ActionStatus.PREPARE) {
                     return;
                 }
                 val actionChain = actionData.getActionChain();
@@ -80,7 +80,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                 // 注册执行中行动
                 val phaser = new Phaser();
                 val phaserRecord = actionCapability.putPhaserRecord(phaser, actionData);
-                actionData.setStatus(ActionData.ActionStatus.EXECUTING);
+                actionData.setStatus(ActionStatus.EXECUTING);
 
                 // 开始执行
                 val stageCursor = new Object() {
@@ -124,7 +124,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                 do {
                     val metaActions = actionChain.get(actionData.getExecutingStage());
 
-                    val listeningRecord = executeAndListening(metaActions, phaserRecord, userId);
+                    val listeningRecord = executeAndListening(metaActions, phaserRecord, source);
                     phaser.awaitAdvance(listeningRecord.phase());
 
                     // synchronized 同步防止 accepting 循环间、phase guard 判定后发生 stage 推进
@@ -140,7 +140,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     try {
                         // 针对行动链进行修正，修正需要传入执行历史、行动目标等内容
                         // 如果后续运行 corrector 触发频率较高，可考虑增加重试机制
-                        val correctorInput = assemblyHelper.buildCorrectorInput(actionData, userId);
+                        val correctorInput = assemblyHelper.buildCorrectorInput(actionData, source);
                         val correctorResult = actionCorrector.execute(correctorInput);
                         actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), actionData);
                     } catch (Exception ignored) {
@@ -153,7 +153,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
 
                 // 结束
                 actionCapability.removePhaserRecord(phaser);
-                if (actionData.getStatus() != ActionData.ActionStatus.FAILED) {
+                if (actionData.getStatus() != ActionStatus.FAILED) {
                     // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
                     if (actionData instanceof ScheduledActionData scheduledActionData) {
                         scheduledActionData.recordAndReset();
@@ -168,7 +168,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
 
     }
 
-    private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, PhaserRecord phaserRecord, String userId) {
+    private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, PhaserRecord phaserRecord, String source) {
         AtomicBoolean accepting = new AtomicBoolean(true);
         AtomicInteger cursor = new AtomicInteger();
 
@@ -199,7 +199,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     }
 
                     ExecutorService executor = next.isIo() ? virtualExecutor : platformExecutor;
-                    executor.execute(buildMataActionTask(next, phaserRecord, userId));
+                    executor.execute(buildMataActionTask(next, phaserRecord, source));
 
                     if (first) {
                         phaser.arriveAndDeregister();
@@ -217,7 +217,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
         return new MetaActionsListeningRecord(accepting, phase);
     }
 
-    private Runnable buildMataActionTask(MetaAction metaAction, PhaserRecord phaserRecord, String userId) {
+    private Runnable buildMataActionTask(MetaAction metaAction, PhaserRecord phaserRecord, String source) {
         val phaser = phaserRecord.phaser();
         phaser.register();
         return () -> {
@@ -229,7 +229,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     val executingStage = actionData.getExecutingStage();
                     val historyActionResults = actionData.getHistory().get(executingStage);
                     val additionalContext = actionData.getAdditionalContext().get(executingStage);
-                    val extractorInput = assemblyHelper.buildExtractorInput(metaAction, userId, historyActionResults, additionalContext);
+                    val extractorInput = assemblyHelper.buildExtractorInput(metaAction, source, historyActionResults, additionalContext);
                     val extractorResult = paramsExtractor.execute(extractorInput);
 
                     if (extractorResult.isOk()) {
@@ -240,7 +240,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                                 .computeIfAbsent(executingStage, integer -> new ArrayList<>())
                                 .add(historyAction);
                     } else {
-                        val repairerInput = assemblyHelper.buildRepairerInput(historyActionResults, metaAction, userId);
+                        val repairerInput = assemblyHelper.buildRepairerInput(historyActionResults, metaAction, source);
                         val repairerResult = actionRepairer.execute(repairerInput);
                         switch (repairerResult.getStatus()) {
                             // 如果本次修复被认为成功，则将补充的信息添加至 additionalContext
@@ -289,10 +289,10 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
             return input;
         }
 
-        private ExtractorInput buildExtractorInput(MetaAction action, String userId, List<HistoryAction> historyActionResults,
+        private ExtractorInput buildExtractorInput(MetaAction action, String source, List<HistoryAction> historyActionResults,
                                                    List<String> additionalContext) {
             ExtractorInput input = new ExtractorInput();
-            input.setEvaluatedSlices(memoryCapability.getActivatedSlices(userId));
+            input.setEvaluatedSlices(memoryCapability.getActivatedSlices(source));
             input.setRecentMessages(cognationCapability.getChatMessages());
             input.setMetaActionInfo(actionCapability.loadMetaActionInfo(action.getKey()));
             input.setHistoryActionResults(historyActionResults);
@@ -300,7 +300,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
             return input;
         }
 
-        private CorrectorInput buildCorrectorInput(ActionData actionData, String userId) {
+        private CorrectorInput buildCorrectorInput(ActionData actionData, String source) {
             return CorrectorInput.builder()
                     .tendency(actionData.getTendency())
                     .source(actionData.getSource())
@@ -309,7 +309,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     .history(actionData.getHistory().get(actionData.getExecutingStage()))
                     .status(actionData.getStatus())
                     .recentMessages(cognationCapability.getChatMessages())
-                    .activatedSlices(memoryCapability.getActivatedSlices(userId))
+                    .activatedSlices(memoryCapability.getActivatedSlices(source))
                     .build();
         }
     }
