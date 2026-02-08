@@ -1,6 +1,7 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -373,15 +374,15 @@ class ActionExecutorTest {
     }
 
     private ImmediateActionData buildActionData(Map<Integer, List<MetaAction>> actionChain) {
-        ImmediateActionData actionData = new ImmediateActionData();
-        actionData.setStatus(ActionData.ActionStatus.PREPARE);
-        actionData.setActionChain(actionChain);
-        actionData.setAdditionalContext(initAdditionalContext(actionChain));
-        actionData.setReason("reason");
-        actionData.setDescription("desc");
-        actionData.setSource("source");
-        actionData.setTendency("tendency");
-        return actionData;
+        val immediateActionData = new ImmediateActionData(
+                "tendency",
+                actionChain,
+                "reason",
+                "desc",
+                "source"
+        );
+        immediateActionData.getAdditionalContext().putAll(initAdditionalContext(actionChain));
+        return immediateActionData;
     }
 
     private Map<Integer, List<MetaAction>> singleStageChain(boolean io) {

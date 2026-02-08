@@ -153,7 +153,7 @@ public class ActionPlanner extends PreRunningModule {
 
     private void putActionData(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
-            ActionData actionData = assemblyHelper.buildActionData(evaluatorResult);
+            ActionData actionData = assemblyHelper.buildActionData(evaluatorResult, context.getUserId());
             if (evaluatorResult.isNeedConfirm()) {
                 actionCapability.putPendingActions(context.getUserId(), actionData);
             } else {
@@ -231,24 +231,25 @@ public class ActionPlanner extends PreRunningModule {
             return input;
         }
 
-        private ActionData buildActionData(EvaluatorResult evaluatorResult) {
+        private ActionData buildActionData(EvaluatorResult evaluatorResult, String userId) {
             Map<Integer, List<MetaAction>> actionChain = getActionChain(evaluatorResult);
             return switch (evaluatorResult.getType()) {
-                case PLANNING -> {
-                    ScheduledActionData actionInfo = new ScheduledActionData();
-                    actionInfo.setActionChain(actionChain);
-                    actionInfo.setScheduleContent(evaluatorResult.getScheduleContent());
-                    actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
-                    actionInfo.setUuid(UUID.randomUUID().toString());
-                    yield actionInfo;
-                }
-                case IMMEDIATE -> {
-                    ImmediateActionData actionInfo = new ImmediateActionData();
-                    actionInfo.setActionChain(actionChain);
-                    actionInfo.setStatus(ActionData.ActionStatus.PREPARE);
-                    actionInfo.setUuid(UUID.randomUUID().toString());
-                    yield actionInfo;
-                }
+                case PLANNING -> new ScheduledActionData(
+                        evaluatorResult.getTendency(),
+                        actionChain,
+                        evaluatorResult.getReason(),
+                        evaluatorResult.getDescription(),
+                        userId,
+                        evaluatorResult.getScheduleType(),
+                        evaluatorResult.getScheduleContent()
+                );
+                case IMMEDIATE -> new ImmediateActionData(
+                        evaluatorResult.getTendency(),
+                        actionChain,
+                        evaluatorResult.getReason(),
+                        evaluatorResult.getDescription(),
+                        userId
+                );
             };
         }
 

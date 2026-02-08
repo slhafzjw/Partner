@@ -90,7 +90,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
             }
 
             val parseToZonedDateTime = parseToZonedDateTime(
-                actionData.type,
+                actionData.scheduleType,
                 actionData.scheduleContent,
                 ZonedDateTime.now()
             ) ?: run {
@@ -226,7 +226,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                 for (actionData in primaryActions) {
                     val latestExecutingTime =
                         parseToZonedDateTime(
-                            actionData.type,
+                            actionData.scheduleType,
                             actionData.scheduleContent,
                             now
                         ) ?: run {
@@ -250,12 +250,13 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
         }
 
         private fun parseToZonedDateTime(
-            scheduleType: ScheduledActionData.ScheduledType,
+            scheduleType: ScheduledActionData.ScheduleType,
             scheduleContent: String,
             now: ZonedDateTime
         ): ZonedDateTime? {
             return when (scheduleType) {
-                ScheduledActionData.ScheduledType.CYCLE -> {
+                ScheduledActionData.ScheduleType.CYCLE
+                    -> {
                     val cron = try {
                         cronParser.parse(scheduleContent).validate()
                     } catch (_: Exception) {
@@ -265,7 +266,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                     executionTime.nextExecution(now).getOrNull()
                 }
 
-                ScheduledActionData.ScheduledType.ONCE -> {
+                ScheduledActionData.ScheduleType.ONCE -> {
                     val executionTime = try {
                         ZonedDateTime.parse(scheduleContent)
                     } catch (_: Exception) {
