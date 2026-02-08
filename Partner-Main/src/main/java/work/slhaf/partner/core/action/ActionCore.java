@@ -77,6 +77,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
 
     @CapabilityMethod
     public void putAction(@NonNull ActionData actionData) {
+        actionPool.removeIf(data -> data.getUuid().equals(actionData.getUuid())); // 用来应对 ScheduledActionData 的重新排列
         actionPool.add(actionData);
     }
 
