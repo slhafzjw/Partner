@@ -27,6 +27,11 @@
             <artifactId>kotlinx-coroutines-core</artifactId>
             <version>1.10.2</version>
         </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-coroutines-test</artifactId>
+            <version>1.10.2</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.nd4j/nd4j-api -->
         <dependency>
             <groupId>org.nd4j</groupId>
