@@ -137,7 +137,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                         val seconds = java.time.Duration.between(
                             actionsLoadingTime, actionsLoadingTime.truncatedTo(ChronoUnit.HOURS).plusHours(1)
                         ).toMillis()
-                        withTimeout(seconds) {
+                        withTimeoutOrNull(seconds) {
                             state.first { it == WheelState.ACTIVE }
                         }
                         state.value = WheelState.SLEEPING
