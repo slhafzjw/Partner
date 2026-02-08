@@ -180,7 +180,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
 
         private fun loadHourActions(): ZonedDateTime {
             val load: (ZonedDateTime, ScheduledActionData) -> Unit = { latestExecutionTime, actionData ->
-                val secondsTime = latestExecutionTime.minute * 60 + latestExecutionTime.second - 1
+                val secondsTime = latestExecutionTime.minute * 60 + latestExecutionTime.second
                 wheel[secondsTime].add(actionData)
             }
 
