@@ -32,7 +32,7 @@ data class MetaAction(
     /**
      * 行动结果，包括执行状态和相应内容(执行结果或者错误信息)
      */
-    var result = Result()
+    val result = Result()
 
     val key: String
         /**
