@@ -47,10 +47,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
             .map { actionData -> actionData as ScheduledActionData }
             .collect(Collectors.toSet())
         timeWheel = TimeWheel(actions) { actionDataSet ->
-            val input = ActionExecutorInput.builder()
-                .actions(actionDataSet)
-                .build()
-            actionExecutor.execute(input)
+            actionExecutor.execute(ActionExecutorInput(actionDataSet))
         }
     }
 

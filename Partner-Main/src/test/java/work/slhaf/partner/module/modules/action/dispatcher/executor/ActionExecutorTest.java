@@ -369,9 +369,7 @@ class ActionExecutorTest {
     }
 
     private ActionExecutorInput buildInput(String userId, ImmediateActionData actionData) {
-        return ActionExecutorInput.builder()
-                .actions(Set.of(actionData))
-                .build();
+        return new ActionExecutorInput(Set.of(actionData));
     }
 
     private ImmediateActionData buildActionData(Map<Integer, List<MetaAction>> actionChain) {

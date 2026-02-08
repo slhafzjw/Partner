@@ -57,10 +57,7 @@ public class ActionDispatcher extends PostRunningModule {
                     immediateActions.add(actionInfo);
                 }
             }
-            val actionExecutorInput = ActionExecutorInput.builder()
-                    .actions(immediateActions)
-                    .build();
-            actionExecutor.execute(actionExecutorInput);
+            actionExecutor.execute(new ActionExecutorInput(immediateActions));
             actionScheduler.execute(scheduledActions);
         });
     }
