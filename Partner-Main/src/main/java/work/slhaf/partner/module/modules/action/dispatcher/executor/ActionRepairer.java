@@ -16,7 +16,6 @@ import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
-import work.slhaf.partner.core.action.entity.MetaAction.ResultStatus;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorInput;
@@ -112,7 +111,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
         runnerClient.submit(tempAction);
         // 根据 tempAction 的执行状态设置修复结果
         Result actionResult = tempAction.getResult();
-        if (actionResult.getStatus() != ResultStatus.SUCCESS) {
+        if (actionResult.getStatus() != MetaAction.Result.Status.SUCCESS) {
             result.setStatus(RepairerStatus.FAILED);
             return result;
         }
@@ -137,7 +136,7 @@ public class ActionRepairer extends AgentRunningSubModule<RepairerInput, Repaire
         AtomicInteger failedCount = new AtomicInteger(0);
         for (String key : actionKeys) {
             MetaAction action = actionCapability.loadMetaAction(key);
-            executor = action.isIo() ? virtual : platform;
+            executor = action.getIo() ? virtual : platform;
             executor.execute(() -> {
                 try {
                     runnerClient.submit(action);

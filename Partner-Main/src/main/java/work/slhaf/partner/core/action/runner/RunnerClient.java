@@ -9,7 +9,6 @@ import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
-import work.slhaf.partner.core.action.entity.MetaAction.ResultStatus;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
 
@@ -67,17 +66,17 @@ public abstract class RunnerClient {
     public void submit(MetaAction metaAction) {
         // 获取已存在行动列表
         Result result = metaAction.getResult();
-        if (!result.getStatus().equals(ResultStatus.WAITING)) {
+        if (!result.getStatus().equals(Result.Status.WAITING)) {
             return;
         }
         RunnerResponse response = doRun(metaAction);
         result.setData(response.getData());
-        result.setStatus(response.isOk() ? ResultStatus.SUCCESS : ResultStatus.FAILED);
+        result.setStatus(response.isOk() ? Result.Status.SUCCESS : Result.Status.FAILED);
     }
 
     protected abstract RunnerResponse doRun(MetaAction metaAction);
 
-    public abstract String buildTmpPath(MetaAction tempAction, String codeType);
+    public abstract String buildTmpPath(String actionKey, String codeType);
 
     public abstract void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException;
 

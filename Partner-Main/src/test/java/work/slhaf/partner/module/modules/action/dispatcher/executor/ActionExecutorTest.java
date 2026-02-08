@@ -100,7 +100,7 @@ class ActionExecutorTest {
         when(paramsExtractor.execute(any())).thenReturn(extractorResult);
         doAnswer(inv -> {
             MetaAction metaAction = inv.getArgument(0);
-            metaAction.getResult().setStatus(MetaAction.ResultStatus.SUCCESS);
+            metaAction.getResult().setStatus(MetaAction.Result.Status.SUCCESS);
             return null;
         }).when(runnerClient).submit(any(MetaAction.class));
 
@@ -148,7 +148,7 @@ class ActionExecutorTest {
         when(paramsExtractor.execute(any())).thenReturn(extractorResult);
         doAnswer(inv -> {
             MetaAction metaAction = inv.getArgument(0);
-            metaAction.getResult().setStatus(MetaAction.ResultStatus.SUCCESS);
+            metaAction.getResult().setStatus(MetaAction.Result.Status.SUCCESS);
             log.info("metaAction result:{}", metaAction.getResult().getStatus());
             return null;
         }).when(runnerClient).submit(any(MetaAction.class));
@@ -177,7 +177,7 @@ class ActionExecutorTest {
         lenient().when(paramsExtractor.execute(any())).thenReturn(extractorResult);
         lenient().doAnswer(inv -> {
             MetaAction metaAction = inv.getArgument(0);
-            metaAction.getResult().setStatus(MetaAction.ResultStatus.SUCCESS);
+            metaAction.getResult().setStatus(MetaAction.Result.Status.SUCCESS);
             return null;
         }).when(runnerClient).submit(any(MetaAction.class));
 
@@ -211,7 +211,7 @@ class ActionExecutorTest {
 
         doAnswer(inv -> {
             MetaAction metaAction = inv.getArgument(0);
-            metaAction.getResult().setStatus(MetaAction.ResultStatus.SUCCESS);
+            metaAction.getResult().setStatus(MetaAction.Result.Status.SUCCESS);
             return null;
         }).when(runnerClient).submit(any(MetaAction.class));
 
@@ -252,7 +252,7 @@ class ActionExecutorTest {
         } catch (InterruptedException ignored) {
         }
         MetaAction metaAction = actionData.getActionChain().get(0).get(0);
-        assertEquals(MetaAction.ResultStatus.FAILED, metaAction.getResult().getStatus());
+        assertEquals(MetaAction.Result.Status.FAILED, metaAction.getResult().getStatus());
         verify(runnerClient, never()).submit(any(MetaAction.class));
     }
 
@@ -279,7 +279,7 @@ class ActionExecutorTest {
 
         doAnswer(inv -> {
             MetaAction metaAction = inv.getArgument(0);
-            metaAction.getResult().setStatus(MetaAction.ResultStatus.SUCCESS);
+            metaAction.getResult().setStatus(MetaAction.Result.Status.SUCCESS);
             return null;
         }).when(runnerClient).submit(any(MetaAction.class));
 
@@ -326,7 +326,7 @@ class ActionExecutorTest {
         lenient().when(paramsExtractor.execute(any())).thenReturn(ok);
         lenient().doAnswer(inv -> {
             MetaAction metaAction = inv.getArgument(0);
-            metaAction.getResult().setStatus(MetaAction.ResultStatus.SUCCESS);
+            metaAction.getResult().setStatus(MetaAction.Result.Status.SUCCESS);
             return null;
         }).when(runnerClient).submit(any(MetaAction.class));
 
@@ -392,11 +392,12 @@ class ActionExecutorTest {
     }
 
     private MetaAction buildMetaAction(String name, boolean io) {
-        MetaAction metaAction = new MetaAction();
-        metaAction.setName(name);
-        metaAction.setLocation("loc");
-        metaAction.setIo(io);
-        return metaAction;
+        return new MetaAction(
+                name,
+                io,
+                MetaAction.Type.ORIGIN,
+                "location"
+        );
     }
 
     private Map<Integer, List<String>> initAdditionalContext(Map<Integer, List<MetaAction>> actionChain) {

@@ -203,7 +203,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                         continue;
                     }
 
-                    ExecutorService executor = next.isIo() ? virtualExecutor : platformExecutor;
+                    ExecutorService executor = next.getIo() ? virtualExecutor : platformExecutor;
                     executor.execute(buildMataActionTask(next, phaserRecord, source));
 
                     if (first) {
@@ -238,7 +238,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     val extractorResult = paramsExtractor.execute(extractorInput);
 
                     if (extractorResult.isOk()) {
-                        metaAction.setParams(extractorResult.getParams());
+                        metaAction.getParams().putAll(extractorResult.getParams());
                         runnerClient.submit(metaAction);
                         val historyAction = new HistoryAction(actionKey, actionCapability.loadMetaActionInfo(actionKey).getDescription(), metaAction.getResult().getData());
                         actionData.getHistory()
@@ -251,21 +251,21 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                             // 如果本次修复被认为成功，则将补充的信息添加至 additionalContext
                             case RepairerResult.RepairerStatus.OK -> {
                                 additionalContext.addAll(repairerResult.getFixedData());
-                                result.setStatus(MetaAction.ResultStatus.WAITING);
+                                result.setStatus(MetaAction.Result.Status.WAITING);
                             }
                             // 此处的修复失败来自系统内部的执行失败：其余方式均不可行时将回退至当前分支
                             case RepairerResult.RepairerStatus.FAILED -> {
-                                result.setStatus(MetaAction.ResultStatus.FAILED);
+                                result.setStatus(MetaAction.Result.Status.FAILED);
                                 result.setData("行动执行失败");
                             }
                             // 此处对应已在 repairer 内发起外部请求，故在此处进行阻塞
                             case RepairerResult.RepairerStatus.ACQUIRE -> {
                                 phaserRecord.interrupt();
-                                result.setStatus(MetaAction.ResultStatus.WAITING);
+                                result.setStatus(MetaAction.Result.Status.WAITING);
                             }
                         }
                     }
-                } while (result.getStatus().equals(MetaAction.ResultStatus.WAITING));
+                } while (result.getStatus().equals(MetaAction.Result.Status.WAITING));
             } catch (Exception e) {
                 log.error("Action executing failed: {}", actionKey, e);
             } finally {

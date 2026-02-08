@@ -29,7 +29,6 @@ import work.slhaf.partner.common.mcp.InProcessMcpTransport;
 import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.entity.MetaActionType;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
 import work.slhaf.partner.core.action.exception.ActionSerializeFailedException;
 
@@ -200,8 +199,8 @@ public class LocalRunnerClient extends RunnerClient {
         RunnerResponse response;
         try {
             response = switch (metaAction.getType()) {
-                case MetaActionType.MCP -> doRunWithMcp(metaAction);
-                case MetaActionType.ORIGIN -> doRunWithOrigin(metaAction);
+                case MetaAction.Type.MCP -> doRunWithMcp(metaAction);
+                case MetaAction.Type.ORIGIN -> doRunWithOrigin(metaAction);
             };
         } catch (Exception e) {
             response = new RunnerResponse();
@@ -251,8 +250,8 @@ public class LocalRunnerClient extends RunnerClient {
     }
 
     @Override
-    public String buildTmpPath(MetaAction tempAction, String codeType) {
-        return Path.of(TMP_ACTION_PATH, System.currentTimeMillis() + "-" + tempAction.getKey() + codeType).toString();
+    public String buildTmpPath(String actionKey, String codeType) {
+        return Path.of(TMP_ACTION_PATH, System.currentTimeMillis() + "-" + actionKey + codeType).toString();
     }
 
     @Override

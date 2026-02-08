@@ -8,7 +8,10 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.PartnerCore;
-import work.slhaf.partner.core.action.entity.*;
+import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.MetaAction;
+import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.action.entity.cache.ActionCacheData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
@@ -214,17 +217,17 @@ public class ActionCore extends PartnerCore<ActionCore> {
         if (metaActionInfo == null) {
             throw new MetaActionNotFoundException("未找到对应的行动程序信息" + actionKey);
         }
-        MetaAction metaAction = new MetaAction();
-        metaAction.setParams(metaActionInfo.getParams());
-        metaAction.setType(MetaActionType.MCP);
-        metaAction.setIo(metaActionInfo.isIo());
+
         String[] split = actionKey.split("::");
         if (split.length < 2) {
             throw new MetaActionNotFoundException("未找到对应的行动程序，原因: 传入的 actionKey(" + actionKey + ") 存在异常");
         }
-        metaAction.setLocation(split[0]);
-        metaAction.setName(split[1]);
-        return metaAction;
+        return new MetaAction(
+                split[1],
+                metaActionInfo.isIo(),
+                MetaAction.Type.MCP,
+                split[0]
+        );
     }
 
     @CapabilityMethod

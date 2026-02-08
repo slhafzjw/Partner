@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.entity.MetaActionType;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -177,12 +176,14 @@ public class LocalRunnerClientTest {
                     + "  }";
         }
 
-        static MetaAction buildMetaAction(MetaActionType type, String location, String name, Map<String, Object> params) {
-            MetaAction metaAction = new MetaAction();
-            metaAction.setType(type);
-            metaAction.setLocation(location);
-            metaAction.setName(name);
-            metaAction.setParams(params);
+        static MetaAction buildMetaAction(MetaAction.Type type, String location, String name, Map<String, Object> params) {
+            MetaAction metaAction = new MetaAction(
+                    name,
+                    false,
+                    type,
+                    location
+            );
+            metaAction.getParams().putAll(params);
             return metaAction;
         }
     }
@@ -782,7 +783,7 @@ public class LocalRunnerClientTest {
             try {
                 Path script = tempDir.resolve("run");
                 Files.writeString(script, "echo ok\n");
-                MetaAction metaAction = buildMetaAction(MetaActionType.ORIGIN, script.toString(), "run", Map.of());
+                MetaAction metaAction = buildMetaAction(MetaAction.Type.ORIGIN, script.toString(), "run", Map.of());
                 RunnerClient.RunnerResponse response = client.doRun(metaAction);
                 Assertions.assertNotNull(response);
                 Assertions.assertFalse(response.isOk());
@@ -801,7 +802,7 @@ public class LocalRunnerClientTest {
             try {
                 Path script = tempDir.resolve("run.sh");
                 Files.writeString(script, "echo ok\n");
-                MetaAction metaAction = buildMetaAction(MetaActionType.ORIGIN, script.toString(), "run", Map.of());
+                MetaAction metaAction = buildMetaAction(MetaAction.Type.ORIGIN, script.toString(), "run", Map.of());
                 RunnerClient.RunnerResponse response = client.doRun(metaAction);
                 Assertions.assertNotNull(response);
                 Assertions.assertTrue(response.isOk());
@@ -818,7 +819,7 @@ public class LocalRunnerClientTest {
             LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
 
             try {
-                MetaAction metaAction = buildMetaAction(MetaActionType.MCP, "missing-client", "missing-tool", Map.of());
+                MetaAction metaAction = buildMetaAction(MetaAction.Type.MCP, "missing-client", "missing-tool", Map.of());
                 RunnerClient.RunnerResponse response = client.doRun(metaAction);
                 Assertions.assertNotNull(response);
                 Assertions.assertFalse(response.isOk());
@@ -834,7 +835,7 @@ public class LocalRunnerClientTest {
             RunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
 
             try {
-                MetaAction metaAction = buildMetaAction(MetaActionType.MCP, "missing-client", "missing-tool", Map.of());
+                MetaAction metaAction = buildMetaAction(MetaAction.Type.MCP, "missing-client", "missing-tool", Map.of());
                 client.submit(metaAction);
                 Assertions.assertNotNull(metaAction.getResult().getData());
             } finally {
@@ -861,9 +862,9 @@ public class LocalRunnerClientTest {
                 waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")), 20000);
                 Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")));
 
-                MetaAction metaAction = buildMetaAction(MetaActionType.MCP, "playwright", "browser_navigate", Map.of("url", "https://deepwiki.com/microsoft/vscode"));
+                MetaAction metaAction = buildMetaAction(MetaAction.Type.MCP, "playwright", "browser_navigate", Map.of("url", "https://deepwiki.com/microsoft/vscode"));
                 client.submit(metaAction);
-                Assertions.assertNotEquals(MetaAction.ResultStatus.WAITING, metaAction.getResult().getStatus());
+                Assertions.assertNotEquals(MetaAction.Result.Status.WAITING, metaAction.getResult().getStatus());
             } finally {
                 executor.shutdownNow();
             }

@@ -23,7 +23,7 @@ public class RunnerClientTest {
         }
 
         @Override
-        public String buildTmpPath(MetaAction tempAction, String codeType) {
+        public String buildTmpPath(String actionKey, String codeType) {
             return null;
         }
 

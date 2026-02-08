@@ -40,7 +40,7 @@ public class SandboxRunnerClient extends RunnerClient {
     }
 
     @Override
-    public String buildTmpPath(MetaAction tempAction, String codeType) {
+    public String buildTmpPath(String actionKey, String codeType) {
         throw new UnsupportedOperationException("Unimplemented method 'buildTmpPath'");
     }
 
