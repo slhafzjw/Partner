@@ -63,10 +63,10 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
      */
     @Override
     public Void execute(ActionExecutorInput input) {
-        val immediateActions = input.getActions();
+        val actions = input.getActions();
         val userId = input.getUserId();
         // 异步执行所有行动
-        for (ActionData actionData : immediateActions) {
+        for (ActionData actionData : actions) {
             platformExecutor.execute(() -> {
                 if (actionData.getStatus() != ActionData.ActionStatus.PREPARE) {
                     return;
