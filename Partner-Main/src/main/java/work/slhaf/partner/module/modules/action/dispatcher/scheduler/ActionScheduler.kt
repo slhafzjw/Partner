@@ -48,14 +48,17 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
 
     @Init
     fun init() {
-        val actions = actionCapability.listActions(null, null)
-            .stream()
-            .filter { actionData -> actionData is ScheduledActionData }
-            .map { actionData -> actionData as ScheduledActionData }
-            .collect(Collectors.toSet())
-        timeWheel = TimeWheel(actions) { actionDataSet ->
-            actionExecutor.execute(ActionExecutorInput(actionDataSet))
+        val listScheduledActions: () -> Set<ScheduledActionData> = {
+            actionCapability.listActions(null, null)
+                .stream()
+                .filter { it is ScheduledActionData }
+                .map { it as ScheduledActionData }
+                .collect(Collectors.toSet())
         }
+
+        val onTrigger: (Set<ScheduledActionData>) -> Unit = { actionExecutor.execute(ActionExecutorInput(it)) }
+
+        timeWheel = TimeWheel(listScheduledActions, onTrigger)
 
         setupShutdownHook()
     }
@@ -80,8 +83,8 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
     }
 
     private class TimeWheel(
-        val primaryActions: Set<ScheduledActionData>,
-        val onTrigger: (Set<ScheduledActionData>) -> Unit
+        val listScheduledActions: () -> Set<ScheduledActionData>,
+        val onTrigger: (toTrigger: Set<ScheduledActionData>) -> Unit
     ) : Closeable {
 
         private val actionsGroupByHour = Array<MutableSet<ScheduledActionData>>(24) { mutableSetOf() }
@@ -232,7 +235,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
         ) {
             val runLoading = {
                 val now = ZonedDateTime.now()
-                for (actionData in primaryActions) {
+                for (actionData in listScheduledActions()) {
                     val latestExecutingTime =
                         parseToZonedDateTime(
                             actionData.scheduleType,
