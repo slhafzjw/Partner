@@ -42,9 +42,6 @@ import java.time.ZonedDateTime
 class ActionSchedulerTest {
 
     @Mock
-    private lateinit var actionExecutor: ActionExecutor
-
-    @Mock
     private lateinit var actionCapability: ActionCapability
 
     @InjectMocks
