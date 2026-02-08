@@ -112,7 +112,7 @@ data class ScheduledActionData(
         for (entry in actionChain) {
             for (action in entry.value) {
                 action.params.clear()
-                action.result = MetaAction.Result()
+                action.result.reset()
             }
         }
 
