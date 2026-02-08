@@ -15,9 +15,11 @@ import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.*;
+import work.slhaf.partner.module.modules.action.dispatcher.scheduler.ActionScheduler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
@@ -41,6 +43,8 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
     private ActionRepairer actionRepairer;
     @InjectModule
     private ActionCorrector actionCorrector;
+    @InjectModule
+    private ActionScheduler actionScheduler;
 
     private ExecutorService virtualExecutor;
     private ExecutorService platformExecutor;
@@ -157,6 +161,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
                     if (actionData instanceof ScheduledActionData scheduledActionData) {
                         scheduledActionData.recordAndReset();
+                        actionScheduler.execute(Set.of(scheduledActionData));
                     } else {
                         actionData.setStatus(ActionStatus.SUCCESS);
                     }
