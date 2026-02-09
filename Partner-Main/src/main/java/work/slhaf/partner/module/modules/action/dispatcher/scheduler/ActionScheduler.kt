@@ -140,7 +140,8 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                         val bucket = wheel[i]
                         if (bucket.isNotEmpty()) {
                             toTrigger.addAll(bucket)
-                            actionsGroupByHour[triggerHour].removeAll(bucket)
+                            val bucketUuids = bucket.asSequence().map { it.uuid }.toHashSet()
+                            actionsGroupByHour[triggerHour].removeIf { it.uuid in bucketUuids }
                             bucket.clear() // 避免重复触发
                         }
                     }
