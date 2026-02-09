@@ -8,7 +8,7 @@ public abstract class PostRunningModule extends AgentRunningModule<PartnerRunnin
     @Override
     public final void execute(PartnerRunningFlowContext context) {
         boolean trigger = context.getModuleContext().getExtraContext().getBoolean("post_process_trigger");
-        if (!trigger) {
+        if (!trigger && relyOnMessage()) {
             return;
         }
         doExecute(context);
@@ -16,4 +16,5 @@ public abstract class PostRunningModule extends AgentRunningModule<PartnerRunnin
 
     public abstract void doExecute(PartnerRunningFlowContext context);
 
+    protected abstract boolean relyOnMessage();
 }

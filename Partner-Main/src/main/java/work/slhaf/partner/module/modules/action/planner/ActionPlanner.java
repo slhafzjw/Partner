@@ -1,15 +1,19 @@
 package work.slhaf.partner.module.modules.action.planner;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.action.ActionCapability;
+import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
+import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
+import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
@@ -25,15 +29,15 @@ import work.slhaf.partner.module.modules.action.planner.extractor.entity.Extract
 import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 负责针对本次输入生成基础的行动计划，在主模型传达意愿后，执行行动或者放入计划池
  */
+@Slf4j
 @AgentModule(name = "action_planner", order = 2)
 public class ActionPlanner extends PreRunningModule {
 
@@ -53,21 +57,25 @@ public class ActionPlanner extends PreRunningModule {
     @InjectModule
     private ActionConfirmer actionConfirmer;
 
-    private InteractionThreadPoolExecutor executor;
-    private ActionAssemblyHelper assemblyHelper;
+    private ExecutorService executor;
+
+    private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
     @Init
     public void init() {
-        executor = InteractionThreadPoolExecutor.getInstance();
-        assemblyHelper = new ActionAssemblyHelper();
+        executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
     }
 
     @Override
     protected void doExecute(PartnerRunningFlowContext context) {
-        List<Callable<Void>> tasks = new ArrayList<>();
-        addConfirmTask(tasks, context);
-        addNewActionTask(tasks, context);
-        executor.invokeAll(tasks);
+        try {
+            List<Callable<Void>> tasks = new ArrayList<>();
+            addConfirmTask(tasks, context);
+            addNewActionTask(tasks, context);
+            executor.invokeAll(tasks);
+        } catch (Exception e) {
+            log.error("执行异常", e);
+        }
     }
 
     /**
@@ -84,14 +92,15 @@ public class ActionPlanner extends PreRunningModule {
                 return null;
             }
             EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult, context.getUserId());
-            List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); //并发操作均为访问
-            setupActionInfo(evaluatorResults, context);
+            List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); // 并发操作均为访问
+            putActionData(evaluatorResults, context);
+            updateTendencyCache(evaluatorResults, context.getInput(), extractorResult);
             return null;
         });
     }
 
-    @AfterExecute
-    private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input, ExtractorResult extractorResult) {
+    private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input,
+                                     ExtractorResult extractorResult) {
         if (!VectorClient.status) {
             return;
         }
@@ -123,72 +132,69 @@ public class ActionPlanner extends PreRunningModule {
         tasks.add(() -> {
             ConfirmerInput confirmerInput = assemblyHelper.buildConfirmerInput(context);
             ConfirmerResult result = actionConfirmer.execute(confirmerInput);
-            setupPendingActionInfo(context, result);
+            setupConfirmedActionInfo(context, result);
             return null;
         });
     }
 
-    private void setupPendingActionInfo(PartnerRunningFlowContext context, ConfirmerResult result) {
-        //TODO 需考虑未确认任务的失效或者拒绝时机
+    private void setupConfirmedActionInfo(PartnerRunningFlowContext context, ConfirmerResult result) {
+        // TODO 需考虑未确认任务的失效或者拒绝时机，在action core中实现
         List<String> uuids = result.getUuids();
         if (uuids == null) {
             return;
         }
-        String contextUuid = context.getUuid();
-        List<MetaActionInfo> pendingActions = actionCapability.popPendingAction(context.getUserId());
-        for (MetaActionInfo actionInfo : pendingActions) {
-            if (uuids.contains(actionInfo.getUuid())) {
-                actionCapability.putPreparedAction(contextUuid, actionInfo);
+        List<ActionData> pendingActions = actionCapability.popPendingAction(context.getUserId());
+        for (ActionData actionData : pendingActions) {
+            if (uuids.contains(actionData.getUuid())) {
+                actionCapability.putAction(actionData);
             }
         }
     }
 
-
-    private void setupActionInfo(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
+    private void putActionData(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
-            MetaActionInfo metaActionInfo = assemblyHelper.buildMetaActionInfo(evaluatorResult);
+            ActionData actionData = assemblyHelper.buildActionData(evaluatorResult, context.getUserId());
             if (evaluatorResult.isNeedConfirm()) {
-                actionCapability.putPendingActions(context.getUserId(), metaActionInfo);
+                actionCapability.putPendingActions(context.getUserId(), actionData);
             } else {
-                actionCapability.putPreparedAction(context.getUuid(), metaActionInfo);
+                actionCapability.putAction(actionData);
             }
         }
     }
-
 
     @Override
-    protected HashMap<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
+    protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
-        setupPendingActions(map, context.getUserId());
-        setupPreparedActions(map, context.getUuid());
+        String userId = context.getUserId();
+        setupPendingActions(map, userId);
+        setupPreparedActions(map, userId);
         return map;
     }
 
     private void setupPendingActions(HashMap<String, String> map, String userId) {
-        List<MetaActionInfo> actionInfos = actionCapability.listPendingAction(userId);
-        if (actionInfos == null || actionInfos.isEmpty()) {
-            map.put("[待确认行动] <待确认行动信息>", "无待确认行动");
+        List<ActionData> actionData = actionCapability.listPendingAction(userId);
+        if (actionData == null || actionData.isEmpty()) {
+            map.put("[待确认行动] <等待用户确认的行动信息>", "无待确认行动");
             return;
         }
-        for (int i = 0; i < actionInfos.size(); i++) {
-            map.put("[待确认行动 " + (i + 1) + " ]", generateActionStr(actionInfos.get(i)));
+        for (int i = 0; i < actionData.size(); i++) {
+            map.put("[待确认行动 " + (i + 1) + " ] <等待用户确认的行动信息>", generateActionStr(actionData.get(i)));
         }
     }
 
-    private void setupPreparedActions(HashMap<String, String> map, String uuid) {
-        List<MetaActionInfo> actionInfos = actionCapability.listPreparedAction(uuid);
-        if (actionInfos == null || actionInfos.isEmpty()) {
-            map.put("[预备行动] <预备行动信息>", "无预备行动");
+    private void setupPreparedActions(HashMap<String, String> map, String userId) {
+        val preparedActions = actionCapability.listActions(ActionData.ActionStatus.PREPARE, userId).stream().toList();
+        if (preparedActions.isEmpty()) {
+            map.put("[预备行动] <预备执行或放入计划池的行动信息>", "无预备行动");
             return;
         }
-        for (int i = 0; i < actionInfos.size(); i++) {
-            map.put("[预备行动 " + (i + 1) + " ]", generateActionStr(actionInfos.get(i)));
+        for (int i = 0; i < preparedActions.size(); i++) {
+            map.put("[预备行动 " + (i + 1) + " ] <预备执行或放入计划池的行动信息>", generateActionStr(preparedActions.get(i)));
         }
     }
 
-    private String generateActionStr(MetaActionInfo metaActionInfo) {
-        ActionData actionData = metaActionInfo.getActionData();
-        return "<行动倾向>" + " : " + metaActionInfo.getTendency() +
+    private String generateActionStr(ActionData actionData) {
+        return "<行动倾向>" + " : " + actionData.getTendency() +
                 "<行动原因>" + " : " + actionData.getReason() +
                 "<工具描述>" + " : " + actionData.getDescription();
     }
@@ -198,7 +204,7 @@ public class ActionPlanner extends PreRunningModule {
         return "[行动模块]";
     }
 
-    private class ActionAssemblyHelper {
+    private final class ActionAssemblyHelper {
         private ActionAssemblyHelper() {
         }
 
@@ -225,31 +231,109 @@ public class ActionPlanner extends PreRunningModule {
             return input;
         }
 
-        private MetaActionInfo buildMetaActionInfo(EvaluatorResult evaluatorResult) {
+        private ActionData buildActionData(EvaluatorResult evaluatorResult, String userId) {
+            Map<Integer, List<MetaAction>> actionChain = getActionChain(evaluatorResult);
             return switch (evaluatorResult.getType()) {
-                case PLANNING -> {
-                    ScheduledActionInfo actionInfo = new ScheduledActionInfo();
-                    actionInfo.setActionData(evaluatorResult.getActionData());
-                    actionInfo.setScheduleContent(evaluatorResult.getScheduleContent());
-                    actionInfo.setStatus(ActionStatus.PREPARE);
-                    actionInfo.setUuid(UUID.randomUUID().toString());
-                    yield actionInfo;
-                }
-                case IMMEDIATE -> {
-                    ImmediateActionInfo actionInfo = new ImmediateActionInfo();
-                    actionInfo.setActionData(evaluatorResult.getActionData());
-                    actionInfo.setStatus(ActionStatus.PREPARE);
-                    actionInfo.setUuid(UUID.randomUUID().toString());
-                    yield actionInfo;
-                }
+                case PLANNING -> new ScheduledActionData(
+                        evaluatorResult.getTendency(),
+                        actionChain,
+                        evaluatorResult.getReason(),
+                        evaluatorResult.getDescription(),
+                        userId,
+                        evaluatorResult.getScheduleType(),
+                        evaluatorResult.getScheduleContent()
+                );
+                case IMMEDIATE -> new ImmediateActionData(
+                        evaluatorResult.getTendency(),
+                        actionChain,
+                        evaluatorResult.getReason(),
+                        evaluatorResult.getDescription(),
+                        userId
+                );
             };
+        }
+
+        private @NotNull Map<Integer, List<MetaAction>> getActionChain(EvaluatorResult evaluatorResult) {
+            Map<Integer, List<MetaAction>> actionChain = new HashMap<>();
+            Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChain();
+            fixDependencies(primaryActionChain);
+            primaryActionChain.forEach((order, actionKeys) -> {
+                List<MetaAction> metaActions = actionKeys.stream()
+                        .map(actionKey -> actionCapability.loadMetaAction(actionKey))
+                        .toList();
+                actionChain.put(order, metaActions);
+            });
+            return actionChain;
+        }
+
+        private void fixDependencies(Map<Integer, List<String>> primaryActionChain) {
+            // 先将 primaryActionChain 的节点序号修正为从1开始依次增大
+            fixOrder(primaryActionChain);
+            List<Integer> fixedOrders = new ArrayList<>(primaryActionChain.keySet().stream().toList());
+            AtomicBoolean fixed = new AtomicBoolean(false);
+            do {
+                Set<Integer> tempOrders = new HashSet<>();
+                fixedOrders.sort(Integer::compareTo);
+                for (Integer fixedOrder : fixedOrders) {
+                    int lastOrder = fixedOrder - 1;
+                    List<String> actionKeys = primaryActionChain.get(fixedOrder);
+                    for (String actionKey : actionKeys) {
+                        // 根据 actionKey 加载行动信息,并检查是否存在必需前置依赖
+                        MetaActionInfo metaActionInfo = actionCapability.loadMetaActionInfo(actionKey);
+                        List<String> preActions = metaActionInfo.getPreActions();
+                        boolean preActionsExist = preActions != null && !preActions.isEmpty();
+                        if (!preActionsExist) {
+                            continue;
+                        }
+                        if (!metaActionInfo.isStrictDependencies()) {
+                            continue;
+                        }
+                        if (checkDependenciesExist(lastOrder, preActions, primaryActionChain)) {
+                            continue;
+                        }
+
+                        // 如果存在前置依赖,则将其放置在当前order之前的位置,
+                        // 放置位置优先选择已存在的上一节点,如果不存在(行动链的头节点时)则需要向行动链新增order
+                        // 不需要检查行动链的当前节点的已存在 Action 是否为新 Action 的依赖项,因为这些 Action 实际来自 LLM
+                        // 的评估结果,并非作为依赖项存在
+                        fixed.set(true);
+                        List<String> actionsInChain = primaryActionChain.computeIfAbsent(lastOrder,
+                                list -> new ArrayList<>());
+                        preActions = new ArrayList<>(preActions);
+                        preActions.removeAll(actionsInChain);
+                        actionsInChain.addAll(preActions);
+                        tempOrders.add(lastOrder);
+                    }
+                }
+                fixedOrders.clear();
+                fixedOrders.addAll(tempOrders);
+            } while (fixed.getAndSet(false));
+        }
+
+        private void fixOrder(Map<Integer, List<String>> primaryActionChain) {
+            Map<Integer, List<String>> tempChain = new HashMap<>(primaryActionChain);
+            primaryActionChain.clear();
+            int chainSize = tempChain.size();
+            for (int i = 0; i < chainSize; i++) {
+                primaryActionChain.put(i, tempChain.get(i));
+            }
+        }
+
+        private boolean checkDependenciesExist(int lastOrder, List<String> preActions,
+                                               Map<Integer, List<String>> primaryActionChain) {
+            if (!primaryActionChain.containsKey(lastOrder)) {
+                return false;
+            }
+            List<String> existActions = primaryActionChain.get(lastOrder);
+            //noinspection SlowListContainsAll
+            return existActions.containsAll(preActions);
         }
 
         private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
             ConfirmerInput confirmerInput = new ConfirmerInput();
             confirmerInput.setInput(context.getInput());
-            List<MetaActionInfo> pendingActions = actionCapability.listPendingAction(context.getUserId());
-            confirmerInput.setActionInfos(pendingActions);
+            List<ActionData> pendingActions = actionCapability.listPendingAction(context.getUserId());
+            confirmerInput.setActionData(pendingActions);
             return confirmerInput;
         }
     }

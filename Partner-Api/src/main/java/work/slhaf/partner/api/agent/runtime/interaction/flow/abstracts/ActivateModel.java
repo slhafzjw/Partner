@@ -23,7 +23,7 @@ public interface ActivateModel {
         ModelConfig modelConfig = AgentConfigManager.INSTANCE.loadModelConfig(modelKey());
         model.setBaseMessages(withBasicPrompt() ? loadSpecificPromptAndBasicPrompt(modelKey()) : loadSpecificPrompt(modelKey()));
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
-        ((Module) this).setModel(model);
+        setModel(model);
     }
 
     default void updateModelSettings(ChatClient newChatClient) {

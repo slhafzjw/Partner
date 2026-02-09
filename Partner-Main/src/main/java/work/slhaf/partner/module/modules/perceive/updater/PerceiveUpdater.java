@@ -70,6 +70,11 @@ public class PerceiveUpdater extends PostRunningModule {
         });
     }
 
+    @Override
+    protected boolean relyOnMessage() {
+        return true;
+    }
+
     private void runRelationExtractorAction(PartnerRunningFlowContext context, ReentrantLock userLock, User user) {
         RelationExtractResult relationExtractResult = relationExtractor.execute(context);
         userLock.lock();

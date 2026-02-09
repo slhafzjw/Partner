@@ -13,7 +13,6 @@ import java.util.concurrent.locks.Lock;
 public interface CognationCapability {
 
     List<Message> getChatMessages();
-    void setChatMessages(List<Message> chatMessages);
     void cleanMessage(List<Message> messages);
     Lock getMessageLock();
     void addMetaMessage(String userId, MetaMessage metaMessage);

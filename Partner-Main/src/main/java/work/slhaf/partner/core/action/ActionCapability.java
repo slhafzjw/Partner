@@ -1,26 +1,59 @@
 package work.slhaf.partner.core.action;
 
+import lombok.NonNull;
+import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
-import work.slhaf.partner.core.action.entity.CacheAdjustData;
+import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.entity.PhaserRecord;
+import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
+import work.slhaf.partner.core.action.runner.RunnerClient;
+import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Phaser;
 
 @Capability(value = "action")
 public interface ActionCapability {
-    void putPreparedAction(String uuid, MetaActionInfo metaActionInfo);
 
-    List<MetaActionInfo> popPreparedAction(String userId);
+    void putAction(@NonNull ActionData actionData);
 
-    List<MetaActionInfo> popPendingAction(String userId);
+    Set<ActionData> listActions(@Nullable ActionData.ActionStatus actionStatus, @Nullable String source);
 
-    List<MetaActionInfo> listPreparedAction(String userId);
+    List<ActionData> popPendingAction(String userId);
 
-    List<MetaActionInfo> listPendingAction(String userId);
+    List<ActionData> listPendingAction(String userId);
 
-    void putPendingActions(String userId, MetaActionInfo metaActionInfo);
+    void putPendingActions(String userId, ActionData actionData);
 
     List<String> selectTendencyCache(String input);
 
     void updateTendencyCache(CacheAdjustData data);
+
+    ExecutorService getExecutor(ActionCore.ExecutorType type);
+
+    PhaserRecord putPhaserRecord(Phaser phaser, ActionData actionData);
+
+    void removePhaserRecord(Phaser phaser);
+
+    List<PhaserRecord> listPhaserRecords();
+
+    PhaserRecord getPhaserRecord(String tendency, String source);
+
+    MetaAction loadMetaAction(@NonNull String actionKey);
+
+    MetaActionInfo loadMetaActionInfo(@NonNull String actionKey);
+
+    Map<String, MetaActionInfo> listAvailableMetaActions();
+
+    boolean checkExists(String... actionKeys);
+
+    RunnerClient runnerClient();
+
+    void handleInterventions(List<MetaIntervention> interventions, ActionData data);
+
 }

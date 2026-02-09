@@ -55,8 +55,6 @@ build/
 /data/
 /generated-classes/
 /.idea/copilot.data.migration.ask2agent.xml
-.idea/copilot.data.migration.agent.xml
-.gitignore
-.idea/copilot.data.migration.edit.xml
-.gitignore
-.idea/copilot.data.migration.ask.xml
+/Partner-Main/data/
+/AGENTS.md
+/.serena/

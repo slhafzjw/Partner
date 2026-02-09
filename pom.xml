@@ -12,6 +12,8 @@
         <module>Partner-Test-Demo</module>
         <module>Partner-Main</module>
         <module>Partner-Api</module>
+        <module>Partner-SandboxRunner</module>
+        <module>Partner-Common</module>
     </modules>
 
     <properties>
@@ -50,7 +52,8 @@
                             </goals>
                             <configuration>
                                 <transformers>
-                                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <transformer
+                                            implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                         <mainClass>work.slhaf.demo.AgentDemoApplication</mainClass>
                                     </transformer>
                                 </transformers>

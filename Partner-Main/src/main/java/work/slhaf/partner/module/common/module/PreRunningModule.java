@@ -5,7 +5,7 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunn
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 前置模块抽象类
@@ -15,7 +15,7 @@ public abstract class PreRunningModule extends AgentRunningModule<PartnerRunning
     private synchronized void setAppendedPrompt(PartnerRunningFlowContext context) {
         AppendPromptData data = new AppendPromptData();
         data.setModuleName(moduleName());
-        HashMap<String, String> map = getPromptDataMap(context);
+        Map<String, String> map = getPromptDataMap(context);
         data.setAppendedPrompt(map);
         context.setAppendedPrompt(data);
     }
@@ -24,7 +24,7 @@ public abstract class PreRunningModule extends AgentRunningModule<PartnerRunning
         context.getCoreContext().addActiveModule(moduleName());
     }
 
-    protected abstract HashMap<String, String> getPromptDataMap(PartnerRunningFlowContext context);
+    protected abstract Map<String, String> getPromptDataMap(PartnerRunningFlowContext context);
 
     /**
      * 用于在CoreModule接收到的模块Prompt中标识模块名称
@@ -39,6 +39,5 @@ public abstract class PreRunningModule extends AgentRunningModule<PartnerRunning
     }
 
     protected abstract void doExecute(PartnerRunningFlowContext context);
-
 
 }

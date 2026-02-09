@@ -12,7 +12,7 @@ public class Main {
                 .setAgentConfigManager(PartnerAgentConfigManager.class)
                 .setGateway(WebSocketGateway.class)
                 .setAgentExceptionCallback(PartnerExceptionCallback.class)
-                .addAfterLaunchRunners(() -> VectorClient.load())
+                .addAfterLaunchRunners(VectorClient::load)
                 .launch();
     }
 }
