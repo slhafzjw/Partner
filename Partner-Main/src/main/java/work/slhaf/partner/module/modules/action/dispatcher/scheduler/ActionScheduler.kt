@@ -183,6 +183,12 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                         if (it.hour != launchingHour) {
                             shouldBreak = true
                             toTrigger = collectToTrigger(wheel.lastIndex, previousTick, launchingHour)
+                            log.debug(
+                                "Hour changed, previousTick: {}, tick: {}, toTriggerSize: {}",
+                                previousTick,
+                                tick,
+                                toTrigger?.size
+                            )
                             return@checkThenExecute
                         }
 
