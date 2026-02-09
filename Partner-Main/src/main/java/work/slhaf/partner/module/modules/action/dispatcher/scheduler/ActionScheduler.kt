@@ -136,7 +136,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
             fun collectToTrigger(tick: Int, previousTick: Int, triggerHour: Int): Set<ScheduledActionData>? {
                 if (tick > previousTick) {
                     val toTrigger = mutableSetOf<ScheduledActionData>()
-                    for (i in (previousTick + 1)..tick) {
+                    for (i in previousTick..tick) {
                         val bucket = wheel[i]
                         if (bucket.isNotEmpty()) {
                             toTrigger.addAll(bucket)
@@ -193,13 +193,15 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                         onTrigger(it)
                         log.debug("Executing action at hour {} tick {}", launchingHour, tick)
                     }
+
+                    // 休眠一秒
+                    delay(1000)
+
                     if (shouldBreak) {
                         log.debug("Wheel stopped at tick {}", tick)
                         break
                     }
 
-                    // 休眠一秒
-                    delay(1000)
                 }
             }
 
@@ -253,7 +255,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
             ) {
                 val runLoading = {
                     for (actionData in source) {
-                        val latestExecutingTime =
+                        val nextExecutingTime =
                             parseToZonedDateTime(
                                 actionData.scheduleType,
                                 actionData.scheduleContent,
@@ -263,7 +265,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                                 continue
                             }
 
-                        load(latestExecutingTime, actionData)
+                        load(nextExecutingTime, actionData)
                     }
                 }
 
@@ -341,7 +343,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                     } catch (_: Exception) {
                         return null
                     }
-                    if (executionTime.isBefore(now) || executionTime.dayOfYear != now.dayOfYear)
+                    if (executionTime.plusSeconds(1).isBefore(now) || executionTime.dayOfMonth != now.dayOfMonth)
                         null
                     else
                         executionTime
