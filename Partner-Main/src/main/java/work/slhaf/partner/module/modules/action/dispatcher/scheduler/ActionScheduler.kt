@@ -194,7 +194,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                         log.debug("Executing action at hour {} tick {}", launchingHour, tick)
                     }
                     if (shouldBreak) {
-                        log.debug("Wheel stopped")
+                        log.debug("Wheel stopped at tick {}", tick)
                         break
                     }
 
