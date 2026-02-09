@@ -187,7 +187,10 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
 
                         // 取当前 tick、推进过程中经过的 tick 对应任务，异步启动
                     }
-                    toTrigger?.let { onTrigger(it) }
+                    toTrigger?.let {
+                        onTrigger(it)
+                        log.debug("Executing action at hour {} tick {}", launchingHour, tick)
+                    }
                     if (shouldBreak) {
                         log.debug("Wheel stopped")
                         break
