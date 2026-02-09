@@ -235,12 +235,13 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
 
         suspend fun checkThenExecute(then: (currentTime: ZonedDateTime) -> Unit) = wheelActionsLock.withLock {
             fun loadActions(
+                source: Set<ScheduledActionData>,
                 now: ZonedDateTime,
                 load: (latestExecutingTime: ZonedDateTime, actionData: ScheduledActionData) -> Unit,
                 repair: () -> Unit
             ) {
                 val runLoading = {
-                    for (actionData in listScheduledActions()) {
+                    for (actionData in source) {
                         val latestExecutingTime =
                             parseToZonedDateTime(
                                 actionData.scheduleType,
@@ -271,7 +272,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                     }
                 }
 
-                loadActions(currentTime, load, repair)
+                loadActions(actionsGroupByHour[currentTime.hour], currentTime, load, repair)
             }
 
             fun loadDayActions(currentTime: ZonedDateTime) {
@@ -285,7 +286,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                     }
                 }
 
-                loadActions(currentTime, load, repair)
+                loadActions(listScheduledActions(), currentTime, load, repair)
             }
 
             val currentTime = ZonedDateTime.now()
