@@ -151,6 +151,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
             }
 
             suspend fun CoroutineScope.wheel(launchingTime: ZonedDateTime, primaryTickAdvanceTime: Long) {
+                log.debug("Wheel launched at {}, current nanoTime: {}", launchingTime, primaryTickAdvanceTime)
                 // 计算当前距离时内下次任务的剩余时间, 秒级推进
                 val launchingHour = launchingTime.hour
                 var tick = launchingTime.minute * 60 + launchingTime.second
@@ -165,7 +166,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                     tick = (tick + step).coerceAtMost(wheel.lastIndex)
                     lastTickAdvanceTime = current
 
-                    var shouldBreak: Boolean? = null
+                    var shouldBreak = false
                     var toTrigger: Set<ScheduledActionData>? = null
                     checkThenExecute {
 
@@ -187,7 +188,8 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                         // 取当前 tick、推进过程中经过的 tick 对应任务，异步启动
                     }
                     toTrigger?.let { onTrigger(it) }
-                    if (shouldBreak!!) {
+                    if (shouldBreak) {
+                        log.debug("Wheel stopped")
                         break
                     }
 
@@ -197,13 +199,16 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
             }
 
             suspend fun wait(currentTime: ZonedDateTime) {
+                val nextHour = currentTime.truncatedTo(ChronoUnit.HOURS).plusHours(1)
                 val seconds = Duration.between(
-                    currentTime, currentTime.truncatedTo(ChronoUnit.HOURS).plusHours(1)
+                    currentTime, nextHour
                 ).toMillis()
                 // withTimeoutOrNull 内部已处理 seconds 小于 0 的情况
+                log.debug("Start waiting {} ms at {}, target time: {}", seconds, currentTime, nextHour)
                 withTimeoutOrNull(seconds) {
                     state.first { it == WheelState.ACTIVE }
                 }
+                log.debug("Waiting ended at {}", ZonedDateTime.now())
             }
 
             timeWheelScope.launch {
@@ -265,6 +270,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                 val load: (ZonedDateTime, ScheduledActionData) -> Unit = { latestExecutionTime, actionData ->
                     val secondsTime = latestExecutionTime.minute * 60 + latestExecutionTime.second
                     wheel[secondsTime].add(actionData)
+                    log.debug("Action loaded to hour: {}", actionData)
                 }
 
                 val repair: () -> Unit = {
@@ -279,6 +285,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
             fun loadDayActions(currentTime: ZonedDateTime) {
                 val load: (ZonedDateTime, ScheduledActionData) -> Unit = { latestExecutingTime, actionData ->
                     actionsGroupByHour[latestExecutingTime.hour].add(actionData)
+                    log.debug("Action loaded to day: {}", actionData)
                 }
 
                 val repair: () -> Unit = {
