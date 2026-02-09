@@ -74,6 +74,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
         schedulerScope.launch {
             scheduledActionDataSet?.run {
                 for (scheduledActionData in scheduledActionDataSet) {
+                    log.debug("New action to schedule: {}", scheduledActionData)
                     actionCapability.putAction(scheduledActionData)
                     timeWheel.schedule(scheduledActionData)
                 }
@@ -121,11 +122,17 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                     logFailedStatus(actionData)
                     return@checkThenExecute
                 }
+                log.debug("Action next execution time: {}", parseToZonedDateTime)
 
                 val hour = parseToZonedDateTime.hour
                 actionsGroupByHour[hour].add(actionData)
+                log.debug("Action scheduled at {}", hour)
+
                 if (it.hour == hour) {
+                    val wheelOffset = parseToZonedDateTime.minute * 60 + parseToZonedDateTime.second
+                    wheel[wheelOffset].add(actionData)
                     state.value = WheelState.ACTIVE
+                    log.debug("Action scheduled at wheel offset {}", wheelOffset)
                 }
 
             }
