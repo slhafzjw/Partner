@@ -1,5 +1,6 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor
 
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -11,11 +12,14 @@ import org.mockito.Mockito
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import org.slf4j.LoggerFactory
 import work.slhaf.partner.core.action.ActionCapability
 import work.slhaf.partner.core.action.entity.ActionData
 import work.slhaf.partner.core.action.entity.ScheduledActionData
+import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ActionExecutorInput
 import work.slhaf.partner.module.modules.action.dispatcher.scheduler.ActionScheduler
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 /**
  * ActionScheduler.execute(...) 测试矩阵（控制流入口：execute）。
@@ -42,10 +46,60 @@ import java.time.ZonedDateTime
 class ActionSchedulerTest {
 
     @Mock
+    private lateinit var actionExecutor: ActionExecutor
+
+    @Mock
     private lateinit var actionCapability: ActionCapability
 
     @InjectMocks
     private lateinit var actionScheduler: ActionScheduler
+
+    companion object {
+        val log = LoggerFactory.getLogger(ActionSchedulerTest::class.java)!!
+    }
+
+    @Test
+    fun `running test`() {
+        fun buildAction(time: ZonedDateTime): ScheduledActionData {
+            return ScheduledActionData(
+                "tendency",
+                mutableMapOf(),
+                "reason",
+                "description",
+                "source",
+                ScheduledActionData.ScheduleType.ONCE,
+                time.toString()
+            )
+        }
+
+        val now = ZonedDateTime.now()
+        val actions = setOf(
+            buildAction(now.plusMinutes(1)),
+            buildAction(now.truncatedTo(ChronoUnit.HOURS).plusHours(1).minusSeconds(1)),
+        )
+        Mockito.`when`(actionCapability.listActions(null, null))
+            .thenReturn(actions as Set<ActionData>)
+        Mockito.`when`(actionExecutor.execute(any()))
+            .thenAnswer {
+                val input = it.arguments[0] as ActionExecutorInput
+                for (actionData in input.actions) {
+                    log.info("Executed action $actionData at ${ZonedDateTime.now()}")
+                }
+                null
+            }
+        actionScheduler.init()
+
+
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineName("ActionSchedulerTest"))
+        scope.launch {
+            actionScheduler.execute(
+                setOf(
+                    buildAction(now.plusSeconds(5)),
+                )
+            )
+        }
+        readlnOrNull()
+    }
 
     @Test
     fun `execute with null input should return null and no side effects`() {
