@@ -159,10 +159,6 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                     // tick 推进（nano -> second）
                     val current = System.nanoTime()
                     val step = ((current - lastTickAdvanceTime) / 1_000_000_000L).toInt()
-                    if (step <= 0) {
-                        delay(50) // 避免空转
-                        continue
-                    }
 
                     val previousTick = tick
                     tick = (tick + step).coerceAtMost(wheel.lastIndex)
