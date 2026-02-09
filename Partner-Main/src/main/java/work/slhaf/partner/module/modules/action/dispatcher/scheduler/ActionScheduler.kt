@@ -149,11 +149,12 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                 return null
             }
 
-            suspend fun CoroutineScope.wheel(launchingTime: ZonedDateTime) {
+            suspend fun CoroutineScope.wheel(launchingTime: ZonedDateTime, primaryTickAdvanceTime: Long) {
                 // 计算当前距离时内下次任务的剩余时间, 秒级推进
                 val launchingHour = launchingTime.hour
                 var tick = launchingTime.minute * 60 + launchingTime.second
-                var lastTickAdvanceTime = System.nanoTime()
+                var lastTickAdvanceTime = primaryTickAdvanceTime
+
                 while (isActive) {
                     // tick 推进（nano -> second）
                     val current = System.nanoTime()
@@ -213,9 +214,14 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                     // 判断是否该步入下一小时
                     var shouldWait: Boolean? = null
                     var currentTime: ZonedDateTime? = null
+                    var primaryTickAdvanceTime: Long? = null
                     checkThenExecute {
                         currentTime = it
                         shouldWait = actionsGroupByHour[it.hour].isEmpty()
+                        // 由于 wheel 的启动时间可能存在延迟，而时内推进由 nanoTime 保证不会漏发，
+                        // 正常的时序结束又由 tick 是否触顶、当前时是否存在额外任务触发，
+                        // 而启动时无触发保障，此时一并初始化 tick 推进时间，足以应对 check 与 wheel 间的这段时间间隔
+                        primaryTickAdvanceTime = System.nanoTime()
                     }
 
                     // 如果该时无任务则等待，插入事件可提前唤醒
@@ -226,7 +232,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
                     }
 
                     // 唤醒进行时间轮循环
-                    wheel(currentTime!!)
+                    wheel(currentTime!!, primaryTickAdvanceTime!!)
                 }
             }
         }
