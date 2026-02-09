@@ -288,13 +288,14 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
 
             val currentTime = ZonedDateTime.now()
             val currentDay = currentTime.dayOfMonth
+            val currentHour = currentTime.hour
             if (currentDay != recordDay) {
                 recordDay = currentDay
-                recordHour = currentTime.hour
+                recordHour = currentHour
                 loadDayActions(currentTime)
                 loadHourActions(currentTime)
-            } else if (currentTime.hour != recordHour) {
-                recordHour = currentTime.hour
+            } else if (currentHour != recordHour) {
+                recordHour = currentHour
                 loadHourActions(currentTime)
             }
 
