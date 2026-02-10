@@ -16,7 +16,7 @@ import java.util.*;
 public abstract class AgentConfigManager {
 
     @Setter
-    public static AgentConfigManager INSTANCE = new FileAgentConfigManager();
+    public static AgentConfigManager INSTANCE;
     private static final String DEFAULT_KEY = "default";
 
     protected HashMap<String, ModelConfig> modelConfigMap;
