@@ -11,7 +11,9 @@ Partner 是一个实验性的多模块智能体框架，关注 **长期上下文
 该项目仍处于早期实验阶段，核心目标是探索一种 **可扩展、可重组的智能体系统结构**，而非给出最终形态的“通用智能”实现。
 
 ## 流程参考
+
 ### 整体流程
+
 ```mermaid
 ---
 config:
@@ -69,20 +71,16 @@ flowchart TD
 单个主题节点下存在多级子主题。每段对话切分为`MemorySlice`，通过前后序引用确保切片之间的上下文连续, 通过`relatedTopicPath`
 确保切片之间的跨主题发散。切片将聚合为`MemoryNode`(记忆节点)的形式挂载到主题节点。除此之外，每个记忆节点还将按照日期进行索引.
 
-> 未来计划引入向量召回作为`模糊记忆`, 实体图谱作为`语义记忆`.
-
 #### 基于时间轮和行动链的行动系统(开发中)
 
 #### 多用户会话管理
+
 构建区分用户的单上下文窗口、多用户会话的管理机制.
 
-#### 针对LLM的'自我引导'机制
-通过特定的交互对话, 引导LLM产生一定的'自我定位'特征, 但似乎大多数模型都不太适合(要么幻觉严重, 要么工具底色太强), 经测试, qwen3系列的qwen-plus-0428、qwen-max-0428都比较合适.
-
-不过除了`自我引导`部分, Partner的整体架构应当都是通用的.
-
 ### 框架部分
+
 #### 基于注解驱动的核心服务与上层模块注册机制
+
 1. 基于 Reflections, Proxy, ByteBuddy 的从核心服务到智能体流程的完整基于注解的注册机制
 2. 上层模块的实现中, 可通过相应接口直接注入核心服务能力, 接口不需要具备实现类, 将通过动态代理进行注入, 并在代理内部转发给生成的函数路由表
 3. 支持实现者继承原有的模块抽象类并在其中添加各个子模块通用的hook逻辑, 支持在启动类中通过添加Runner来启动追加服务
@@ -102,6 +100,7 @@ flowchart TD
 > 模块注册机制原计划作为后续优化任务处理。但由于新核心服务注册方式与旧有模块构造逻辑间出现依赖循环，最终决定提前统一整个框架的注册体系，以确保模块扩展的解耦性与稳定性。
 
 ## 模块(已实现/正在实现)
+
 - 预处理模块: `PreprocessExecutor`
 - 后处理模块: `PostprocessExecutor`
 - 主对话模块: `CoreModel`
@@ -129,7 +128,9 @@ flowchart TD
   - 行动干预模块: `ActionInterventor`
     - 干预识别模块: `InterventionRecognizer`
     - 干预评估模块: `InterventionEvaluator`
+
 ## 当前问题
+
 - 系统的正常运作效果取决于各模块中大模型对于`prompt`的遵循能力，目前来看`qwen3`的遵循效果明显较好，但在轮次较多时，也容易出现不遵循的情况。
 
 ## 规划
@@ -144,6 +145,7 @@ flowchart TD
 - [ ] 实现演进机制
 
 ## License
+
 This project is not licensed for public use. All rights reserved.
 
 Partner is currently in an early experimental phase. Code, logic, and architecture are rapidly evolving.  
