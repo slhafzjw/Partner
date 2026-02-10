@@ -71,7 +71,28 @@ flowchart TD
 单个主题节点下存在多级子主题。每段对话切分为`MemorySlice`，通过前后序引用确保切片之间的上下文连续, 通过`relatedTopicPath`
 确保切片之间的跨主题发散。切片将聚合为`MemoryNode`(记忆节点)的形式挂载到主题节点。除此之外，每个记忆节点还将按照日期进行索引.
 
-#### 基于时间轮和行动链的行动系统(开发中)
+#### 基于时间轮和行动链的行动系统
+
+行动系统由 ActionCore 作为统一能力入口，维护行动池、待确认行动(按用户区分)、可用行动程序(MCP Tool 描述信息)以及语义倾向缓存。行动本体以
+ActionData 表达，分为 ImmediateActionData 与 ScheduledActionData 两类，核心结构是按阶段(order)组织的行动链：
+`Map<order, List<MetaAction>>`。每个 MetaAction 封装具体行动程序的定位信息、参数容器与执行结果。
+
+整体流程分为规划与分发两段：
+
+- 规划(Pre)：ActionExtractor 先尝试命中语义缓存，否则调用模型抽取行动倾向；ActionEvaluator
+  结合可用行动列表与记忆切片评估行动并产出行动链；ActionConfirmer 对需要确认的行动发起确认，确认通过后进入行动池。
+- 分发(Post)：ActionDispatcher 将 PREPARE 的行动划分为计划型与即时型。计划型进入 ActionScheduler 持有的时间轮组件，即时型直接进入
+  ActionExecutor 并发执行。
+
+执行时，ActionExecutor 以阶段为单位推进行动链，同一阶段内的多个 MetaAction 并行执行，并通过 Phaser 进行阶段同步。参数由
+ParamsExtractor 从上下文/历史结果中提取；若参数不足，则 ActionRepairer 通过动态生成行动单元、调用已有行动或发起自对话/用户补充进行修复；阶段结束后
+ActionCorrector 可根据执行结果对后续行动链进行修正。
+
+行动干预(ActionInterventor)可在执行中或预备阶段识别用户的“更改行动”意图，经评估后对行动链执行追加、插入、删除、取消或重建等操作。ActionCore
+负责将干预应用到具体 ActionData，并确保阶段推进与链变更的互斥安全。
+
+执行环境由 RunnerClient 抽象。LocalRunnerClient 负责本地 MCP 工具调用、动态行动生成与持久化；SandboxRunnerClient
+预留为沙盒执行器客户端，实现与远端行动程序的同步与执行。
 
 #### 多用户会话管理
 
@@ -117,7 +138,7 @@ flowchart TD
   - 感知更新模块: `PerceiveUpdater`
     - 关系提取模块: `RelationExtractor`
     - 静态记忆提取模块: `StaticMemoryExtractor`
-- 行动模块(实现中)
+- 行动模块
   - 行动规划模块: `ActionPlanner`
     - 行动确认模块: `ActionConfirmer`
     - 行动提取模块: `ActionExtractor`
