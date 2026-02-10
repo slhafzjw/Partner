@@ -12,8 +12,8 @@ import java.util.Map;
 @Slf4j
 public class OllamaVectorClient extends VectorClient {
 
-    private String ollamaEmbeddingUrl;
-    private String ollamaEmbeddingModel;
+    private final String ollamaEmbeddingUrl;
+    private final String ollamaEmbeddingModel;
 
     protected OllamaVectorClient(String url, String model) {
         this.ollamaEmbeddingUrl = url;
