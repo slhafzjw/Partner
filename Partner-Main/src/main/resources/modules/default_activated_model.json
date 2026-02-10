@@ -1,8 +1,0 @@
-[
-  "slice_evaluator",
-  "core_model",
-  "topic_extractor",
-  "multi_summarizer",
-  "total_summarizer",
-  "single_summarizer"
-]
