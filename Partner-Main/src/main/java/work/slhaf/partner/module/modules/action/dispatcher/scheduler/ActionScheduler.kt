@@ -70,6 +70,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledActionData>, Void>() 
         })
     }
 
+    // TODO 如果要将 TimeWheel 作为 Agent 内部的循环周期，那么不依赖 Action 链路的内容，将不适合参与到 ActionExecutor，因此需要将 ActionData 的触发类型进行分类：SILENT TRIGGER（仅限更新 ActionData 内部状态，通过属性 copy 完成，不开放过多权限，防止序列化失败）、EXECUTOR、AGENT TURN。考虑将时间轮下放至 ActionCapability，作为底层行动语义的一部分
     override fun execute(scheduledActionDataSet: Set<ScheduledActionData>?): Void? {
         schedulerScope.launch {
             scheduledActionDataSet?.run {

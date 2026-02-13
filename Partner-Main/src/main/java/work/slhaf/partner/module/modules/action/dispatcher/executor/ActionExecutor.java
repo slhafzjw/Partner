@@ -165,6 +165,8 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     } else {
                         actionData.setStatus(ActionStatus.SUCCESS);
                     }
+
+                    // TODO 执行过后需要回写至任务上下文（recentCompletedTask），同时触发自对话信号进行确认并记录以及是否通知用户（触发与否需要机制进行匹配，在模块链路可增加 interaction gate 门控，判断此次对话作用于谁、由谁发出、何种性质、是否需要回应等）
                 }
             });
 
