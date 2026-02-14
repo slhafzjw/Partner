@@ -141,5 +141,3 @@ data class ImmediateActionData(
     override val description: String,
     override val source: String,
 ) : ActionData()
-
-// TODO 考虑是否新增 SYNC、ASYNC 分类，用于适应后台与非后台行动，但是否引入则需要权衡，分析原因和引入后果、是否值得
