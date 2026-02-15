@@ -150,3 +150,42 @@ data class ImmediateExecutableAction(
     override val description: String,
     override val source: String,
 ) : ExecutableAction()
+
+/**
+ * 用于计时的一次性触发或者针对某一数据源进行内容更新的行动
+ */
+data class StateAction(
+    override val source: String,
+    override val reason: String,
+    override val description: String,
+
+    override val scheduleType: Scheduled.ScheduleType,
+    override val scheduleContent: String,
+
+    val trigger: Trigger
+) : Action(), Scheduled {
+
+    sealed interface Trigger {
+
+        fun onTrigger()
+
+        /**
+         * State 更新触发
+         */
+        class Update<T>(val stateSource: T, val update: (stateSource: T) -> Unit) : Trigger {
+            override fun onTrigger() {
+                update(stateSource)
+            }
+        }
+
+        /**
+         *  常规逻辑触发
+         */
+        class Call(val call: () -> Unit) : Trigger {
+            override fun onTrigger() {
+                call()
+            }
+        }
+
+    }
+}
