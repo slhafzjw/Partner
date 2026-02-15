@@ -8,7 +8,7 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.PartnerCore;
-import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.PhaserRecord;
@@ -37,12 +37,12 @@ public class ActionCore extends PartnerCore<ActionCore> {
     /**
      * 持久行动池
      */
-    private CopyOnWriteArraySet<ActionData> actionPool = new CopyOnWriteArraySet<>();
+    private CopyOnWriteArraySet<ExecutableAction> actionPool = new CopyOnWriteArraySet<>();
 
     /**
      * 待确认任务，以userId区分不同用户，因为需要跨请求确认
      */
-    private HashMap<String, List<ActionData>> pendingActions = new HashMap<>();
+    private HashMap<String, List<ExecutableAction>> pendingActions = new HashMap<>();
 
     /**
      * 语义缓存与行为倾向映射
@@ -71,45 +71,45 @@ public class ActionCore extends PartnerCore<ActionCore> {
 
     private void setupShutdownHook() {
         // 将执行中的行动状态置为失败
-        val executingActionSet = listActions(ActionData.ActionStatus.EXECUTING, null);
-        for (ActionData actionData : executingActionSet) {
-            actionData.setStatus(ActionData.ActionStatus.FAILED);
-            actionData.setResult("由于系统中断而失败");
+        val executingActionSet = listActions(ExecutableAction.Status.EXECUTING, null);
+        for (ExecutableAction executableAction : executingActionSet) {
+            executableAction.setStatus(ExecutableAction.Status.FAILED);
+            executableAction.setResult("由于系统中断而失败");
         }
     }
 
     @CapabilityMethod
-    public void putAction(@NonNull ActionData actionData) {
-        actionPool.removeIf(data -> data.getUuid().equals(actionData.getUuid())); // 用来应对 ScheduledActionData 的重新排列
-        actionPool.add(actionData);
+    public void putAction(@NonNull ExecutableAction executableAction) {
+        actionPool.removeIf(data -> data.getUuid().equals(executableAction.getUuid())); // 用来应对 ScheduledActionData 的重新排列
+        actionPool.add(executableAction);
     }
 
     @CapabilityMethod
-    public Set<ActionData> listActions(@Nullable ActionData.ActionStatus actionStatus, @Nullable String source) {
+    public Set<ExecutableAction> listActions(@Nullable ExecutableAction.Status status, @Nullable String source) {
         return actionPool.stream()
-                .filter(actionData -> actionStatus == null || actionData.getStatus().equals(actionStatus))
+                .filter(actionData -> status == null || actionData.getStatus().equals(status))
                 .filter(actionData -> source == null || actionData.getSource().equals(source))
                 .collect(Collectors.toSet());
     }
 
     @CapabilityMethod
-    public synchronized void putPendingActions(String userId, ActionData actionData) {
+    public synchronized void putPendingActions(String userId, ExecutableAction executableAction) {
         pendingActions.computeIfAbsent(userId, k -> {
-            List<ActionData> temp = new ArrayList<>();
-            temp.add(actionData);
+            List<ExecutableAction> temp = new ArrayList<>();
+            temp.add(executableAction);
             return temp;
         });
     }
 
     @CapabilityMethod
-    public synchronized List<ActionData> popPendingAction(String userId) {
-        List<ActionData> infos = pendingActions.get(userId);
+    public synchronized List<ExecutableAction> popPendingAction(String userId) {
+        List<ExecutableAction> infos = pendingActions.get(userId);
         pendingActions.remove(userId);
         return infos;
     }
 
     @CapabilityMethod
-    public List<ActionData> listPendingAction(String userId) {
+    public List<ExecutableAction> listPendingAction(String userId) {
         return pendingActions.get(userId);
     }
 
@@ -180,8 +180,8 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public synchronized PhaserRecord putPhaserRecord(Phaser phaser, ActionData actionData) {
-        PhaserRecord record = new PhaserRecord(phaser, actionData);
+    public synchronized PhaserRecord putPhaserRecord(Phaser phaser, ExecutableAction executableAction) {
+        PhaserRecord record = new PhaserRecord(phaser, executableAction);
         phaserRecords.add(record);
         return record;
     }
@@ -203,7 +203,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
     @CapabilityMethod
     public PhaserRecord getPhaserRecord(String tendency, String source) {
         for (PhaserRecord record : phaserRecords) {
-            ActionData data = record.actionData();
+            ExecutableAction data = record.executableAction();
             if (data.getTendency().equals(tendency) && data.getSource().equals(source)) {
                 return record;
             }
@@ -255,19 +255,19 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public void handleInterventions(List<MetaIntervention> interventions, ActionData actionData) {
+    public void handleInterventions(List<MetaIntervention> interventions, ExecutableAction executableAction) {
         // 加载数据
-        if (actionData == null) {
+        if (executableAction == null) {
             return;
         }
 
         // 加锁确保同步
-        synchronized (actionData.getStatus()) {
-            applyInterventions(interventions, actionData);
+        synchronized (executableAction.getStatus()) {
+            applyInterventions(interventions, executableAction);
         }
     }
 
-    private void applyInterventions(List<MetaIntervention> interventions, ActionData actionData) {
+    private void applyInterventions(List<MetaIntervention> interventions, ExecutableAction executableAction) {
         boolean rebuildCleanTag = false;
 
         interventions.sort(Comparator.comparingInt(MetaIntervention::getOrder));
@@ -279,16 +279,16 @@ public class ActionCore extends PartnerCore<ActionCore> {
                     .toList();
 
             switch (intervention.getType()) {
-                case InterventionType.APPEND -> handleAppend(actionData, intervention.getOrder(), actions);
-                case InterventionType.INSERT -> handleInsert(actionData, intervention.getOrder(), actions);
-                case InterventionType.DELETE -> handleDelete(actionData, intervention.getOrder(), actions);
-                case InterventionType.CANCEL -> handleCancel(actionData);
+                case InterventionType.APPEND -> handleAppend(executableAction, intervention.getOrder(), actions);
+                case InterventionType.INSERT -> handleInsert(executableAction, intervention.getOrder(), actions);
+                case InterventionType.DELETE -> handleDelete(executableAction, intervention.getOrder(), actions);
+                case InterventionType.CANCEL -> handleCancel(executableAction);
                 case InterventionType.REBUILD -> {
                     if (!rebuildCleanTag) {
-                        cleanActionData(actionData);
+                        cleanActionData(executableAction);
                         rebuildCleanTag = true;
                     }
-                    handleRebuild(actionData, intervention.getOrder(), actions);
+                    handleRebuild(executableAction, intervention.getOrder(), actions);
                 }
             }
         }
@@ -298,28 +298,28 @@ public class ActionCore extends PartnerCore<ActionCore> {
     /**
      * 在未进入执行阶段的行动单元组新增新的行动
      */
-    private void handleAppend(ActionData actionData, int order, List<MetaAction> actions) {
-        if (order <= actionData.getExecutingStage())
+    private void handleAppend(ExecutableAction executableAction, int order, List<MetaAction> actions) {
+        if (order <= executableAction.getExecutingStage())
             return;
 
-        actionData.getActionChain().put(order, actions);
+        executableAction.getActionChain().put(order, actions);
     }
 
     /**
      * 在未进入执行阶段和正处于行动阶段的行动单元组插入新的行动
      */
-    private void handleInsert(ActionData actionData, int order, List<MetaAction> actions) {
-        if (order < actionData.getExecutingStage())
+    private void handleInsert(ExecutableAction executableAction, int order, List<MetaAction> actions) {
+        if (order < executableAction.getExecutingStage())
             return;
 
-        actionData.getActionChain().computeIfAbsent(order, k -> new ArrayList<>()).addAll(actions);
+        executableAction.getActionChain().computeIfAbsent(order, k -> new ArrayList<>()).addAll(actions);
     }
 
-    private void handleDelete(ActionData actionData, int order, List<MetaAction> actions) {
-        if (order <= actionData.getExecutingStage())
+    private void handleDelete(ExecutableAction executableAction, int order, List<MetaAction> actions) {
+        if (order <= executableAction.getExecutingStage())
             return;
 
-        Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
+        Map<Integer, List<MetaAction>> actionChain = executableAction.getActionChain();
         if (actionChain.containsKey(order)) {
             actionChain.get(order).removeAll(actions);
             if (actionChain.get(order).isEmpty()) {
@@ -328,21 +328,21 @@ public class ActionCore extends PartnerCore<ActionCore> {
         }
     }
 
-    private void handleCancel(ActionData actionData) {
-        actionData.setStatus(ActionData.ActionStatus.FAILED);
-        actionData.setResult("行动取消");
+    private void handleCancel(ExecutableAction executableAction) {
+        executableAction.setStatus(ExecutableAction.Status.FAILED);
+        executableAction.setResult("行动取消");
     }
 
-    private void handleRebuild(ActionData actionData, int order, List<MetaAction> actions) {
-        Map<Integer, List<MetaAction>> actionChain = actionData.getActionChain();
+    private void handleRebuild(ExecutableAction executableAction, int order, List<MetaAction> actions) {
+        Map<Integer, List<MetaAction>> actionChain = executableAction.getActionChain();
         actionChain.put(order, actions);
     }
 
-    private void cleanActionData(ActionData actionData) {
-        actionData.getActionChain().clear();
-        actionData.setExecutingStage(0);
-        actionData.setStatus(ActionData.ActionStatus.PREPARE);
-        actionData.getHistory().clear();
+    private void cleanActionData(ExecutableAction executableAction) {
+        executableAction.getActionChain().clear();
+        executableAction.setExecutingStage(0);
+        executableAction.setStatus(ExecutableAction.Status.PREPARE);
+        executableAction.getHistory().clear();
     }
 
     /**

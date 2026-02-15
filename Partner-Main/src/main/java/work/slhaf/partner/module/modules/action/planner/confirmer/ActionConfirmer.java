@@ -11,7 +11,7 @@ import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
-import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerResult;
 
@@ -30,23 +30,23 @@ public class ActionConfirmer extends AgentRunningSubModule<ConfirmerInput, Confi
 
     @Override
     public ConfirmerResult execute(ConfirmerInput data) {
-        List<ActionData> actionDataList = data.getActionData();
+        List<ExecutableAction> executableActionList = data.getExecutableActionData();
         ExecutorService executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
-        CountDownLatch latch = new CountDownLatch(actionDataList.size());
+        CountDownLatch latch = new CountDownLatch(executableActionList.size());
 
         ConfirmerResult result = new ConfirmerResult();
         List<String> uuids = result.getUuids();
 
-        for (ActionData actionData : actionDataList) {
+        for (ExecutableAction executableAction : executableActionList) {
             executor.execute(() -> {
                 try {
-                    String prompt = buildPrompt(actionData, data.getInput(), data.getRecentMessages());
+                    String prompt = buildPrompt(executableAction, data.getInput(), data.getRecentMessages());
                     ChatResponse response = this.singleChat(prompt);
                     JSONObject tempResult = JSONObject.parseObject(extractJson(response.getMessage()));
                     if (tempResult.getBoolean("confirmed")) {
-                        actionData.setStatus(ActionData.ActionStatus.PREPARE);
+                        executableAction.setStatus(ExecutableAction.Status.PREPARE);
                         synchronized (uuids) {
-                            uuids.add(actionData.getUuid());
+                            uuids.add(executableAction.getUuid());
                         }
                     }
                 } finally {
@@ -62,7 +62,7 @@ public class ActionConfirmer extends AgentRunningSubModule<ConfirmerInput, Confi
         return result;
     }
 
-    private String buildPrompt(ActionData data, String input, List<Message> recentMessages) {
+    private String buildPrompt(ExecutableAction data, String input, List<Message> recentMessages) {
         JSONObject prompt = new JSONObject();
         prompt.put("[用户输入]", input);
 

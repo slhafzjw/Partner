@@ -7,9 +7,9 @@ import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
-import work.slhaf.partner.core.action.entity.ActionData;
-import work.slhaf.partner.core.action.entity.ImmediateActionData;
-import work.slhaf.partner.core.action.entity.ScheduledActionData;
+import work.slhaf.partner.core.action.entity.ExecutableAction;
+import work.slhaf.partner.core.action.entity.ImmediateExecutableAction;
+import work.slhaf.partner.core.action.entity.ScheduledExecutableAction;
 import work.slhaf.partner.module.common.module.PostRunningModule;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.ActionExecutor;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ActionExecutorInput;
@@ -46,14 +46,14 @@ public class ActionDispatcher extends PostRunningModule {
         // action，理想做法是将执行工具做成执行链的形式，模型的自对话流程、是否通知用户都做成与普通工具同等的通用可选能力，避免绑定固定流程
         executor.execute(() -> {
             String userId = context.getUserId();
-            val preparedActions = actionCapability.listActions(ActionData.ActionStatus.PREPARE, userId);
+            val preparedActions = actionCapability.listActions(ExecutableAction.Status.PREPARE, userId);
             // 分类成PLANNING和IMMEDIATE两类
-            Set<ScheduledActionData> scheduledActions = new HashSet<>();
-            Set<ImmediateActionData> immediateActions = new HashSet<>();
-            for (ActionData preparedAction : preparedActions) {
-                if (preparedAction instanceof ScheduledActionData actionInfo) {
+            Set<ScheduledExecutableAction> scheduledActions = new HashSet<>();
+            Set<ImmediateExecutableAction> immediateActions = new HashSet<>();
+            for (ExecutableAction preparedAction : preparedActions) {
+                if (preparedAction instanceof ScheduledExecutableAction actionInfo) {
                     scheduledActions.add(actionInfo);
-                } else if (preparedAction instanceof ImmediateActionData actionInfo) {
+                } else if (preparedAction instanceof ImmediateExecutableAction actionInfo) {
                     immediateActions.add(actionInfo);
                 }
             }

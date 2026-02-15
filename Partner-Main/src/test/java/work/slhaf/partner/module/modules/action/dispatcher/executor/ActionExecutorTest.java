@@ -72,7 +72,7 @@ class ActionExecutorTest {
     void setUp() {
         lenient().when(cognationCapability.getChatMessages()).thenReturn(Collections.emptyList());
         lenient().when(memoryCapability.getActivatedSlices(anyString())).thenReturn(Collections.emptyList());
-        lenient().when(actionCapability.putPhaserRecord(any(Phaser.class), any(ActionData.class)))
+        lenient().when(actionCapability.putPhaserRecord(any(Phaser.class), any(ExecutableAction.class)))
                 .thenAnswer(inv -> new PhaserRecord(inv.getArgument(0), inv.getArgument(1)));
         lenient().when(actionCapability.loadMetaActionInfo(anyString())).thenAnswer(inv -> {
             MetaActionInfo info = new MetaActionInfo();
@@ -92,7 +92,7 @@ class ActionExecutorTest {
         ExecutorService directExecutor = new DirectExecutorService();
         stubExecutors(directExecutor, directExecutor);
 
-        ImmediateActionData actionData = buildActionData(singleStageChain(false));
+        ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
         ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult extractorResult = new ExtractorResult();
@@ -109,7 +109,7 @@ class ActionExecutorTest {
 
         verify(runnerClient, times(1)).submit(any(MetaAction.class));
         verify(actionCapability, times(1)).removePhaserRecord(any(Phaser.class));
-        assertEquals(ActionData.ActionStatus.SUCCESS, actionData.getStatus());
+        assertEquals(ExecutableAction.Status.SUCCESS, actionData.getStatus());
         assertEquals(1, actionData.getHistory().get(0).size());
     }
 
@@ -119,14 +119,14 @@ class ActionExecutorTest {
         ExecutorService directExecutor = new DirectExecutorService();
         stubExecutors(directExecutor, directExecutor);
 
-        ImmediateActionData actionData = buildActionData(singleStageChain(false));
-        actionData.setStatus(ActionData.ActionStatus.EXECUTING);
+        ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
+        actionData.setStatus(ExecutableAction.Status.EXECUTING);
         ActionExecutorInput input = buildInput("u1", actionData);
 
         actionExecutor.init();
         actionExecutor.execute(input);
 
-        verify(actionCapability, never()).putPhaserRecord(any(Phaser.class), any(ActionData.class));
+        verify(actionCapability, never()).putPhaserRecord(any(Phaser.class), any(ExecutableAction.class));
         verify(runnerClient, never()).submit(any(MetaAction.class));
     }
 
@@ -140,7 +140,7 @@ class ActionExecutorTest {
         Map<Integer, List<MetaAction>> chain = new HashMap<>();
         chain.put(0, List.of(buildMetaAction("a1", false)));
         chain.put(1, List.of(buildMetaAction("a2", false)));
-        ImmediateActionData actionData = buildActionData(chain);
+        ImmediateExecutableAction actionData = buildActionData(chain);
         ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult extractorResult = new ExtractorResult();
@@ -159,7 +159,7 @@ class ActionExecutorTest {
         verify(runnerClient, timeout(5000).times(2)).submit(any(MetaAction.class));
         verify(actionCorrector, timeout(5000).times(2)).execute(any());
         assertEquals(2, actionData.getHistory().size());
-        assertEquals(ActionData.ActionStatus.SUCCESS, actionData.getStatus());
+        assertEquals(ExecutableAction.Status.SUCCESS, actionData.getStatus());
     }
 
     // 场景5：B4.2。目的：验证 IO 行动使用虚拟线程池。
@@ -169,7 +169,7 @@ class ActionExecutorTest {
         ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
         stubExecutors(platformExecutor, virtualExecutor);
 
-        ImmediateActionData actionData = buildActionData(singleStageChain(true));
+        ImmediateExecutableAction actionData = buildActionData(singleStageChain(true));
         ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult extractorResult = new ExtractorResult();
@@ -195,7 +195,7 @@ class ActionExecutorTest {
         ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
         stubExecutors(platformExecutor, virtualExecutor);
 
-        ImmediateActionData actionData = buildActionData(singleStageChain(false));
+        ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
         ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult fail = new ExtractorResult();
@@ -233,7 +233,7 @@ class ActionExecutorTest {
         ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
         stubExecutors(platformExecutor, virtualExecutor);
 
-        ImmediateActionData actionData = buildActionData(singleStageChain(false));
+        ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
         ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult fail = new ExtractorResult();
@@ -264,7 +264,7 @@ class ActionExecutorTest {
         ExecutorService virtualExecutor = Executors.newCachedThreadPool();
         stubExecutors(platformExecutor, virtualExecutor);
 
-        ImmediateActionData actionData = buildActionData(singleStageChain(false));
+        ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
         ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult fail = new ExtractorResult();
@@ -291,13 +291,13 @@ class ActionExecutorTest {
 
         ExecutorService resumeExecutor = Executors.newSingleThreadExecutor();
         resumeExecutor.execute(() -> {
-            while (actionData.getStatus() != ActionData.ActionStatus.INTERRUPTED) {
+            while (actionData.getStatus() != ExecutableAction.Status.INTERRUPTED) {
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException ignored) {
                 }
             }
-            actionData.setStatus(ActionData.ActionStatus.EXECUTING);
+            actionData.setStatus(ExecutableAction.Status.EXECUTING);
         });
 
         actionExecutor.init();
@@ -318,7 +318,7 @@ class ActionExecutorTest {
         ExecutorService virtualExecutor = Executors.newCachedThreadPool();
         stubExecutors(platformExecutor, virtualExecutor);
 
-        ImmediateActionData actionData = buildActionData(singleStageChain(false));
+        ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
         ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult ok = new ExtractorResult();
@@ -351,7 +351,7 @@ class ActionExecutorTest {
         ExecutorService virtualExecutor = Executors.newCachedThreadPool();
         stubExecutors(platformExecutor, virtualExecutor);
 
-        ImmediateActionData actionData = buildActionData(new HashMap<>());
+        ImmediateExecutableAction actionData = buildActionData(new HashMap<>());
         ActionExecutorInput input = buildInput("u1", actionData);
 
         actionExecutor.init();
@@ -369,12 +369,12 @@ class ActionExecutorTest {
         when(actionCapability.runnerClient()).thenReturn(runnerClient);
     }
 
-    private ActionExecutorInput buildInput(String userId, ImmediateActionData actionData) {
+    private ActionExecutorInput buildInput(String userId, ImmediateExecutableAction actionData) {
         return new ActionExecutorInput(Set.of(actionData));
     }
 
-    private ImmediateActionData buildActionData(Map<Integer, List<MetaAction>> actionChain) {
-        val immediateActionData = new ImmediateActionData(
+    private ImmediateExecutableAction buildActionData(Map<Integer, List<MetaAction>> actionChain) {
+        val immediateActionData = new ImmediateExecutableAction(
                 "tendency",
                 actionChain,
                 "reason",

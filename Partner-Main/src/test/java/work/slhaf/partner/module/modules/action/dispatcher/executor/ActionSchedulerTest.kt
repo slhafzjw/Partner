@@ -14,8 +14,9 @@ import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.core.action.ActionCapability
-import work.slhaf.partner.core.action.entity.ActionData
-import work.slhaf.partner.core.action.entity.ScheduledActionData
+import work.slhaf.partner.core.action.entity.ExecutableAction
+import work.slhaf.partner.core.action.entity.Scheduled
+import work.slhaf.partner.core.action.entity.ScheduledExecutableAction
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ActionExecutorInput
 import work.slhaf.partner.module.modules.action.dispatcher.scheduler.ActionScheduler
 import java.time.ZonedDateTime
@@ -60,14 +61,14 @@ class ActionSchedulerTest {
 
     @Test
     fun `running test`() {
-        fun buildAction(time: ZonedDateTime): ScheduledActionData {
-            return ScheduledActionData(
+        fun buildAction(time: ZonedDateTime): ScheduledExecutableAction {
+            return ScheduledExecutableAction(
                 "tendency",
                 mutableMapOf(),
                 "reason",
                 "description",
                 "source",
-                ScheduledActionData.ScheduleType.ONCE,
+                Scheduled.ScheduleType.ONCE,
                 time.toString()
             )
         }
@@ -78,7 +79,7 @@ class ActionSchedulerTest {
             buildAction(now.truncatedTo(ChronoUnit.HOURS).plusHours(1).minusSeconds(1)),
         )
         Mockito.`when`(actionCapability.listActions(null, null))
-            .thenReturn(actions as Set<ActionData>)
+            .thenReturn(actions as Set<ExecutableAction>)
         Mockito.`when`(actionExecutor.execute(any()))
             .thenAnswer {
                 val input = it.arguments[0] as ActionExecutorInput
@@ -107,7 +108,7 @@ class ActionSchedulerTest {
         val result = actionScheduler.execute(null)
 
         assertEquals(null, result)
-        verify(actionCapability, Mockito.never()).putAction(any(ActionData::class.java))
+        verify(actionCapability, Mockito.never()).putAction(any(ExecutableAction::class.java))
     }
 
     @Test
@@ -115,7 +116,7 @@ class ActionSchedulerTest {
         // 场景编号：2；路径：B2 → B2.3；目的：验证正常入轮与副作用
         initTimeWheelWithPrimaryActions(emptySet())
         val action = buildScheduledAction(
-            type = ScheduledActionData.ScheduleType.ONCE,
+            type = Scheduled.ScheduleType.ONCE,
             ZonedDateTime.now().plusHours(1).toString()
         )
 
@@ -132,7 +133,7 @@ class ActionSchedulerTest {
         // 场景编号：3；路径：B2 → B2.1；目的：验证忽略非 PREPARE 状态
         initTimeWheelWithPrimaryActions(emptySet())
         val action = buildScheduledAction(
-            type = ScheduledActionData.ScheduleType.ONCE
+            type = Scheduled.ScheduleType.ONCE
         )
 
         actionScheduler.execute(setOf(action))
@@ -147,7 +148,7 @@ class ActionSchedulerTest {
         // 场景编号：4；路径：B2 → B2.2；目的：验证解析失败被跳过
         initTimeWheelWithPrimaryActions(emptySet())
         val action = buildScheduledAction(
-            type = ScheduledActionData.ScheduleType.ONCE
+            type = Scheduled.ScheduleType.ONCE
         )
 
         actionScheduler.execute(setOf(action))
@@ -161,7 +162,7 @@ class ActionSchedulerTest {
         // 场景编号：5；路径：B2 → B2.2；目的：验证 cron 解析失败被跳过
         initTimeWheelWithPrimaryActions(emptySet())
         val action = buildScheduledAction(
-            type = ScheduledActionData.ScheduleType.CYCLE,
+            type = Scheduled.ScheduleType.CYCLE,
             scheduleContentOverride = "invalid-cron"
         )
 
@@ -176,7 +177,7 @@ class ActionSchedulerTest {
         // 场景编号：6；路径：B2 异常中断；目的：验证异常传播
         initTimeWheelWithPrimaryActions(emptySet())
         val action = buildScheduledAction(
-            type = ScheduledActionData.ScheduleType.ONCE
+            type = Scheduled.ScheduleType.ONCE
         )
         Mockito.doThrow(RuntimeException("boom"))
             .`when`(actionCapability)
@@ -192,7 +193,7 @@ class ActionSchedulerTest {
         // 场景编号：7；路径：B2.3；目的：验证同小时调度触发 ACTIVE
         initTimeWheelWithPrimaryActions(emptySet())
         val action = buildScheduledAction(
-            type = ScheduledActionData.ScheduleType.ONCE,
+            type = Scheduled.ScheduleType.ONCE,
             scheduleContentOverride = ZonedDateTime.now().plusMinutes(2).toString()
         )
 
@@ -211,16 +212,16 @@ class ActionSchedulerTest {
         // 场景编号：15；路径：B2 + B2.1/B2.2/B2.3；目的：验证混合输入行为
         initTimeWheelWithPrimaryActions(emptySet())
         val ok = buildScheduledAction(
-            type = ScheduledActionData.ScheduleType.ONCE,
+            type = Scheduled.ScheduleType.ONCE,
             scheduleContentOverride = ZonedDateTime.now().plusMinutes(2).toString()
         )
         val nonPrepare = buildScheduledAction(
-            type = ScheduledActionData.ScheduleType.ONCE,
+            type = Scheduled.ScheduleType.ONCE,
             scheduleContentOverride = ZonedDateTime.now().plusMinutes(2).toString()
         )
-        nonPrepare.status = ActionData.ActionStatus.FAILED
+        nonPrepare.status = ExecutableAction.Status.FAILED
         val invalid = buildScheduledAction(
-            type = ScheduledActionData.ScheduleType.CYCLE,
+            type = Scheduled.ScheduleType.CYCLE,
             scheduleContentOverride = "invalid-cron"
         )
 
@@ -235,18 +236,18 @@ class ActionSchedulerTest {
         assertFalse(allScheduled.contains(invalid))
     }
 
-    private fun initTimeWheelWithPrimaryActions(actions: Set<ScheduledActionData>) {
+    private fun initTimeWheelWithPrimaryActions(actions: Set<ScheduledExecutableAction>) {
         @Suppress("UNCHECKED_CAST")
         Mockito.`when`(actionCapability.listActions(null, null))
-            .thenReturn(actions as Set<ActionData>)
+            .thenReturn(actions as Set<ExecutableAction>)
         actionScheduler.init()
     }
 
     private fun buildScheduledAction(
-        type: ScheduledActionData.ScheduleType,
+        type: Scheduled.ScheduleType,
         scheduleContentOverride: String? = null
-    ): ScheduledActionData {
-        val action = ScheduledActionData(
+    ): ScheduledExecutableAction {
+        val action = ScheduledExecutableAction(
             "test",
             mutableMapOf(),
             "reason",
@@ -258,7 +259,7 @@ class ActionSchedulerTest {
         return action
     }
 
-    private fun ScheduledActionData.scheduleContentHour(): Int {
+    private fun ScheduledExecutableAction.scheduleContentHour(): Int {
         return ZonedDateTime.parse(this.scheduleContent).hour
     }
 
@@ -269,14 +270,14 @@ class ActionSchedulerTest {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun actionsGroupByHour(timeWheel: Any): Array<MutableSet<ScheduledActionData>> {
+    private fun actionsGroupByHour(timeWheel: Any): Array<MutableSet<ScheduledExecutableAction>> {
         val field = timeWheel.javaClass.getDeclaredField("actionsGroupByHour")
         field.isAccessible = true
-        return field.get(timeWheel) as Array<MutableSet<ScheduledActionData>>
+        return field.get(timeWheel) as Array<MutableSet<ScheduledExecutableAction>>
     }
 
-    private fun allScheduledActions(timeWheel: Any): Set<ScheduledActionData> {
-        val result = linkedSetOf<ScheduledActionData>()
+    private fun allScheduledActions(timeWheel: Any): Set<ScheduledExecutableAction> {
+        val result = linkedSetOf<ScheduledExecutableAction>()
         for (bucket in actionsGroupByHour(timeWheel)) {
             result.addAll(bucket)
         }

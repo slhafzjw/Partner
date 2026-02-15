@@ -143,21 +143,21 @@ public class ActionPlanner extends PreRunningModule {
         if (uuids == null) {
             return;
         }
-        List<ActionData> pendingActions = actionCapability.popPendingAction(context.getUserId());
-        for (ActionData actionData : pendingActions) {
-            if (uuids.contains(actionData.getUuid())) {
-                actionCapability.putAction(actionData);
+        List<ExecutableAction> pendingActions = actionCapability.popPendingAction(context.getUserId());
+        for (ExecutableAction executableAction : pendingActions) {
+            if (uuids.contains(executableAction.getUuid())) {
+                actionCapability.putAction(executableAction);
             }
         }
     }
 
     private void putActionData(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
-            ActionData actionData = assemblyHelper.buildActionData(evaluatorResult, context.getUserId());
+            ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, context.getUserId());
             if (evaluatorResult.isNeedConfirm()) {
-                actionCapability.putPendingActions(context.getUserId(), actionData);
+                actionCapability.putPendingActions(context.getUserId(), executableAction);
             } else {
-                actionCapability.putAction(actionData);
+                actionCapability.putAction(executableAction);
             }
         }
     }
@@ -172,18 +172,18 @@ public class ActionPlanner extends PreRunningModule {
     }
 
     private void setupPendingActions(HashMap<String, String> map, String userId) {
-        List<ActionData> actionData = actionCapability.listPendingAction(userId);
-        if (actionData == null || actionData.isEmpty()) {
+        List<ExecutableAction> executableActionData = actionCapability.listPendingAction(userId);
+        if (executableActionData == null || executableActionData.isEmpty()) {
             map.put("[待确认行动] <等待用户确认的行动信息>", "无待确认行动");
             return;
         }
-        for (int i = 0; i < actionData.size(); i++) {
-            map.put("[待确认行动 " + (i + 1) + " ] <等待用户确认的行动信息>", generateActionStr(actionData.get(i)));
+        for (int i = 0; i < executableActionData.size(); i++) {
+            map.put("[待确认行动 " + (i + 1) + " ] <等待用户确认的行动信息>", generateActionStr(executableActionData.get(i)));
         }
     }
 
     private void setupPreparedActions(HashMap<String, String> map, String userId) {
-        val preparedActions = actionCapability.listActions(ActionData.ActionStatus.PREPARE, userId).stream().toList();
+        val preparedActions = actionCapability.listActions(ExecutableAction.Status.PREPARE, userId).stream().toList();
         if (preparedActions.isEmpty()) {
             map.put("[预备行动] <预备执行或放入计划池的行动信息>", "无预备行动");
             return;
@@ -193,10 +193,10 @@ public class ActionPlanner extends PreRunningModule {
         }
     }
 
-    private String generateActionStr(ActionData actionData) {
-        return "<行动倾向>" + " : " + actionData.getTendency() +
-                "<行动原因>" + " : " + actionData.getReason() +
-                "<工具描述>" + " : " + actionData.getDescription();
+    private String generateActionStr(ExecutableAction executableAction) {
+        return "<行动倾向>" + " : " + executableAction.getTendency() +
+                "<行动原因>" + " : " + executableAction.getReason() +
+                "<工具描述>" + " : " + executableAction.getDescription();
     }
 
     @Override
@@ -231,10 +231,10 @@ public class ActionPlanner extends PreRunningModule {
             return input;
         }
 
-        private ActionData buildActionData(EvaluatorResult evaluatorResult, String userId) {
+        private ExecutableAction buildActionData(EvaluatorResult evaluatorResult, String userId) {
             Map<Integer, List<MetaAction>> actionChain = getActionChain(evaluatorResult);
             return switch (evaluatorResult.getType()) {
-                case PLANNING -> new ScheduledActionData(
+                case PLANNING -> new ScheduledExecutableAction(
                         evaluatorResult.getTendency(),
                         actionChain,
                         evaluatorResult.getReason(),
@@ -243,7 +243,7 @@ public class ActionPlanner extends PreRunningModule {
                         evaluatorResult.getScheduleType(),
                         evaluatorResult.getScheduleContent()
                 );
-                case IMMEDIATE -> new ImmediateActionData(
+                case IMMEDIATE -> new ImmediateExecutableAction(
                         evaluatorResult.getTendency(),
                         actionChain,
                         evaluatorResult.getReason(),
@@ -332,8 +332,8 @@ public class ActionPlanner extends PreRunningModule {
         private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
             ConfirmerInput confirmerInput = new ConfirmerInput();
             confirmerInput.setInput(context.getInput());
-            List<ActionData> pendingActions = actionCapability.listPendingAction(context.getUserId());
-            confirmerInput.setActionData(pendingActions);
+            List<ExecutableAction> pendingActions = actionCapability.listPendingAction(context.getUserId());
+            confirmerInput.setExecutableActionData(pendingActions);
             return confirmerInput;
         }
     }

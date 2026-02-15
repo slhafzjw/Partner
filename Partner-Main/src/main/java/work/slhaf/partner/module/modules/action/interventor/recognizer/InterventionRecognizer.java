@@ -9,7 +9,7 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunn
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
-import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.MetaRecognizerResult;
 import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerInput;
 import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerResult;
@@ -30,14 +30,14 @@ public class InterventionRecognizer extends AgentRunningSubModule<RecognizerInpu
     public RecognizerResult execute(RecognizerInput input) {
         // 获取必须数据
         ExecutorService executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
-        List<ActionData> executingActions = input.getExecutingActions();
-        List<ActionData> preparedActions = input.getPreparedActions();
+        List<ExecutableAction> executingActions = input.getExecutingActions();
+        List<ExecutableAction> preparedActions = input.getPreparedActions();
         CountDownLatch countDownLatch = new CountDownLatch(executingActions.size() + preparedActions.size());
 
         // 创建结果容器
         RecognizerResult recognizerResult = new RecognizerResult();
-        Map<String, ActionData> executingInterventions = recognizerResult.getExecutingInterventions();
-        Map<String, ActionData> preparedInterventions = recognizerResult.getPreparedInterventions();
+        Map<String, ExecutableAction> executingInterventions = recognizerResult.getExecutingInterventions();
+        Map<String, ExecutableAction> preparedInterventions = recognizerResult.getPreparedInterventions();
 
         // 执行识别操作
         recognizeIntervention(executingInterventions, executingActions, executor, input, countDownLatch);
@@ -51,8 +51,8 @@ public class InterventionRecognizer extends AgentRunningSubModule<RecognizerInpu
         return recognizerResult;
     }
 
-    private void recognizeIntervention(Map<String, ActionData> interventionsMap, List<ActionData> actions, ExecutorService executor, RecognizerInput input, CountDownLatch latch) {
-        for (ActionData data : actions) {
+    private void recognizeIntervention(Map<String, ExecutableAction> interventionsMap, List<ExecutableAction> actions, ExecutorService executor, RecognizerInput input, CountDownLatch latch) {
+        for (ExecutableAction data : actions) {
             executor.execute(() -> {
                 try {
                     String prompt = buildPrompt(data, input);
@@ -72,15 +72,15 @@ public class InterventionRecognizer extends AgentRunningSubModule<RecognizerInpu
         }
     }
 
-    private String buildPrompt(ActionData actionData, RecognizerInput input) {
+    private String buildPrompt(ExecutableAction executableAction, RecognizerInput input) {
         JSONObject json = new JSONObject();
 
         JSONObject actionInfo = json.putObject("行动信息");
-        actionInfo.put("行动倾向", actionData.getTendency());
-        actionInfo.put("行动原因", actionData.getReason());
-        actionInfo.put("行动描述", actionData.getDescription());
-        actionInfo.put("行动状态", actionData.getStatus());
-        actionInfo.put("行动来源", actionData.getSource());
+        actionInfo.put("行动倾向", executableAction.getTendency());
+        actionInfo.put("行动原因", executableAction.getReason());
+        actionInfo.put("行动描述", executableAction.getDescription());
+        actionInfo.put("行动状态", executableAction.getStatus());
+        actionInfo.put("行动来源", executableAction.getSource());
 
         JSONObject interactionInfo = json.putObject("交互信息");
         interactionInfo.put("用户输入", input.getInput());

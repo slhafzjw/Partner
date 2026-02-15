@@ -4,15 +4,44 @@ import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.Histo
 import java.time.ZonedDateTime
 import java.util.*
 
-/**
- * 行动模块传递的行动数据，包含行动uuid、倾向、状态、行动链、结果、发起原因、行动描述等信息。
- */
-sealed class ActionData {
+sealed class Action {
     /**
      * 行动ID
      */
     val uuid: String = UUID.randomUUID().toString()
 
+    /**
+     * 行动来源
+     */
+    abstract val source: String
+
+    /**
+     * 行动原因
+     */
+    abstract val reason: String
+
+    /**
+     * 行动描述
+     */
+    abstract val description: String
+
+}
+
+sealed interface Scheduled {
+
+    val scheduleType: ScheduleType
+    val scheduleContent: String
+
+    enum class ScheduleType {
+        CYCLE,
+        ONCE
+    }
+}
+
+/**
+ * 行动模块传递的行动数据，包含行动uuid、倾向、状态、行动链、结果、发起原因、行动描述等信息。
+ */
+sealed class ExecutableAction : Action() {
     /**
      * 行动倾向
      */
@@ -21,7 +50,7 @@ sealed class ActionData {
     /**
      * 行动状态
      */
-    var status: ActionStatus = ActionStatus.PREPARE
+    var status: Status = Status.PREPARE
 
     /**
      * 行动链
@@ -45,22 +74,7 @@ sealed class ActionData {
      */
     val additionalContext: MutableMap<Int, MutableList<String>> = mutableMapOf()
 
-    /**
-     * 行动原因
-     */
-    abstract val reason: String
-
-    /**
-     * 行动描述
-     */
-    abstract val description: String
-
-    /**
-     * 行动来源
-     */
-    abstract val source: String
-
-    enum class ActionStatus {
+    enum class Status {
         /**
          * 执行成功
          */
@@ -89,17 +103,17 @@ sealed class ActionData {
 }
 
 /**
- * 计划行动数据类，继承自{@link ActionData}，扩展了属性{@link ScheduledActionData#type}和{@link ScheduledActionData#scheduleContent}，用于标识计划类型(单次还是周期性任务)和计划内容
+ * 计划行动数据类，继承自[Action]，扩展了[Scheduled]相关调度属性，用于标识计划类型(单次还是周期性任务)和计划内容
  */
-data class ScheduledActionData(
+data class ScheduledExecutableAction(
     override val tendency: String,
     override val actionChain: MutableMap<Int, MutableList<MetaAction>>,
     override val reason: String,
     override val description: String,
     override val source: String,
-    val scheduleType: ScheduleType,
-    val scheduleContent: String,
-) : ActionData() {
+    override val scheduleType: Scheduled.ScheduleType,
+    override val scheduleContent: String
+) : ExecutableAction(), Scheduled {
 
     val scheduleHistories = ArrayList<ScheduleHistory>()
 
@@ -116,12 +130,7 @@ data class ScheduledActionData(
             }
         }
 
-        status = ActionStatus.PREPARE
-    }
-
-    enum class ScheduleType {
-        CYCLE,
-        ONCE
+        status = Status.PREPARE
     }
 
     data class ScheduleHistory(
@@ -134,10 +143,10 @@ data class ScheduledActionData(
 /**
  * 即时行动数据类
  */
-data class ImmediateActionData(
+data class ImmediateExecutableAction(
     override val tendency: String,
     override val actionChain: MutableMap<Int, MutableList<MetaAction>>,
     override val reason: String,
     override val description: String,
     override val source: String,
-) : ActionData()
+) : ExecutableAction()

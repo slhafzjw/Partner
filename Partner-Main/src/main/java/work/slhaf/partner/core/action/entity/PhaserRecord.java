@@ -1,13 +1,13 @@
 package work.slhaf.partner.core.action.entity;
 
-import work.slhaf.partner.core.action.entity.ActionData.ActionStatus;
+import work.slhaf.partner.core.action.entity.ExecutableAction.Status;
 
 import java.util.concurrent.Phaser;
 
-public record PhaserRecord(Phaser phaser, ActionData actionData) {
+public record PhaserRecord(Phaser phaser, ExecutableAction executableAction) {
 
     public void fail() {
-        actionData.setStatus(ActionStatus.FAILED);
+        executableAction.setStatus(Status.FAILED);
     }
 
     /**
@@ -15,8 +15,8 @@ public record PhaserRecord(Phaser phaser, ActionData actionData) {
      * 同时循环检查进行阻塞
      */
     public void interrupt() {
-        actionData.setStatus(ActionStatus.INTERRUPTED);
-        while (actionData().getStatus() == ActionStatus.INTERRUPTED) {
+        executableAction.setStatus(Status.INTERRUPTED);
+        while (executableAction().getStatus() == Status.INTERRUPTED) {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException ignored) {
@@ -28,6 +28,6 @@ public record PhaserRecord(Phaser phaser, ActionData actionData) {
      * 将状态重新设置为 EXECUTING ，恢复 interrupt 阻塞状态
      */
     public void complete() {
-        actionData().setStatus(ActionStatus.EXECUTING);
+        executableAction().setStatus(Status.EXECUTING);
     }
 }

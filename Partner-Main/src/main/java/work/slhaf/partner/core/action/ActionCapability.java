@@ -3,7 +3,7 @@ package work.slhaf.partner.core.action;
 import lombok.NonNull;
 import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
-import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.PhaserRecord;
@@ -20,15 +20,15 @@ import java.util.concurrent.Phaser;
 @Capability(value = "action")
 public interface ActionCapability {
 
-    void putAction(@NonNull ActionData actionData);
+    void putAction(@NonNull ExecutableAction executableAction);
 
-    Set<ActionData> listActions(@Nullable ActionData.ActionStatus actionStatus, @Nullable String source);
+    Set<ExecutableAction> listActions(@Nullable ExecutableAction.Status status, @Nullable String source);
 
-    List<ActionData> popPendingAction(String userId);
+    List<ExecutableAction> popPendingAction(String userId);
 
-    List<ActionData> listPendingAction(String userId);
+    List<ExecutableAction> listPendingAction(String userId);
 
-    void putPendingActions(String userId, ActionData actionData);
+    void putPendingActions(String userId, ExecutableAction executableAction);
 
     List<String> selectTendencyCache(String input);
 
@@ -36,7 +36,7 @@ public interface ActionCapability {
 
     ExecutorService getExecutor(ActionCore.ExecutorType type);
 
-    PhaserRecord putPhaserRecord(Phaser phaser, ActionData actionData);
+    PhaserRecord putPhaserRecord(Phaser phaser, ExecutableAction executableAction);
 
     void removePhaserRecord(Phaser phaser);
 
@@ -54,6 +54,6 @@ public interface ActionCapability {
 
     RunnerClient runnerClient();
 
-    void handleInterventions(List<MetaIntervention> interventions, ActionData data);
+    void handleInterventions(List<MetaIntervention> interventions, ExecutableAction data);
 
 }

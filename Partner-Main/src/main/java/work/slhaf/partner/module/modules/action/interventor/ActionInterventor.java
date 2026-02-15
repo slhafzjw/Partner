@@ -9,7 +9,7 @@ import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
-import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
@@ -96,7 +96,7 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
 
     }
 
-    private void handleInterventions(List<EvaluatedInterventionData> interventionDataList, Map<String, ActionData> interventionDataMap) {
+    private void handleInterventions(List<EvaluatedInterventionData> interventionDataList, Map<String, ExecutableAction> interventionDataMap) {
         val executor = actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM);
         executor.execute(() -> {
             for (EvaluatedInterventionData interventionData : interventionDataList) {
@@ -175,8 +175,8 @@ public class ActionInterventor extends PreRunningModule implements ActivateModel
             recognizerInput.setUserDialogMapStr(memoryCapability.getUserDialogMapStr(userId));
             // 参考的对话列表大小或需调整
             recognizerInput.setRecentMessages(cognationCapability.getChatMessages());
-            recognizerInput.setExecutingActions(actionCapability.listPhaserRecords().stream().map(PhaserRecord::actionData).toList());
-            recognizerInput.setPreparedActions(actionCapability.listActions(ActionData.ActionStatus.PREPARE, userId).stream().toList());
+            recognizerInput.setExecutingActions(actionCapability.listPhaserRecords().stream().map(PhaserRecord::executableAction).toList());
+            recognizerInput.setPreparedActions(actionCapability.listActions(ExecutableAction.Status.PREPARE, userId).stream().toList());
             return recognizerInput;
         }
 

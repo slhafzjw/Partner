@@ -10,7 +10,7 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunn
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
-import work.slhaf.partner.core.action.entity.ActionData.ActionStatus;
+import work.slhaf.partner.core.action.entity.ExecutableAction.Status;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
@@ -69,22 +69,22 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
     public Void execute(ActionExecutorInput input) {
         val actions = input.getActions();
         // 异步执行所有行动
-        for (ActionData actionData : actions) {
+        for (ExecutableAction executableAction : actions) {
             platformExecutor.execute(() -> {
-                val source = actionData.getSource();
-                if (actionData.getStatus() != ActionStatus.PREPARE) {
+                val source = executableAction.getSource();
+                if (executableAction.getStatus() != Status.PREPARE) {
                     return;
                 }
-                val actionChain = actionData.getActionChain();
+                val actionChain = executableAction.getActionChain();
                 if (actionChain.isEmpty()) {
-                    actionData.setStatus(ActionStatus.FAILED);
-                    actionData.setResult("行动链为空");
+                    executableAction.setStatus(Status.FAILED);
+                    executableAction.setResult("行动链为空");
                     return;
                 }
                 // 注册执行中行动
                 val phaser = new Phaser();
-                val phaserRecord = actionCapability.putPhaserRecord(phaser, actionData);
-                actionData.setStatus(ActionStatus.EXECUTING);
+                val phaserRecord = actionCapability.putPhaserRecord(phaser, executableAction);
+                executableAction.setStatus(Status.EXECUTING);
 
                 // 开始执行
                 val stageCursor = new Object() {
@@ -120,13 +120,13 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     void update() {
                         val orderList = new ArrayList<>(actionChain.keySet());
                         orderList.sort(Integer::compareTo);
-                        actionData.setExecutingStage(orderList.get(stageCount));
+                        executableAction.setExecutingStage(orderList.get(stageCount));
                     }
                 };
 
                 stageCursor.init();
                 do {
-                    val metaActions = actionChain.get(actionData.getExecutingStage());
+                    val metaActions = actionChain.get(executableAction.getExecutingStage());
 
                     val listeningRecord = executeAndListening(metaActions, phaserRecord, source);
                     phaser.awaitAdvance(listeningRecord.phase());
@@ -144,9 +144,9 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                     try {
                         // 针对行动链进行修正，修正需要传入执行历史、行动目标等内容
                         // 如果后续运行 corrector 触发频率较高，可考虑增加重试机制
-                        val correctorInput = assemblyHelper.buildCorrectorInput(actionData, source);
+                        val correctorInput = assemblyHelper.buildCorrectorInput(executableAction, source);
                         val correctorResult = actionCorrector.execute(correctorInput);
-                        actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), actionData);
+                        actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), executableAction);
                     } catch (Exception ignored) {
                     }
 
@@ -157,13 +157,13 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
 
                 // 结束
                 actionCapability.removePhaserRecord(phaser);
-                if (actionData.getStatus() != ActionStatus.FAILED) {
+                if (executableAction.getStatus() != Status.FAILED) {
                     // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
-                    if (actionData instanceof ScheduledActionData scheduledActionData) {
+                    if (executableAction instanceof ScheduledExecutableAction scheduledActionData) {
                         scheduledActionData.recordAndReset();
                         actionScheduler.execute(Set.of(scheduledActionData));
                     } else {
-                        actionData.setStatus(ActionStatus.SUCCESS);
+                        executableAction.setStatus(Status.SUCCESS);
                     }
 
                     // TODO 执行过后需要回写至任务上下文（recentCompletedTask），同时触发自对话信号进行确认并记录以及是否通知用户（触发与否需要机制进行匹配，在模块链路可增加 interaction gate 门控，判断此次对话作用于谁、由谁发出、何种性质、是否需要回应等）
@@ -232,7 +232,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
             try {
                 val result = metaAction.getResult();
                 do {
-                    val actionData = phaserRecord.actionData();
+                    val actionData = phaserRecord.executableAction();
                     val executingStage = actionData.getExecutingStage();
                     val historyActionResults = actionData.getHistory().get(executingStage);
                     val additionalContext = actionData.getAdditionalContext().get(executingStage);
@@ -307,14 +307,14 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
             return input;
         }
 
-        private CorrectorInput buildCorrectorInput(ActionData actionData, String source) {
+        private CorrectorInput buildCorrectorInput(ExecutableAction executableAction, String source) {
             return CorrectorInput.builder()
-                    .tendency(actionData.getTendency())
-                    .source(actionData.getSource())
-                    .reason(actionData.getReason())
-                    .description(actionData.getDescription())
-                    .history(actionData.getHistory().get(actionData.getExecutingStage()))
-                    .status(actionData.getStatus())
+                    .tendency(executableAction.getTendency())
+                    .source(executableAction.getSource())
+                    .reason(executableAction.getReason())
+                    .description(executableAction.getDescription())
+                    .history(executableAction.getHistory().get(executableAction.getExecutingStage()))
+                    .status(executableAction.getStatus())
                     .recentMessages(cognationCapability.getChatMessages())
                     .activatedSlices(memoryCapability.getActivatedSlices(source))
                     .build();

@@ -10,7 +10,7 @@ import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
-import work.slhaf.partner.core.action.entity.ActionData;
+import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorResult;
@@ -36,8 +36,8 @@ public class InterventionEvaluator extends AgentRunningSubModule<EvaluatorInput,
     public EvaluatorResult execute(EvaluatorInput input) {
         // 获取必须数据
         ExecutorService executor = actionCapability.getExecutor(ExecutorType.VIRTUAL);
-        Map<String, ActionData> executingInterventions = input.getExecutingInterventions();
-        Map<String, ActionData> preparedInterventions = input.getPreparedInterventions();
+        Map<String, ExecutableAction> executingInterventions = input.getExecutingInterventions();
+        Map<String, ExecutableAction> preparedInterventions = input.getPreparedInterventions();
         CountDownLatch latch = new CountDownLatch(executingInterventions.size() + preparedInterventions.size());
 
         // 创建结果容器
@@ -58,7 +58,7 @@ public class InterventionEvaluator extends AgentRunningSubModule<EvaluatorInput,
         return result;
     }
 
-    private void evaluateIntervention(List<EvaluatedInterventionData> evaluatedDataList, Map<String, ActionData> interventionMap, EvaluatorInput input, ExecutorService executor, CountDownLatch latch) {
+    private void evaluateIntervention(List<EvaluatedInterventionData> evaluatedDataList, Map<String, ExecutableAction> interventionMap, EvaluatorInput input, ExecutorService executor, CountDownLatch latch) {
         interventionMap.forEach((tendency, actionData) -> executor.execute(() -> {
             try {
                 String prompt = buildPrompt(input.getRecentMessages(), input.getActivatedSlices(), actionData, tendency);
@@ -78,12 +78,12 @@ public class InterventionEvaluator extends AgentRunningSubModule<EvaluatorInput,
     }
 
     private String buildPrompt(List<Message> recentMessages, List<EvaluatedSlice> activatedSlices,
-                               ActionData actionData, String tendency) {
+                               ExecutableAction executableAction, String tendency) {
         JSONObject json = new JSONObject();
         json.put("干预倾向", tendency);
         json.putArray("近期对话").addAll(recentMessages);
         json.putArray("参考记忆").addAll(activatedSlices);
-        json.put("将干预的行动", JSONObject.toJSONString(actionData));
+        json.put("将干预的行动", JSONObject.toJSONString(executableAction));
         return json.toJSONString();
     }
 
