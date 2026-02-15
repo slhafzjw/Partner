@@ -27,7 +27,7 @@ sealed class Action {
 
 }
 
-sealed interface Scheduled {
+sealed interface Schedulable {
 
     val scheduleType: ScheduleType
     val scheduleContent: String
@@ -103,17 +103,17 @@ sealed class ExecutableAction : Action() {
 }
 
 /**
- * 计划行动数据类，继承自[Action]，扩展了[Scheduled]相关调度属性，用于标识计划类型(单次还是周期性任务)和计划内容
+ * 计划行动数据类，继承自[Action]，扩展了[Schedulable]相关调度属性，用于标识计划类型(单次还是周期性任务)和计划内容
  */
-data class ScheduledExecutableAction(
+data class SchedulableExecutableAction(
     override val tendency: String,
     override val actionChain: MutableMap<Int, MutableList<MetaAction>>,
     override val reason: String,
     override val description: String,
     override val source: String,
-    override val scheduleType: Scheduled.ScheduleType,
+    override val scheduleType: Schedulable.ScheduleType,
     override val scheduleContent: String
-) : ExecutableAction(), Scheduled {
+) : ExecutableAction(), Schedulable {
 
     val scheduleHistories = ArrayList<ScheduleHistory>()
 
@@ -159,11 +159,11 @@ data class StateAction(
     override val reason: String,
     override val description: String,
 
-    override val scheduleType: Scheduled.ScheduleType,
+    override val scheduleType: Schedulable.ScheduleType,
     override val scheduleContent: String,
 
     val trigger: Trigger
-) : Action(), Scheduled {
+) : Action(), Schedulable {
 
     sealed interface Trigger {
 

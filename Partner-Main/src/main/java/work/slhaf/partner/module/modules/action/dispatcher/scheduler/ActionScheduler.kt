@@ -18,8 +18,8 @@ import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule
 import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule
 import work.slhaf.partner.core.action.ActionCapability
 import work.slhaf.partner.core.action.entity.ExecutableAction
-import work.slhaf.partner.core.action.entity.Scheduled
-import work.slhaf.partner.core.action.entity.ScheduledExecutableAction
+import work.slhaf.partner.core.action.entity.Schedulable
+import work.slhaf.partner.core.action.entity.SchedulableExecutableAction
 import work.slhaf.partner.module.modules.action.dispatcher.executor.ActionExecutor
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ActionExecutorInput
 import java.io.Closeable
@@ -30,7 +30,7 @@ import java.util.stream.Collectors
 import kotlin.jvm.optionals.getOrNull
 
 @AgentSubModule
-class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Void>() {
+class ActionScheduler : AgentRunningSubModule<Set<SchedulableExecutableAction>, Void>() {
 
     @InjectCapability
     private lateinit var actionCapability: ActionCapability
@@ -49,15 +49,15 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
 
     @Init
     fun init() {
-        val listScheduledActions: () -> Set<ScheduledExecutableAction> = {
+        val listScheduledActions: () -> Set<SchedulableExecutableAction> = {
             actionCapability.listActions(null, null)
                 .stream()
-                .filter { it is ScheduledExecutableAction }
-                .map { it as ScheduledExecutableAction }
+                .filter { it is SchedulableExecutableAction }
+                .map { it as SchedulableExecutableAction }
                 .collect(Collectors.toSet())
         }
 
-        val onTrigger: (Set<ScheduledExecutableAction>) -> Unit = { actionExecutor.execute(ActionExecutorInput(it)) }
+        val onTrigger: (Set<SchedulableExecutableAction>) -> Unit = { actionExecutor.execute(ActionExecutorInput(it)) }
 
         timeWheel = TimeWheel(listScheduledActions, onTrigger)
 
@@ -72,7 +72,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
     }
 
     // TODO 如果要将 TimeWheel 作为 Agent 内部的循环周期，那么不依赖 Action 链路的内容，将不适合参与到 ActionExecutor，因此需要将 ActionData 的触发类型进行分类：SILENT TRIGGER（仅限更新 ActionData 内部状态，通过属性 copy 完成，不开放过多权限，防止序列化失败）、EXECUTOR、AGENT TURN。考虑将时间轮下放至 ActionCapability，作为底层行动语义的一部分
-    override fun execute(scheduledActionDataSet: Set<ScheduledExecutableAction>?): Void? {
+    override fun execute(scheduledActionDataSet: Set<SchedulableExecutableAction>?): Void? {
         schedulerScope.launch {
             scheduledActionDataSet?.run {
                 for (scheduledActionData in scheduledActionDataSet) {
@@ -86,12 +86,12 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
     }
 
     private class TimeWheel(
-        val listScheduledActions: () -> Set<ScheduledExecutableAction>,
-        val onTrigger: (toTrigger: Set<ScheduledExecutableAction>) -> Unit
+        val listScheduledActions: () -> Set<SchedulableExecutableAction>,
+        val onTrigger: (toTrigger: Set<SchedulableExecutableAction>) -> Unit
     ) : Closeable {
 
-        private val actionsGroupByHour = Array<MutableSet<ScheduledExecutableAction>>(24) { mutableSetOf() }
-        private val wheel = Array<MutableSet<ScheduledExecutableAction>>(60 * 60) { mutableSetOf() }
+        private val actionsGroupByHour = Array<MutableSet<SchedulableExecutableAction>>(24) { mutableSetOf() }
+        private val wheel = Array<MutableSet<SchedulableExecutableAction>>(60 * 60) { mutableSetOf() }
         private var recordHour: Int = -1
         private var recordDay: Int = -1
         private val state = MutableStateFlow(WheelState.SLEEPING)
@@ -110,7 +110,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
             launchWheel()
         }
 
-        suspend fun schedule(actionData: ScheduledExecutableAction) {
+        suspend fun schedule(actionData: SchedulableExecutableAction) {
             if (actionData.status != ExecutableAction.Status.PREPARE) {
                 return
             }
@@ -142,9 +142,9 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
 
         private fun launchWheel() {
 
-            fun collectToTrigger(tick: Int, previousTick: Int, triggerHour: Int): Set<ScheduledExecutableAction>? {
+            fun collectToTrigger(tick: Int, previousTick: Int, triggerHour: Int): Set<SchedulableExecutableAction>? {
                 if (tick > previousTick) {
-                    val toTrigger = mutableSetOf<ScheduledExecutableAction>()
+                    val toTrigger = mutableSetOf<SchedulableExecutableAction>()
                     for (i in previousTick..tick) {
                         val bucket = wheel[i]
                         if (bucket.isNotEmpty()) {
@@ -179,7 +179,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
                     nextTickNanos += step.toLong() * 1_000_000_000L
 
                     var shouldBreak = false
-                    var toTrigger: Set<ScheduledExecutableAction>? = null
+                    var toTrigger: Set<SchedulableExecutableAction>? = null
 
                     checkThenExecute(false) {
                         if (it.hour != launchingHour) {
@@ -266,9 +266,9 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
         suspend fun checkThenExecute(finallyToExecute: Boolean = true, then: (currentTime: ZonedDateTime) -> Unit) =
             wheelActionsLock.withLock {
                 fun loadActions(
-                    source: Set<ScheduledExecutableAction>,
+                    source: Set<SchedulableExecutableAction>,
                     now: ZonedDateTime,
-                    load: (latestExecutingTime: ZonedDateTime, actionData: ScheduledExecutableAction) -> Unit,
+                    load: (latestExecutingTime: ZonedDateTime, actionData: SchedulableExecutableAction) -> Unit,
                     repair: () -> Unit
                 ) {
                     val runLoading = {
@@ -292,7 +292,8 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
                 }
 
                 fun loadHourActions(currentTime: ZonedDateTime) {
-                    val load: (ZonedDateTime, ScheduledExecutableAction) -> Unit = { latestExecutionTime, actionData ->
+                    val load: (ZonedDateTime, SchedulableExecutableAction) -> Unit =
+                        { latestExecutionTime, actionData ->
                         val secondsTime = latestExecutionTime.minute * 60 + latestExecutionTime.second
                         wheel[secondsTime].add(actionData)
                         log.debug("Action loaded to hour: {}", actionData)
@@ -308,7 +309,8 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
                 }
 
                 fun loadDayActions(currentTime: ZonedDateTime) {
-                    val load: (ZonedDateTime, ScheduledExecutableAction) -> Unit = { latestExecutingTime, actionData ->
+                    val load: (ZonedDateTime, SchedulableExecutableAction) -> Unit =
+                        { latestExecutingTime, actionData ->
                         actionsGroupByHour[latestExecutingTime.hour].add(actionData)
                         log.debug("Action loaded to day: {}", actionData)
                     }
@@ -348,12 +350,12 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
             }
 
         private fun parseToZonedDateTime(
-            scheduleType: Scheduled.ScheduleType,
+            scheduleType: Schedulable.ScheduleType,
             scheduleContent: String,
             now: ZonedDateTime
         ): ZonedDateTime? {
             return when (scheduleType) {
-                Scheduled.ScheduleType.CYCLE
+                Schedulable.ScheduleType.CYCLE
                     -> {
                     val cron = try {
                         cronParser.parse(scheduleContent).validate()
@@ -364,7 +366,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
                     executionTime.nextExecution(now).getOrNull()
                 }
 
-                Scheduled.ScheduleType.ONCE -> {
+                Schedulable.ScheduleType.ONCE -> {
                     val executionTime = try {
                         ZonedDateTime.parse(scheduleContent)
                     } catch (_: Exception) {
@@ -380,7 +382,7 @@ class ActionScheduler : AgentRunningSubModule<Set<ScheduledExecutableAction>, Vo
 
         }
 
-        private fun logFailedStatus(actionData: ScheduledExecutableAction) {
+        private fun logFailedStatus(actionData: SchedulableExecutableAction) {
             log.warn(
                 "行动未加载，uuid: {}, source: {}, tendency: {}, scheduleContent: {}",
                 actionData.uuid,

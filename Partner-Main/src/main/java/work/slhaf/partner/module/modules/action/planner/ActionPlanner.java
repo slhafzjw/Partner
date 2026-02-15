@@ -234,7 +234,7 @@ public class ActionPlanner extends PreRunningModule {
         private ExecutableAction buildActionData(EvaluatorResult evaluatorResult, String userId) {
             Map<Integer, List<MetaAction>> actionChain = getActionChain(evaluatorResult);
             return switch (evaluatorResult.getType()) {
-                case PLANNING -> new ScheduledExecutableAction(
+                case PLANNING -> new SchedulableExecutableAction(
                         evaluatorResult.getTendency(),
                         actionChain,
                         evaluatorResult.getReason(),

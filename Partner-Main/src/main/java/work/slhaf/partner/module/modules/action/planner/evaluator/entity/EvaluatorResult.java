@@ -1,7 +1,7 @@
 package work.slhaf.partner.module.modules.action.planner.evaluator.entity;
 
 import lombok.Data;
-import work.slhaf.partner.core.action.entity.ScheduledExecutableAction;
+import work.slhaf.partner.core.action.entity.SchedulableExecutableAction;
 
 import java.util.List;
 import java.util.Map;
@@ -12,7 +12,7 @@ public class EvaluatorResult {
     private boolean needConfirm;
     private ActionType type;
     private String scheduleContent;
-    private ScheduledExecutableAction.ScheduleType scheduleType;
+    private SchedulableExecutableAction.ScheduleType scheduleType;
     private Map<Integer, List<String>> primaryActionChain;
     private String tendency;
     private String reason;

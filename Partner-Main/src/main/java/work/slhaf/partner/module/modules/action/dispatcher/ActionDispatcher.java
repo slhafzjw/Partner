@@ -9,7 +9,7 @@ import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.ImmediateExecutableAction;
-import work.slhaf.partner.core.action.entity.ScheduledExecutableAction;
+import work.slhaf.partner.core.action.entity.SchedulableExecutableAction;
 import work.slhaf.partner.module.common.module.PostRunningModule;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.ActionExecutor;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ActionExecutorInput;
@@ -48,10 +48,10 @@ public class ActionDispatcher extends PostRunningModule {
             String userId = context.getUserId();
             val preparedActions = actionCapability.listActions(ExecutableAction.Status.PREPARE, userId);
             // 分类成PLANNING和IMMEDIATE两类
-            Set<ScheduledExecutableAction> scheduledActions = new HashSet<>();
+            Set<SchedulableExecutableAction> scheduledActions = new HashSet<>();
             Set<ImmediateExecutableAction> immediateActions = new HashSet<>();
             for (ExecutableAction preparedAction : preparedActions) {
-                if (preparedAction instanceof ScheduledExecutableAction actionInfo) {
+                if (preparedAction instanceof SchedulableExecutableAction actionInfo) {
                     scheduledActions.add(actionInfo);
                 } else if (preparedAction instanceof ImmediateExecutableAction actionInfo) {
                     immediateActions.add(actionInfo);

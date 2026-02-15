@@ -159,7 +159,7 @@ public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, V
                 actionCapability.removePhaserRecord(phaser);
                 if (executableAction.getStatus() != Status.FAILED) {
                     // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
-                    if (executableAction instanceof ScheduledExecutableAction scheduledActionData) {
+                    if (executableAction instanceof SchedulableExecutableAction scheduledActionData) {
                         scheduledActionData.recordAndReset();
                         actionScheduler.execute(Set.of(scheduledActionData));
                     } else {
