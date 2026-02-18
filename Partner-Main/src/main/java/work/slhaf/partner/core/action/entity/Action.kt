@@ -31,6 +31,7 @@ sealed interface Schedulable {
 
     val scheduleType: ScheduleType
     val scheduleContent: String
+    val uuid: String
 
     enum class ScheduleType {
         CYCLE,
