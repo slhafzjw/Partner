@@ -59,7 +59,6 @@ class ActionScheduler : AgentRunningSubModule<Set<Schedulable>, Void>() {
                     .collect(Collectors.toSet())
             }
 
-            // TODO 3. 重构 trigger 内容，在替换为 Set<Schedulable> 后，需要进行类型判定，确认是自行执行，还是交给 actionExecutor
             val onTrigger: (Set<Schedulable>) -> Unit = { schedulableSet ->
                 val executableActions = mutableSetOf<SchedulableExecutableAction>()
                 val stateActions = mutableSetOf<StateAction>()
@@ -90,7 +89,6 @@ class ActionScheduler : AgentRunningSubModule<Set<Schedulable>, Void>() {
     }
 
     override fun execute(schedulableSet: Set<Schedulable>?): Void? {
-        // TODO 1. 将输入参数重构为 Set<Schedulable>，在 for 循环中依据计划字段放入时间轮
         schedulerScope.launch {
             schedulableSet?.run {
                 for (schedulableData in schedulableSet) {
@@ -105,7 +103,6 @@ class ActionScheduler : AgentRunningSubModule<Set<Schedulable>, Void>() {
         return null
     }
 
-    // TODO 2. 重构为 Set<Schedulable>
     private class TimeWheel(
         val listSource: () -> Set<Schedulable>,
         val onTrigger: (toTrigger: Set<Schedulable>) -> Unit
