@@ -9,4 +9,5 @@ import work.slhaf.partner.api.agent.runtime.interaction.data.AgentOutputData;
 @Data
 @AllArgsConstructor
 public class PartnerOutputData extends AgentOutputData {
+    // TODO 待添加字段细节
 }
