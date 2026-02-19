@@ -1,9 +1,7 @@
 package work.slhaf.partner.api.agent.factory.module.abstracts;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext;
 
@@ -14,12 +12,11 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowC
 public abstract class AbstractAgentRunningModule<C extends RunningFlowContext> extends AbstractAgentModule {
     public abstract void execute(C context);
 
-    @BeforeExecute
+    // TODO 重构注解扫描体系
     private void beforeLog() {
         log.debug("[{}] 模块执行开始...", getModuleName());
     }
 
-    @AfterExecute
     private void afterLog() {
         log.debug("[{}] 模块执行结束...", getModuleName());
     }

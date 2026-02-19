@@ -7,10 +7,9 @@ import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
+import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleCheckException;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
 
@@ -18,8 +17,6 @@ import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static work.slhaf.partner.api.agent.util.AgentUtil.getMethodAnnotationTypeSet;
 
 /**
  * <h2>Agent启动流程 1</h2>
@@ -68,7 +65,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
         //检查实现了ActivateModel的模块数量、名称与prompt是否一致
         activateModelImplCheck();
         //检查hook注解所在位置是否正确
-        hookLocationCheck();
+        initHookLocationCheck();
     }
 
     private ExtendedModules getExtendedModules() {
@@ -123,31 +120,8 @@ public class ModuleCheckFactory extends AgentBaseFactory {
         }
     }
 
-    private void hookLocationCheck() {
-        //检查@AfterExecute注解
-        postHookLocationCheck();
-        //检查@BeforeExecute注解
-        preHookLocationCheck();
-        //检查@Init注解
-        initHookLocationCheck();
-    }
-
     private void initHookLocationCheck() {
-        Set<Class<?>> types = getMethodAnnotationTypeSet(AgentRunningModule.class, reflections);
-        checkLocation(types);
-    }
-
-    private void preHookLocationCheck() {
-        Set<Method> methods = reflections.getMethodsAnnotatedWith(BeforeExecute.class);
-        Set<Class<?>> types = methods.stream()
-                .map(Method::getDeclaringClass)
-                .collect(Collectors.toSet());
-        checkLocation(types);
-    }
-
-
-    private void postHookLocationCheck() {
-        Set<Method> methods = reflections.getMethodsAnnotatedWith(AfterExecute.class);
+        Set<Method> methods = reflections.getMethodsAnnotatedWith(Init.class);
         Set<Class<?>> types = methods.stream()
                 .map(Method::getDeclaringClass)
                 .collect(Collectors.toSet());
