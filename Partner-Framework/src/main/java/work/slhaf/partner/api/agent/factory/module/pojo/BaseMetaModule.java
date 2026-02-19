@@ -1,7 +1,7 @@
 package work.slhaf.partner.api.agent.factory.module.pojo;
 
 import lombok.Data;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.Module;
+import work.slhaf.partner.api.agent.factory.module.abstracts.Module;
 
 @Data
 public abstract class BaseMetaModule <C extends Module> {

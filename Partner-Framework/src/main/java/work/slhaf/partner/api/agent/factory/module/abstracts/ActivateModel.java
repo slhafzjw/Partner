@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts;
+package work.slhaf.partner.api.agent.factory.module.abstracts;
 
 import cn.hutool.core.bean.BeanUtil;
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;

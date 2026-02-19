@@ -1,6 +1,6 @@
 package module;
 
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext;
 
 public class MyAgentRunningModule extends AgentRunningModule {

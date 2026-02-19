@@ -4,15 +4,15 @@ import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.AgentRegisterFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.Module;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleInitHookExecuteFailedException;
 import work.slhaf.partner.api.agent.factory.module.pojo.BaseMetaModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaMethod;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.Module;
 import work.slhaf.partner.api.agent.util.AgentUtil;
 
 import java.lang.reflect.InvocationTargetException;

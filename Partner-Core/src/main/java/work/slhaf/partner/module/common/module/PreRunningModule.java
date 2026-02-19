@@ -1,7 +1,7 @@
 package work.slhaf.partner.module.common.module;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 

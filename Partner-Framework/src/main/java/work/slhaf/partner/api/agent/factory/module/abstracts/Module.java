@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts;
+package work.slhaf.partner.api.agent.factory.module.abstracts;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -4,15 +4,15 @@ import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
+import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleCheckException;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningModule;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;

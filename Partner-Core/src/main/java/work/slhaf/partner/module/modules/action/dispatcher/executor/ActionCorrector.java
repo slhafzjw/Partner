@@ -2,9 +2,9 @@ package work.slhaf.partner.module.modules.action.dispatcher.executor;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.val;
+import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.CorrectorInput;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.CorrectorResult;
 
