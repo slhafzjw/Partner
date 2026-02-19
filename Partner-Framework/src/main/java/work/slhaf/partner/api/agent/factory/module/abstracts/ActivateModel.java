@@ -19,11 +19,10 @@ public interface ActivateModel {
 
     @Init(order = -1)
     default void modelSettings() {
-        Model model = new Model();
+        Model model = getModel();
         ModelConfig modelConfig = AgentConfigManager.INSTANCE.loadModelConfig(modelKey());
         model.setBaseMessages(withBasicPrompt() ? loadSpecificPromptAndBasicPrompt(modelKey()) : loadSpecificPrompt(modelKey()));
         model.setChatClient(new ChatClient(modelConfig.getBaseUrl(), modelConfig.getApikey(), modelConfig.getModel()));
-        setModel(model);
     }
 
     default void updateModelSettings(ChatClient newChatClient) {
