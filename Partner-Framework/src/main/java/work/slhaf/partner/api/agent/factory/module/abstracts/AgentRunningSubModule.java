@@ -12,24 +12,4 @@ public abstract class AgentRunningSubModule<I, O> extends Module {
 
     public abstract O execute(I data);
 
-
-    @BeforeExecute
-    private void beforeLog() {
-        log.debug("[{}] 模块执行开始...", getModuleName());
-    }
-
-    @AfterExecute
-    private void afterLog() {
-        log.debug("[{}] 模块执行结束...", getModuleName());
-    }
-
-    private String getModuleName(){
-        if (this.getClass().isAnnotationPresent(AgentModule.class)) {
-            return this.getClass().getAnnotation(AgentModule.class).name();
-        } else if (this.getClass().isAnnotationPresent(CoreModule.class)) {
-            return CoreModule.class.getAnnotation(AgentModule.class).name();
-        }else {
-            return "Unknown Module";
-        }
-    }
 }
