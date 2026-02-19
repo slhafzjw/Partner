@@ -5,7 +5,7 @@ import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.capability.annotation.ToCoordinated;
-import work.slhaf.partner.api.agent.factory.capability.exception.ProxySetFailedExceptionCapability;
+import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityProxySetFailedException;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
 import work.slhaf.partner.api.agent.factory.module.ModuleInitHookExecuteFactory;
@@ -81,7 +81,7 @@ import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
                 field.set(capabilityHolderInstances.get(field.getDeclaringClass()), instance);
             }
         } catch (Exception e) {
-            throw new ProxySetFailedExceptionCapability("代理设置失败", e);
+            throw new CapabilityProxySetFailedException("代理设置失败", e);
         }
     }
 

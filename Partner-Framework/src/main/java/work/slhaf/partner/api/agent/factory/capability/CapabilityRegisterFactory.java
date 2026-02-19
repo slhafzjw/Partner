@@ -4,8 +4,8 @@ import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.capability.annotation.*;
+import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityCoreInstancesCreateFailedException;
 import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityFactoryExecuteFailedException;
-import work.slhaf.partner.api.agent.factory.capability.exception.CoreInstancesCreateFailedExceptionCapability;
 import work.slhaf.partner.api.agent.factory.capability.exception.DuplicateMethodException;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
@@ -205,7 +205,7 @@ public class CapabilityRegisterFactory extends AgentBaseFactory {
             }
         } catch (InvocationTargetException | NoSuchMethodException | InstantiationException |
                  IllegalAccessException e) {
-            throw new CoreInstancesCreateFailedExceptionCapability("core实例创建失败");
+            throw new CapabilityCoreInstancesCreateFailedException("core实例创建失败");
         }
     }
 }
