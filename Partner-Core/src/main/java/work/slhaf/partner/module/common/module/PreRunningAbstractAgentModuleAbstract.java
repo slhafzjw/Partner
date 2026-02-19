@@ -1,7 +1,7 @@
 package work.slhaf.partner.module.common.module;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
 import work.slhaf.partner.module.common.entity.AppendPromptData;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
@@ -11,7 +11,7 @@ import java.util.Map;
  * 前置模块抽象类
  */
 @Slf4j
-public abstract class PreRunningModule extends AgentRunningModule<PartnerRunningFlowContext> {
+public abstract class PreRunningAbstractAgentModuleAbstract extends AbstractAgentRunningModule<PartnerRunningFlowContext> {
     private synchronized void setAppendedPrompt(PartnerRunningFlowContext context) {
         AppendPromptData data = new AppendPromptData();
         data.setModuleName(moduleName());

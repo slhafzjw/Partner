@@ -4,8 +4,8 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -23,7 +23,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 
 @Slf4j
 @AgentSubModule
-public class ActionConfirmer extends AgentRunningSubModule<ConfirmerInput, ConfirmerResult> implements ActivateModel {
+public class ActionConfirmer extends AbstractAgentSubModule<ConfirmerInput, ConfirmerResult> implements ActivateModel {
 
     @InjectCapability
     private ActionCapability actionCapability;

@@ -3,8 +3,8 @@ package work.slhaf.partner.module.modules.action.dispatcher.executor;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
@@ -20,7 +20,7 @@ import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.Gener
  * 负责依据输入内容生成可执行的动态行动单元，并选择是否持久化至 SandboxRunner 容器内
  */
 @AgentSubModule
-public class DynamicActionGenerator extends AgentRunningSubModule<GeneratorInput, GeneratorResult>
+public class DynamicActionGenerator extends AbstractAgentSubModule<GeneratorInput, GeneratorResult>
         implements ActivateModel {
 
     @InjectCapability

@@ -5,8 +5,8 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
@@ -23,7 +23,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 @Data
 @Slf4j
 @AgentSubModule
-public class MultiSummarizer extends AgentRunningSubModule<SummarizeInput, SummarizeResult> implements ActivateModel {
+public class MultiSummarizer extends AbstractAgentSubModule<SummarizeInput, SummarizeResult> implements ActivateModel {
 
     @Init
     public void init() {

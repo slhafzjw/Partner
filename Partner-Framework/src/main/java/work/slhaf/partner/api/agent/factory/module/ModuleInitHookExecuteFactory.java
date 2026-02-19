@@ -4,9 +4,9 @@ import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.AgentRegisterFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
-import work.slhaf.partner.api.agent.factory.module.abstracts.Module;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleInitHookExecuteFailedException;
 import work.slhaf.partner.api.agent.factory.module.pojo.BaseMetaModule;
@@ -59,12 +59,12 @@ public class ModuleInitHookExecuteFactory extends AgentBaseFactory {
     protected void run() {
         //遍历模块列表，并向上查找@Init注解
         for (MetaSubModule metaSubModule : subModuleList) {
-            List<MetaMethod> initHookMethods = collectInitHookMethods(metaSubModule.getClazz(),AgentRunningModule.class);
+            List<MetaMethod> initHookMethods = collectInitHookMethods(metaSubModule.getClazz(), AbstractAgentRunningModule.class);
             proceedInitMethods(metaSubModule, initHookMethods);
         }
 
         for (MetaModule metaModule : moduleList) {
-            List<MetaMethod> initHookMethods = collectInitHookMethods(metaModule.getClazz(), AgentRunningSubModule.class);
+            List<MetaMethod> initHookMethods = collectInitHookMethods(metaModule.getClazz(), AbstractAgentSubModule.class);
             proceedInitMethods(metaModule, initHookMethods);
         }
     }
@@ -79,7 +79,7 @@ public class ModuleInitHookExecuteFactory extends AgentBaseFactory {
         }
     }
 
-    private List<MetaMethod> collectInitHookMethods(Class<?> clazz, Class<? extends Module> target) {
+    private List<MetaMethod> collectInitHookMethods(Class<?> clazz, Class<? extends AbstractAgentModule> target) {
         Set<Class<?>> classes = collectExtendedClasses(clazz, target);
         return classes.stream()
                 .map(Class::getDeclaredMethods)

@@ -11,7 +11,7 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowC
  * 流程执行模块基类
  */
 @Slf4j
-public abstract class AgentRunningModule<C extends RunningFlowContext> extends Module {
+public abstract class AbstractAgentRunningModule<C extends RunningFlowContext> extends AbstractAgentModule {
     public abstract void execute(C context);
 
     @BeforeExecute
@@ -30,7 +30,7 @@ public abstract class AgentRunningModule<C extends RunningFlowContext> extends M
         } else if (this.getClass().isAnnotationPresent(CoreModule.class)) {
             return CoreModule.class.getAnnotation(AgentModule.class).name();
         }else {
-            return "Unknown Module";
+            return "Unknown AbstractAgentModule";
         }
     }
 }

@@ -4,8 +4,8 @@ import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 @AgentSubModule
-public class ActionEvaluator extends AgentRunningSubModule<EvaluatorInput, List<EvaluatorResult>> implements ActivateModel {
+public class ActionEvaluator extends AbstractAgentSubModule<EvaluatorInput, List<EvaluatorResult>> implements ActivateModel {
 
     @InjectCapability
     private ActionCapability actionCapability;

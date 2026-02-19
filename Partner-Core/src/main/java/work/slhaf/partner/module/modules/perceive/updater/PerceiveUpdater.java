@@ -11,7 +11,7 @@ import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.core.perceive.pojo.User;
-import work.slhaf.partner.module.common.module.PostRunningModule;
+import work.slhaf.partner.module.common.module.PostRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.RelationExtractor;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.entity.RelationExtractResult;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.StaticMemoryExtractor;
@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 @Data
 @AgentModule(name = "perceive_updater", order = 7)
-public class PerceiveUpdater extends PostRunningModule {
+public class PerceiveUpdater extends PostRunningAbstractAgentModuleAbstract {
 
     @InjectCapability
     private PerceiveCapability perceiveCapability;

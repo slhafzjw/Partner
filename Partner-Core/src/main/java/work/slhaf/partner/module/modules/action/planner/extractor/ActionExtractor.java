@@ -3,8 +3,8 @@ package work.slhaf.partner.module.modules.action.planner.extractor;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -15,7 +15,7 @@ import java.util.List;
 
 @Slf4j
 @AgentSubModule
-public class ActionExtractor extends AgentRunningSubModule<ExtractorInput, ExtractorResult> implements ActivateModel {
+public class ActionExtractor extends AbstractAgentSubModule<ExtractorInput, ExtractorResult> implements ActivateModel {
 
     @InjectCapability
     private ActionCapability actionCapability;

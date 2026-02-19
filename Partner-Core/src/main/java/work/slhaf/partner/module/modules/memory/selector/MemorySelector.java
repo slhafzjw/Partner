@@ -14,7 +14,7 @@ import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.core.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
-import work.slhaf.partner.module.common.module.PreRunningModule;
+import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.SliceSelectEvaluator;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.memory.selector.extractor.MemorySelectExtractor;
@@ -29,7 +29,7 @@ import java.util.*;
 @Data
 @Slf4j
 @AgentModule(name = "memory_selector", order = 2)
-public class MemorySelector extends PreRunningModule {
+public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
 
     @InjectCapability
     private MemoryCapability memoryCapability;

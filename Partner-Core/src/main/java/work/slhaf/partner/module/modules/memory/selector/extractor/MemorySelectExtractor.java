@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
@@ -29,7 +29,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 @Data
 @Slf4j
 @AgentSubModule
-public class MemorySelectExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, ExtractorResult>
+public class MemorySelectExtractor extends AbstractAgentSubModule<PartnerRunningFlowContext, ExtractorResult>
         implements ActivateModel {
 
     @InjectCapability

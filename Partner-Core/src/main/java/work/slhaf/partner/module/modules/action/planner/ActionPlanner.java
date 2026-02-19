@@ -17,7 +17,7 @@ import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
-import work.slhaf.partner.module.common.module.PreRunningModule;
+import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerResult;
@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 @AgentModule(name = "action_planner", order = 2)
-public class ActionPlanner extends PreRunningModule {
+public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
 
     @InjectCapability
     private CognationCapability cognationCapability;

@@ -10,7 +10,7 @@ import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.ImmediateExecutableAction;
 import work.slhaf.partner.core.action.entity.SchedulableExecutableAction;
-import work.slhaf.partner.module.common.module.PostRunningModule;
+import work.slhaf.partner.module.common.module.PostRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.ActionExecutor;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ActionExecutorInput;
 import work.slhaf.partner.module.modules.action.dispatcher.scheduler.ActionScheduler;
@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 @AgentModule(name = "action_dispatcher", order = 7)
-public class ActionDispatcher extends PostRunningModule {
+public class ActionDispatcher extends PostRunningAbstractAgentModuleAbstract {
 
     @InjectCapability
     private ActionCapability actionCapability;

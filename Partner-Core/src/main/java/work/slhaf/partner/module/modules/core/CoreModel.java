@@ -5,8 +5,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
@@ -29,7 +29,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 @Data
 @Slf4j
 @CoreModule
-public class CoreModel extends AgentRunningModule<PartnerRunningFlowContext> implements ActivateModel {
+public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowContext> implements ActivateModel {
     
     @InjectCapability
     private CognationCapability cognationCapability;

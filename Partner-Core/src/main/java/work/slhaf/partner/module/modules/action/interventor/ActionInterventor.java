@@ -13,7 +13,7 @@ import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.module.common.module.PreRunningModule;
+import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.module.modules.action.interventor.entity.InterventionType;
 import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
 import work.slhaf.partner.module.modules.action.interventor.evaluator.InterventionEvaluator;
@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  * 负责识别潜在的行动干预信息，作用于正在进行或已存在的行动池中内容
  */
 @AgentModule(name = "action_identifier", order = 2)
-public class ActionInterventor extends PreRunningModule implements ActivateModel {
+public class ActionInterventor extends PreRunningAbstractAgentModuleAbstract implements ActivateModel {
 
     @InjectModule
     private InterventionRecognizer interventionRecognizer;

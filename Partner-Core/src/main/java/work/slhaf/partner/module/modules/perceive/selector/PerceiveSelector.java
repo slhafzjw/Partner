@@ -6,7 +6,7 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.core.perceive.pojo.User;
-import work.slhaf.partner.module.common.module.PreRunningModule;
+import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.HashMap;
@@ -15,7 +15,7 @@ import java.util.Map;
 @Slf4j
 @Setter
 @AgentModule(name = "perceive_selector",order = 2)
-public class PerceiveSelector extends PreRunningModule {
+public class PerceiveSelector extends PreRunningAbstractAgentModuleAbstract {
 
     @InjectCapability
     private PerceiveCapability perceiveCapability;

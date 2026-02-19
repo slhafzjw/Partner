@@ -7,7 +7,7 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.Model;
 /**
  * 模块基类
  */
-public abstract class Module {
+public abstract class AbstractAgentModule {
 
     @Getter
     @Setter

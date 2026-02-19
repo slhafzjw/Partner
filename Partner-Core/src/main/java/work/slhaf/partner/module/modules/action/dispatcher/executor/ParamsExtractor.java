@@ -3,8 +3,8 @@ package work.slhaf.partner.module.modules.action.dispatcher.executor;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Slf4j
 @AgentSubModule
-public class ParamsExtractor extends AgentRunningSubModule<ExtractorInput, ExtractorResult> implements ActivateModel {
+public class ParamsExtractor extends AbstractAgentSubModule<ExtractorInput, ExtractorResult> implements ActivateModel {
 
     @Override
     public ExtractorResult execute(ExtractorInput input) {

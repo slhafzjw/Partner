@@ -8,7 +8,7 @@ import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.core.perceive.pojo.User;
-import work.slhaf.partner.module.common.module.PreRunningModule;
+import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 import work.slhaf.partner.runtime.interaction.data.context.subcontext.CoreContext;
 
@@ -21,7 +21,7 @@ import java.util.Map;
 @Data
 @Slf4j
 @AgentModule(name = "preprocess_executor", order = 1)
-public class PreprocessExecutor extends PreRunningModule {
+public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
 
     @InjectCapability
     private CognationCapability cognationCapability;

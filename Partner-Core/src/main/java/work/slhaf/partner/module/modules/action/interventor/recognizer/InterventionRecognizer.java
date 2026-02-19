@@ -3,8 +3,8 @@ package work.slhaf.partner.module.modules.action.interventor.recognizer;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @AgentSubModule
-public class InterventionRecognizer extends AgentRunningSubModule<RecognizerInput, RecognizerResult> implements ActivateModel {
+public class InterventionRecognizer extends AbstractAgentSubModule<RecognizerInput, RecognizerResult> implements ActivateModel {
 
     @InjectCapability
     private ActionCapability actionCapability;

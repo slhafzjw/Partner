@@ -4,21 +4,21 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.matcher.ElementMatchers;
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
-public class ModuleProxyTest {
+public class AbstractAgentModuleProxyTest {
     @Test
     public void test() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, IOException, ClassNotFoundException {
-        Class<? extends AgentRunningModule> clazz = new ByteBuddy().subclass(MyAgentRunningModule.class)
-                .method(ElementMatchers.isOverriddenFrom(AgentRunningModule.class))
+        Class<? extends AbstractAgentRunningModule> clazz = new ByteBuddy().subclass(MyAbstractAgentRunningAbstractAgentModule.class)
+                .method(ElementMatchers.isOverriddenFrom(AbstractAgentRunningModule.class))
                 .intercept(MethodDelegation.to(
                         new MyModuleProxyInterceptor()
                 ))
                 .make()
-                .load(ModuleProxyTest.class.getClassLoader())
+                .load(AbstractAgentModuleProxyTest.class.getClassLoader())
                 .getLoaded();
         clazz.getConstructor().newInstance().execute(null);
     }

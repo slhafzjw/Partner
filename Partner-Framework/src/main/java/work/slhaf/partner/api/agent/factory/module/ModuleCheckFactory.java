@@ -4,9 +4,9 @@ import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
@@ -31,7 +31,7 @@ import static work.slhaf.partner.api.agent.util.AgentUtil.getMethodAnnotationTyp
  * <ol>
  *     <li>
  *         <p>{@link ModuleCheckFactory#annotationAbstractCheck(Set, Class)}</p>
- *         所有添加了 {@link AgentModule} 注解的类都将作为Agent的执行模块，为规范模块入口，都必须实现抽象类: {@link AgentRunningModule}; {@link AgentSubModule} 注解所在类则必须实现 {@link AgentRunningSubModule}
+ *         所有添加了 {@link AgentModule} 注解的类都将作为Agent的执行模块，为规范模块入口，都必须实现抽象类: {@link AbstractAgentRunningModule}; {@link AgentSubModule} 注解所在类则必须实现 {@link AbstractAgentSubModule}
  *     </li>
  *     <li>
  *         <p>{@link ModuleCheckFactory#moduleConstructorsCheck(Set)}</p>
@@ -60,8 +60,8 @@ public class ModuleCheckFactory extends AgentBaseFactory {
         ExtendedModules extendedModules = getExtendedModules();
         checkIfClassCorresponds(annotatedModules, extendedModules);
         //检查注解AgentModule或AgentSubModule所在类是否继承了对应的抽象类
-        annotationAbstractCheck(annotatedModules.moduleTypes(), AgentRunningModule.class);
-        annotationAbstractCheck(annotatedModules.subModuleTypes(), AgentRunningSubModule.class);
+        annotationAbstractCheck(annotatedModules.moduleTypes(), AbstractAgentRunningModule.class);
+        annotationAbstractCheck(annotatedModules.subModuleTypes(), AbstractAgentSubModule.class);
         //检查AgentModule是否具备无参构造方法
         moduleConstructorsCheck(annotatedModules.moduleTypes());
         moduleConstructorsCheck(annotatedModules.subModuleTypes());
@@ -72,11 +72,11 @@ public class ModuleCheckFactory extends AgentBaseFactory {
     }
 
     private ExtendedModules getExtendedModules() {
-        Set<Class<?>> moduleTypes = reflections.getSubTypesOf(AgentRunningModule.class)
+        Set<Class<?>> moduleTypes = reflections.getSubTypesOf(AbstractAgentRunningModule.class)
                 .stream()
                 .filter(ClassUtil::isNormalClass)
                 .collect(Collectors.toSet());
-        Set<Class<?>> subModuleTypes = reflections.getSubTypesOf(AgentRunningSubModule.class)
+        Set<Class<?>> subModuleTypes = reflections.getSubTypesOf(AbstractAgentSubModule.class)
                 .stream()
                 .filter(ClassUtil::isNormalClass)
                 .collect(Collectors.toSet());
@@ -156,10 +156,10 @@ public class ModuleCheckFactory extends AgentBaseFactory {
 
     private void checkLocation(Set<Class<?>> types) {
         for (Class<?> type : types) {
-            if (AgentRunningModule.class.isAssignableFrom(type)) {
+            if (AbstractAgentRunningModule.class.isAssignableFrom(type)) {
                 continue;
             }
-            if (AgentRunningSubModule.class.isAssignableFrom(type)) {
+            if (AbstractAgentSubModule.class.isAssignableFrom(type)) {
                 continue;
             }
             if (ActivateModel.class.isAssignableFrom(type)) {

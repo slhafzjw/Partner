@@ -3,8 +3,8 @@ package work.slhaf.partner.module.modules.action.interventor.evaluator;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @AgentSubModule
-public class InterventionEvaluator extends AgentRunningSubModule<EvaluatorInput, EvaluatorResult>
+public class InterventionEvaluator extends AbstractAgentSubModule<EvaluatorInput, EvaluatorResult>
         implements ActivateModel {
 
     @InjectCapability

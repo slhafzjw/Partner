@@ -80,11 +80,11 @@ public interface ActivateModel {
      * @return 持有的model实例
      */
     default Model getModel() {
-        return ((Module) this).getModel();
+        return ((AbstractAgentModule) this).getModel();
     }
 
     default void setModel(Model model) {
-        ((Module) this).setModel(model);
+        ((AbstractAgentModule) this).setModel(model);
     }
 
     /**

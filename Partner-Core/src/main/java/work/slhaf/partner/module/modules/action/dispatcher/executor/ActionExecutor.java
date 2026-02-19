@@ -3,7 +3,7 @@ package work.slhaf.partner.module.modules.action.dispatcher.executor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @AgentSubModule
-public class ActionExecutor extends AgentRunningSubModule<ActionExecutorInput, Void> {
+public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, Void> {
 
     @InjectCapability
     private ActionCapability actionCapability;

@@ -4,8 +4,8 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @Data
 @AgentSubModule
-public class SingleSummarizer extends AgentRunningSubModule<List<Message>,Void> implements ActivateModel {
+public class SingleSummarizer extends AbstractAgentSubModule<List<Message>, Void> implements ActivateModel {
 
     private InteractionThreadPoolExecutor executor;
 

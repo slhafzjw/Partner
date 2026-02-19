@@ -6,8 +6,8 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
@@ -32,7 +32,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 @Data
 @Slf4j
 @AgentSubModule
-public class SliceSelectEvaluator extends AgentRunningSubModule<EvaluatorInput, List<EvaluatedSlice>> implements ActivateModel {
+public class SliceSelectEvaluator extends AbstractAgentSubModule<EvaluatorInput, List<EvaluatedSlice>> implements ActivateModel {
 
     private InteractionThreadPoolExecutor executor;
 

@@ -5,8 +5,8 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -19,7 +19,7 @@ import java.util.HashMap;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @AgentSubModule
-public class StaticMemoryExtractor extends AgentRunningSubModule<PartnerRunningFlowContext, HashMap<String, String>> implements ActivateModel {
+public class StaticMemoryExtractor extends AbstractAgentSubModule<PartnerRunningFlowContext, HashMap<String, String>> implements ActivateModel {
 
     @InjectCapability
     private CognationCapability cognationCapability;

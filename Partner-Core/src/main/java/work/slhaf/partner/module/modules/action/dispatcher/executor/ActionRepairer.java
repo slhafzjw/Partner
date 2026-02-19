@@ -6,8 +6,8 @@ import com.alibaba.fastjson2.TypeReference;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 @AgentSubModule
-public class ActionRepairer extends AgentRunningSubModule<RepairerInput, RepairerResult> implements ActivateModel {
+public class ActionRepairer extends AbstractAgentSubModule<RepairerInput, RepairerResult> implements ActivateModel {
 
     @InjectCapability
     private ActionCapability actionCapability;

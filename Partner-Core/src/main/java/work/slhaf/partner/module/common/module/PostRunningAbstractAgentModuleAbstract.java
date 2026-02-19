@@ -1,9 +1,9 @@
 package work.slhaf.partner.module.common.module;
 
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-public abstract class PostRunningModule extends AgentRunningModule<PartnerRunningFlowContext> {
+public abstract class PostRunningAbstractAgentModuleAbstract extends AbstractAgentRunningModule<PartnerRunningFlowContext> {
 
     @Override
     public final void execute(PartnerRunningFlowContext context) {

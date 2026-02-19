@@ -12,7 +12,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule
 import work.slhaf.partner.api.agent.factory.module.annotation.Init
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule
@@ -31,7 +31,7 @@ import java.util.stream.Collectors
 import kotlin.jvm.optionals.getOrNull
 
 @AgentSubModule
-class ActionScheduler : AgentRunningSubModule<Set<Schedulable>, Void>() {
+class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
 
     @InjectCapability
     private lateinit var actionCapability: ActionCapability

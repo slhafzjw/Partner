@@ -10,9 +10,9 @@ import work.slhaf.partner.api.agent.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
-import work.slhaf.partner.api.agent.factory.module.abstracts.Module;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
@@ -96,8 +96,8 @@ public class ModuleProxyFactory extends AgentBaseFactory {
     }
 
     private void createProxiedInstances() {
-        generateModuleProxy(moduleList, AgentRunningModule.class);
-        generateModuleProxy(subModuleList, AgentRunningSubModule.class);
+        generateModuleProxy(moduleList, AbstractAgentRunningModule.class);
+        generateModuleProxy(subModuleList, AbstractAgentSubModule.class);
         updateInstanceMap(moduleInstances, moduleList);
         updateInstanceMap(subModuleInstances, subModuleList);
         updateCapabilityHolderInstances();
@@ -115,7 +115,7 @@ public class ModuleProxyFactory extends AgentBaseFactory {
     }
 
 
-    private void generateModuleProxy(List<? extends BaseMetaModule> list, Class<? extends Module> overrideSource) {
+    private void generateModuleProxy(List<? extends BaseMetaModule> list, Class<? extends AbstractAgentModule> overrideSource) {
         for (BaseMetaModule module : list) {
             Class<?> clazz = module.getClazz();
             try {
@@ -128,10 +128,10 @@ public class ModuleProxyFactory extends AgentBaseFactory {
         }
     }
 
-    private void generateProxiedInstances(MethodsListRecord record, BaseMetaModule module, Class<? extends Module> overrideSource) {
+    private void generateProxiedInstances(MethodsListRecord record, BaseMetaModule module, Class<? extends AbstractAgentModule> overrideSource) {
         try {
-            Class<? extends Module> clazz = module.getClazz();
-            Class<? extends Module> proxyClass = new ByteBuddy()
+            Class<? extends AbstractAgentModule> clazz = module.getClazz();
+            Class<? extends AbstractAgentModule> proxyClass = new ByteBuddy()
                     .subclass(clazz)
                     .method(ElementMatchers.isOverriddenFrom(overrideSource))
                     .intercept(MethodDelegation.to(new ModuleProxyInterceptor(record.post, record.pre)))
@@ -159,7 +159,7 @@ public class ModuleProxyFactory extends AgentBaseFactory {
         //获取该类本身的hook逻辑
         collectHookMethods(post, pre, clazz);
         //获取它所继承、实现的抽象类或接口, 以Module为终点，收集继承链上所有父类和接口
-        Set<Class<?>> classes = collectExtendedClasses(clazz, Module.class);
+        Set<Class<?>> classes = collectExtendedClasses(clazz, AbstractAgentModule.class);
         //获取这些类中的hook逻辑
         collectHookMethods(post, pre, classes);
         return new MethodsListRecord(post, pre);

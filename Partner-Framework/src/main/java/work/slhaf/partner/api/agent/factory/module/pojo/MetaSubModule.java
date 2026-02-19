@@ -2,9 +2,9 @@ package work.slhaf.partner.api.agent.factory.module.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class MetaSubModule extends BaseMetaModule<AgentRunningSubModule>{
+public class MetaSubModule extends BaseMetaModule<AbstractAgentSubModule> {
 }

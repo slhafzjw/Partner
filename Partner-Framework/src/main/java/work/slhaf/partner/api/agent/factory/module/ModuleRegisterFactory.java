@@ -5,8 +5,8 @@ import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningModule;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AgentRunningSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
@@ -60,13 +60,27 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
         setSubModuleList();
     }
 
+    private static MetaModule getMetaModule(Class<? extends AbstractAgentRunningModule> clazz) {
+        MetaModule metaModule = new MetaModule();
+        AgentModule agentModule;
+        if (clazz.isAnnotationPresent(CoreModule.class)){
+            agentModule = CoreModule.class.getAnnotation(AgentModule.class);
+        }else{
+            agentModule = clazz.getAnnotation(AgentModule.class);
+        }
+        metaModule.setName(agentModule.name());
+        metaModule.setOrder(agentModule.order());
+        metaModule.setClazz(clazz);
+        return metaModule;
+    }
+
     private void setSubModuleList() {
         Set<Class<?>> subModules = reflections.getTypesAnnotatedWith(AgentSubModule.class);
         for (Class<?> subModule : subModules) {
             if (!ClassUtil.isNormalClass(subModule)) {
                 continue;
             }
-            Class<? extends AgentRunningSubModule> clazz = subModule.asSubclass(AgentRunningSubModule.class);
+            Class<? extends AbstractAgentSubModule> clazz = subModule.asSubclass(AbstractAgentSubModule.class);
             MetaSubModule metaSubModule = new MetaSubModule();
             metaSubModule.setClazz(clazz);
             subModuleList.add(metaSubModule);
@@ -80,25 +94,11 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
             if (!ClassUtil.isNormalClass(module)) {
                 continue;
             }
-            Class<? extends AgentRunningModule> clazz = module.asSubclass(AgentRunningModule.class);
+            Class<? extends AbstractAgentRunningModule> clazz = module.asSubclass(AbstractAgentRunningModule.class);
             MetaModule metaModule = getMetaModule(clazz);
             moduleList.add(metaModule);
         }
         moduleList.sort(Comparator.comparing(MetaModule::getOrder));
-    }
-
-    private static MetaModule getMetaModule(Class<? extends AgentRunningModule> clazz) {
-        MetaModule metaModule = new MetaModule();
-        AgentModule agentModule;
-        if (clazz.isAnnotationPresent(CoreModule.class)){
-            agentModule = CoreModule.class.getAnnotation(AgentModule.class);
-        }else{
-            agentModule = clazz.getAnnotation(AgentModule.class);
-        }
-        metaModule.setName(agentModule.name());
-        metaModule.setOrder(agentModule.order());
-        metaModule.setClazz(clazz);
-        return metaModule;
     }
 
 }
