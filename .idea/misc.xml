@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
     <list size="15">
@@ -9,7 +10,7 @@
       <item index="5" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.CoordinateManager" />
       <item index="6" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.Coordinated" />
       <item index="7" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute" />
-      <item index="8" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AgentModule" />
+      <item index="8" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule" />
       <item index="9" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule" />
       <item index="10" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute" />
       <item index="11" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.Init" />

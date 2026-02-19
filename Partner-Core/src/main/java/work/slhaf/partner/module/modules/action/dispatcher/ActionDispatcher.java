@@ -2,7 +2,7 @@ package work.slhaf.partner.module.modules.action.dispatcher;
 
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-@AgentModule(name = "action_dispatcher", order = 7)
+@AgentRunningModule(name = "action_dispatcher", order = 7)
 public class ActionDispatcher extends PostRunningAbstractAgentModuleAbstract {
 
     @InjectCapability

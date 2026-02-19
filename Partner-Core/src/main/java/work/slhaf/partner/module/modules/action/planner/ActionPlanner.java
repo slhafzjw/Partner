@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 负责针对本次输入生成基础的行动计划，在主模型传达意愿后，执行行动或者放入计划池
  */
 @Slf4j
-@AgentModule(name = "action_planner", order = 2)
+@AgentRunningModule(name = "action_planner", order = 2)
 public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
 
     @InjectCapability

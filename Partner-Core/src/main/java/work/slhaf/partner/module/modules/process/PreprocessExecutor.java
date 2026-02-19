@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.core.perceive.pojo.User;
@@ -20,7 +20,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-@AgentModule(name = "preprocess_executor", order = 1)
+@AgentRunningModule(name = "preprocess_executor", order = 1)
 public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
 
     @InjectCapability

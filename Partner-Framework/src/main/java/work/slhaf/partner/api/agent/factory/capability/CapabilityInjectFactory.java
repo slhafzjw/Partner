@@ -9,7 +9,7 @@ import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityProxy
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
 import work.slhaf.partner.api.agent.factory.module.ModuleInitHookExecuteFactory;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 
 import java.lang.reflect.Field;
@@ -27,7 +27,7 @@ import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
  *
  * <p>实现方式：</p>
  * <ol>
- *     <li>通过动态代理，为 {@link AgentModule} 与 {@link AgentSubModule} 中待注入的
+ *     <li>通过动态代理，为 {@link AgentRunningModule} 与 {@link AgentSubModule} 中待注入的
  *         <b>能力接口</b> 类型（即 {@link Capability} 标注的接口类）生成代理对象。
  *     </li>
  *     <li>在代理对象内部，根据调用方法的签名确定路由，将调用转发至对应的具体函数。

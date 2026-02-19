@@ -7,7 +7,7 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.*;
 import work.slhaf.partner.api.agent.factory.capability.exception.*;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.util.AgentUtil;
 
@@ -42,7 +42,7 @@ import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
  *     </li>
  *     <li>
  *         <p>{@link CapabilityCheckFactory#checkInjectCapability()}</p>
- *         检查 {@link InjectCapability} 注解是否只用在 {@link CapabilityHolder} 所标识类的字段上。{@link AgentModule} 与 {@link AgentSubModule} 已经被 {@link CapabilityHolder} 标注
+ *         检查 {@link InjectCapability} 注解是否只用在 {@link CapabilityHolder} 所标识类的字段上。{@link AgentRunningModule} 与 {@link AgentSubModule} 已经被 {@link CapabilityHolder} 标注
  *     </li>
  * </ol>
  *

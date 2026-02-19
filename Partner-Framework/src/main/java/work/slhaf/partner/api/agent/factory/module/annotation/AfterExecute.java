@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 
 /**
  * 仅适用于以下类中的方法:
- * 1. <code>@AgentModule</code>注解所在类
+ * 1. <code>@AgentRunningModule</code>注解所在类
  * 2. <code>ActivateModel</code>子类
  * 3. <code>AbstractAgentRunningModule</code>或者<code>AbstractAgentSubModule</code>子类
  */

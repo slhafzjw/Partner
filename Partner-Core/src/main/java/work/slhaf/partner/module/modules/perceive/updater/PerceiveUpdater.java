@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
 @Data
-@AgentModule(name = "perceive_updater", order = 7)
+@AgentRunningModule(name = "perceive_updater", order = 7)
 public class PerceiveUpdater extends PostRunningAbstractAgentModuleAbstract {
 
     @InjectCapability

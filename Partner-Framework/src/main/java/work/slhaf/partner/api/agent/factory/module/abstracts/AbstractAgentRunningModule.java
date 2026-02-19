@@ -2,7 +2,7 @@ package work.slhaf.partner.api.agent.factory.module.abstracts;
 
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext;
@@ -25,10 +25,10 @@ public abstract class AbstractAgentRunningModule<C extends RunningFlowContext> e
     }
 
     private String getModuleName(){
-        if (this.getClass().isAnnotationPresent(AgentModule.class)) {
-            return this.getClass().getAnnotation(AgentModule.class).name();
+        if (this.getClass().isAnnotationPresent(AgentRunningModule.class)) {
+            return this.getClass().getAnnotation(AgentRunningModule.class).name();
         } else if (this.getClass().isAnnotationPresent(CoreModule.class)) {
-            return CoreModule.class.getAnnotation(AgentModule.class).name();
+            return CoreModule.class.getAnnotation(AgentRunningModule.class).name();
         }else {
             return "Unknown AbstractAgentModule";
         }

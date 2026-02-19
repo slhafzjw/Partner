@@ -9,7 +9,7 @@ import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityFacto
 import work.slhaf.partner.api.agent.factory.capability.exception.DuplicateMethodException;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 
 import java.lang.reflect.Constructor;
@@ -52,7 +52,7 @@ import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
  *         </ul>
  *     </li>
  *     <li>
- *         函数路由表生成完毕、core实例创建完毕之后，将交由下一工厂完成能力(Capability)注入操作，注入到 {@link AgentModule} 与 {@link AgentSubModule} 对应的实例中
+ *         函数路由表生成完毕、core实例创建完毕之后，将交由下一工厂完成能力(Capability)注入操作，注入到 {@link AgentRunningModule} 与 {@link AgentSubModule} 对应的实例中
  *     </li>
  * </ol>
  *

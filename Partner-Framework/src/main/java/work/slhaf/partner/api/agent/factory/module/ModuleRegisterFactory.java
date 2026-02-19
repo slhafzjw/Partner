@@ -7,7 +7,7 @@ import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
 import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
@@ -21,13 +21,13 @@ import java.util.Set;
  * <h2>Agent启动流程 2</h2>
  *
  * <p>
- * 负责收集 {@link AgentModule} 与 {@link AgentSubModule} 注解所在类的信息，供后续工厂完成动态代理、模块与能力注入
+ * 负责收集 {@link AgentRunningModule} 与 {@link AgentSubModule} 注解所在类的信息，供后续工厂完成动态代理、模块与能力注入
  * <p/>
  *
  * <ol>
  *     <li>
  *         <p>{@link ModuleRegisterFactory#setModuleList()}</p>
- *         扫描 {@link AgentModule} 注解，获取执行模块信息: 类型、模块名称({@link AgentModule#name()})，执行顺序。并按照注解的 {@link AgentModule#order()} 字段进行排序
+ *         扫描 {@link AgentRunningModule} 注解，获取执行模块信息: 类型、模块名称({@link AgentRunningModule#name()})，执行顺序。并按照注解的 {@link AgentRunningModule#order()} 字段进行排序
  *     </li>
  *     <li>
  *         <p>{@link ModuleRegisterFactory#setSubModuleList()}</p>
@@ -62,14 +62,14 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
 
     private static MetaModule getMetaModule(Class<? extends AbstractAgentRunningModule> clazz) {
         MetaModule metaModule = new MetaModule();
-        AgentModule agentModule;
+        AgentRunningModule agentRunningModule;
         if (clazz.isAnnotationPresent(CoreModule.class)){
-            agentModule = CoreModule.class.getAnnotation(AgentModule.class);
+            agentRunningModule = CoreModule.class.getAnnotation(AgentRunningModule.class);
         }else{
-            agentModule = clazz.getAnnotation(AgentModule.class);
+            agentRunningModule = clazz.getAnnotation(AgentRunningModule.class);
         }
-        metaModule.setName(agentModule.name());
-        metaModule.setOrder(agentModule.order());
+        metaModule.setName(agentRunningModule.name());
+        metaModule.setOrder(agentRunningModule.order());
         metaModule.setClazz(clazz);
         return metaModule;
     }
@@ -89,7 +89,7 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
 
     private void setModuleList() {
         //反射扫描获取@AgentModule所在类, 该部分为Agent流程执行模块
-        Set<Class<?>> modules = reflections.getTypesAnnotatedWith(AgentModule.class);
+        Set<Class<?>> modules = reflections.getTypesAnnotatedWith(AgentRunningModule.class);
         for (Class<?> module : modules) {
             if (!ClassUtil.isNormalClass(module)) {
                 continue;

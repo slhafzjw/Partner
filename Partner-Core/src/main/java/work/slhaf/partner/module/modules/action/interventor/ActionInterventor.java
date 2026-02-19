@@ -5,7 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 /**
  * 负责识别潜在的行动干预信息，作用于正在进行或已存在的行动池中内容
  */
-@AgentModule(name = "action_identifier", order = 2)
+@AgentRunningModule(name = "action_identifier", order = 2)
 public class ActionInterventor extends PreRunningAbstractAgentModuleAbstract implements ActivateModel {
 
     @InjectModule

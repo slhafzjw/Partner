@@ -9,7 +9,7 @@ import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunnin
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
-public class AbstractAgentModuleProxyTest {
+public class AbstractAgentRunningModuleProxyTest {
     @Test
     public void test() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, IOException, ClassNotFoundException {
         Class<? extends AbstractAgentRunningModule> clazz = new ByteBuddy().subclass(MyAbstractAgentRunningAbstractAgentModule.class)
@@ -18,7 +18,7 @@ public class AbstractAgentModuleProxyTest {
                         new MyModuleProxyInterceptor()
                 ))
                 .make()
-                .load(AbstractAgentModuleProxyTest.class.getClassLoader())
+                .load(AbstractAgentRunningModuleProxyTest.class.getClassLoader())
                 .getLoaded();
         clazz.getConstructor().newInstance().execute(null);
     }

@@ -1,7 +1,7 @@
 package work.slhaf.demo.module;
 
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 
-@AgentModule(name = "module_a",order = 0)
+@AgentRunningModule(name = "module_a", order = 0)
 public class ATestModule {
 }

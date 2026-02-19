@@ -8,7 +8,7 @@ import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunnin
 import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleCheckException;
@@ -31,11 +31,11 @@ import static work.slhaf.partner.api.agent.util.AgentUtil.getMethodAnnotationTyp
  * <ol>
  *     <li>
  *         <p>{@link ModuleCheckFactory#annotationAbstractCheck(Set, Class)}</p>
- *         所有添加了 {@link AgentModule} 注解的类都将作为Agent的执行模块，为规范模块入口，都必须实现抽象类: {@link AbstractAgentRunningModule}; {@link AgentSubModule} 注解所在类则必须实现 {@link AbstractAgentSubModule}
+ *         所有添加了 {@link AgentRunningModule} 注解的类都将作为Agent的执行模块，为规范模块入口，都必须实现抽象类: {@link AbstractAgentRunningModule}; {@link AgentSubModule} 注解所在类则必须实现 {@link AbstractAgentSubModule}
  *     </li>
  *     <li>
  *         <p>{@link ModuleCheckFactory#moduleConstructorsCheck(Set)}</p>
- *         所有 {@link AgentModule} 与 {@link AgentSubModule} 注解所在类都必须具备空参构造方法，初始化逻辑可放在 @Init 注解所处方法中，将在 Capability 与 subModules 注入后才会执行
+ *         所有 {@link AgentRunningModule} 与 {@link AgentSubModule} 注解所在类都必须具备空参构造方法，初始化逻辑可放在 @Init 注解所处方法中，将在 Capability 与 subModules 注入后才会执行
  *     </li>
  *     <li>
  *         <p>{@link ModuleCheckFactory#activateModelImplCheck()}</p>
@@ -84,7 +84,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
     }
 
     private AnnotatedModules getAnnotatedModules() {
-        Set<Class<?>> moduleTypes = reflections.getTypesAnnotatedWith(AgentModule.class)
+        Set<Class<?>> moduleTypes = reflections.getTypesAnnotatedWith(AgentRunningModule.class)
                 .stream()
                 .filter(ClassUtil::isNormalClass)
                 .collect(Collectors.toSet());
@@ -133,7 +133,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
     }
 
     private void initHookLocationCheck() {
-        Set<Class<?>> types = getMethodAnnotationTypeSet(AgentModule.class, reflections);
+        Set<Class<?>> types = getMethodAnnotationTypeSet(AgentRunningModule.class, reflections);
         checkLocation(types);
     }
 

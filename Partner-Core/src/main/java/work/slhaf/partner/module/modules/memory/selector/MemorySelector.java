@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentModule;
+import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
@@ -28,7 +28,7 @@ import java.util.*;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Slf4j
-@AgentModule(name = "memory_selector", order = 2)
+@AgentRunningModule(name = "memory_selector", order = 2)
 public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
 
     @InjectCapability

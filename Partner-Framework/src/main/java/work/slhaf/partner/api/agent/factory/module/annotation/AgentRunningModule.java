@@ -12,7 +12,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @CapabilityHolder
 @Inherited
-public @interface AgentModule {
+public @interface AgentRunningModule {
 
     /**
      * 模块名称
