@@ -10,8 +10,8 @@
     <packaging>pom</packaging>
     <modules>
         <module>Partner-Test-Demo</module>
-        <module>Partner-Main</module>
-        <module>Partner-Api</module>
+        <module>Partner-Core</module>
+        <module>Partner-Framework</module>
         <module>Partner-SandboxRunner</module>
         <module>Partner-Common</module>
     </modules>

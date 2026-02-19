@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding">
-    <file url="file://$PROJECT_DIR$/Partner-Api/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/Partner-Api/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Partner-Common/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Partner-Common/src/main/resources" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/Partner-Main/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/Partner-Main/src/main/java/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/Partner-Main/src/main/java/src/main/resources" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/Partner-Main/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/Partner-Core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/Partner-Core/src/main/java/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/Partner-Core/src/main/java/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/Partner-Core/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/Partner-Framework/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/Partner-Framework/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Partner-SandboxRunner/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Partner-Test-Demo/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Partner-Test-Demo/src/main/resources" charset="UTF-8" />
