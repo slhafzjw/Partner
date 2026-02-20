@@ -35,8 +35,8 @@ abstract class AbstractAgentModule {
 interface ActivateModel {
 
     companion object {
-        val configManager: AgentConfigManager = AgentConfigManager.INSTANCE
         val modelMap: MutableMap<String, Model> = mutableMapOf()
+        private val configManager: AgentConfigManager = AgentConfigManager.INSTANCE
     }
 
     fun getModel(): Model {
