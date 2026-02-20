@@ -3,12 +3,10 @@ package work.slhaf.partner.module.modules.core;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.chat.ChatClient;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
@@ -29,10 +27,8 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-@Slf4j
-@CoreModule
-public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowContext> implements ActivateModel {
-    
+public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowContext> implements ActivateModel {
+
     @InjectCapability
     private CognationCapability cognationCapability;
     private List<Message> appendedMessages = new ArrayList<>();
@@ -251,5 +247,10 @@ public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowCont
                 .content(ModelConstant.CharacterPrefix.SYSTEM + data.getModuleName() + "以下为" + data.getModuleName() + "相关认知.")
                 .build();
         appendedMessages.add(startMessage);
+    }
+
+    @Override
+    public int order() {
+        return 5;
     }
 }
