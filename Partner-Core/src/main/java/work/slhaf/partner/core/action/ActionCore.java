@@ -34,33 +34,28 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ActionCore extends PartnerCore<ActionCore> {
 
-    /**
-     * 持久行动池
-     */
-    private CopyOnWriteArraySet<ExecutableAction> actionPool = new CopyOnWriteArraySet<>();
-
-    /**
-     * 待确认任务，以userId区分不同用户，因为需要跨请求确认
-     */
-    private HashMap<String, List<ExecutableAction>> pendingActions = new HashMap<>();
-
-    /**
-     * 语义缓存与行为倾向映射
-     */
-    private List<ActionCacheData> actionCache = new ArrayList<>();
-
     private final Lock cacheLock = new ReentrantLock();
-
     // 由于当前的执行器逻辑实现，平台线程池大小不得小于 2，这里规定为最小为 4
     private final ExecutorService platformExecutor = Executors
             .newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors(), 4));
     private final ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
-
     /**
      * 已存在的行动程序，键格式为‘<MCP-ServerName>::<Tool-Name>’，值为 MCP Server 通过 Resources 相关渠道传递的行动程序元信息
      */
     private final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
     private final List<PhaserRecord> phaserRecords = new ArrayList<>();
+    /**
+     * 持久行动池
+     */
+    private CopyOnWriteArraySet<ExecutableAction> actionPool = new CopyOnWriteArraySet<>();
+    /**
+     * 待确认任务，以userId区分不同用户，因为需要跨请求确认
+     */
+    private HashMap<String, List<ExecutableAction>> pendingActions = new HashMap<>();
+    /**
+     * 语义缓存与行为倾向映射
+     */
+    private List<ActionCacheData> actionCache = new ArrayList<>();
     private RunnerClient runnerClient;
 
     public ActionCore() throws IOException, ClassNotFoundException {

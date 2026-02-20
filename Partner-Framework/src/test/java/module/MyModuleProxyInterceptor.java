@@ -6,7 +6,8 @@ import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 
 public class MyModuleProxyInterceptor {
-    public MyModuleProxyInterceptor() {}
+    public MyModuleProxyInterceptor() {
+    }
 
     @RuntimeType
     public Object intercept(@Origin Method method, @AllArguments Object[] allArguments, @SuperCall Callable<?> zuper, @This Object proxy) throws Exception {

@@ -13,14 +13,23 @@ import java.util.concurrent.locks.Lock;
 public interface CognationCapability {
 
     List<Message> getChatMessages();
+
     void cleanMessage(List<Message> messages);
+
     Lock getMessageLock();
+
     void addMetaMessage(String userId, MetaMessage metaMessage);
+
     List<Message> unpackAndClear(String userId);
+
     void refreshMemoryId();
+
     void resetLastUpdatedTime();
+
     long getLastUpdatedTime();
-    HashMap<String,List<MetaMessage>> getSingleMetaMessageMap();
+
+    HashMap<String, List<MetaMessage>> getSingleMetaMessageMap();
+
     String getCurrentMemoryId();
 
     @ToCoordinated

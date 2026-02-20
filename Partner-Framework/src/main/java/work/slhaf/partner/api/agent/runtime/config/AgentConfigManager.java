@@ -15,10 +15,9 @@ import java.util.*;
 @Data
 public abstract class AgentConfigManager {
 
+    private static final String DEFAULT_KEY = "default";
     @Setter
     public static AgentConfigManager INSTANCE;
-    private static final String DEFAULT_KEY = "default";
-
     protected HashMap<String, ModelConfig> modelConfigMap;
     protected HashMap<String, List<Message>> modelPromptMap;
     protected HashMap<String, Boolean> moduleEnabledStatus;

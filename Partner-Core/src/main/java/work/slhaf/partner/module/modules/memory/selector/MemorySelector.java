@@ -22,6 +22,7 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 
 import java.time.LocalDate;
 import java.util.*;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
@@ -33,6 +34,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
     private SliceSelectEvaluator sliceSelectEvaluator;
     @InjectModule
     private MemorySelectExtractor memorySelectExtractor;
+
     @Override
     public void doExecute(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getUserId();
@@ -45,6 +47,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
         }
         setModuleContextRecall(runningFlowContext);
     }
+
     private List<EvaluatedSlice> selectAndEvaluateMemory(PartnerRunningFlowContext runningFlowContext, ExtractorResult extractorResult) {
         log.debug("[MemorySelector] 触发记忆回溯...");
         //查找切片
@@ -62,6 +65,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
         log.debug("[MemorySelector] 切片评估结果: {}", JSONObject.toJSONString(memorySlices));
         return memorySlices;
     }
+
     private void setModuleContextRecall(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getUserId();
         boolean recall = memoryCapability.hasActivatedSlices(userId);
@@ -70,6 +74,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
             runningFlowContext.getModuleContext().getExtraContext().put("recall_count", memoryCapability.getActivatedSlicesSize(userId));
         }
     }
+
     private void setMemoryResultList(List<MemoryResult> memoryResultList, List<ExtractorMatchData> matches, String userId) {
         for (ExtractorMatchData match : matches) {
             try {
@@ -97,21 +102,25 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
             memoryResult.getRelatedMemorySliceResult().removeIf(m -> removeOrNot(m, userId));
         }
     }
+
     private void removeDuplicateSlice(MemoryResult memoryResult) {
         Collection<String> values = memoryCapability.getDialogMap().values();
         memoryResult.getRelatedMemorySliceResult().removeIf(m -> values.contains(m.getSummary()));
         memoryResult.getMemorySliceResult().removeIf(m -> values.contains(m.getMemorySlice().getSummary()));
     }
+
     private boolean removeOrNot(MemorySlice memorySlice, String userId) {
         if (memorySlice.isPrivate()) {
             return memorySlice.getStartUserId().equals(userId);
         }
         return false;
     }
+
     @Override
     public String moduleName() {
         return "[记忆模块]";
     }
+
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();

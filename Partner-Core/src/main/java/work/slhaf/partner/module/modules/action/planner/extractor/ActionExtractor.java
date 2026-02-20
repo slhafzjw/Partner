@@ -14,6 +14,7 @@ import java.util.List;
 public class ActionExtractor extends AbstractAgentModule.Sub<ExtractorInput, ExtractorResult> implements ActivateModel {
     @InjectCapability
     private ActionCapability actionCapability;
+
     @Override
     public ExtractorResult execute(ExtractorInput data) {
         ExtractorResult result = new ExtractorResult();
@@ -32,10 +33,12 @@ public class ActionExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
         }
         return new ExtractorResult();
     }
+
     @Override
     public String modelKey() {
         return "action_extractor";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;

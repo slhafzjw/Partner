@@ -20,7 +20,7 @@
 
     <!-- 同时输出到文件和控制台 -->
     <root level="DEBUG">
-        <appender-ref ref="ROLLING_FILE" />
-        <appender-ref ref="CONSOLE" />  <!-- 关键：添加这一行 -->
+        <appender-ref ref="ROLLING_FILE"/>
+        <appender-ref ref="CONSOLE"/>  <!-- 关键：添加这一行 -->
     </root>
 </configuration>

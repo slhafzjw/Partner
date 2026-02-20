@@ -30,7 +30,7 @@ public class CoreContext extends PersistableObject {
         activeModules.put(moduleName, false);
     }
 
-    public void activateModule(String moduleName){
+    public void activateModule(String moduleName) {
         activeModules.put(moduleName, true);
     }
 }

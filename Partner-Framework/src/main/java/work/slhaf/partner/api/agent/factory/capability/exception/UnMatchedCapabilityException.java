@@ -1,6 +1,6 @@
 package work.slhaf.partner.api.agent.factory.capability.exception;
 
-public class UnMatchedCapabilityException extends CapabilityCheckFailedException{
+public class UnMatchedCapabilityException extends CapabilityCheckFailedException {
     public UnMatchedCapabilityException(String message) {
         super(message);
     }

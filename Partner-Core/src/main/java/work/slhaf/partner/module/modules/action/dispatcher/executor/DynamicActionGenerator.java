@@ -1,4 +1,5 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor;
+
 import com.alibaba.fastjson2.JSONObject;
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
@@ -13,6 +14,7 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorInput;
 import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorResult;
+
 /**
  * 负责依据输入内容生成可执行的动态行动单元，并选择是否持久化至 SandboxRunner 容器内
  */
@@ -21,10 +23,12 @@ public class DynamicActionGenerator extends AbstractAgentModule.Sub<GeneratorInp
     @InjectCapability
     private ActionCapability actionCapability;
     private RunnerClient runnerClient;
+
     @Init
     void init() {
         runnerClient = actionCapability.runnerClient();
     }
+
     @Override
     public GeneratorResult execute(GeneratorInput input) {
         GeneratorResult result = new GeneratorResult();
@@ -56,9 +60,11 @@ public class DynamicActionGenerator extends AbstractAgentModule.Sub<GeneratorInp
         }
         return result;
     }
+
     private void waitingSerialize() {
         throw new UnsupportedOperationException("Unimplemented method 'waitingSerialize'");
     }
+
     private String buildPrompt(GeneratorInput data) {
         JSONObject prompt = new JSONObject();
         prompt.put("[行动描述]", data.getDescription());
@@ -66,10 +72,12 @@ public class DynamicActionGenerator extends AbstractAgentModule.Sub<GeneratorInp
         prompt.putObject("[行动参数描述]").putAll(data.getParamsDescription());
         return prompt.toString();
     }
+
     @Override
     public String modelKey() {
         return "dynamic_generator";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;

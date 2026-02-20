@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * 负责识别行动链的修复
  * <ol>
@@ -41,18 +42,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </ol>
  */
 public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, RepairerResult> implements ActivateModel {
+    private final AssemblyHelper assemblyHelper = new AssemblyHelper();
     @InjectCapability
     private ActionCapability actionCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
     @InjectModule
     private DynamicActionGenerator dynamicActionGenerator;
-    private final AssemblyHelper assemblyHelper = new AssemblyHelper();
     private RunnerClient runnerClient;
+
     @Init
     void init() {
         runnerClient = actionCapability.runnerClient();
     }
+
     @Override
     public RepairerResult execute(RepairerInput data) {
         RepairerResult result;
@@ -62,7 +65,7 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
             RepairerData repairerData = JSONObject.parseObject(response.getMessage(), RepairerData.class);
             result = switch (repairerData.getRepairerType()) {
                 case ACTION_GENERATION ->
-                    handleActionGeneration(JSONObject.parseObject(repairerData.getData(), GeneratorInput.class));
+                        handleActionGeneration(JSONObject.parseObject(repairerData.getData(), GeneratorInput.class));
                 case ACTION_INVOCATION -> handleActionInvocation(
                         JSONObject.parseObject(repairerData.getData(), new TypeReference<List<String>>() {
                         }));
@@ -82,6 +85,7 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
         }
         return result;
     }
+
     /**
      * 负责根据输入内容进行行动单元的参数信息修复
      *
@@ -107,6 +111,7 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
         result.getFixedData().add(actionResult.getData());
         return result;
     }
+
     /**
      * 负责根据输入内容进行行动单元的参数信息修复
      *
@@ -147,35 +152,42 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
         }
         return result;
     }
+
     private RepairerResult handleUserInteraction(String acquireContent) {
         RepairerResult result = new RepairerResult();
         result.setStatus(RepairerStatus.ACQUIRE);
         // 发送自对话请求
         return result;
     }
+
     @Override
     public String modelKey() {
         return "action_repairer";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;
     }
+
+    private enum RepairerType {
+        ACTION_GENERATION,
+        ACTION_INVOCATION,
+        USER_INTERACTION
+    }
+
     @SuppressWarnings("InnerClassMayBeStatic")
     @Data
     private class RepairerData {
         private RepairerType repairerType;
         private String data;
     }
-    private enum RepairerType {
-        ACTION_GENERATION,
-        ACTION_INVOCATION,
-        USER_INTERACTION
-    }
+
     @SuppressWarnings("InnerClassMayBeStatic")
     private class AssemblyHelper {
         private AssemblyHelper() {
         }
+
         private String buildPrompt(RepairerInput data, String specialInstruction) {
             JSONObject prompt = new JSONObject();
             JSONObject actionData = prompt.putObject("[本次行动信息]");

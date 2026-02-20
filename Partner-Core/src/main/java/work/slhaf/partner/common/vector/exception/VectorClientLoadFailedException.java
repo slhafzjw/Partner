@@ -11,5 +11,5 @@ public class VectorClientLoadFailedException extends AgentRuntimeException {
     public VectorClientLoadFailedException(String message, Throwable cause) {
         super(message, cause);
     }
-    
+
 }

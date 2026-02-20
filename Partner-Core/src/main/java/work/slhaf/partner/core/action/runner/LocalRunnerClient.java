@@ -119,6 +119,29 @@ public class LocalRunnerClient extends RunnerClient {
         setupShutdownHook();
     }
 
+    private static @NotNull Path createActionDir(String baseName, Path baseDir) {
+        Path actionDir = null;
+
+        // 原子地“抢占”目录名
+        for (int i = 0; ; i++) {
+            String dirName = (i == 0) ? baseName : baseName + "(" + i + ")";
+            Path candidate = baseDir.resolve(dirName);
+
+            try {
+                Files.createDirectory(candidate); // 原子操作
+                actionDir = candidate;
+                break;
+            } catch (FileAlreadyExistsException ignored) {
+                // 继续尝试下一个名字
+            } catch (IOException e) {
+                throw new ActionSerializeFailedException(
+                        "无法创建行动目录: " + candidate.toAbsolutePath(), e
+                );
+            }
+        }
+        return actionDir;
+    }
+
     private void registerCommonMcp() throws IOException {
         val ctx = new WatchContext(Path.of(MCP_SERVER_PATH), FileSystems.getDefault().newWatchService());
         val common = new LocalWatchEventProcessor.Common(existedMetaActions, mcpClients, mcpClients.get(MCP_NAME_DESC), ctx);
@@ -264,29 +287,6 @@ public class LocalRunnerClient extends RunnerClient {
         log.debug("临时序列化完毕");
     }
 
-    private static @NotNull Path createActionDir(String baseName, Path baseDir) {
-        Path actionDir = null;
-
-        // 原子地“抢占”目录名
-        for (int i = 0; ; i++) {
-            String dirName = (i == 0) ? baseName : baseName + "(" + i + ")";
-            Path candidate = baseDir.resolve(dirName);
-
-            try {
-                Files.createDirectory(candidate); // 原子操作
-                actionDir = candidate;
-                break;
-            } catch (FileAlreadyExistsException ignored) {
-                // 继续尝试下一个名字
-            } catch (IOException e) {
-                throw new ActionSerializeFailedException(
-                        "无法创建行动目录: " + candidate.toAbsolutePath(), e
-                );
-            }
-        }
-        return actionDir;
-    }
-
     @Override
     public void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData) {
         log.debug("行动程序持久序列化: {}", metaActionInfo);
@@ -416,8 +416,8 @@ public class LocalRunnerClient extends RunnerClient {
         class BuildRegistry implements LocalWatchServiceBuild {
 
             private final Map<WatchEvent.Kind<?>, EventHandler> handlers = new HashMap<>();
-            private InitLoader initLoader;
             private final WatchContext ctx;
+            private InitLoader initLoader;
             private boolean watchAll = false;
 
             private BuildRegistry(WatchContext ctx) {
@@ -1082,15 +1082,15 @@ public class LocalRunnerClient extends RunnerClient {
             private final Map<File, McpConfigFileRecord> mcpConfigFileCache = new HashMap<>();
             private final McpSyncClient descClient;
 
-            @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-            private boolean normalFile(File file) {
-                return file.exists() && file.isFile() && file.getName().endsWith(".json");
-            }
-
             private Common(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, Map<String, McpSyncClient> mcpClients, McpSyncClient descClient, WatchContext ctx) {
                 super(existedMetaActions, ctx);
                 this.mcpClients = mcpClients;
                 this.descClient = descClient;
+            }
+
+            @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+            private boolean normalFile(File file) {
+                return file.exists() && file.isFile() && file.getName().endsWith(".json");
             }
 
             /**

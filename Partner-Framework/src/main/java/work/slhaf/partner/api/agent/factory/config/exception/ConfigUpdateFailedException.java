@@ -1,6 +1,6 @@
 package work.slhaf.partner.api.agent.factory.config.exception;
 
-public class ConfigUpdateFailedException extends ConfigFactoryRuntimeException{
+public class ConfigUpdateFailedException extends ConfigFactoryRuntimeException {
     public ConfigUpdateFailedException(String message, Throwable cause) {
         super(message, cause);
     }

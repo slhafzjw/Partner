@@ -1,5 +1,5 @@
 public interface InterfaceTest {
-    default String getName(){
+    default String getName() {
         return "111";
     }
 }

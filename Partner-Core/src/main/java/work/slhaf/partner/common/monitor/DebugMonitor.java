@@ -6,13 +6,20 @@ import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 @Slf4j
 public class DebugMonitor {
 
-    private InteractionThreadPoolExecutor executor;
     private static DebugMonitor debugMonitor;
+    private InteractionThreadPoolExecutor executor;
 
     public static void initialize() {
         debugMonitor = new DebugMonitor();
         debugMonitor.executor = InteractionThreadPoolExecutor.getInstance();
         debugMonitor.runMonitor();
+    }
+
+    public static DebugMonitor getInstance() {
+        if (debugMonitor == null) {
+            initialize();
+        }
+        return debugMonitor;
     }
 
     private void runMonitor() {
@@ -25,12 +32,5 @@ public class DebugMonitor {
                 }
             }
         });
-    }
-
-    public static DebugMonitor getInstance(){
-        if (debugMonitor == null) {
-            initialize();
-        }
-        return debugMonitor;
     }
 }

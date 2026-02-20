@@ -40,11 +40,11 @@ import java.util.List;
  */
 public class ModuleProxyFactory extends AgentBaseFactory {
 
+    private final HashMap<Class<?>, Object> subModuleInstances = new HashMap<>();
+    private final HashMap<Class<?>, Object> moduleInstances = new HashMap<>();
     private List<MetaModule> moduleList;
     private List<MetaSubModule> subModuleList;
     private HashMap<Class<?>, Object> capabilityHolderInstances;
-    private final HashMap<Class<?>, Object> subModuleInstances = new HashMap<>();
-    private final HashMap<Class<?>, Object> moduleInstances = new HashMap<>();
 
     @Override
     protected void setVariables(AgentRegisterContext context) {

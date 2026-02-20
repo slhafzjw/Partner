@@ -46,6 +46,20 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
     private List<MetaModule> moduleList;
     private List<MetaSubModule> subModuleList;
 
+    private static MetaModule getMetaModule(Class<? extends AbstractAgentRunningModule> clazz) {
+        MetaModule metaModule = new MetaModule();
+        AgentRunningModule agentRunningModule;
+        if (clazz.isAnnotationPresent(CoreModule.class)) {
+            agentRunningModule = CoreModule.class.getAnnotation(AgentRunningModule.class);
+        } else {
+            agentRunningModule = clazz.getAnnotation(AgentRunningModule.class);
+        }
+        metaModule.setName(agentRunningModule.name());
+        metaModule.setOrder(agentRunningModule.order());
+        metaModule.setClazz(clazz);
+        return metaModule;
+    }
+
     @Override
     protected void setVariables(AgentRegisterContext context) {
         ModuleFactoryContext factoryContext = context.getModuleFactoryContext();
@@ -58,20 +72,6 @@ public class ModuleRegisterFactory extends AgentBaseFactory {
     protected void run() {
         setModuleList();
         setSubModuleList();
-    }
-
-    private static MetaModule getMetaModule(Class<? extends AbstractAgentRunningModule> clazz) {
-        MetaModule metaModule = new MetaModule();
-        AgentRunningModule agentRunningModule;
-        if (clazz.isAnnotationPresent(CoreModule.class)){
-            agentRunningModule = CoreModule.class.getAnnotation(AgentRunningModule.class);
-        }else{
-            agentRunningModule = clazz.getAnnotation(AgentRunningModule.class);
-        }
-        metaModule.setName(agentRunningModule.name());
-        metaModule.setOrder(agentRunningModule.order());
-        metaModule.setClazz(clazz);
-        return metaModule;
     }
 
     private void setSubModuleList() {

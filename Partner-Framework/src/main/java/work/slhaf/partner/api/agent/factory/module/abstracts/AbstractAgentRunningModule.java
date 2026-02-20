@@ -21,12 +21,12 @@ public abstract class AbstractAgentRunningModule<C extends RunningFlowContext> e
         log.debug("[{}] 模块执行结束...", getModuleName());
     }
 
-    private String getModuleName(){
+    private String getModuleName() {
         if (this.getClass().isAnnotationPresent(AgentRunningModule.class)) {
             return this.getClass().getAnnotation(AgentRunningModule.class).name();
         } else if (this.getClass().isAnnotationPresent(CoreModule.class)) {
             return CoreModule.class.getAnnotation(AgentRunningModule.class).name();
-        }else {
+        } else {
             return "Unknown AbstractAgentModule";
         }
     }

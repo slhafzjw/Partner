@@ -1,6 +1,6 @@
 package work.slhaf.partner.api.agent.factory.capability.exception;
 
-public class EmptyCapabilityHolderException extends CapabilityCheckFailedException{
+public class EmptyCapabilityHolderException extends CapabilityCheckFailedException {
     public EmptyCapabilityHolderException(String message) {
         super(message);
     }

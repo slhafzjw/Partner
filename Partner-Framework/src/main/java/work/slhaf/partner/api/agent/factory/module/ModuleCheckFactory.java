@@ -157,26 +157,27 @@ public class ModuleCheckFactory extends AgentBaseFactory {
 
     private void checkIfClassCorresponds(AnnotatedModules annotatedModules, ExtendedModules extendedModules) {
         // 检查是否有被@AgentModule注解但没有继承AgentRunningModule的类
-        checkSets(annotatedModules.moduleTypes(), extendedModules.moduleTypes(), 
-                 "存在被@AgentModule注解但未继承AgentRunningModule的类");
-        
+        checkSets(annotatedModules.moduleTypes(), extendedModules.moduleTypes(),
+                "存在被@AgentModule注解但未继承AgentRunningModule的类");
+
         // 检查是否有继承AgentRunningModule但没有被@AgentModule注解的类
         checkSets(extendedModules.moduleTypes(), annotatedModules.moduleTypes(),
-                 "存在继承AgentRunningModule但未被@AgentModule注解的类");
-        
+                "存在继承AgentRunningModule但未被@AgentModule注解的类");
+
         // 检查是否有被@AgentSubModule注解但没有继承AgentRunningSubModule的类
         checkSets(annotatedModules.subModuleTypes(), extendedModules.subModuleTypes(),
-                 "存在被@AgentSubModule注解但未继承AgentRunningSubModule的类");
-        
+                "存在被@AgentSubModule注解但未继承AgentRunningSubModule的类");
+
         // 检查是否有继承AgentRunningSubModule但没有被@AgentSubModule注解的类
         checkSets(extendedModules.subModuleTypes(), annotatedModules.subModuleTypes(),
-                 "存在继承AgentRunningSubModule但未被@AgentSubModule注解的类");
+                "存在继承AgentRunningSubModule但未被@AgentSubModule注解的类");
     }
-    
+
     /**
      * 检查源集合中是否有不在目标集合中的元素
-     * @param source 源集合
-     * @param target 目标集合
+     *
+     * @param source       源集合
+     * @param target       目标集合
      * @param errorMessage 错误信息前缀
      */
     private void checkSets(Set<Class<?>> source, Set<Class<?>> target, String errorMessage) {
@@ -188,7 +189,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
                     .map(Class::getSimpleName)
                     .limit(10) // 限制显示数量，避免信息泄露
                     .collect(Collectors.joining(", ", "[", "]"));
-            
+
             throw new ModuleCheckException(errorMessage + ": " + classNames);
         }
     }

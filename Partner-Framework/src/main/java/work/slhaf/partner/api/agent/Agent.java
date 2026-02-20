@@ -56,13 +56,12 @@ public final class Agent {
         private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
         private final List<Runnable> beforeLaunchRunners = new ArrayList<>();
         private final List<Runnable> afterLaunchRunners = new ArrayList<>();
-        private AgentGateway gateway;
         private final Class<?> applicationClass;
+        private final CountDownLatch latch = new CountDownLatch(1);
+        private AgentGateway gateway;
         private Class<? extends AgentConfigManager> agentConfigManagerClass;
         private Class<? extends AgentGateway> gatewayClass;
         private Class<? extends AgentExceptionCallback> agentExceptionCallbackClass;
-
-        private final CountDownLatch latch = new CountDownLatch(1);
 
         private AgentApp(Class<?> clazz) {
             this.applicationClass = clazz;
@@ -136,9 +135,9 @@ public final class Agent {
         private void beforeLaunch() {
             try {
                 AgentConfigManager.setINSTANCE(agentConfigManagerClass.getDeclaredConstructor().newInstance());
-                log.info("配置管理器设置完毕: {}",agentConfigManagerClass.getSimpleName());
+                log.info("配置管理器设置完毕: {}", agentConfigManagerClass.getSimpleName());
                 GlobalExceptionHandler.setExceptionCallback(agentExceptionCallbackClass.getDeclaredConstructor().newInstance());
-                log.info("异常处理回调设置完毕: {}",agentExceptionCallbackClass.getSimpleName());
+                log.info("异常处理回调设置完毕: {}", agentExceptionCallbackClass.getSimpleName());
                 launchRunners(beforeLaunchRunners);
                 log.info("前置任务启动完毕");
             } catch (Exception e) {

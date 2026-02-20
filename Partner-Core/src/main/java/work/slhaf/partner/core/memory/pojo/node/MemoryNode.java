@@ -51,10 +51,10 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
 
     public List<MemorySlice> loadMemorySliceList() throws IOException, ClassNotFoundException {
         //检查是否存在对应文件
-        File file = new File(SLICE_DATA_DIR+this.getMemoryNodeId()+".slice");
-        if (file.exists()){
+        File file = new File(SLICE_DATA_DIR + this.getMemoryNodeId() + ".slice");
+        if (file.exists()) {
             this.memorySliceList = deserialize(file);
-        }else {
+        } else {
             //逻辑正常的话，这部分应该不会出现，除非在insertMemory中进行save操作之前出现异常，中断了方法，但程序却没有结束
             this.memorySliceList = new CopyOnWriteArrayList<>();
         }
@@ -62,12 +62,12 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
     }
 
     public void saveMemorySliceList() throws IOException {
-        if (memorySliceList == null){
+        if (memorySliceList == null) {
             throw new NullSliceListException("memorySliceList为NULL! 检查实现逻辑!");
         }
-        File file = new File(SLICE_DATA_DIR+this.getMemoryNodeId()+".slice");
+        File file = new File(SLICE_DATA_DIR + this.getMemoryNodeId() + ".slice");
         Files.createDirectories(Path.of(SLICE_DATA_DIR));
-        try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))){
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {
             oos.writeObject(this.memorySliceList);
         }
         //取消切片挂载, 释放内存
@@ -75,7 +75,7 @@ public class MemoryNode extends PersistableObject implements Comparable<MemoryNo
     }
 
     private CopyOnWriteArrayList<MemorySlice> deserialize(File file) throws IOException, ClassNotFoundException {
-        try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             return (CopyOnWriteArrayList<MemorySlice>) ois.readObject();
         }
     }

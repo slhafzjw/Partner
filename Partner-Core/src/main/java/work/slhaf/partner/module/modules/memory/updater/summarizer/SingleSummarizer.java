@@ -16,14 +16,17 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Void> implements ActivateModel {
     private InteractionThreadPoolExecutor executor;
+
     @Init
     public void init() {
         this.executor = InteractionThreadPoolExecutor.getInstance();
     }
+
     @Override
     public Void execute(List<Message> chatMessages) {
         log.debug("[MemorySummarizer] 长文本摘要开始...");
@@ -47,6 +50,7 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
         log.debug("[MemorySummarizer] 长文本摘要结束");
         return null;
     }
+
     private String singleExecute(String primaryContent) {
         try {
             ChatResponse response = this.singleChat(primaryContent);
@@ -56,10 +60,12 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
             return primaryContent;
         }
     }
+
     @Override
     public String modelKey() {
         return "single_summarizer";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;

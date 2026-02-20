@@ -18,6 +18,7 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
+
 public class ActionDispatcher extends PostRunningAbstractAgentModuleAbstract {
     @InjectCapability
     private ActionCapability actionCapability;
@@ -26,10 +27,12 @@ public class ActionDispatcher extends PostRunningAbstractAgentModuleAbstract {
     @InjectModule
     private ActionScheduler actionScheduler;
     private ExecutorService executor;
+
     @Init
     public void init() {
         executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
     }
+
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
         // 只需要处理prepared action，因为pending action在用户确认后也将变为prepared action
@@ -53,6 +56,7 @@ public class ActionDispatcher extends PostRunningAbstractAgentModuleAbstract {
             actionScheduler.execute(scheduledActions);
         });
     }
+
     @Override
     protected boolean relyOnMessage() {
         return false;

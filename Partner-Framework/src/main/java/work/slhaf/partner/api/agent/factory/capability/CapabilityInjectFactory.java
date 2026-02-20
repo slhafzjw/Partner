@@ -37,7 +37,8 @@ import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
  * </ol>
  *
  * <p>下一步流程请参阅 {@link ModuleInitHookExecuteFactory}</p>
- */public class CapabilityInjectFactory extends AgentBaseFactory {
+ */
+public class CapabilityInjectFactory extends AgentBaseFactory {
 
     private Reflections reflections;
     private HashMap<String, Function<Object[], Object>> coordinatedMethodsRouterTable;

@@ -5,5 +5,5 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public abstract class AgentInputData extends InteractionData{
+public abstract class AgentInputData extends InteractionData {
 }

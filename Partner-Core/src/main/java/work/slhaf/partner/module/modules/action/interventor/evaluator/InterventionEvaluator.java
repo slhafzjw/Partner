@@ -23,6 +23,7 @@ public class InterventionEvaluator extends AbstractAgentModule.Sub<EvaluatorInpu
         implements ActivateModel {
     @InjectCapability
     private ActionCapability actionCapability;
+
     /**
      * 基于干预意图、记忆切片、交互上下文、已有行动程序综合评估，尝试评估并选取出合适的行动程序，交付给 ActionInterventor
      */
@@ -47,6 +48,7 @@ public class InterventionEvaluator extends AbstractAgentModule.Sub<EvaluatorInpu
         }
         return result;
     }
+
     private void evaluateIntervention(List<EvaluatedInterventionData> evaluatedDataList, Map<String, ExecutableAction> interventionMap, EvaluatorInput input, ExecutorService executor, CountDownLatch latch) {
         interventionMap.forEach((tendency, actionData) -> executor.execute(() -> {
             try {
@@ -64,6 +66,7 @@ public class InterventionEvaluator extends AbstractAgentModule.Sub<EvaluatorInpu
             }
         }));
     }
+
     private String buildPrompt(List<Message> recentMessages, List<EvaluatedSlice> activatedSlices,
                                ExecutableAction executableAction, String tendency) {
         JSONObject json = new JSONObject();
@@ -73,10 +76,12 @@ public class InterventionEvaluator extends AbstractAgentModule.Sub<EvaluatorInpu
         json.put("将干预的行动", JSONObject.toJSONString(executableAction));
         return json.toJSONString();
     }
+
     @Override
     public String modelKey() {
         return "intervention_evaluator";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;

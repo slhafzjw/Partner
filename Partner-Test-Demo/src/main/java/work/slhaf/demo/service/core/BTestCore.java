@@ -7,11 +7,11 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMeth
 public class BTestCore {
 
     @CapabilityMethod
-    public void testMethodNormalA(){
+    public void testMethodNormalA() {
         System.out.println("BTestCore::testMethodNormalA");
     }
 
-    public String testCoordinateSubMethod(){
+    public String testCoordinateSubMethod() {
         return "BTestCore::testMethodCoordinate";
     }
 }

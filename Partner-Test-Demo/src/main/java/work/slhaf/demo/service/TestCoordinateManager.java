@@ -11,7 +11,7 @@ public class TestCoordinateManager {
     private CTestCore cTestCore = new CTestCore();
 
     @Coordinated(capability = "test_c")
-    public void testMethodCoordinate(String input){
+    public void testMethodCoordinate(String input) {
         String resultB = bTestCore.testCoordinateSubMethod();
         cTestCore.testCoordinateSubMethod(resultB);
     }

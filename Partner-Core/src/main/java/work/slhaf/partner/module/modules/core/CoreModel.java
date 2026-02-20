@@ -34,7 +34,7 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
     private List<Message> appendedMessages = new ArrayList<>();
 
     @Init
-    public void init(){
+    public void init() {
         List<Message> chatMessages = this.cognationCapability.getChatMessages();
         this.getModel().getChatMessages().addAll(chatMessages);
 

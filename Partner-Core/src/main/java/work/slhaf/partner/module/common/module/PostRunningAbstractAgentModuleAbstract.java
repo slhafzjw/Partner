@@ -12,6 +12,8 @@ public abstract class PostRunningAbstractAgentModuleAbstract extends AbstractAge
         }
         doExecute(context);
     }
+
     public abstract void doExecute(PartnerRunningFlowContext context);
+
     protected abstract boolean relyOnMessage();
 }

@@ -12,6 +12,7 @@ import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import java.util.HashMap;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TotalSummarizer extends AbstractAgentModule.Sub<HashMap<String, String>, String> implements ActivateModel {
@@ -19,14 +20,17 @@ public class TotalSummarizer extends AbstractAgentModule.Sub<HashMap<String, Str
     public void init() {
         updateChatClientSettings();
     }
-    public String execute(HashMap<String, String> singleMemorySummary){
+
+    public String execute(HashMap<String, String> singleMemorySummary) {
         ChatResponse response = this.singleChat(JSONUtil.toJsonPrettyStr(singleMemorySummary));
         return JSONObject.parseObject(extractJson(response.getMessage())).getString("content");
     }
+
     @Override
     public String modelKey() {
         return "total_summarizer";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return true;

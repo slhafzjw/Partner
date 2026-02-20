@@ -14,6 +14,7 @@ import work.slhaf.partner.module.modules.perceive.updater.static_extractor.entit
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.HashMap;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class StaticMemoryExtractor extends AbstractAgentModule.Sub<PartnerRunningFlowContext, HashMap<String, String>> implements ActivateModel {
@@ -21,6 +22,7 @@ public class StaticMemoryExtractor extends AbstractAgentModule.Sub<PartnerRunnin
     private CognationCapability cognationCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
+
     @Override
     public HashMap<String, String> execute(PartnerRunningFlowContext context) {
         StaticMemoryExtractInput input = StaticMemoryExtractInput.builder()
@@ -34,10 +36,12 @@ public class StaticMemoryExtractor extends AbstractAgentModule.Sub<PartnerRunnin
         jsonObject.forEach((k, v) -> result.put(k, (String) v));
         return result;
     }
+
     @Override
     public String modelKey() {
         return "static_extractor";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return true;

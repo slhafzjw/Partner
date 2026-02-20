@@ -8,6 +8,6 @@ import java.util.List;
 
 @Data
 public class RelationExtractInput {
-    private HashMap<String,String> primaryUserPerceive;
+    private HashMap<String, String> primaryUserPerceive;
     private List<Message> chatMessages;
 }

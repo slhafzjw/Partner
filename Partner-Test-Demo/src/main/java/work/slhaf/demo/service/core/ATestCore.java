@@ -7,12 +7,12 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMeth
 public class ATestCore {
 
     @CapabilityMethod
-    public void testMethodNormalA(){
+    public void testMethodNormalA() {
         System.out.println("ATestCore::testMethodNormalA");
     }
 
     @CapabilityMethod
-    public String testMethodNormalB(){
+    public String testMethodNormalB() {
         return "ATestCore::testMethodNormalB";
     }
 

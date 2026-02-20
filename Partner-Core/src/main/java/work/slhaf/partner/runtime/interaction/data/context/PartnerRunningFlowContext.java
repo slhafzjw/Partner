@@ -42,21 +42,21 @@ public class PartnerRunningFlowContext extends RunningFlowContext {
         activeContext.put(userId, this);
     }
 
-    public void setFinished(boolean finished) {
-        moduleContext.setFinished(finished);
+    public static HashMap<String, PartnerRunningFlowContext> getInstance() {
+        return activeContext;
     }
 
     public boolean isFinished() {
         return moduleContext.isFinished();
     }
 
+    public void setFinished(boolean finished) {
+        moduleContext.setFinished(finished);
+    }
+
     public void setAppendedPrompt(AppendPromptData appendedPrompt) {
         List<AppendPromptData> appendPromptList = moduleContext.getAppendedPrompt();
         appendPromptList.addFirst(appendedPrompt);
-    }
-
-    public static HashMap<String, PartnerRunningFlowContext> getInstance() {
-        return activeContext;
     }
 
     public void clearUp() {

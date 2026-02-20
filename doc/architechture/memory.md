@@ -1,7 +1,9 @@
 # 流程参考: 记忆模块
+
 > 仅展示大致流程，缓存命中、持久化等内容在下方流程图中尚未体现
 
 ## 前置模块: [MemorySelector](../../Partner-Main/src/main/java/work/slhaf/partner/module/modules/memory/selector/MemorySelector.java)
+
 ```mermaid
 ---
 config:
@@ -45,6 +47,7 @@ flowchart TD
 ```
 
 ### 后置模块: [MemoryUpdater](../../Partner-Main/src/main/java/work/slhaf/partner/module/modules/memory/updater/MemoryUpdater.java)
+
 ```mermaid
 ---
 config:

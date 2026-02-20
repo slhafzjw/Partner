@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
@@ -21,17 +22,20 @@ public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
     private CognationCapability cognationCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
+
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
         checkAndSetMemoryId();
         getInteractionContext(context);
     }
+
     private void checkAndSetMemoryId() {
         String currentMemoryId = cognationCapability.getCurrentMemoryId();
         if (currentMemoryId == null || cognationCapability.getChatMessages().isEmpty()) {
             cognationCapability.refreshMemoryId();
         }
     }
+
     private void getInteractionContext(PartnerRunningFlowContext context) {
         log.debug("[PreprocessExecutor] 预处理原始输入: {}", context);
         User user = perceiveCapability.getUser(context.getUserInfo(), context.getPlatform());
@@ -46,6 +50,7 @@ public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
         setCoreContext(context);
         log.debug("[PreprocessExecutor] 预处理结果: {}", context);
     }
+
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
@@ -57,10 +62,12 @@ public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
         map.put("其他", "历史对话中将在用户消息的最后一行标注时间");
         return map;
     }
+
     @Override
     protected String moduleName() {
         return "[基础模块]";
     }
+
     private void setCoreContext(PartnerRunningFlowContext context) {
         CoreContext coreContext = context.getCoreContext();
         coreContext.setText(context.getInput());

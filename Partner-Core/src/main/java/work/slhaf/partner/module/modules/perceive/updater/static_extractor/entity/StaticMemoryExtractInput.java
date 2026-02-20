@@ -12,5 +12,5 @@ import java.util.Map;
 public class StaticMemoryExtractInput {
     private String userId;
     private List<Message> messages;
-    private Map<String,String> existedStaticMap;
+    private Map<String, String> existedStaticMap;
 }

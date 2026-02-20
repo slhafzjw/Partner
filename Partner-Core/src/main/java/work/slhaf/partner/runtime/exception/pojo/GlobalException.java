@@ -15,7 +15,7 @@ public class GlobalException extends RuntimeException {
         super(message);
         try {
             this.data = new GlobalExceptionData();
-        }  catch (Exception e) {
+        } catch (Exception e) {
             log.error("[GlobalException] 捕获异常, 获取数据失败");
         }
     }

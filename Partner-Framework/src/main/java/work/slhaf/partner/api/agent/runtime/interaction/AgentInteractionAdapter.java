@@ -15,7 +15,7 @@ public abstract class AgentInteractionAdapter<I extends AgentInputData, O extend
     protected AgentRunningFlow<C> agentRunningFlow = new AgentRunningFlow<>();
     protected Map<Integer, List<MetaModule>> moduleOrderedMap = AgentConfigManager.INSTANCE.getModuleOrderedMap();
 
-    public C call(C finalInputData){
+    public C call(C finalInputData) {
         return agentRunningFlow.launch(moduleOrderedMap, finalInputData);
     }
 

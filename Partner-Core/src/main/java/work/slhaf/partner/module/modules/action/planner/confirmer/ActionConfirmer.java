@@ -22,6 +22,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, ConfirmerResult> implements ActivateModel {
     @InjectCapability
     private ActionCapability actionCapability;
+
     @Override
     public ConfirmerResult execute(ConfirmerInput data) {
         List<ExecutableAction> executableActionList = data.getExecutableActionData();
@@ -53,6 +54,7 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
         }
         return result;
     }
+
     private String buildPrompt(ExecutableAction data, String input, List<Message> recentMessages) {
         JSONObject prompt = new JSONObject();
         prompt.put("[用户输入]", input);
@@ -65,10 +67,12 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
         messageData.addAll(recentMessages);
         return prompt.toString();
     }
+
     @Override
     public String modelKey() {
         return "action-confirmer";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;

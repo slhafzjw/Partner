@@ -9,6 +9,10 @@ public class GlobalExceptionHandler {
 
     private AgentExceptionCallback exceptionCallback = new LogAgentExceptionCallback();
 
+    public static void setExceptionCallback(AgentExceptionCallback callback) {
+        INSTANCE.exceptionCallback = callback;
+    }
+
     public boolean handle(Throwable e) {
         boolean exit;
         Throwable cause = e.getCause();
@@ -31,9 +35,5 @@ public class GlobalExceptionHandler {
             }
         }
         return exit;
-    }
-
-    public static void setExceptionCallback(AgentExceptionCallback callback) {
-        INSTANCE.exceptionCallback = callback;
     }
 }

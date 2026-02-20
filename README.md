@@ -111,17 +111,20 @@ ActionCorrector 可根据执行结果对后续行动链进行修正。
 2. 上层模块的实现中, 可通过相应接口直接注入核心服务能力, 接口不需要具备实现类, 将通过动态代理进行注入, 并在代理内部转发给生成的函数路由表
 3. 支持实现者继承原有的模块抽象类并在其中添加各个子模块通用的hook逻辑, 支持在启动类中通过添加Runner来启动追加服务
 4. 支持可自定义的配置实现类, 但最终返回结构需遵循现有定义, 也可自行提供其完整实现
-5. 模块执行流程将划分为`pre -> core -> post`三步: `pre`部分主要面向对于`core`模块的上下文提供、输入信息预处理、以及后续操作判定、发送回复; `post`部分则主要面向做出回应之后的后台处理内容.
+5. 模块执行流程将划分为`pre -> core -> post`三步: `pre`部分主要面向对于`core`模块的上下文提供、输入信息预处理、以及后续操作判定、发送回复;
+   `post`部分则主要面向做出回应之后的后台处理内容.
 
 > 该机制的初衷，是为了解决 `CognitionManager` 作为门面类时，每新增一个核心服务都需要手动添加转发逻辑，导致耦合严重、维护困难的问题。
 >
-> 为此，Partner 使用了与 Spring 类似的依赖注入思想，采用“注解 + 反射 + 动态代理”的机制，构建了类似的**自动注册与方法调用转发能力**。
+> 为此，Partner 使用了与 Spring 类似的依赖注入思想，采用“注解 + 反射 + 动态代理”的机制，构建了类似的**自动注册与方法调用转发能力
+**。
 >
 > 但与 Spring 不同：
 > - Spring 的依赖注入主要发生在**对象实例级别**，关注的是 Bean 的生命周期与依赖管理；
 > - 而 Partner 中，核心服务在**方法级别**就已存在复杂的跨服务协同需求，单纯的对象注入难以满足这种粒度（不过在某次重构后这种需求也明显减少了，但这个机制或许可以保留下来）
 >
-> 因此，系统引入了 `CoordinateManager`，用于维护所有核心服务的**方法路由与协调关系**。系统将在启动时构建协调方法与普通方法的完整路由表，并通过接口代理完成实际调用，无需手动编写注册与转发逻辑。
+> 因此，系统引入了 `CoordinateManager`，用于维护所有核心服务的**方法路由与协调关系**
+> 。系统将在启动时构建协调方法与普通方法的完整路由表，并通过接口代理完成实际调用，无需手动编写注册与转发逻辑。
 >
 > 模块注册机制原计划作为后续优化任务处理。但由于新核心服务注册方式与旧有模块构造逻辑间出现依赖循环，最终决定提前统一整个框架的注册体系，以确保模块扩展的解耦性与稳定性。
 
@@ -131,29 +134,29 @@ ActionCorrector 可根据执行结果对后续行动链进行修正。
 - 后处理模块: `PostprocessExecutor`
 - 主对话模块: `CoreModel`
 - 记忆模块
-  - 记忆选择模块: `MemorySelector`
-    - 主题提取模块: `MemorySelectExtractor`
-    - 切片评估模块: `SliceSelectEvaluator`
-  - 记忆更新模块: `MemoryUpdater`
-    - 记忆总结模块[多聊天对象]: `MultiSummarizer`
-    - 记忆总结模块[单聊天对象]: `SingleSummarizer`
-    - 记忆总结模块[汇总]: `TotalSummarizer`
+    - 记忆选择模块: `MemorySelector`
+        - 主题提取模块: `MemorySelectExtractor`
+        - 切片评估模块: `SliceSelectEvaluator`
+    - 记忆更新模块: `MemoryUpdater`
+        - 记忆总结模块[多聊天对象]: `MultiSummarizer`
+        - 记忆总结模块[单聊天对象]: `SingleSummarizer`
+        - 记忆总结模块[汇总]: `TotalSummarizer`
 - 感知模块
-  - 感知选择模块: `PerceiveSelector`
-  - 感知更新模块: `PerceiveUpdater`
-    - 关系提取模块: `RelationExtractor`
-    - 静态记忆提取模块: `StaticMemoryExtractor`
+    - 感知选择模块: `PerceiveSelector`
+    - 感知更新模块: `PerceiveUpdater`
+        - 关系提取模块: `RelationExtractor`
+        - 静态记忆提取模块: `StaticMemoryExtractor`
 - 行动模块
-  - 行动规划模块: `ActionPlanner`
-    - 行动确认模块: `ActionConfirmer`
-    - 行动提取模块: `ActionExtractor`
-    - 行动评估模块: `ActionEvaluator`
-  - 行动分发模块: `ActionDispatcher`
-    - 行动调度模块: `ActionScheduler`
-    - 行动执行模块: `ActionExecutor`
-  - 行动干预模块: `ActionInterventor`
-    - 干预识别模块: `InterventionRecognizer`
-    - 干预评估模块: `InterventionEvaluator`
+    - 行动规划模块: `ActionPlanner`
+        - 行动确认模块: `ActionConfirmer`
+        - 行动提取模块: `ActionExtractor`
+        - 行动评估模块: `ActionEvaluator`
+    - 行动分发模块: `ActionDispatcher`
+        - 行动调度模块: `ActionScheduler`
+        - 行动执行模块: `ActionExecutor`
+    - 行动干预模块: `ActionInterventor`
+        - 干预识别模块: `InterventionRecognizer`
+        - 干预评估模块: `InterventionEvaluator`
 
 ## 当前问题
 
@@ -166,7 +169,8 @@ ActionCorrector 可根据执行结果对后续行动链进行修正。
 - [ ] 将当前行动模块中的语义缓存机制同样应用于记忆模块，可用作主题提取流程的快速匹配
 - [ ] 回顾时发现不少遗留的逻辑错误或不合适的处理规则，需要找时间回顾整个流程并做出修正
 - [ ] 服务端与客户端的通信加上消息队列，防止消息因连接断开而丢失。
-- [ ] 实现流式输出，同时在各模块执行时可向客户端返回回调信息，优化使用体验。(现在用的是`websocket`与客户端通信, 应该实现这点会简单些)
+- [ ] 实现流式输出，同时在各模块执行时可向客户端返回回调信息，优化使用体验。(现在用的是`websocket`与客户端通信,
+  应该实现这点会简单些)
 - [ ] 踩坑。
 - [ ] 实现演进机制
 

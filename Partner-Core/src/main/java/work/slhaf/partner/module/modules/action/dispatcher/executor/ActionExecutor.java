@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput, Void> {
+    private final AssemblyHelper assemblyHelper = new AssemblyHelper();
     @InjectCapability
     private ActionCapability actionCapability;
     @InjectCapability
@@ -42,13 +43,14 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
     private ExecutorService virtualExecutor;
     private ExecutorService platformExecutor;
     private RunnerClient runnerClient;
-    private final AssemblyHelper assemblyHelper = new AssemblyHelper();
+
     @Init
     public void init() {
         virtualExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
         platformExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM);
         runnerClient = actionCapability.runnerClient();
     }
+
     /**
      * 执行行动
      *
@@ -80,12 +82,14 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
                     int stageCount;
                     boolean executingStageUpdated;
                     boolean stageCountUpdated;
+
                     void init() {
                         stageCount = 0;
                         executingStageUpdated = false;
                         stageCountUpdated = false;
                         update();
                     }
+
                     void requestAdvance() {
                         if (!stageCountUpdated) {
                             stageCount++;
@@ -96,11 +100,13 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
                             executingStageUpdated = true;
                         }
                     }
+
                     boolean next() {
                         executingStageUpdated = false;
                         stageCountUpdated = false;
                         return stageCount < actionChain.size();
                     }
+
                     void update() {
                         val orderList = new ArrayList<>(actionChain.keySet());
                         orderList.sort(Integer::compareTo);
@@ -148,6 +154,7 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
         }
         return null;
     }
+
     private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, PhaserRecord phaserRecord, String source) {
         AtomicBoolean accepting = new AtomicBoolean(true);
         AtomicInteger cursor = new AtomicInteger();
@@ -190,6 +197,7 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
         }
         return new MetaActionsListeningRecord(accepting, phase);
     }
+
     private Runnable buildMataActionTask(MetaAction metaAction, PhaserRecord phaserRecord, String source) {
         val phaser = phaserRecord.phaser();
         phaser.register();
@@ -240,12 +248,15 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
             }
         };
     }
+
     private record MetaActionsListeningRecord(AtomicBoolean accepting, int phase) {
     }
+
     @SuppressWarnings("InnerClassMayBeStatic")
     private class AssemblyHelper {
         private AssemblyHelper() {
         }
+
         private RepairerInput buildRepairerInput(List<HistoryAction> historyActionsResults, MetaAction action, String userId) {
             RepairerInput input = new RepairerInput();
             MetaActionInfo metaActionInfo = actionCapability.loadMetaActionInfo(action.getKey());
@@ -256,6 +267,7 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
             input.setUserId(userId);
             return input;
         }
+
         private ExtractorInput buildExtractorInput(MetaAction action, String source, List<HistoryAction> historyActionResults,
                                                    List<String> additionalContext) {
             ExtractorInput input = new ExtractorInput();
@@ -266,6 +278,7 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
             input.setAdditionalContext(additionalContext);
             return input;
         }
+
         private CorrectorInput buildCorrectorInput(ExecutableAction executableAction, String source) {
             return CorrectorInput.builder()
                     .tendency(executableAction.getTendency())

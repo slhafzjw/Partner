@@ -25,14 +25,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<EvaluatedSlice>> implements ActivateModel {
     private InteractionThreadPoolExecutor executor;
+
     @Init
     public void init() {
         executor = InteractionThreadPoolExecutor.getInstance();
     }
+
     @Override
     public List<EvaluatedSlice> execute(EvaluatorInput evaluatorInput) {
         log.debug("[SliceSelectEvaluator] 切片评估模块开始...");
@@ -78,8 +81,9 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
         executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
         log.debug("[SliceSelectEvaluator] 评估模块结束, 输出队列: {}", queue);
         List<EvaluatedSlice> temp = queue.stream().toList();
-        return new  ArrayList<>(temp);
+        return new ArrayList<>(temp);
     }
+
     private void setSliceSummaryList(MemoryResult memoryResult, List<SliceSummary> sliceSummaryList, Map<Long, SliceSummary> map) {
         for (MemorySliceResult memorySliceResult : memoryResult.getMemorySliceResult()) {
             SliceSummary sliceSummary = new SliceSummary();
@@ -109,9 +113,11 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
             map.put(memorySlice.getTimestamp(), sliceSummary);
         }
     }
+
     public String modelKey() {
         return "slice_evaluator";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;

@@ -14,9 +14,7 @@ public class GlobalExceptionData extends PersistableObject {
 
     @Serial
     private static final long serialVersionUID = 1L;
-
-    private String exceptionMessage;
-
     protected HashMap<String, PartnerRunningFlowContext> context = PartnerRunningFlowContext.getInstance();
     protected Long exceptionTime = System.currentTimeMillis();
+    private String exceptionMessage;
 }

@@ -5,7 +5,7 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public abstract class AgentOutputData extends InteractionData{
+public abstract class AgentOutputData extends InteractionData {
 
     protected int code;
 

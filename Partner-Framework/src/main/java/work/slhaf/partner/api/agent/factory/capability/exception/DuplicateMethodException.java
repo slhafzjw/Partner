@@ -1,6 +1,6 @@
 package work.slhaf.partner.api.agent.factory.capability.exception;
 
-public class DuplicateMethodException extends CapabilityCheckFailedException{
+public class DuplicateMethodException extends CapabilityCheckFailedException {
     public DuplicateMethodException(String message) {
         super(message);
     }

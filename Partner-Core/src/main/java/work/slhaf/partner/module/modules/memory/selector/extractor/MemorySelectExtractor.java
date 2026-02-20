@@ -22,6 +22,7 @@ import java.util.List;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunningFlowContext, ExtractorResult>
@@ -30,6 +31,7 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
+
     @Override
     public ExtractorResult execute(PartnerRunningFlowContext context) {
         log.debug("[MemorySelectExtractor] 主题提取模块开始...");
@@ -66,6 +68,7 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
         }
         return fix(extractorResult);
     }
+
     private ExtractorResult fix(ExtractorResult extractorResult) {
         extractorResult.getMatches().forEach(m -> {
             if (m.getType().equals(ExtractorMatchData.Constant.DATE)) {
@@ -79,10 +82,12 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
         extractorResult.getMatches().removeIf(m -> m.getText().split("->")[0].isEmpty());
         return extractorResult;
     }
+
     @Override
     public String modelKey() {
         return "topic_extractor";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;

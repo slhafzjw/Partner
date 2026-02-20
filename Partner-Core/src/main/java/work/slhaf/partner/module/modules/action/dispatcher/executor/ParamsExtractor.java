@@ -12,6 +12,7 @@ import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.Histo
 
 import java.util.HashMap;
 import java.util.List;
+
 /**
  * 负责依据输入内容进行行动单元的参数信息提取
  */
@@ -31,6 +32,7 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
         }
         return result;
     }
+
     private String buildPrompt(ExtractorInput input) {
         JSONObject prompt = new JSONObject();
         JSONObject actionData = prompt.putObject("[本次行动信息]");
@@ -50,10 +52,12 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
         messageData.addAll(input.getRecentMessages());
         return prompt.toString();
     }
+
     @Override
     public String modelKey() {
         return "params_extractor";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;

@@ -35,38 +35,30 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
 
     @Serial
     private static final long serialVersionUID = 1L;
-
+    private final Lock sliceInsertLock = new ReentrantLock();
     /**
      * key: 根主题名称  value: 根主题节点
      */
     private HashMap<String, TopicNode> topicNodes = new HashMap<>();
-
     /**
      * 用于存储已存在的主题列表，便于记忆查找, 使用根主题名称作为键, 子主题名称集合为值
      * 该部分在'主题提取LLM'的system prompt中常驻
      */
     private HashMap<String /*根主题名*/, LinkedHashSet<String> /*子主题列表*/> existedTopics = new HashMap<>();
-
     /**
      * 临时的同一对话切片容器, 用于为同一对话内的不同切片提供更新上下文的场所
      */
     private HashMap<String /*对话id, 即slice中的字段'memoryId'*/, List<MemorySlice>> currentDateDialogSlices = new HashMap<>();
-
     /**
      * 记忆节点的日期索引, 同一日期内按照对话id区分
      */
     private HashMap<LocalDate, Set<String>> dateIndex = new HashMap<>();
-
     /**
      * 已被选中的切片时间戳集合，需要及时清理
      */
     private Set<Long> selectedSlices = new HashSet<>();
-
     private HashMap<String, List<String>> userIndex = new HashMap<>();
-
     private MemoryCache cache = new MemoryCache();
-
-    private final Lock sliceInsertLock = new ReentrantLock();
 
     public MemoryCore() throws IOException, ClassNotFoundException {
     }

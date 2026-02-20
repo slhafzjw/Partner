@@ -16,6 +16,7 @@ import java.util.List;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, SummarizeResult> implements ActivateModel {
@@ -23,6 +24,7 @@ public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, Sum
     public void init() {
         updateChatClientSettings();
     }
+
     @Override
     public SummarizeResult execute(SummarizeInput input) {
         log.debug("[MemorySummarizer] 整体摘要开始...");
@@ -31,6 +33,7 @@ public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, Sum
         SummarizeResult result = JSONObject.parseObject(extractJson(response.getMessage()), SummarizeResult.class);
         return fix(result);
     }
+
     private SummarizeResult fix(SummarizeResult result) {
         if (result == null || result.getTopicPath() == null || result.getTopicPath().isEmpty()) {
             return result;
@@ -44,10 +47,12 @@ public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, Sum
         result.setRelatedTopicPath(relatedTopicPath);
         return result;
     }
+
     @Override
     public String modelKey() {
         return "multi_summarizer";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return true;

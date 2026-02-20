@@ -30,8 +30,8 @@ public class ResourcesUtil {
             return readPromptFromResources(SELF_AWARENESS_PATH);
         }
 
-        public static List<Message> loadPrompt(String modelKey,String promptType){
-            return new ArrayList<>(readPromptFromResources(MODULE_PROMPT_PREFIX_PATH+promptType+"/"+modelKey+".json"));
+        public static List<Message> loadPrompt(String modelKey, String promptType) {
+            return new ArrayList<>(readPromptFromResources(MODULE_PROMPT_PREFIX_PATH + promptType + "/" + modelKey + ".json"));
         }
 
         private static List<Message> readPromptFromResources(String filePath) {

@@ -9,13 +9,16 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 
 import java.util.HashMap;
 import java.util.Map;
+
 @Setter
 public class PerceiveSelector extends PreRunningAbstractAgentModuleAbstract {
     @InjectCapability
     private PerceiveCapability perceiveCapability;
+
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
     }
+
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
@@ -26,6 +29,7 @@ public class PerceiveSelector extends PreRunningAbstractAgentModuleAbstract {
         map.put("[静态记忆] <你关于最新聊天用户的静态记忆>", user.getStaticMemory().toString());
         return map;
     }
+
     @Override
     public String moduleName() {
         return "[感知模块]";

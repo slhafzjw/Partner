@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 public class InterventionRecognizer extends AbstractAgentModule.Sub<RecognizerInput, RecognizerResult> implements ActivateModel {
     @InjectCapability
     private ActionCapability actionCapability;
+
     @Override
     public RecognizerResult execute(RecognizerInput input) {
         // 获取必须数据
@@ -41,6 +42,7 @@ public class InterventionRecognizer extends AbstractAgentModule.Sub<RecognizerIn
         }
         return recognizerResult;
     }
+
     private void recognizeIntervention(Map<String, ExecutableAction> interventionsMap, List<ExecutableAction> actions, ExecutorService executor, RecognizerInput input, CountDownLatch latch) {
         for (ExecutableAction data : actions) {
             executor.execute(() -> {
@@ -61,6 +63,7 @@ public class InterventionRecognizer extends AbstractAgentModule.Sub<RecognizerIn
             });
         }
     }
+
     private String buildPrompt(ExecutableAction executableAction, RecognizerInput input) {
         JSONObject json = new JSONObject();
         JSONObject actionInfo = json.putObject("行动信息");
@@ -75,10 +78,12 @@ public class InterventionRecognizer extends AbstractAgentModule.Sub<RecognizerIn
         interactionInfo.put("近期对话", input.getUserDialogMapStr());
         return json.toString();
     }
+
     @Override
     public String modelKey() {
         return "intervention_recognizer";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return false;

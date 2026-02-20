@@ -31,9 +31,6 @@ public final class InProcessMcpTransport implements McpClientTransport, McpState
 
     private volatile McpStatelessServerHandler serverHandler;
 
-    public record Pair(InProcessMcpTransport clientSide, InProcessMcpTransport serverSide) {
-    }
-
     public static Pair pair() {
         InProcessMcpTransport client = new InProcessMcpTransport();
         InProcessMcpTransport server = new InProcessMcpTransport();
@@ -126,14 +123,14 @@ public final class InProcessMcpTransport implements McpClientTransport, McpState
         return Mono.empty();
     }
 
-    /* ======================================================
-     * other boilerplate
-     * ====================================================== */
-
     @Override
     public void close() {
         McpClientTransport.super.close();
     }
+
+    /* ======================================================
+     * other boilerplate
+     * ====================================================== */
 
     @Override
     public Mono<Void> closeGracefully() {
@@ -151,5 +148,8 @@ public final class InProcessMcpTransport implements McpClientTransport, McpState
     @Override
     public List<String> protocolVersions() {
         return McpClientTransport.super.protocolVersions();
+    }
+
+    public record Pair(InProcessMcpTransport clientSide, InProcessMcpTransport serverSide) {
     }
 }

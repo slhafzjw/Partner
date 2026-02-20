@@ -25,10 +25,12 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
     @InjectCapability
     private ActionCapability actionCapability;
     private InteractionThreadPoolExecutor executor;
+
     @Init
     public void init() {
         executor = InteractionThreadPoolExecutor.getInstance();
     }
+
     /**
      * 对输入的行为倾向进行评估，并根据评估结果，对缓存做出调整
      *
@@ -41,6 +43,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
         List<Callable<EvaluatorResult>> tasks = getTasks(batchInputs);
         return executor.invokeAllAndReturn(tasks);
     }
+
     private List<Callable<EvaluatorResult>> getTasks(List<EvaluatorBatchInput> batchInputs) {
         List<Callable<EvaluatorResult>> list = new ArrayList<>();
         for (EvaluatorBatchInput batchInput : batchInputs) {
@@ -53,6 +56,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
         }
         return list;
     }
+
     private List<EvaluatorBatchInput> buildEvaluatorBatchInput(EvaluatorInput data) {
         List<EvaluatorBatchInput> list = new ArrayList<>();
         for (String tendency : data.getTendencies()) {
@@ -66,6 +70,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
         }
         return list;
     }
+
     private String buildPrompt(EvaluatorBatchInput batchInput) {
         JSONObject prompt = new JSONObject();
         prompt.put("[行动倾向]", batchInput.getTendency());
@@ -79,10 +84,12 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
         availableActionData.putAll(batchInput.getAvailableActions());
         return prompt.toString();
     }
+
     @Override
     public String modelKey() {
         return "action_evaluator";
     }
+
     @Override
     public boolean withBasicPrompt() {
         return true;

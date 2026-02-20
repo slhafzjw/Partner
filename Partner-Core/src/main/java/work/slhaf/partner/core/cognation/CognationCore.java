@@ -49,17 +49,17 @@ public class CognationCore extends PartnerCore<CognationCore> {
     }
 
     @CapabilityMethod
-    public long getLastUpdatedTime(){
+    public long getLastUpdatedTime() {
         return lastUpdatedTime;
     }
 
     @CapabilityMethod
-    public HashMap<String,List<MetaMessage>> getSingleMetaMessageMap(){
+    public HashMap<String, List<MetaMessage>> getSingleMetaMessageMap() {
         return singleMetaMessageMap;
     }
 
     @CapabilityMethod
-    public String getCurrentMemoryId(){
+    public String getCurrentMemoryId() {
         return currentMemoryId;
     }
 
