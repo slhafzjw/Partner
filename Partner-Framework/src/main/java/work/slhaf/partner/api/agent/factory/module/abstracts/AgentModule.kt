@@ -1,5 +1,6 @@
 package work.slhaf.partner.api.agent.factory.module.abstracts
 
+import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityHolder
 import work.slhaf.partner.api.agent.factory.module.annotation.Init
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext
@@ -11,25 +12,22 @@ import work.slhaf.partner.api.chat.pojo.Message
 /**
  * 模块基类
  */
+@CapabilityHolder
 abstract class AbstractAgentModule {
     var moduleName: String = javaClass.simpleName
+
+    interface Running<T : RunningFlowContext> {
+        fun execute(context: T)
+    }
+
+    interface Sub<I, O> {
+        fun execute(input: I): O
+    }
+
+    interface Standalone
+
+    // TODO 后续于此处扩展生命周期内容
 }
-
-data class Model(
-    val chatClient: ChatClient,
-    val chatMessages: MutableList<Message> = mutableListOf(),
-    val baseMessages: MutableList<Message> = mutableListOf()
-)
-
-interface RunningModule<T : RunningFlowContext> {
-    fun execute(context: T)
-}
-
-interface SubModule<I, O> {
-    fun execute(input: I): O
-}
-
-interface StandaloneModule
 
 interface ActivateModel {
 
@@ -94,12 +92,17 @@ interface ActivateModel {
     }
 
     /**
-     * 对应调用的模型配置名称，默认配合[AbstractAgentModule.moduleName]使用
+     * 对应调用的模型配置名称
      */
     fun modelKey(): String {
-        return (this as AbstractAgentModule).moduleName
+        return javaClass.simpleName
     }
 
     fun withBasicPrompt(): Boolean
 
+    data class Model(
+        val chatClient: ChatClient,
+        val chatMessages: MutableList<Message> = mutableListOf(),
+        val baseMessages: MutableList<Message> = mutableListOf()
+    )
 }
