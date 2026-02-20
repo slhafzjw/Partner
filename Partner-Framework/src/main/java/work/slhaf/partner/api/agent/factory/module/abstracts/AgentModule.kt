@@ -94,7 +94,7 @@ interface ActivateModel {
     }
 
     /**
-     * 对应调用的模型配置名称
+     * 对应调用的模型配置名称，默认配合[AbstractAgentModule.moduleName]使用
      */
     fun modelKey(): String {
         return (this as AbstractAgentModule).moduleName
