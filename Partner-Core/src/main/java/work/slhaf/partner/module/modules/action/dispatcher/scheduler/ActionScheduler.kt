@@ -12,8 +12,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule
 import work.slhaf.partner.api.agent.factory.module.annotation.Init
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule
 import work.slhaf.partner.core.action.ActionCapability
@@ -30,17 +29,13 @@ import java.time.temporal.ChronoUnit
 import java.util.stream.Collectors
 import kotlin.jvm.optionals.getOrNull
 
-@AgentSubModule
-class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
-
+class ActionScheduler : AbstractAgentModule.Sub<Set<Schedulable>, Void?>() {
     @InjectCapability
     private lateinit var actionCapability: ActionCapability
 
     @InjectModule
     private lateinit var actionExecutor: ActionExecutor
-
     private lateinit var timeWheel: TimeWheel
-
     private val schedulerScope =
         CoroutineScope(Dispatchers.Default + SupervisorJob() + CoroutineName("ActionScheduler"))
 
@@ -58,7 +53,6 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                     .map { it as SchedulableExecutableAction }
                     .collect(Collectors.toSet())
             }
-
             val onTrigger: (Set<Schedulable>) -> Unit = { schedulableSet ->
                 val executableActions = mutableSetOf<SchedulableExecutableAction>()
                 val stateActions = mutableSetOf<StateAction>()
@@ -72,12 +66,9 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                 actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL)
                     .execute { stateActions.forEach { it.trigger.onTrigger() } }
             }
-
             timeWheel = TimeWheel(listScheduledActions, onTrigger)
         }
-
         loadScheduledActions()
-
         setupShutdownHook()
     }
 
@@ -88,15 +79,13 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
         })
     }
 
-    override fun execute(schedulableSet: Set<Schedulable>?): Void? {
+    override fun execute(input: Set<Schedulable>): Void? {
         schedulerScope.launch {
-            schedulableSet?.run {
-                for (schedulableData in schedulableSet) {
-                    log.debug("New data to schedule: {}", schedulableData)
-                    timeWheel.schedule(schedulableData)
-                    if (schedulableData is SchedulableExecutableAction) {
-                        actionCapability.putAction(schedulableData)
-                    }
+            for (schedulableData in input) {
+                log.debug("New data to schedule: {}", schedulableData)
+                timeWheel.schedule(schedulableData)
+                if (schedulableData is SchedulableExecutableAction) {
+                    actionCapability.putAction(schedulableData)
                 }
             }
         }
@@ -107,16 +96,13 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
         val listSource: () -> Set<Schedulable>,
         val onTrigger: (toTrigger: Set<Schedulable>) -> Unit
     ) : Closeable {
-
         private val schedulableGroupByHour = Array<MutableSet<Schedulable>>(24) { mutableSetOf() }
         private val wheel = Array<MutableSet<Schedulable>>(60 * 60) { mutableSetOf() }
         private var recordHour: Int = -1
         private var recordDay: Int = -1
         private val state = MutableStateFlow(WheelState.SLEEPING)
-
         private val wheelActionsLock = Mutex()
         private val timeWheelScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineName("TimeWheel"))
-
         private val cronDefinition: CronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ)
         private val cronParser: CronParser = CronParser(cronDefinition)
 
@@ -136,23 +122,19 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                     return@checkThenExecute
                 }
                 log.debug("Action next execution time: {}", parseToZonedDateTime)
-
                 val hour = parseToZonedDateTime.hour
                 schedulableGroupByHour[hour].add(schedulableData)
                 log.debug("Action scheduled at {}", hour)
-
                 if (it.hour == hour) {
                     val wheelOffset = parseToZonedDateTime.minute * 60 + parseToZonedDateTime.second
                     wheel[wheelOffset].add(schedulableData)
                     state.value = WheelState.ACTIVE
                     log.debug("Action scheduled at wheel offset {}", wheelOffset)
                 }
-
             }
         }
 
         private fun wheel() {
-
             data class WheelStepResult(
                 val toTrigger: Set<Schedulable>?,
                 val shouldBreak: Boolean
@@ -178,26 +160,20 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
             suspend fun CoroutineScope.wheel(launchingTime: ZonedDateTime, primaryTickAdvanceTime: Long) {
                 val launchingHour = launchingTime.hour
                 var tick = launchingTime.minute * 60 + launchingTime.second
-
                 // 让节拍器从“启动时刻的下一秒”开始（避免立即 step=0）
                 var nextTickNanos = primaryTickAdvanceTime + 1_000_000_000L
-
                 while (isActive) {
                     // 1) 计算落后多少秒：至少 1（正常推进），也可能 >1（追赶）
                     val now0 = System.nanoTime()
                     val lagNanos = now0 - nextTickNanos
                     val step = if (lagNanos < 0) 1 else (lagNanos / 1_000_000_000L).toInt() + 1
-
                     val previousTick = tick
                     tick = (tick + step).coerceAtMost(wheel.lastIndex)
-
                     // 2) 推进节拍器：按“理论秒”前进 step 次
                     nextTickNanos += step.toLong() * 1_000_000_000L
-
                     val stepResult = run {
                         var shouldBreak = false
                         var toTrigger: Set<Schedulable>? = null
-
                         checkThenExecute(false) {
                             if (it.hour != launchingHour) {
                                 shouldBreak = true
@@ -210,30 +186,23 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                                 )
                                 return@checkThenExecute
                             }
-
                             toTrigger = collectToTrigger(tick, previousTick, launchingHour)
-
                             if (tick >= wheel.lastIndex || schedulableGroupByHour[launchingHour].isEmpty()) {
                                 state.value = WheelState.SLEEPING
                                 shouldBreak = true
                             }
-
                         }
-
                         WheelStepResult(toTrigger, shouldBreak)
                     }
-
                     stepResult.toTrigger?.let { trigger ->
                         timeWheelScope.launch {
                             onTrigger(trigger)
                         }
                     }
-
                     if (stepResult.shouldBreak) {
                         log.debug("Wheel stopped at tick {}", tick)
                         break
                     }
-
                     // 3) 精确睡到下一次理论 tick（用最新 nanoTime）
                     val now1 = System.nanoTime()
                     val sleepNanos = nextTickNanos - now1
@@ -255,7 +224,6 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                 }
                 log.debug("Waiting ended at {}", ZonedDateTime.now())
             }
-
             timeWheelScope.launch {
                 while (isActive) {
                     // 判断是否该步入下一小时
@@ -270,14 +238,12 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                         // 而启动时无触发保障，此时一并初始化 tick 推进时间，足以应对 check 与 wheel 间的这段时间间隔
                         primaryTickAdvanceTime = System.nanoTime()
                     }
-
                     // 如果该时无任务则等待，插入事件可提前唤醒
                     if (shouldWait!!) {
                         // 计算距离下一小时的时间，等待
                         currentTime?.let { wait(it) }
                         continue
                     }
-
                     // 唤醒进行时间轮循环
                     wheel(currentTime!!, primaryTickAdvanceTime!!)
                 }
@@ -303,11 +269,9 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                                     logFailedStatus(schedulableData)
                                     continue
                                 }
-
                             load(nextExecutingTime, schedulableData)
                         }
                     }
-
                     repair()
                     runLoading()
                 }
@@ -319,13 +283,11 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                             wheel[secondsTime].add(schedulableData)
                             log.debug("Action loaded to hour: {}", schedulableData)
                         }
-
                     val repair: () -> Unit = {
                         for (set in wheel) {
                             set.clear()
                         }
                     }
-
                     loadActions(schedulableGroupByHour[currentTime.hour], currentTime, load, repair)
                 }
 
@@ -335,13 +297,11 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                             schedulableGroupByHour[latestExecutingTime.hour].add(schedulableData)
                             log.debug("Action loaded to day: {}", schedulableData)
                         }
-
                     val repair: () -> Unit = {
                         for (set in schedulableGroupByHour) {
                             set.clear()
                         }
                     }
-
                     loadActions(listSource(), currentTime, load, repair)
                 }
 
@@ -360,7 +320,6 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                 }
 
                 val now = ZonedDateTime.now()
-
                 if (finallyToExecute) {
                     refreshIfNeeded(now)
                     then(now)
@@ -398,9 +357,7 @@ class ActionScheduler : AbstractAgentSubModule<Set<Schedulable>, Void>() {
                     else
                         executionTime
                 }
-
             }
-
         }
 
         private fun logFailedStatus(scheduleData: Schedulable) {

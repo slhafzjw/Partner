@@ -3,9 +3,7 @@ package work.slhaf.partner.module.modules.memory.selector;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
@@ -24,23 +22,17 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 
 import java.time.LocalDate;
 import java.util.*;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
-@Slf4j
-@AgentRunningModule(name = "memory_selector", order = 2)
 public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
-
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
-
     @InjectModule
     private SliceSelectEvaluator sliceSelectEvaluator;
     @InjectModule
     private MemorySelectExtractor memorySelectExtractor;
-
     @Override
     public void doExecute(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getUserId();
@@ -53,7 +45,6 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
         }
         setModuleContextRecall(runningFlowContext);
     }
-
     private List<EvaluatedSlice> selectAndEvaluateMemory(PartnerRunningFlowContext runningFlowContext, ExtractorResult extractorResult) {
         log.debug("[MemorySelector] 触发记忆回溯...");
         //查找切片
@@ -71,7 +62,6 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
         log.debug("[MemorySelector] 切片评估结果: {}", JSONObject.toJSONString(memorySlices));
         return memorySlices;
     }
-
     private void setModuleContextRecall(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getUserId();
         boolean recall = memoryCapability.hasActivatedSlices(userId);
@@ -80,8 +70,6 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
             runningFlowContext.getModuleContext().getExtraContext().put("recall_count", memoryCapability.getActivatedSlicesSize(userId));
         }
     }
-
-
     private void setMemoryResultList(List<MemoryResult> memoryResultList, List<ExtractorMatchData> matches, String userId) {
         for (ExtractorMatchData match : matches) {
             try {
@@ -101,7 +89,6 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
         }
         //清理切片记录
         memoryCapability.cleanSelectedSliceFilter();
-
         //根据userInfo过滤是否为私人记忆
         for (MemoryResult memoryResult : memoryResultList) {
             //过滤终点记忆
@@ -110,25 +97,21 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
             memoryResult.getRelatedMemorySliceResult().removeIf(m -> removeOrNot(m, userId));
         }
     }
-
     private void removeDuplicateSlice(MemoryResult memoryResult) {
         Collection<String> values = memoryCapability.getDialogMap().values();
         memoryResult.getRelatedMemorySliceResult().removeIf(m -> values.contains(m.getSummary()));
         memoryResult.getMemorySliceResult().removeIf(m -> values.contains(m.getMemorySlice().getSummary()));
     }
-
     private boolean removeOrNot(MemorySlice memorySlice, String userId) {
         if (memorySlice.isPrivate()) {
             return memorySlice.getStartUserId().equals(userId);
         }
         return false;
     }
-
     @Override
     public String moduleName() {
         return "[记忆模块]";
     }
-
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
@@ -137,12 +120,10 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
         if (!dialogMapStr.isEmpty()) {
             map.put("[记忆缓存] <你最近两日和所有聊天者的对话记忆印象>", dialogMapStr);
         }
-
         String userDialogMapStr = memoryCapability.getUserDialogMapStr(userId);
         if (userDialogMapStr != null && !userDialogMapStr.isEmpty() && !cognationCapability.isSingleUser()) {
             map.put("[用户记忆缓存] <与最新一条消息的发送者的近两天对话记忆印象, 可能与[记忆缓存]稍有重复>", userDialogMapStr);
         }
-
         String sliceStr = memoryCapability.getActivatedSlicesStr(userId);
         if (sliceStr != null && !sliceStr.isEmpty()) {
             map.put("[记忆切片] <你与最新一条消息的发送者的相关回忆, 不会与[记忆缓存]重复, 如果有重复你也可以指出来>", sliceStr);
@@ -150,4 +131,8 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
         return map;
     }
 
+    @Override
+    public int order() {
+        return 2;
+    }
 }

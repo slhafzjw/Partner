@@ -3,9 +3,7 @@ package work.slhaf.partner.module.modules.memory.updater;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
@@ -29,11 +27,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractUserId;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
-@Slf4j
-@AgentRunningModule(name = "memory_updater", order = 7)
 public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
 
     private static final long SCHEDULED_UPDATE_INTERVAL = 10 * 1000;
@@ -52,19 +47,16 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
     private SingleSummarizer singleSummarizer;
     @InjectModule
     private TotalSummarizer totalSummarizer;
-
     private InteractionThreadPoolExecutor executor;
     /**
      * 用于临时存储完整对话记录，在MemoryManager的分离后
      */
     private List<Message> tempMessage;
-
     @Init
     public void init() {
         executor = InteractionThreadPoolExecutor.getInstance();
         setScheduledUpdater();
     }
-
     private void setScheduledUpdater() {
         executor.execute(() -> {
             log.info("[MemoryUpdater] 记忆自动更新线程启动");
@@ -88,7 +80,6 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
             log.info("[MemoryUpdater] 记忆自动更新线程结束");
         });
     }
-
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
         if (context.isFinished()) {
@@ -118,12 +109,10 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
             }
         });
     }
-
     @Override
     protected boolean relyOnMessage() {
         return true;
     }
-
     private void updateMemory() {
         log.debug("[MemoryUpdater] 记忆更新流程开始...");
         tempMessage = new ArrayList<>(cognationCapability.getChatMessages());
@@ -135,7 +124,6 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
         cognationCapability.resetLastUpdatedTime();
         log.debug("[MemoryUpdater] 记忆更新流程结束...");
     }
-
     private void updateMultiChatSlices(HashMap<String, String> singleMemorySummary) {
         // 此时chatMessages中不再包含单聊记录，直接执行摘要以及切片插入
         // 对剩下的多人聊天记录进行进行摘要
@@ -161,21 +149,17 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
                 // 设置involvedUserId
                 setInvolvedUserId(userId, memorySlice, chatMessages);
                 memoryCapability.insertSlice(memorySlice, summarizeResult.getTopicPath());
-
                 memoryCapability.updateDialogMap(LocalDateTime.now(), summarizeResult.getSummary());
-
             } else {
                 log.debug("[MemoryUpdater] 不存在多人聊天记录, 将以单聊总结为对话缓存的主要输入: {}", singleMemorySummary);
                 memoryCapability.updateDialogMap(LocalDateTime.now(), totalSummarizer.execute(singleMemorySummary));
             }
             log.debug("[MemoryUpdater] 对话缓存更新完毕");
             log.debug("[MemoryUpdater] 多人聊天记忆更新流程结束...");
-
             return null;
         };
         executor.invokeAll(List.of(task));
     }
-
     private void cleanMessage(List<Message> chatMessages) {
         // 清理时间标识
         for (Message message : chatMessages) {
@@ -186,7 +170,6 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
             message.setContent(message.getContent().replace("\r\n**" + time, ""));
         }
     }
-
     private void clearChatMessages() {
         // 不全部清空，保留一部分输入防止上下文割裂
         cognationCapability.getMessageLock().lock();
@@ -196,7 +179,6 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
         cognationCapability.getChatMessages().addAll(0, temp);
         cognationCapability.getMessageLock().unlock();
     }
-
     private void setInvolvedUserId(String startUserId, MemorySlice memorySlice, List<Message> chatMessages) {
         for (Message chatMessage : chatMessages) {
             if (chatMessage.getRole().equals(ChatConstant.Character.ASSISTANT)) {
@@ -214,7 +196,6 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
             memorySlice.getInvolvedUserIds().add(userId);
         }
     }
-
     private void updateSingleChatSlices(HashMap<String, String> singleMemorySummary) {
         log.debug("[MemoryUpdater] 单聊记忆更新流程开始...");
         // 更新单聊记忆，同时从chatMessages中去掉单聊记忆
@@ -247,23 +228,19 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
                 }
                 return null;
             });
-
         }
         executor.invokeAll(tasks);
         log.debug("[MemoryUpdater] 单聊记忆更新结束...");
     }
-
     private SummarizeResult summarize(SummarizeInput summarizeInput) {
         singleSummarizer.execute(summarizeInput.getChatMessages());
         return multiSummarizer.execute(summarizeInput);
     }
-
     private MemorySlice getMemorySlice(String userId, SummarizeResult summarizeResult, List<Message> chatMessages) {
         MemorySlice memorySlice = new MemorySlice();
         // 设置 memoryId,timestamp
         memorySlice.setMemoryId(cognationCapability.getCurrentMemoryId());
         memorySlice.setTimestamp(System.currentTimeMillis());
-
         // 补充信息
         memorySlice.setPrivate(summarizeResult.isPrivate());
         memorySlice.setSummary(summarizeResult.getSummary());
@@ -276,5 +253,10 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
         }
         memorySlice.setRelatedTopics(relatedTopicPathList);
         return memorySlice;
+    }
+
+    @Override
+    public int order() {
+        return 7;
     }
 }

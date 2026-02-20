@@ -1,10 +1,8 @@
 package work.slhaf.partner.module.modules.action.planner;
 
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -33,14 +31,10 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 /**
  * 负责针对本次输入生成基础的行动计划，在主模型传达意愿后，执行行动或者放入计划池
  */
-@Slf4j
-@AgentRunningModule(name = "action_planner", order = 2)
 public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
-
     @InjectCapability
     private CognationCapability cognationCapability;
     @InjectCapability
@@ -49,23 +43,18 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
     private PerceiveCapability perceiveCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
-
     @InjectModule
     private ActionEvaluator actionEvaluator;
     @InjectModule
     private ActionExtractor actionExtractor;
     @InjectModule
     private ActionConfirmer actionConfirmer;
-
     private ExecutorService executor;
-
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
-
     @Init
     public void init() {
         executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
     }
-
     @Override
     protected void doExecute(PartnerRunningFlowContext context) {
         try {
@@ -77,7 +66,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             log.error("执行异常", e);
         }
     }
-
     /**
      * 新的提取与评估任务
      *
@@ -98,7 +86,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             return null;
         });
     }
-
     private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input,
                                      ExtractorResult extractorResult) {
         if (!VectorClient.status) {
@@ -119,9 +106,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             data.setInput(input);
             actionCapability.updateTendencyCache(data);
         });
-
     }
-
     /**
      * 待确认行动的判断任务
      *
@@ -136,7 +121,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             return null;
         });
     }
-
     private void setupConfirmedActionInfo(PartnerRunningFlowContext context, ConfirmerResult result) {
         // TODO 需考虑未确认任务的失效或者拒绝时机，在action core中实现
         List<String> uuids = result.getUuids();
@@ -150,7 +134,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             }
         }
     }
-
     private void putActionData(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
             ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, context.getUserId());
@@ -161,7 +144,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             }
         }
     }
-
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
@@ -170,7 +152,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
         setupPreparedActions(map, userId);
         return map;
     }
-
     private void setupPendingActions(HashMap<String, String> map, String userId) {
         List<ExecutableAction> executableActionData = actionCapability.listPendingAction(userId);
         if (executableActionData == null || executableActionData.isEmpty()) {
@@ -181,7 +162,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             map.put("[待确认行动 " + (i + 1) + " ] <等待用户确认的行动信息>", generateActionStr(executableActionData.get(i)));
         }
     }
-
     private void setupPreparedActions(HashMap<String, String> map, String userId) {
         val preparedActions = actionCapability.listActions(ExecutableAction.Status.PREPARE, userId).stream().toList();
         if (preparedActions.isEmpty()) {
@@ -192,22 +172,18 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             map.put("[预备行动 " + (i + 1) + " ] <预备执行或放入计划池的行动信息>", generateActionStr(preparedActions.get(i)));
         }
     }
-
     private String generateActionStr(ExecutableAction executableAction) {
         return "<行动倾向>" + " : " + executableAction.getTendency() +
                 "<行动原因>" + " : " + executableAction.getReason() +
                 "<工具描述>" + " : " + executableAction.getDescription();
     }
-
     @Override
     protected String moduleName() {
         return "[行动模块]";
     }
-
     private final class ActionAssemblyHelper {
         private ActionAssemblyHelper() {
         }
-
         private ExtractorInput buildExtractorInput(PartnerRunningFlowContext context) {
             ExtractorInput input = new ExtractorInput();
             input.setInput(context.getInput());
@@ -221,7 +197,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             input.setRecentMessages(recentMessages);
             return input;
         }
-
         private EvaluatorInput buildEvaluatorInput(ExtractorResult extractorResult, String userId) {
             EvaluatorInput input = new EvaluatorInput();
             input.setTendencies(extractorResult.getTendencies());
@@ -230,7 +205,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             input.setActivatedSlices(memoryCapability.getActivatedSlices(userId));
             return input;
         }
-
         private ExecutableAction buildActionData(EvaluatorResult evaluatorResult, String userId) {
             Map<Integer, List<MetaAction>> actionChain = getActionChain(evaluatorResult);
             return switch (evaluatorResult.getType()) {
@@ -252,7 +226,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
                 );
             };
         }
-
         private @NotNull Map<Integer, List<MetaAction>> getActionChain(EvaluatorResult evaluatorResult) {
             Map<Integer, List<MetaAction>> actionChain = new HashMap<>();
             Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChain();
@@ -265,7 +238,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             });
             return actionChain;
         }
-
         private void fixDependencies(Map<Integer, List<String>> primaryActionChain) {
             // 先将 primaryActionChain 的节点序号修正为从1开始依次增大
             fixOrder(primaryActionChain);
@@ -291,7 +263,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
                         if (checkDependenciesExist(lastOrder, preActions, primaryActionChain)) {
                             continue;
                         }
-
                         // 如果存在前置依赖,则将其放置在当前order之前的位置,
                         // 放置位置优先选择已存在的上一节点,如果不存在(行动链的头节点时)则需要向行动链新增order
                         // 不需要检查行动链的当前节点的已存在 Action 是否为新 Action 的依赖项,因为这些 Action 实际来自 LLM
@@ -309,7 +280,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
                 fixedOrders.addAll(tempOrders);
             } while (fixed.getAndSet(false));
         }
-
         private void fixOrder(Map<Integer, List<String>> primaryActionChain) {
             Map<Integer, List<String>> tempChain = new HashMap<>(primaryActionChain);
             primaryActionChain.clear();
@@ -318,7 +288,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
                 primaryActionChain.put(i, tempChain.get(i));
             }
         }
-
         private boolean checkDependenciesExist(int lastOrder, List<String> preActions,
                                                Map<Integer, List<String>> primaryActionChain) {
             if (!primaryActionChain.containsKey(lastOrder)) {
@@ -328,7 +297,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             //noinspection SlowListContainsAll
             return existActions.containsAll(preActions);
         }
-
         private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
             ConfirmerInput confirmerInput = new ConfirmerInput();
             confirmerInput.setInput(context.getInput());
@@ -336,5 +304,10 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             confirmerInput.setExecutableActionData(pendingActions);
             return confirmerInput;
         }
+    }
+
+    @Override
+    public int order() {
+        return 2;
     }
 }

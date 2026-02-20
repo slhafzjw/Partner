@@ -4,9 +4,8 @@ import cn.hutool.core.bean.BeanUtil;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
@@ -22,19 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-@AgentSubModule
-public class ActionEvaluator extends AbstractAgentSubModule<EvaluatorInput, List<EvaluatorResult>> implements ActivateModel {
-
+public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<EvaluatorResult>> implements ActivateModel {
     @InjectCapability
     private ActionCapability actionCapability;
-
     private InteractionThreadPoolExecutor executor;
-
     @Init
     public void init() {
         executor = InteractionThreadPoolExecutor.getInstance();
     }
-
     /**
      * 对输入的行为倾向进行评估，并根据评估结果，对缓存做出调整
      *
@@ -47,7 +41,6 @@ public class ActionEvaluator extends AbstractAgentSubModule<EvaluatorInput, List
         List<Callable<EvaluatorResult>> tasks = getTasks(batchInputs);
         return executor.invokeAllAndReturn(tasks);
     }
-
     private List<Callable<EvaluatorResult>> getTasks(List<EvaluatorBatchInput> batchInputs) {
         List<Callable<EvaluatorResult>> list = new ArrayList<>();
         for (EvaluatorBatchInput batchInput : batchInputs) {
@@ -60,7 +53,6 @@ public class ActionEvaluator extends AbstractAgentSubModule<EvaluatorInput, List
         }
         return list;
     }
-
     private List<EvaluatorBatchInput> buildEvaluatorBatchInput(EvaluatorInput data) {
         List<EvaluatorBatchInput> list = new ArrayList<>();
         for (String tendency : data.getTendencies()) {
@@ -74,30 +66,23 @@ public class ActionEvaluator extends AbstractAgentSubModule<EvaluatorInput, List
         }
         return list;
     }
-
     private String buildPrompt(EvaluatorBatchInput batchInput) {
         JSONObject prompt = new JSONObject();
         prompt.put("[行动倾向]", batchInput.getTendency());
-
         JSONArray memoryData = prompt.putArray("[相关记忆切片]");
         for (EvaluatedSlice evaluatedSlice : batchInput.getActivatedSlices()) {
             JSONObject memory = memoryData.addObject();
             memory.put("[日期]", evaluatedSlice.getDate());
             memory.put("[摘要]", evaluatedSlice.getSummary());
-
         }
-
         JSONObject availableActionData = prompt.putObject("[可用行动单元]");
         availableActionData.putAll(batchInput.getAvailableActions());
-
         return prompt.toString();
     }
-
     @Override
     public String modelKey() {
         return "action_evaluator";
     }
-
     @Override
     public boolean withBasicPrompt() {
         return true;

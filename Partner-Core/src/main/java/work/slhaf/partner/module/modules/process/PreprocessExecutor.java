@@ -2,9 +2,7 @@ package work.slhaf.partner.module.modules.process;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.core.perceive.pojo.User;
@@ -16,31 +14,24 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
-@Slf4j
-@AgentRunningModule(name = "preprocess_executor", order = 1)
 public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
-
     @InjectCapability
     private CognationCapability cognationCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
-
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
         checkAndSetMemoryId();
         getInteractionContext(context);
     }
-
     private void checkAndSetMemoryId() {
         String currentMemoryId = cognationCapability.getCurrentMemoryId();
         if (currentMemoryId == null || cognationCapability.getChatMessages().isEmpty()) {
             cognationCapability.refreshMemoryId();
         }
     }
-
     private void getInteractionContext(PartnerRunningFlowContext context) {
         log.debug("[PreprocessExecutor] 预处理原始输入: {}", context);
         User user = perceiveCapability.getUser(context.getUserInfo(), context.getPlatform());
@@ -49,15 +40,12 @@ public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
         }
         String userId = user.getUuid();
         context.setUserId(userId);
-
         String userStr = "[" + context.getUserNickname() + "(" + userId + ")]";
         String input = userStr + " " + context.getInput();
         context.setInput(input);
         setCoreContext(context);
         log.debug("[PreprocessExecutor] 预处理结果: {}", context);
     }
-
-
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
@@ -69,17 +57,20 @@ public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
         map.put("其他", "历史对话中将在用户消息的最后一行标注时间");
         return map;
     }
-
     @Override
     protected String moduleName() {
         return "[基础模块]";
     }
-
     private void setCoreContext(PartnerRunningFlowContext context) {
         CoreContext coreContext = context.getCoreContext();
         coreContext.setText(context.getInput());
         coreContext.setDateTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         coreContext.setUserNick(context.getUserNickname());
         coreContext.setUserId(context.getUserId());
+    }
+
+    @Override
+    public int order() {
+        return 1;
     }
 }

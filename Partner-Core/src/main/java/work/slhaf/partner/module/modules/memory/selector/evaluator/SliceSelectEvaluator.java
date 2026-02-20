@@ -5,10 +5,8 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
@@ -27,20 +25,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
-@Slf4j
-@AgentSubModule
-public class SliceSelectEvaluator extends AbstractAgentSubModule<EvaluatorInput, List<EvaluatedSlice>> implements ActivateModel {
-
+public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<EvaluatedSlice>> implements ActivateModel {
     private InteractionThreadPoolExecutor executor;
-
     @Init
     public void init() {
         executor = InteractionThreadPoolExecutor.getInstance();
     }
-
     @Override
     public List<EvaluatedSlice> execute(EvaluatorInput evaluatorInput) {
         log.debug("[SliceSelectEvaluator] 切片评估模块开始...");
@@ -83,16 +75,13 @@ public class SliceSelectEvaluator extends AbstractAgentSubModule<EvaluatorInput,
                 return null;
             });
         }
-
         executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
         log.debug("[SliceSelectEvaluator] 评估模块结束, 输出队列: {}", queue);
         List<EvaluatedSlice> temp = queue.stream().toList();
         return new  ArrayList<>(temp);
     }
-
     private void setSliceSummaryList(MemoryResult memoryResult, List<SliceSummary> sliceSummaryList, Map<Long, SliceSummary> map) {
         for (MemorySliceResult memorySliceResult : memoryResult.getMemorySliceResult()) {
-
             SliceSummary sliceSummary = new SliceSummary();
             sliceSummary.setId(memorySliceResult.getMemorySlice().getTimestamp());
             StringBuilder stringBuilder = new StringBuilder();
@@ -109,29 +98,22 @@ public class SliceSelectEvaluator extends AbstractAgentSubModule<EvaluatorInput,
             sliceSummary.setSummary(stringBuilder.toString());
             Long timestamp = memorySliceResult.getMemorySlice().getTimestamp();
             sliceSummary.setDate(DateUtil.date(timestamp).toLocalDateTime().toLocalDate());
-
             sliceSummaryList.add(sliceSummary);
             map.put(timestamp, sliceSummary);
         }
-
         for (MemorySlice memorySlice : memoryResult.getRelatedMemorySliceResult()) {
             SliceSummary sliceSummary = new SliceSummary();
             sliceSummary.setId(memorySlice.getTimestamp());
             sliceSummary.setSummary(memorySlice.getSummary());
-
             sliceSummaryList.add(sliceSummary);
             map.put(memorySlice.getTimestamp(), sliceSummary);
         }
     }
-
-
     public String modelKey() {
         return "slice_evaluator";
     }
-
     @Override
     public boolean withBasicPrompt() {
         return false;
     }
-
 }

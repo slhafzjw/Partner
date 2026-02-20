@@ -2,9 +2,7 @@ package work.slhaf.partner.module.modules.perceive.updater;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
@@ -22,34 +20,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
-
 /**
  * 感知更新，异步
  */
 @EqualsAndHashCode(callSuper = true)
-@Slf4j
 @Data
-@AgentRunningModule(name = "perceive_updater", order = 7)
 public class PerceiveUpdater extends PostRunningAbstractAgentModuleAbstract {
-
     @InjectCapability
     private PerceiveCapability perceiveCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
-
     @InjectModule
     private RelationExtractor relationExtractor;
     @InjectModule
     private StaticMemoryExtractor staticMemoryExtractor;
-
     private InteractionThreadPoolExecutor executor;
-
-
     @Init
     public void init() {
         this.executor = InteractionThreadPoolExecutor.getInstance();
     }
-
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
         executor.execute(() -> {
@@ -69,12 +58,10 @@ public class PerceiveUpdater extends PostRunningAbstractAgentModuleAbstract {
             perceiveCapability.updateUser(user);
         });
     }
-
     @Override
     protected boolean relyOnMessage() {
         return true;
     }
-
     private void runRelationExtractorAction(PartnerRunningFlowContext context, ReentrantLock userLock, User user) {
         RelationExtractResult relationExtractResult = relationExtractor.execute(context);
         userLock.lock();
@@ -84,7 +71,6 @@ public class PerceiveUpdater extends PostRunningAbstractAgentModuleAbstract {
         user.updateRelationChange(relationExtractResult.getRelationChangeHistory());
         userLock.unlock();
     }
-
     private void runStaticExtractorAction(PartnerRunningFlowContext context, ReentrantLock userLock, User user) {
         HashMap<String, String> newStaticMemory = staticMemoryExtractor.execute(context);
         userLock.lock();
@@ -92,4 +78,8 @@ public class PerceiveUpdater extends PostRunningAbstractAgentModuleAbstract {
         userLock.unlock();
     }
 
+    @Override
+    public int order() {
+        return 7;
+    }
 }

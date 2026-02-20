@@ -1,10 +1,8 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor;
 
-import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -26,17 +24,13 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Slf4j
-@AgentSubModule
-public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, Void> {
-
+public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput, Void> {
     @InjectCapability
     private ActionCapability actionCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
-
     @InjectModule
     private ParamsExtractor paramsExtractor;
     @InjectModule
@@ -45,20 +39,16 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
     private ActionCorrector actionCorrector;
     @InjectModule
     private ActionScheduler actionScheduler;
-
     private ExecutorService virtualExecutor;
     private ExecutorService platformExecutor;
     private RunnerClient runnerClient;
-
     private final AssemblyHelper assemblyHelper = new AssemblyHelper();
-
     @Init
     public void init() {
         virtualExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
         platformExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM);
         runnerClient = actionCapability.runnerClient();
     }
-
     /**
      * 执行行动
      *
@@ -85,62 +75,51 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
                 val phaser = new Phaser();
                 val phaserRecord = actionCapability.putPhaserRecord(phaser, executableAction);
                 executableAction.setStatus(Status.EXECUTING);
-
                 // 开始执行
                 val stageCursor = new Object() {
                     int stageCount;
                     boolean executingStageUpdated;
                     boolean stageCountUpdated;
-
                     void init() {
                         stageCount = 0;
                         executingStageUpdated = false;
                         stageCountUpdated = false;
                         update();
                     }
-
                     void requestAdvance() {
                         if (!stageCountUpdated) {
                             stageCount++;
                             stageCountUpdated = true;
                         }
-
                         if (stageCount < actionChain.size() && !executingStageUpdated) {
                             update();
                             executingStageUpdated = true;
                         }
                     }
-
                     boolean next() {
                         executingStageUpdated = false;
                         stageCountUpdated = false;
                         return stageCount < actionChain.size();
                     }
-
                     void update() {
                         val orderList = new ArrayList<>(actionChain.keySet());
                         orderList.sort(Integer::compareTo);
                         executableAction.setExecutingStage(orderList.get(stageCount));
                     }
                 };
-
                 stageCursor.init();
                 do {
                     val metaActions = actionChain.get(executableAction.getExecutingStage());
-
                     val listeningRecord = executeAndListening(metaActions, phaserRecord, source);
                     phaser.awaitAdvance(listeningRecord.phase());
-
                     // synchronized 同步防止 accepting 循环间、phase guard 判定后发生 stage 推进
                     // 导致新行动的 phaser 投放阶段错乱无法阻塞的场景
                     // 该 synchronized 将阶段推进与 accepting 监听 loop 捆绑为互斥的原子事件，避免了细粒度的 phaser 阶段竞态问题
                     synchronized (listeningRecord.accepting()) {
                         listeningRecord.accepting().set(false);
-
                         // 立即尝试推进，本次推进中，如果前方仍有未执行 stage，将执行一次阶段推进
                         stageCursor.requestAdvance();
                     }
-
                     try {
                         // 针对行动链进行修正，修正需要传入执行历史、行动目标等内容
                         // 如果后续运行 corrector 触发频率较高，可考虑增加重试机制
@@ -149,12 +128,10 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
                         actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), executableAction);
                     } catch (Exception ignored) {
                     }
-
                     // 第二次尝试进行阶段推进，本次负责补充上一次在不存在 stage时，但 corrector 执行期间发生了 actionChain 的插入事件
                     // 如果第一次已经推进完毕，本次将会跳过
                     stageCursor.requestAdvance();
                 } while (stageCursor.next());
-
                 // 结束
                 actionCapability.removePhaserRecord(phaser);
                 if (executableAction.getStatus() != Status.FAILED) {
@@ -165,20 +142,15 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
                     } else {
                         executableAction.setStatus(Status.SUCCESS);
                     }
-
                     // TODO 执行过后需要回写至任务上下文（recentCompletedTask），同时触发自对话信号进行确认并记录以及是否通知用户（触发与否需要机制进行匹配，在模块链路可增加 interaction gate 门控，判断此次对话作用于谁、由谁发出、何种性质、是否需要回应等）
                 }
             });
-
         }
         return null;
-
     }
-
     private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, PhaserRecord phaserRecord, String source) {
         AtomicBoolean accepting = new AtomicBoolean(true);
         AtomicInteger cursor = new AtomicInteger();
-
         CountDownLatch latch = new CountDownLatch(1);
         val phaser = phaserRecord.phaser();
         val phase = phaser.register();
@@ -187,27 +159,22 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
             while (accepting.get()) {
                 synchronized (accepting) {
                     MetaAction next = null;
-
                     synchronized (metaActions) {
                         if (cursor.get() < metaActions.size()) {
                             next = metaActions.get(cursor.getAndIncrement());
                         }
                     }
-
                     if (next == null) {
                         Thread.onSpinWait();
                         continue;
                     }
-
                     if (phaser.getPhase() != phase) {
                         metaActions.remove(next);
                         log.warn("行动阶段已推进，丢弃该行动: {}", next);
                         continue;
                     }
-
                     ExecutorService executor = next.getIo() ? virtualExecutor : platformExecutor;
                     executor.execute(buildMataActionTask(next, phaserRecord, source));
-
                     if (first) {
                         phaser.arriveAndDeregister();
                         latch.countDown();
@@ -223,7 +190,6 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
         }
         return new MetaActionsListeningRecord(accepting, phase);
     }
-
     private Runnable buildMataActionTask(MetaAction metaAction, PhaserRecord phaserRecord, String source) {
         val phaser = phaserRecord.phaser();
         phaser.register();
@@ -238,7 +204,6 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
                     val additionalContext = actionData.getAdditionalContext().get(executingStage);
                     val extractorInput = assemblyHelper.buildExtractorInput(metaAction, source, historyActionResults, additionalContext);
                     val extractorResult = paramsExtractor.execute(extractorInput);
-
                     if (extractorResult.isOk()) {
                         metaAction.getParams().putAll(extractorResult.getParams());
                         runnerClient.submit(metaAction);
@@ -275,16 +240,12 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
             }
         };
     }
-
     private record MetaActionsListeningRecord(AtomicBoolean accepting, int phase) {
     }
-
     @SuppressWarnings("InnerClassMayBeStatic")
     private class AssemblyHelper {
-
         private AssemblyHelper() {
         }
-
         private RepairerInput buildRepairerInput(List<HistoryAction> historyActionsResults, MetaAction action, String userId) {
             RepairerInput input = new RepairerInput();
             MetaActionInfo metaActionInfo = actionCapability.loadMetaActionInfo(action.getKey());
@@ -295,7 +256,6 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
             input.setUserId(userId);
             return input;
         }
-
         private ExtractorInput buildExtractorInput(MetaAction action, String source, List<HistoryAction> historyActionResults,
                                                    List<String> additionalContext) {
             ExtractorInput input = new ExtractorInput();
@@ -306,7 +266,6 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
             input.setAdditionalContext(additionalContext);
             return input;
         }
-
         private CorrectorInput buildCorrectorInput(ExecutableAction executableAction, String source) {
             return CorrectorInput.builder()
                     .tendency(executableAction.getTendency())
@@ -320,5 +279,4 @@ public class ActionExecutor extends AbstractAgentSubModule<ActionExecutorInput, 
                     .build();
         }
     }
-
 }

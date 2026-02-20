@@ -2,11 +2,9 @@ package work.slhaf.partner.module.modules.action.planner.confirmer;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -21,22 +19,16 @@ import java.util.concurrent.ExecutorService;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 
-@Slf4j
-@AgentSubModule
-public class ActionConfirmer extends AbstractAgentSubModule<ConfirmerInput, ConfirmerResult> implements ActivateModel {
-
+public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, ConfirmerResult> implements ActivateModel {
     @InjectCapability
     private ActionCapability actionCapability;
-
     @Override
     public ConfirmerResult execute(ConfirmerInput data) {
         List<ExecutableAction> executableActionList = data.getExecutableActionData();
         ExecutorService executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
         CountDownLatch latch = new CountDownLatch(executableActionList.size());
-
         ConfirmerResult result = new ConfirmerResult();
         List<String> uuids = result.getUuids();
-
         for (ExecutableAction executableAction : executableActionList) {
             executor.execute(() -> {
                 try {
@@ -61,28 +53,22 @@ public class ActionConfirmer extends AbstractAgentSubModule<ConfirmerInput, Conf
         }
         return result;
     }
-
     private String buildPrompt(ExecutableAction data, String input, List<Message> recentMessages) {
         JSONObject prompt = new JSONObject();
         prompt.put("[用户输入]", input);
-
         JSONObject actionData = prompt.putObject("[行动数据]");
         actionData.put("[行动倾向]", data.getTendency());
         actionData.put("[行动原因]", data.getReason());
         actionData.put("[行动来源]", data.getSource());
         actionData.put("[行动描述]", data.getDescription());
-
         JSONArray messageData = prompt.putArray("[近期对话]");
         messageData.addAll(recentMessages);
-
         return prompt.toString();
     }
-
     @Override
     public String modelKey() {
         return "action-confirmer";
     }
-
     @Override
     public boolean withBasicPrompt() {
         return false;

@@ -4,9 +4,8 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -19,20 +18,14 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
-@AgentSubModule
-public class RelationExtractor extends AbstractAgentSubModule<PartnerRunningFlowContext, RelationExtractResult> implements ActivateModel {
-
+public class RelationExtractor extends AbstractAgentModule.Sub<PartnerRunningFlowContext, RelationExtractResult> implements ActivateModel {
     @InjectCapability
     private CognationCapability cognationCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
-
     private List<Message> tempMessages;
-
-
     @Override
     public RelationExtractResult execute(PartnerRunningFlowContext context){
         tempMessages = new ArrayList<>(cognationCapability.getChatMessages());
@@ -43,8 +36,6 @@ public class RelationExtractor extends AbstractAgentSubModule<PartnerRunningFlow
         perceiveCapability.updateUser(user);
         return relationExtractResult;
     }
-
-
     private User getTempUser(PartnerRunningFlowContext context, RelationExtractResult relationExtractResult) {
         User user = new User();
         user.setUuid(context.getUserId());
@@ -53,12 +44,10 @@ public class RelationExtractor extends AbstractAgentSubModule<PartnerRunningFlow
         user.setAttitude(relationExtractResult.getAttitude());
         return user;
     }
-
     private RelationExtractResult getRelationResult(RelationExtractInput input) {
         ChatResponse response = singleChat(JSONObject.toJSONString(input));
         return JSONObject.parseObject(response.getMessage(), RelationExtractResult.class);
     }
-
     private RelationExtractInput getRelationInput(String userId) {
         HashMap<String,String> map = new HashMap<>();
         User user = perceiveCapability.getUser(userId);
@@ -72,15 +61,12 @@ public class RelationExtractor extends AbstractAgentSubModule<PartnerRunningFlow
         input.setChatMessages(tempMessages);
         return input;
     }
-
     @Override
     public String modelKey() {
         return "relation_extractor";
     }
-
     @Override
     public boolean withBasicPrompt() {
         return true;
     }
-
 }

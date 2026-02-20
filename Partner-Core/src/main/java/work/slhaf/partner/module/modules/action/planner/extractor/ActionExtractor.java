@@ -1,11 +1,9 @@
 package work.slhaf.partner.module.modules.action.planner.extractor;
 
 import com.alibaba.fastjson2.JSONObject;
-import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorInput;
@@ -13,13 +11,9 @@ import work.slhaf.partner.module.modules.action.planner.extractor.entity.Extract
 
 import java.util.List;
 
-@Slf4j
-@AgentSubModule
-public class ActionExtractor extends AbstractAgentSubModule<ExtractorInput, ExtractorResult> implements ActivateModel {
-
+public class ActionExtractor extends AbstractAgentModule.Sub<ExtractorInput, ExtractorResult> implements ActivateModel {
     @InjectCapability
     private ActionCapability actionCapability;
-
     @Override
     public ExtractorResult execute(ExtractorInput data) {
         ExtractorResult result = new ExtractorResult();
@@ -28,7 +22,6 @@ public class ActionExtractor extends AbstractAgentSubModule<ExtractorInput, Extr
             result.setTendencies(tendencyCache);
             return result;
         }
-
         for (int i = 0; i < 3; i++) {
             try {
                 ChatResponse response = this.singleChat(JSONObject.toJSONString(data));
@@ -37,15 +30,12 @@ public class ActionExtractor extends AbstractAgentSubModule<ExtractorInput, Extr
                 log.error("[ActionExtractor] 提取信息出错", e);
             }
         }
-
         return new ExtractorResult();
     }
-
     @Override
     public String modelKey() {
         return "action_extractor";
     }
-
     @Override
     public boolean withBasicPrompt() {
         return false;

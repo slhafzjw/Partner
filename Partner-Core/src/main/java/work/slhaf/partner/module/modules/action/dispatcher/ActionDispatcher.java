@@ -2,7 +2,6 @@ package work.slhaf.partner.module.modules.action.dispatcher;
 
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -19,25 +18,18 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-
-@AgentRunningModule(name = "action_dispatcher", order = 7)
 public class ActionDispatcher extends PostRunningAbstractAgentModuleAbstract {
-
     @InjectCapability
     private ActionCapability actionCapability;
-
     @InjectModule
     private ActionExecutor actionExecutor;
     @InjectModule
     private ActionScheduler actionScheduler;
-
     private ExecutorService executor;
-
     @Init
     public void init() {
         executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
     }
-
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
         // 只需要处理prepared action，因为pending action在用户确认后也将变为prepared action
@@ -61,10 +53,13 @@ public class ActionDispatcher extends PostRunningAbstractAgentModuleAbstract {
             actionScheduler.execute(scheduledActions);
         });
     }
-
     @Override
     protected boolean relyOnMessage() {
         return false;
     }
 
+    @Override
+    public int order() {
+        return 7;
+    }
 }

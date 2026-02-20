@@ -4,11 +4,9 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
@@ -28,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-
 /**
  * 负责识别行动链的修复
  * <ol>
@@ -43,26 +40,19 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </li>
  * </ol>
  */
-@Slf4j
-@AgentSubModule
-public class ActionRepairer extends AbstractAgentSubModule<RepairerInput, RepairerResult> implements ActivateModel {
-
+public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, RepairerResult> implements ActivateModel {
     @InjectCapability
     private ActionCapability actionCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
-
     @InjectModule
     private DynamicActionGenerator dynamicActionGenerator;
-
     private final AssemblyHelper assemblyHelper = new AssemblyHelper();
     private RunnerClient runnerClient;
-
     @Init
     void init() {
         runnerClient = actionCapability.runnerClient();
     }
-
     @Override
     public RepairerResult execute(RepairerInput data) {
         RepairerResult result;
@@ -92,7 +82,6 @@ public class ActionRepairer extends AbstractAgentSubModule<RepairerInput, Repair
         }
         return result;
     }
-
     /**
      * 负责根据输入内容进行行动单元的参数信息修复
      *
@@ -107,7 +96,6 @@ public class ActionRepairer extends AbstractAgentSubModule<RepairerInput, Repair
             result.setStatus(RepairerStatus.FAILED);
             return result;
         }
-
         runnerClient.submit(tempAction);
         // 根据 tempAction 的执行状态设置修复结果
         Result actionResult = tempAction.getResult();
@@ -115,12 +103,10 @@ public class ActionRepairer extends AbstractAgentSubModule<RepairerInput, Repair
             result.setStatus(RepairerStatus.FAILED);
             return result;
         }
-
         result.setStatus(RepairerStatus.OK);
         result.getFixedData().add(actionResult.getData());
         return result;
     }
-
     /**
      * 负责根据输入内容进行行动单元的参数信息修复
      *
@@ -161,50 +147,41 @@ public class ActionRepairer extends AbstractAgentSubModule<RepairerInput, Repair
         }
         return result;
     }
-
     private RepairerResult handleUserInteraction(String acquireContent) {
         RepairerResult result = new RepairerResult();
         result.setStatus(RepairerStatus.ACQUIRE);
         // 发送自对话请求
         return result;
     }
-
     @Override
     public String modelKey() {
         return "action_repairer";
     }
-
     @Override
     public boolean withBasicPrompt() {
         return false;
     }
-
     @SuppressWarnings("InnerClassMayBeStatic")
     @Data
     private class RepairerData {
         private RepairerType repairerType;
         private String data;
     }
-
     private enum RepairerType {
         ACTION_GENERATION,
         ACTION_INVOCATION,
         USER_INTERACTION
     }
-
     @SuppressWarnings("InnerClassMayBeStatic")
     private class AssemblyHelper {
         private AssemblyHelper() {
         }
-
         private String buildPrompt(RepairerInput data, String specialInstruction) {
             JSONObject prompt = new JSONObject();
-
             JSONObject actionData = prompt.putObject("[本次行动信息]");
             actionData.put("[行动描述]", data.getActionDescription());
             JSONObject actionParamsData = actionData.putObject("[行动参数说明]");
             actionParamsData.putAll(data.getParams());
-
             JSONArray historyData = prompt.putArray("[历史行动执行结果]");
             data.getHistoryActionResults().forEach(historyAction -> {
                 JSONObject historyItem = new JSONObject();
@@ -213,16 +190,12 @@ public class ActionRepairer extends AbstractAgentSubModule<RepairerInput, Repair
                 historyItem.put("[行动结果]", historyAction.result());
                 historyData.add(historyItem);
             });
-
             JSONArray messageData = prompt.putArray("[最近消息列表]");
             messageData.addAll(data.getRecentMessages());
-
             if (specialInstruction != null) {
                 prompt.put("[特殊指令]", specialInstruction);
             }
-
             return prompt.toString();
         }
-
     }
 }

@@ -4,11 +4,9 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -24,20 +22,14 @@ import java.util.List;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
-@Slf4j
-@AgentSubModule
-public class MemorySelectExtractor extends AbstractAgentSubModule<PartnerRunningFlowContext, ExtractorResult>
+public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunningFlowContext, ExtractorResult>
         implements ActivateModel {
-
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
-
-
     @Override
     public ExtractorResult execute(PartnerRunningFlowContext context) {
         log.debug("[MemorySelectExtractor] 主题提取模块开始...");
@@ -52,7 +44,6 @@ public class MemorySelectExtractor extends AbstractAgentSubModule<PartnerRunning
                 chatMessages.add(metaMessage.getAssistantMessage());
             }
         }
-
         ExtractorResult extractorResult;
         try {
             List<EvaluatedSlice> activatedMemorySlices = memoryCapability.getActivatedSlices(context.getUserId());
@@ -75,7 +66,6 @@ public class MemorySelectExtractor extends AbstractAgentSubModule<PartnerRunning
         }
         return fix(extractorResult);
     }
-
     private ExtractorResult fix(ExtractorResult extractorResult) {
         extractorResult.getMatches().forEach(m -> {
             if (m.getType().equals(ExtractorMatchData.Constant.DATE)) {
@@ -89,15 +79,12 @@ public class MemorySelectExtractor extends AbstractAgentSubModule<PartnerRunning
         extractorResult.getMatches().removeIf(m -> m.getText().split("->")[0].isEmpty());
         return extractorResult;
     }
-
     @Override
     public String modelKey() {
         return "topic_extractor";
     }
-
     @Override
     public boolean withBasicPrompt() {
         return false;
     }
-
 }

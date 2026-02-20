@@ -3,10 +3,8 @@ package work.slhaf.partner.module.modules.memory.updater.summarizer;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
@@ -18,20 +16,14 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 @EqualsAndHashCode(callSuper = true)
-@Slf4j
 @Data
-@AgentSubModule
-public class SingleSummarizer extends AbstractAgentSubModule<List<Message>, Void> implements ActivateModel {
-
+public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Void> implements ActivateModel {
     private InteractionThreadPoolExecutor executor;
-
     @Init
     public void init() {
         this.executor = InteractionThreadPoolExecutor.getInstance();
     }
-
     @Override
     public Void execute(List<Message> chatMessages) {
         log.debug("[MemorySummarizer] 长文本摘要开始...");
@@ -55,7 +47,6 @@ public class SingleSummarizer extends AbstractAgentSubModule<List<Message>, Void
         log.debug("[MemorySummarizer] 长文本摘要结束");
         return null;
     }
-
     private String singleExecute(String primaryContent) {
         try {
             ChatResponse response = this.singleChat(primaryContent);
@@ -65,15 +56,12 @@ public class SingleSummarizer extends AbstractAgentSubModule<List<Message>, Void
             return primaryContent;
         }
     }
-
     @Override
     public String modelKey() {
         return "single_summarizer";
     }
-
     @Override
     public boolean withBasicPrompt() {
         return false;
     }
-
 }

@@ -4,10 +4,8 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
+import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeInput;
@@ -18,18 +16,13 @@ import java.util.List;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
-@Slf4j
-@AgentSubModule
-public class MultiSummarizer extends AbstractAgentSubModule<SummarizeInput, SummarizeResult> implements ActivateModel {
-
+public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, SummarizeResult> implements ActivateModel {
     @Init
     public void init() {
         updateChatClientSettings();
     }
-
     @Override
     public SummarizeResult execute(SummarizeInput input) {
         log.debug("[MemorySummarizer] 整体摘要开始...");
@@ -38,12 +31,10 @@ public class MultiSummarizer extends AbstractAgentSubModule<SummarizeInput, Summ
         SummarizeResult result = JSONObject.parseObject(extractJson(response.getMessage()), SummarizeResult.class);
         return fix(result);
     }
-
     private SummarizeResult fix(SummarizeResult result) {
         if (result == null || result.getTopicPath() == null || result.getTopicPath().isEmpty()) {
             return result;
         }
-
         String topicPath = fixTopicPath(result.getTopicPath());
         List<String> relatedTopicPath = new ArrayList<>();
         for (String s : result.getRelatedTopicPath()) {
@@ -53,15 +44,12 @@ public class MultiSummarizer extends AbstractAgentSubModule<SummarizeInput, Summ
         result.setRelatedTopicPath(relatedTopicPath);
         return result;
     }
-
     @Override
     public String modelKey() {
         return "multi_summarizer";
     }
-
     @Override
     public boolean withBasicPrompt() {
         return true;
     }
-
 }
