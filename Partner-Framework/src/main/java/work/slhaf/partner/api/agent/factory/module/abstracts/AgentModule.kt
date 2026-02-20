@@ -17,7 +17,10 @@ abstract class AbstractAgentModule {
     var moduleName: String = javaClass.simpleName
 
     interface Running<T : RunningFlowContext> {
+
         fun execute(context: T)
+
+        fun order(): Int
     }
 
     interface Sub<I, O> {
