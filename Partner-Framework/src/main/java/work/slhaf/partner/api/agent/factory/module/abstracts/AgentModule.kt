@@ -33,7 +33,7 @@ sealed class AbstractAgentModule {
         abstract fun execute(input: I): O
     }
 
-    abstract class Standalone
+    abstract class Standalone : AbstractAgentModule()
 
     // TODO 后续于此处扩展生命周期内容
 }
