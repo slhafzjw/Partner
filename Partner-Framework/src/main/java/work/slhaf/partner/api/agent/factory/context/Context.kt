@@ -5,22 +5,41 @@ import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule
 import java.time.ZonedDateTime
 
 object AgentContext {
-    val modules = mutableMapOf<String, ModuleContextData<AbstractAgentModule>>()
-    val capabilities = mutableMapOf<Class<*>, Any>()
+
+    private val _modules =
+        mutableMapOf<String, ModuleContextData<AbstractAgentModule>>()
+
+    val modules: Map<String, ModuleContextData<AbstractAgentModule>>
+        get() = _modules
+
+    private val _capabilities =
+        mutableMapOf<Class<*>, Any?>()
+
+    val capabilities: Map<Class<*>, Any?>
+        get() = _capabilities
+
+    fun addModule(name: String, module: ModuleContextData<AbstractAgentModule>) {
+        _modules[name] = module
+    }
+
+    fun <T> addCapability(type: Class<T>, value: T) {
+        _capabilities[type] = value
+    }
 }
 
 sealed class ModuleContextData<out T : AbstractAgentModule> {
     abstract val clazz: Class<out T>
     abstract val instance: T
     abstract val launchTime: ZonedDateTime
+    abstract val modelInfo: ModelInfo
 
-    val modelInfo: ModelInfo? = null
     val metadata = mutableMapOf<String, Any>()
 
     data class Running<T : AbstractAgentModule.Running<*>>(
         override val clazz: Class<T>,
         override val instance: T,
         override val launchTime: ZonedDateTime,
+        override val modelInfo: ModelInfo,
 
         val order: Int,
         val enabled: Boolean
@@ -30,6 +49,7 @@ sealed class ModuleContextData<out T : AbstractAgentModule> {
         override val clazz: Class<T>,
         override val instance: T,
         override val launchTime: ZonedDateTime,
+        override val modelInfo: ModelInfo,
 
         val injectTarget: MutableSet<AbstractAgentModule> = mutableSetOf()
     ) : ModuleContextData<T>()
@@ -38,6 +58,7 @@ sealed class ModuleContextData<out T : AbstractAgentModule> {
         override val clazz: Class<T>,
         override val instance: T,
         override val launchTime: ZonedDateTime,
+        override val modelInfo: ModelInfo,
 
         val injectTarget: MutableSet<AbstractAgentModule> = mutableSetOf()
     ) : ModuleContextData<T>()
