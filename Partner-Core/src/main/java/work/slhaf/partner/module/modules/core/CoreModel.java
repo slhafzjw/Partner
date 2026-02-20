@@ -4,11 +4,13 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
+import work.slhaf.partner.api.chat.ChatClient;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -33,13 +35,12 @@ public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowCont
     
     @InjectCapability
     private CognationCapability cognationCapability;
-    private List<Message> appendedMessages;
+    private List<Message> appendedMessages = new ArrayList<>();
 
     @Init
     public void init(){
         List<Message> chatMessages = this.cognationCapability.getChatMessages();
-        this.getModel().setChatMessages(chatMessages);
-        this.appendedMessages = new ArrayList<>();
+        this.getModel().getChatMessages().addAll(chatMessages);
 
         updateChatClientSettings();
         log.info("[CoreModel] CoreModel注册完毕...");
@@ -47,12 +48,13 @@ public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowCont
 
     @Override
     public void updateChatClientSettings() {
-        chatClient().setTemperature(0.3);
-        chatClient().setTop_p(0.7);
+        ChatClient chatClient = getModel().getChatClient();
+        chatClient.setTemperature(0.3);
+        chatClient.setTop_p(0.7);
     }
 
     @Override
-    public String modelKey() {
+    public @NotNull String modelKey() {
         return "core_model";
     }
 
@@ -75,7 +77,7 @@ public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowCont
         activateModule(runningFlowContext);
         setMessageCount(runningFlowContext);
 
-        log.debug("[CoreModel] 当前消息列表大小: {}", chatMessages().size());
+        log.debug("[CoreModel] 当前消息列表大小: {}", getModel().getChatMessages().size());
         log.debug("[CoreModel] 当前核心prompt内容: {}", runningFlowContext.getCoreContext().toString());
 
         setMessage(runningFlowContext.getCoreContext().toString());
@@ -110,13 +112,13 @@ public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowCont
                 log.error("[CoreModel] CoreModel执行异常: {}", e.getLocalizedMessage());
                 if (count > 3) {
                     handleExceptionResponse(response, "主模型交互出错: " + e.getLocalizedMessage());
-                    chatMessages().removeLast();
+                    getModel().getChatMessages().removeLast();
                     break;
                 }
             } finally {
                 updateCoreResponse(runningFlowContext, response);
                 resetAppendedMessages();
-                log.debug("[CoreModel] 消息列表更新大小: {}", chatMessages().size());
+                log.debug("[CoreModel] 消息列表更新大小: {}", getModel().getChatMessages().size());
             }
         }
     }
@@ -145,17 +147,20 @@ public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowCont
     }
 
     @Override
-    public ChatResponse chat() {
-        List<Message> temp = new ArrayList<>(baseMessages().subList(0, baseMessages().size() - 2));
+    public @NotNull ChatResponse chat() {
+        List<@NotNull Message> baseMessages = getModel().getBaseMessages();
+        List<@NotNull Message> chatMessages = getModel().getChatMessages();
+        List<Message> temp = new ArrayList<>(baseMessages.subList(0, baseMessages.size() - 2));
         temp.addAll(appendedMessages);
-        temp.addAll(baseMessages().subList(baseMessages().size() - 2, baseMessages().size()));
-        temp.addAll(chatMessages());
-        return chatClient().runChat(temp);
+        temp.addAll(baseMessages.subList(baseMessages.size() - 2, baseMessages.size()));
+        temp.addAll(chatMessages);
+        return getModel().getChatClient().runChat(temp);
     }
 
     private void updateModuleContextAndChatMessages(PartnerRunningFlowContext runningFlowContext, String response, ChatResponse chatResponse) {
         cognationCapability.getMessageLock().lock();
-        chatMessages().removeIf(m -> {
+        List<@NotNull Message> chatMessages = getModel().getChatMessages();
+        chatMessages.removeIf(m -> {
             if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
                 return false;
             }
@@ -169,9 +174,9 @@ public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowCont
         //添加时间标志
         String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("\r\n**[yyyy-MM-dd HH:mm:ss]"));
         Message primaryUserMessage = new Message(ChatConstant.Character.USER, runningFlowContext.getCoreContext().getText() + dateTime);
-        chatMessages().add(primaryUserMessage);
+        chatMessages.add(primaryUserMessage);
         Message assistantMessage = new Message(ChatConstant.Character.ASSISTANT, response);
-        chatMessages().add(assistantMessage);
+        chatMessages.add(assistantMessage);
         cognationCapability.getMessageLock().unlock();
         //设置上下文
         runningFlowContext.getModuleContext().getExtraContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
@@ -184,7 +189,7 @@ public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowCont
 
     private void setMessage(String coreContextStr) {
         Message userMessage = new Message(ChatConstant.Character.USER, coreContextStr);
-        chatMessages().add(userMessage);
+        getModel().getChatMessages().add(userMessage);
     }
 
     private void handleExceptionResponse(JSONObject response, String chatResponse) {
@@ -193,7 +198,7 @@ public class CoreModel extends AbstractAgentRunningModule<PartnerRunningFlowCont
     }
 
     private void setMessageCount(PartnerRunningFlowContext runningFlowContext) {
-        runningFlowContext.getModuleContext().getExtraContext().put("message_count", chatMessages().size());
+        runningFlowContext.getModuleContext().getExtraContext().put("message_count", getModel().getChatMessages().size());
     }
 
     private void setAppendedPromptMessage(List<AppendPromptData> appendPrompt) {
