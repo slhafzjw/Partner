@@ -23,7 +23,8 @@ sealed class ModuleContextData<T : AbstractAgentModule> {
         override val instance: T,
         override val launchTime: ZonedDateTime,
 
-        val order: Int
+        val order: Int,
+        val enabled: Boolean
     ) : ModuleContextData<T>()
 
     data class Sub<T : AbstractAgentModule.Sub<out Any, out Any>>(
