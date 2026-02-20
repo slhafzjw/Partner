@@ -29,7 +29,7 @@ import java.time.temporal.ChronoUnit
 import java.util.stream.Collectors
 import kotlin.jvm.optionals.getOrNull
 
-class ActionScheduler : AbstractAgentModule.Sub<Set<Schedulable>, Void?>() {
+class ActionScheduler : AbstractAgentModule.Standalone() {
     @InjectCapability
     private lateinit var actionCapability: ActionCapability
 
@@ -79,17 +79,14 @@ class ActionScheduler : AbstractAgentModule.Sub<Set<Schedulable>, Void?>() {
         })
     }
 
-    override fun execute(input: Set<Schedulable>): Void? {
-        schedulerScope.launch {
-            for (schedulableData in input) {
-                log.debug("New data to schedule: {}", schedulableData)
-                timeWheel.schedule(schedulableData)
-                if (schedulableData is SchedulableExecutableAction) {
-                    actionCapability.putAction(schedulableData)
-                }
+    fun execute(input: Set<Schedulable>) = schedulerScope.launch {
+        for (schedulableData in input) {
+            log.debug("New data to schedule: {}", schedulableData)
+            timeWheel.schedule(schedulableData)
+            if (schedulableData is SchedulableExecutableAction) {
+                actionCapability.putAction(schedulableData)
             }
         }
-        return null
     }
 
     private class TimeWheel(
