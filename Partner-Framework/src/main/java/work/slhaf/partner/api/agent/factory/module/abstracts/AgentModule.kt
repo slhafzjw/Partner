@@ -95,7 +95,11 @@ interface ActivateModel {
      * 对应调用的模型配置名称
      */
     fun modelKey(): String {
-        return javaClass.simpleName
+        return if (this is AbstractAgentModule) {
+            this.moduleName
+        } else {
+            javaClass.simpleName
+        }
     }
 
     fun withBasicPrompt(): Boolean
