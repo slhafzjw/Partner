@@ -3,6 +3,7 @@ package work.slhaf.partner.api.agent.factory.capability;
 import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
+import work.slhaf.partner.api.agent.factory.AgentComponent;
 import work.slhaf.partner.api.agent.factory.capability.annotation.*;
 import work.slhaf.partner.api.agent.factory.capability.exception.*;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
@@ -40,7 +41,7 @@ import static work.slhaf.partner.api.agent.util.AgentUtil.methodSignature;
  *     </li>
  *     <li>
  *         <p>{@link CapabilityCheckFactory#checkInjectCapability()}</p>
- *         检查 {@link InjectCapability} 注解是否只用在 {@link CapabilityHolder} 所标识类的字段上。{@link AgentRunningModule} 与 {@link AgentSubModule} 已经被 {@link CapabilityHolder} 标注
+ *         检查 {@link InjectCapability} 注解是否只用在 {@link AgentComponent} 所标识类的字段上。{@link AgentRunningModule} 与 {@link AgentSubModule} 已经被 {@link AgentComponent} 标注
  *     </li>
  * </ol>
  *
@@ -92,13 +93,13 @@ public class CapabilityCheckFactory extends AgentBaseFactory {
     }
 
     /**
-     * 检查<code>@InjectCapability</code>注解是否只用在<code>@CapabilityHolder</code>所标识类的字段上
+     * 检查<code>@InjectCapability</code>注解是否只用在<code>@AgentComponent</code>所标识类的字段上
      */
     private void checkInjectCapability() {
         reflections.getFieldsAnnotatedWith(InjectCapability.class).forEach(field -> {
             Class<?> declaringClass = field.getDeclaringClass();
-            if (!isAssignableFromAnnotation(declaringClass, CapabilityHolder.class)) {
-                throw new UnMatchedCapabilityException("InjectCapability 注解只能用于 CapabilityHolder 注解所在类，检查该类是否使用了@CapabilityHolder注解或者受其标注的注解或父类: " + declaringClass);
+            if (!isAssignableFromAnnotation(declaringClass, AgentComponent.class)) {
+                throw new UnMatchedCapabilityException("InjectCapability 注解只能用于 AgentComponent 注解所在类，检查该类是否使用了@CapabilityHolder注解或者受其标注的注解或父类: " + declaringClass);
             }
         });
     }

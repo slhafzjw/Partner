@@ -3,6 +3,7 @@ package work.slhaf.partner.api.agent.factory.capability;
 import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
+import work.slhaf.partner.api.agent.factory.AgentComponent;
 import work.slhaf.partner.api.agent.factory.capability.annotation.*;
 import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityCoreInstancesCreateFailedException;
 import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityFactoryExecuteFailedException;
@@ -86,7 +87,7 @@ public class CapabilityRegisterFactory extends AgentBaseFactory {
     }
 
     private void setCapabilityHolderInstances() {
-        Set<Class<?>> collect = reflections.getTypesAnnotatedWith(CapabilityHolder.class).stream()
+        Set<Class<?>> collect = reflections.getTypesAnnotatedWith(AgentComponent.class).stream()
                 .filter(ClassUtil::isNormalClass)
                 .filter(clazz -> !capabilityHolderInstances.containsKey(clazz))
                 .collect(Collectors.toSet());
