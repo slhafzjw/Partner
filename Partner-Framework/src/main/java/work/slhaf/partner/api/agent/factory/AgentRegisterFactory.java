@@ -4,10 +4,8 @@ import org.reflections.util.ClasspathHelper;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityRegisterFactory;
-import work.slhaf.partner.api.agent.factory.component.ModuleCheckFactory;
+import work.slhaf.partner.api.agent.factory.component.AgentComponentRegisterFactory;
 import work.slhaf.partner.api.agent.factory.component.ModuleInitHookExecuteFactory;
-import work.slhaf.partner.api.agent.factory.component.ModuleProxyFactory;
-import work.slhaf.partner.api.agent.factory.component.ModuleRegisterFactory;
 import work.slhaf.partner.api.agent.factory.config.ConfigLoaderFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.exception.ExternalModuleLoadFailedException;
@@ -40,11 +38,8 @@ public class AgentRegisterFactory {
         //流程
         //0. 加载配置
         new ConfigLoaderFactory().execute(registerContext);
-        //1. 注册并检查Module
-        new ModuleCheckFactory().execute(registerContext);
-        new ModuleRegisterFactory().execute(registerContext);
-        //2. 为module通过动态代理添加PostHook逻辑并进行实例化
-        new ModuleProxyFactory().execute(registerContext);
+        //1. 收集所有的 AgentComponent 实例
+        new AgentComponentRegisterFactory().execute(registerContext);
         //3. 加载检查Capability层内容后进行能力层的内容注册
         new CapabilityCheckFactory().execute(registerContext);
         new CapabilityRegisterFactory().execute(registerContext);

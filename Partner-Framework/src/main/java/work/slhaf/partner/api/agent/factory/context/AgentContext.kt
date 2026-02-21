@@ -38,14 +38,12 @@ object AgentContext {
         _capabilities[type] = value
     }
 
-    fun <T> addAdditionalComponent(type: Class<T>, value: T): Boolean {
+    fun addAdditionalComponent(instance: Any): Boolean {
+        val type = instance::class.java
         if (type.isAnnotationPresent(AgentComponent::class.java)) {
             return false
         }
-        if (value == null) {
-            return false
-        }
-        _additionalComponents.add(value)
+        _additionalComponents.add(instance)
         return true
     }
 
@@ -64,7 +62,7 @@ sealed class ModuleContextData<out T : AbstractAgentModule> {
     abstract val clazz: Class<out T>
     abstract val instance: T
     abstract val launchTime: ZonedDateTime
-    abstract val modelInfo: ModelInfo
+    abstract val modelInfo: ModelInfo?
 
     val metadata = mutableMapOf<String, Any>()
 
@@ -72,7 +70,7 @@ sealed class ModuleContextData<out T : AbstractAgentModule> {
         override val clazz: Class<T>,
         override val instance: T,
         override val launchTime: ZonedDateTime,
-        override val modelInfo: ModelInfo,
+        override val modelInfo: ModelInfo?,
 
         val order: Int,
         val enabled: Boolean
@@ -82,7 +80,7 @@ sealed class ModuleContextData<out T : AbstractAgentModule> {
         override val clazz: Class<T>,
         override val instance: T,
         override val launchTime: ZonedDateTime,
-        override val modelInfo: ModelInfo,
+        override val modelInfo: ModelInfo?,
 
         val injectTarget: MutableSet<AbstractAgentModule> = mutableSetOf()
     ) : ModuleContextData<T>()
@@ -91,7 +89,7 @@ sealed class ModuleContextData<out T : AbstractAgentModule> {
         override val clazz: Class<T>,
         override val instance: T,
         override val launchTime: ZonedDateTime,
-        override val modelInfo: ModelInfo,
+        override val modelInfo: ModelInfo?,
 
         val injectTarget: MutableSet<AbstractAgentModule> = mutableSetOf()
     ) : ModuleContextData<T>()
