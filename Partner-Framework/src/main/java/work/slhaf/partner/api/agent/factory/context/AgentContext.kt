@@ -1,6 +1,7 @@
 package work.slhaf.partner.api.agent.factory.context
 
 import com.alibaba.fastjson2.JSONArray
+import com.alibaba.fastjson2.JSONObject
 import work.slhaf.partner.api.agent.factory.AgentComponent
 import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule
 import java.time.ZonedDateTime
@@ -24,7 +25,10 @@ object AgentContext {
     val additionalComponents: Set<Any>
         get() = _additionalComponents
 
-    val metadata: MutableMap<String, Any> = mutableMapOf()
+    private val _metadata: MutableMap<String, MetaDataContent> = mutableMapOf()
+
+    val metadata: Map<String, MetaDataContent>
+        get() = _metadata
 
     fun addModule(name: String, module: ModuleContextData<AbstractAgentModule>) {
         _modules[name] = module
@@ -44,6 +48,16 @@ object AgentContext {
         _additionalComponents.add(value)
         return true
     }
+
+    fun <T> addMetadata(name: String, type: Class<T>, value: T) {
+        val content = MetaDataContent(type, JSONObject.toJSONString(value))
+        _metadata[name] = content
+    }
+
+    data class MetaDataContent(
+        val clazz: Class<*>,
+        val value: String
+    )
 }
 
 sealed class ModuleContextData<out T : AbstractAgentModule> {
