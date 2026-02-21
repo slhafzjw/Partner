@@ -16,9 +16,9 @@ import work.slhaf.partner.api.chat.pojo.Message
 import java.lang.reflect.Modifier
 import java.time.ZonedDateTime
 
-class AgentComponentRegisterFactory : AgentBaseFactory() {
+class ComponentRegisterFactory : AgentBaseFactory() {
     companion object {
-        private val log = LoggerFactory.getLogger(AgentComponentRegisterFactory::class.java)
+        private val log = LoggerFactory.getLogger(ComponentRegisterFactory::class.java)
     }
 
     override fun execute(context: AgentRegisterContext) {
