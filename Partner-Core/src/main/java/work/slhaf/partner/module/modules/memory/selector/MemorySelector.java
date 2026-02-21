@@ -4,7 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
+import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;

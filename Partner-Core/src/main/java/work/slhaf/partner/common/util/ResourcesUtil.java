@@ -15,7 +15,7 @@ public class ResourcesUtil {
 
     public static class Prompt {
         private static final String SELF_AWARENESS_PATH = "prompt/basic_prompt.json";
-        private static final String MODULE_PROMPT_PREFIX_PATH = "prompt/module/";
+        private static final String MODULE_PROMPT_PREFIX_PATH = "prompt/component/";
 
         public static List<Message> loadPromptWithSelfAwareness(String modelKey, String promptType) {
             //加载人格引导

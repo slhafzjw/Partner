@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.factory.module.pojo;
+package work.slhaf.partner.api.agent.factory.component.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

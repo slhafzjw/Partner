@@ -2,8 +2,8 @@ package work.slhaf.partner.module.modules.action.interventor.evaluator;
 
 import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;

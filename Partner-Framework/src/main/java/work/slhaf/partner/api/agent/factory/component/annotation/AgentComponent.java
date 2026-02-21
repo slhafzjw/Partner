@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.factory;
+package work.slhaf.partner.api.agent.factory.component.annotation;
 
 import java.lang.annotation.*;
 

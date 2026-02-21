@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.factory.module.exception;
+package work.slhaf.partner.api.agent.factory.component.exception;
 
 public class ModuleFactoryInitFailedException extends RuntimeException {
     public ModuleFactoryInitFailedException(String message) {

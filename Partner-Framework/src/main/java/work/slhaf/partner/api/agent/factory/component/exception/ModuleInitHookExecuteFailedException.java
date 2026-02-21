@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.factory.module.exception;
+package work.slhaf.partner.api.agent.factory.component.exception;
 
 public class ModuleInitHookExecuteFailedException extends ModuleFactoryInitFailedException {
     public ModuleInitHookExecuteFailedException(String message) {

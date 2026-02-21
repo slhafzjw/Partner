@@ -2,8 +2,8 @@ package work.slhaf.partner.api.agent.factory.context
 
 import com.alibaba.fastjson2.JSONArray
 import com.alibaba.fastjson2.JSONObject
-import work.slhaf.partner.api.agent.factory.AgentComponent
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule
+import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
 import java.time.ZonedDateTime
 
 object AgentContext {

@@ -6,9 +6,9 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.capability.annotation.ToCoordinated;
 import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityProxySetFailedException;
+import work.slhaf.partner.api.agent.factory.component.ModuleInitHookExecuteFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.ModuleInitHookExecuteFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;

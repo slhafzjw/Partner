@@ -1,12 +1,12 @@
-package work.slhaf.partner.api.agent.factory.module;
+package work.slhaf.partner.api.agent.factory.component;
 
 import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
+import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
+import work.slhaf.partner.api.agent.factory.component.annotation.Init;
+import work.slhaf.partner.api.agent.factory.component.exception.ModuleCheckException;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
-import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.module.annotation.Init;
-import work.slhaf.partner.api.agent.factory.module.exception.ModuleCheckException;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 
 import java.lang.reflect.Method;

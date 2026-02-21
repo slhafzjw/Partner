@@ -1,17 +1,17 @@
-package work.slhaf.partner.api.agent.factory.module;
+package work.slhaf.partner.api.agent.factory.component;
 
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityCheckFactory;
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
+import work.slhaf.partner.api.agent.factory.component.exception.ModuleInstanceGenerateFailedException;
+import work.slhaf.partner.api.agent.factory.component.exception.ModuleProxyGenerateFailedException;
+import work.slhaf.partner.api.agent.factory.component.pojo.BaseMetaModule;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaModule;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
-import work.slhaf.partner.api.agent.factory.module.exception.ModuleInstanceGenerateFailedException;
-import work.slhaf.partner.api.agent.factory.module.exception.ModuleProxyGenerateFailedException;
-import work.slhaf.partner.api.agent.factory.module.pojo.BaseMetaModule;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 
 import java.util.Arrays;
 import java.util.HashMap;

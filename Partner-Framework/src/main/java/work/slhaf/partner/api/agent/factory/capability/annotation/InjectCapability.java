@@ -1,6 +1,6 @@
 package work.slhaf.partner.api.agent.factory.capability.annotation;
 
-import work.slhaf.partner.api.agent.factory.AgentComponent;
+import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

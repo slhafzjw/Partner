@@ -2,8 +2,8 @@ package work.slhaf.partner.module.modules.action.dispatcher;
 
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.module.annotation.Init;
-import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule;
+import work.slhaf.partner.api.agent.factory.component.annotation.Init;
+import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ExecutableAction;

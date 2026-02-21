@@ -3,10 +3,10 @@ package work.slhaf.partner.api.agent.runtime.config;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaModule;
 import work.slhaf.partner.api.agent.factory.config.exception.ConfigUpdateFailedException;
 import work.slhaf.partner.api.agent.factory.config.exception.PromptNotExistException;
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.util.*;

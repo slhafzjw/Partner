@@ -3,11 +3,11 @@ package work.slhaf.partner.api.agent.factory.capability;
 import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
-import work.slhaf.partner.api.agent.factory.AgentComponent;
 import work.slhaf.partner.api.agent.factory.capability.annotation.*;
 import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityCoreInstancesCreateFailedException;
 import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityFactoryExecuteFailedException;
 import work.slhaf.partner.api.agent.factory.capability.exception.DuplicateMethodException;
+import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
 

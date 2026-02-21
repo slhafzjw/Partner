@@ -4,11 +4,11 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaModule;
 import work.slhaf.partner.api.agent.factory.config.exception.*;
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
 import work.slhaf.partner.api.agent.factory.config.pojo.PrimaryModelConfig;
 import work.slhaf.partner.api.agent.factory.config.pojo.PrimaryModelPrompt;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
 import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.io.File;

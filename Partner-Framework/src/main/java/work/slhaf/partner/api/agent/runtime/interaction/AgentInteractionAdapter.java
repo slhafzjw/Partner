@@ -1,6 +1,6 @@
 package work.slhaf.partner.api.agent.runtime.interaction;
 
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaModule;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.agent.runtime.interaction.data.AgentInputData;
 import work.slhaf.partner.api.agent.runtime.interaction.data.AgentOutputData;

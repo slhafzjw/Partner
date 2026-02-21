@@ -1,9 +1,9 @@
-package work.slhaf.partner.api.agent.factory.module.abstracts
+package work.slhaf.partner.api.agent.factory.component.abstracts
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import work.slhaf.partner.api.agent.factory.AgentComponent
-import work.slhaf.partner.api.agent.factory.module.annotation.Init
+import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
+import work.slhaf.partner.api.agent.factory.component.annotation.Init
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext
 import work.slhaf.partner.api.chat.ChatClient

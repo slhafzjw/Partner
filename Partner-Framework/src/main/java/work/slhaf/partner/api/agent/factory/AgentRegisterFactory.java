@@ -4,14 +4,14 @@ import org.reflections.util.ClasspathHelper;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityRegisterFactory;
+import work.slhaf.partner.api.agent.factory.component.ModuleCheckFactory;
+import work.slhaf.partner.api.agent.factory.component.ModuleInitHookExecuteFactory;
+import work.slhaf.partner.api.agent.factory.component.ModuleProxyFactory;
+import work.slhaf.partner.api.agent.factory.component.ModuleRegisterFactory;
 import work.slhaf.partner.api.agent.factory.config.ConfigLoaderFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.exception.ExternalModuleLoadFailedException;
 import work.slhaf.partner.api.agent.factory.exception.ExternalModulePathNotExistException;
-import work.slhaf.partner.api.agent.factory.module.ModuleCheckFactory;
-import work.slhaf.partner.api.agent.factory.module.ModuleInitHookExecuteFactory;
-import work.slhaf.partner.api.agent.factory.module.ModuleProxyFactory;
-import work.slhaf.partner.api.agent.factory.module.ModuleRegisterFactory;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.AgentRunningFlow;
 

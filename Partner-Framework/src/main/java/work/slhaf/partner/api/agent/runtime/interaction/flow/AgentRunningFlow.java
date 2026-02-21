@@ -1,6 +1,6 @@
 package work.slhaf.partner.api.agent.runtime.interaction.flow;
 
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaModule;
 import work.slhaf.partner.api.agent.runtime.exception.AgentRuntimeException;
 import work.slhaf.partner.api.agent.runtime.exception.GlobalExceptionHandler;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext;

@@ -309,7 +309,7 @@ class ActionSchedulerTest {
     private fun wheelStateEnum(name: String): Any {
         @Suppress("UNCHECKED_CAST")
         val clazz = Class.forName(
-            $$"work.slhaf.partner.module.modules.action.dispatcher.scheduler.ActionScheduler$TimeWheel$WheelState"
+            $$"work.slhaf.partner.component.modules.action.dispatcher.scheduler.ActionScheduler$TimeWheel$WheelState"
         ) as Class<out Enum<*>>
         return java.lang.Enum.valueOf(clazz, name)
     }

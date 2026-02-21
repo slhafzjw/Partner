@@ -12,9 +12,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule
-import work.slhaf.partner.api.agent.factory.module.annotation.Init
-import work.slhaf.partner.api.agent.factory.module.annotation.InjectModule
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule
+import work.slhaf.partner.api.agent.factory.component.annotation.Init
+import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule
 import work.slhaf.partner.core.action.ActionCapability
 import work.slhaf.partner.core.action.ActionCore
 import work.slhaf.partner.core.action.entity.Schedulable

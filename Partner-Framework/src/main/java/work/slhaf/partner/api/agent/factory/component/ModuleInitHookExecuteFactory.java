@@ -1,16 +1,16 @@
-package work.slhaf.partner.api.agent.factory.module;
+package work.slhaf.partner.api.agent.factory.component;
 
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.AgentRegisterFactory;
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.api.agent.factory.component.annotation.Init;
+import work.slhaf.partner.api.agent.factory.component.exception.ModuleInitHookExecuteFailedException;
+import work.slhaf.partner.api.agent.factory.component.pojo.BaseMetaModule;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaMethod;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaModule;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.Init;
-import work.slhaf.partner.api.agent.factory.module.exception.ModuleInitHookExecuteFailedException;
-import work.slhaf.partner.api.agent.factory.module.pojo.BaseMetaModule;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaMethod;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.util.AgentUtil;
 
 import java.lang.reflect.InvocationTargetException;

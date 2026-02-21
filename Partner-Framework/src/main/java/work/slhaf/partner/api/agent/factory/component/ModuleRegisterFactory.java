@@ -1,12 +1,12 @@
-package work.slhaf.partner.api.agent.factory.module;
+package work.slhaf.partner.api.agent.factory.component;
 
 import cn.hutool.core.util.ClassUtil;
 import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaModule;
+import work.slhaf.partner.api.agent.factory.component.pojo.MetaSubModule;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 
 import java.util.Comparator;
 import java.util.List;
