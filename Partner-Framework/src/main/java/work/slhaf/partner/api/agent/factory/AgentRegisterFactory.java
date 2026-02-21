@@ -4,7 +4,8 @@ import org.reflections.util.ClasspathHelper;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityRegisterFactory;
-import work.slhaf.partner.api.agent.factory.component.AgentComponentRegisterFactory;
+import work.slhaf.partner.api.agent.factory.component.ComponentAnnotationValidatorFactory;
+import work.slhaf.partner.api.agent.factory.component.ComponentRegisterFactory;
 import work.slhaf.partner.api.agent.factory.component.ModuleInitHookExecuteFactory;
 import work.slhaf.partner.api.agent.factory.config.ConfigLoaderFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
@@ -38,8 +39,10 @@ public class AgentRegisterFactory {
         //流程
         //0. 加载配置
         new ConfigLoaderFactory().execute(registerContext);
-        //1. 收集所有的 AgentComponent 实例
-        new AgentComponentRegisterFactory().execute(registerContext);
+        //1. 校验 Component 级别注解是否合规，避免注入到异常位置
+        new ComponentAnnotationValidatorFactory().execute(registerContext);
+        //2. 收集所有的 AgentComponent 实例
+        new ComponentRegisterFactory().execute(registerContext);
         //3. 加载检查Capability层内容后进行能力层的内容注册
         new CapabilityCheckFactory().execute(registerContext);
         new CapabilityRegisterFactory().execute(registerContext);
