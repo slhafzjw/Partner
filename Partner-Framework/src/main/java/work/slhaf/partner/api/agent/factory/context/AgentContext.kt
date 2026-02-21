@@ -15,9 +15,9 @@ object AgentContext {
         get() = _modules
 
     private val _capabilities =
-        mutableMapOf<Class<*>, Any?>()
+        mutableMapOf<Class<*>, Any>()
 
-    val capabilities: Map<Class<*>, Any?>
+    val capabilities: Map<Class<*>, Any>
         get() = _capabilities
 
     private val _additionalComponents = mutableSetOf<Any>()
@@ -34,8 +34,8 @@ object AgentContext {
         _modules[name] = module
     }
 
-    fun <T> addCapability(type: Class<T>, value: T) {
-        _capabilities[type] = value
+    fun addCapability(value: Any) {
+        _capabilities[value::class.java] = value
     }
 
     fun addAdditionalComponent(instance: Any): Boolean {
