@@ -49,8 +49,8 @@ object AgentContext {
         return true
     }
 
-    fun <T> addMetadata(name: String, type: Class<T>, value: T) {
-        val content = MetaDataContent(type, JSONObject.toJSONString(value))
+    fun addMetadata(name: String, value: Any) {
+        val content = MetaDataContent(value::class.java, JSONObject.toJSONString(value))
         _metadata[name] = content
     }
 

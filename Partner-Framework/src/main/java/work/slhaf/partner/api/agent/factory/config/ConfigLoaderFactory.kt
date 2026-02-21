@@ -1,77 +1,75 @@
-package work.slhaf.partner.api.agent.factory.config;
+package work.slhaf.partner.api.agent.factory.config
 
-import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
-import work.slhaf.partner.api.agent.factory.config.exception.ConfigNotExistException;
-import work.slhaf.partner.api.agent.factory.config.exception.PromptNotExistException;
-import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
-import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
-import work.slhaf.partner.api.agent.factory.context.ConfigFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.ModuleCheckFactory;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
-import work.slhaf.partner.api.agent.runtime.config.FileAgentConfigManager;
-import work.slhaf.partner.api.chat.pojo.Message;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import org.slf4j.LoggerFactory
+import work.slhaf.partner.api.agent.factory.AgentBaseFactory
+import work.slhaf.partner.api.agent.factory.config.exception.ConfigNotExistException
+import work.slhaf.partner.api.agent.factory.config.exception.PromptNotExistException
+import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader
+import work.slhaf.partner.api.agent.runtime.config.FileAgentConfigLoader
+import java.lang.reflect.Modifier
 
 /**
  * <h2>Agent启动流程 0</h2>
- * <p>
- * 通过指定的 {@link AgentConfigManager} 或者默认的 {@link FileAgentConfigManager} 加载配置文件
- * <p/>
  *
- * <p>下一步流程请参阅{@link ModuleCheckFactory}</p>
+ * 通过指定的 [AgentConfigLoader] 或默认的 [FileAgentConfigLoader] 加载配置文件。
  */
-@Slf4j
-public class ConfigLoaderFactory extends AgentBaseFactory {
+class ConfigLoaderFactory : AgentBaseFactory() {
 
-    private AgentConfigManager agentConfigManager;
-    private HashMap<String, ModelConfig> modelConfigMap;
-    private HashMap<String, List<Message>> modelPromptMap;
-
-    @Override
-    protected void setVariables(AgentRegisterContext context) {
-        ConfigFactoryContext factoryContext = context.getConfigFactoryContext();
-        modelConfigMap = factoryContext.getModelConfigMap();
-        modelPromptMap = factoryContext.getModelPromptMap();
-
-        if (AgentConfigManager.INSTANCE == null) {
-            AgentConfigManager.setINSTANCE(new FileAgentConfigManager());
-        }
-
-        agentConfigManager = AgentConfigManager.INSTANCE;
+    companion object {
+        private val log = LoggerFactory.getLogger(ConfigLoaderFactory::class.java)
     }
 
-    @Override
-    protected void run() {
-        agentConfigManager.load();
-        modelConfigMap.putAll(agentConfigManager.getModelConfigMap());
-        modelPromptMap.putAll(agentConfigManager.getModelPromptMap());
-        check();
+    override fun execute(context: AgentRegisterContext) {
+        val agentConfigLoader = AgentConfigLoader.INSTANCE ?: FileAgentConfigLoader().also {
+            AgentConfigLoader.INSTANCE = it
+        }
+
+        agentConfigLoader.load()
+
+        val configFactoryContext = context.configFactoryContext
+        configFactoryContext.modelConfigMap.putAll(agentConfigLoader.modelConfigMap)
+        configFactoryContext.modelPromptMap.putAll(agentConfigLoader.modelPromptMap)
+
+        check(configFactoryContext.modelConfigMap.keys, configFactoryContext.modelPromptMap.keys)
+        collectLoaderMetadata(context, agentConfigLoader)
     }
 
-    /**
-     * 对模型Config与Prompt分别进行检验,除了都必须包含default外，还需要确保数量、key一致，毕竟是模型配置与提示词
-     */
-    private void check() {
-        log.info("执行config与prompt检测...");
-        if (!modelConfigMap.containsKey("default")) {
-            throw new ConfigNotExistException("缺少默认配置! 需确保存在一个模型配置的key为`default`");
+    private fun check(configKeys: Set<String>, promptKeys: Set<String>) {
+        log.info("执行config与prompt检测...")
+        if (!configKeys.contains("default")) {
+            throw ConfigNotExistException("缺少默认配置! 需确保存在一个模型配置的key为`default`")
         }
-        if (!modelPromptMap.containsKey("basic")) {
-            throw new PromptNotExistException("缺少基础Prompt! 需要确保存在key为basic的Prompt文件，它将与其他Prompt共同作用于模块节点。");
+        if (!promptKeys.contains("basic")) {
+            throw PromptNotExistException("缺少基础Prompt! 需要确保存在key为basic的Prompt文件，它将与其他Prompt共同作用于模块节点。")
         }
-        Set<String> configKeySet = new HashSet<>(modelConfigMap.keySet());
-        configKeySet.remove("default");
-        Set<String> promptKeySet = new HashSet<>(modelPromptMap.keySet());
-        promptKeySet.remove("basic");
+
+        val configKeySet = configKeys.toMutableSet().apply { remove("default") }
+        val promptKeySet = promptKeys.toMutableSet().apply { remove("basic") }
         if (!promptKeySet.containsAll(configKeySet)) {
-            log.warn("存在未被提示词包含的模型配置，该配置将无法生效!");
+            log.warn("存在未被提示词包含的模型配置，该配置将无法生效!")
         }
-        //检查提示词数量与`ActivateModel`的实现数量是否一致
-        log.info("检测完毕.");
+        log.info("检测完毕.")
+    }
+
+    private fun collectLoaderMetadata(context: AgentRegisterContext, loader: AgentConfigLoader) {
+        val fieldNamesInBaseType = AgentConfigLoader::class.java.declaredFields
+            .asSequence()
+            .filterNot { it.isSynthetic }
+            .map { it.name }
+            .toSet()
+
+        val implementationType = loader::class.java
+        implementationType.declaredFields
+            .asSequence()
+            .filterNot { it.isSynthetic }
+            .filterNot { fieldNamesInBaseType.contains(it.name) }
+            .filterNot { !Modifier.isStatic(it.modifiers) }
+            .forEach { field ->
+                field.isAccessible = true
+                val value = field.get(loader)
+                context.agentContext.addMetadata(field.name, value)
+            }
     }
 }
+
