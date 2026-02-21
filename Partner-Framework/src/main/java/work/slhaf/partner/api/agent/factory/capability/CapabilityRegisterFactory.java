@@ -9,8 +9,6 @@ import work.slhaf.partner.api.agent.factory.capability.exception.CapabilityFacto
 import work.slhaf.partner.api.agent.factory.capability.exception.DuplicateMethodException;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

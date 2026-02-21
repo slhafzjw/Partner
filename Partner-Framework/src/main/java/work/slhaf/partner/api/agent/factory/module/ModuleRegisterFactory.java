@@ -5,11 +5,6 @@ import org.reflections.Reflections;
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.ModuleFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.CoreModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
 import work.slhaf.partner.api.agent.factory.module.pojo.MetaSubModule;
 

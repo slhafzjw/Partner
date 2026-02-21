@@ -2,7 +2,6 @@ package work.slhaf.partner.api.agent.factory.module.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentSubModule;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

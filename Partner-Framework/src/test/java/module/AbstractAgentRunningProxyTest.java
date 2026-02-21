@@ -4,7 +4,6 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.matcher.ElementMatchers;
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.api.agent.factory.module.abstracts.AbstractAgentRunningModule;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;

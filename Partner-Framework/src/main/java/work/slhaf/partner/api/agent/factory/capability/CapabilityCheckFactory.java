@@ -7,8 +7,6 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.*;
 import work.slhaf.partner.api.agent.factory.capability.exception.*;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.context.CapabilityFactoryContext;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule;
-import work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule;
 import work.slhaf.partner.api.agent.util.AgentUtil;
 
 import java.lang.reflect.Method;
