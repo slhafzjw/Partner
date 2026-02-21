@@ -18,6 +18,8 @@ object AgentContext {
     val capabilities: Map<Class<*>, Any?>
         get() = _capabilities
 
+    val metadata: MutableMap<String, Any> = mutableMapOf()
+
     fun addModule(name: String, module: ModuleContextData<AbstractAgentModule>) {
         _modules[name] = module
     }
