@@ -1,6 +1,5 @@
 package work.slhaf.partner.api.agent.factory;
 
-import cn.hutool.core.bean.BeanUtil;
 import org.reflections.util.ClasspathHelper;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityCheckFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectFactory;
@@ -13,9 +12,7 @@ import work.slhaf.partner.api.agent.factory.module.ModuleCheckFactory;
 import work.slhaf.partner.api.agent.factory.module.ModuleInitHookExecuteFactory;
 import work.slhaf.partner.api.agent.factory.module.ModuleProxyFactory;
 import work.slhaf.partner.api.agent.factory.module.ModuleRegisterFactory;
-import work.slhaf.partner.api.agent.factory.module.pojo.MetaModule;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
-import work.slhaf.partner.api.agent.runtime.data.AgentContext;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.AgentRunningFlow;
 
 import java.io.File;
@@ -27,7 +24,7 @@ import java.util.List;
  * <h2>Agent 注册工厂</h2>
  *
  * <p>
- * 具体流程依次按照 {@link AgentRegisterFactory#launch(String)} 方法顺序执行，最终将执行模块列表对应实例交给 {@link AgentConfigManager} ，传递给 {@link AgentRunningFlow} 针对交互做出调用
+ * 具体流程依次按照 {@link AgentRegisterFactory#launch(String)} 方法顺序执行，最终将执行模块列表对应实例交给 {@link AgentConfigLoader} ，传递给 {@link AgentRunningFlow} 针对交互做出调用
  * <p/>
  */
 public class AgentRegisterFactory {
@@ -56,10 +53,6 @@ public class AgentRegisterFactory {
         //. 执行模块PreHook逻辑
         new ModuleInitHookExecuteFactory().execute(registerContext);
 
-        List<MetaModule> moduleList = registerContext.getModuleFactoryContext().getAgentModuleList();
-        AgentConfigManager.INSTANCE.moduleEnabledStatusFilterAndRecord(moduleList);
-
-        BeanUtil.copyProperties(registerContext, AgentContext.INSTANCE);
     }
 
 

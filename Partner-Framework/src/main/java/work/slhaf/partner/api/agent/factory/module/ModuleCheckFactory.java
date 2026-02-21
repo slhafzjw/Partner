@@ -7,7 +7,7 @@ import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.module.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.module.annotation.Init;
 import work.slhaf.partner.api.agent.factory.module.exception.ModuleCheckException;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
@@ -106,7 +106,7 @@ public class ModuleCheckFactory extends AgentBaseFactory {
                 ActivateModel instance = type.getConstructor().newInstance();
                 modelKeySet.add(instance.modelKey());
             }
-            Set<String> promptKeySet = AgentConfigManager.INSTANCE.getModelPromptMap().keySet();
+            Set<String> promptKeySet = AgentConfigLoader.INSTANCE.getModelPromptMap().keySet();
             if (!promptKeySet.containsAll(modelKeySet)) {
                 modelKeySet.removeAll(promptKeySet);
                 throw new ModuleCheckException("存在未配置Prompt的ActivateModel实现! 缺少Prompt的ModelKey列表: " + modelKeySet);
