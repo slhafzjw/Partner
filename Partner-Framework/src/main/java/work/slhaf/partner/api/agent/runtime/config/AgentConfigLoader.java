@@ -13,11 +13,11 @@ import java.util.*;
 
 @Slf4j
 @Data
-public abstract class AgentConfigManager {
+public abstract class AgentConfigLoader {
 
     private static final String DEFAULT_KEY = "default";
     @Setter
-    public static AgentConfigManager INSTANCE;
+    public static AgentConfigLoader INSTANCE;
     protected HashMap<String, ModelConfig> modelConfigMap;
     protected HashMap<String, List<Message>> modelPromptMap;
     protected HashMap<String, Boolean> moduleEnabledStatus;

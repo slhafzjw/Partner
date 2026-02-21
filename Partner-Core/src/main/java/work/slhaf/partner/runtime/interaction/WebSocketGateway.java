@@ -8,10 +8,10 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.agent.runtime.interaction.AgentGateway;
 import work.slhaf.partner.api.agent.runtime.interaction.AgentInteractionAdapter;
-import work.slhaf.partner.common.config.PartnerAgentConfigManager;
+import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.runtime.interaction.data.PartnerInputData;
 import work.slhaf.partner.runtime.interaction.data.PartnerOutputData;
@@ -33,7 +33,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<Pa
     private final ConcurrentHashMap<WebSocket, Long> lastPongTimes = new ConcurrentHashMap<>();
 
     public WebSocketGateway() {
-        this(((PartnerAgentConfigManager) AgentConfigManager.INSTANCE).getConfig().getWebSocketConfig().getPort());
+        this(((PartnerAgentConfigLoader) AgentConfigLoader.INSTANCE).getConfig().getWebSocketConfig().getPort());
     }
 
     private WebSocketGateway(int port) {

@@ -4,9 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.common.config.Config.VectorConfig;
-import work.slhaf.partner.common.config.PartnerAgentConfigManager;
+import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
 import work.slhaf.partner.common.exception.ServiceLoadFailedException;
 import work.slhaf.partner.common.vector.exception.VectorClientExecuteException;
 import work.slhaf.partner.common.vector.exception.VectorClientLoadFailedException;
@@ -18,7 +18,7 @@ public abstract class VectorClient {
     public static VectorClient INSTANCE;
 
     public static void load() {
-        PartnerAgentConfigManager configManager = (PartnerAgentConfigManager) AgentConfigManager.INSTANCE;
+        PartnerAgentConfigLoader configManager = (PartnerAgentConfigLoader) AgentConfigLoader.INSTANCE;
         VectorConfig vectorConfig = configManager.getConfig().getVectorConfig();
         int type = vectorConfig.getType();
         try {

@@ -22,7 +22,7 @@ import java.util.List;
  * 将从当前运行目录的config文件夹下创建并读取配置
  */
 @Slf4j
-public class FileAgentConfigManager extends AgentConfigManager {
+public class FileAgentConfigLoader extends AgentConfigLoader {
 
     protected static final String CONFIG_DIR = "./config/";
     protected static final String MODEL_CONFIG_DIR = "./config/model/";

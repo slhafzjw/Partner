@@ -2,7 +2,7 @@ package work.slhaf.partner.api.agent;
 
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.AgentRegisterFactory;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.agent.runtime.exception.AgentExceptionCallback;
 import work.slhaf.partner.api.agent.runtime.exception.AgentLaunchFailedException;
 import work.slhaf.partner.api.agent.runtime.exception.GlobalExceptionHandler;
@@ -29,7 +29,7 @@ public final class Agent {
     }
 
     public interface AgentConfigManagerStep {
-        AgentGatewayStep setAgentConfigManager(Class<? extends AgentConfigManager> agentConfigManager);
+        AgentGatewayStep setAgentConfigManager(Class<? extends AgentConfigLoader> agentConfigManager);
     }
 
     public interface AgentGatewayStep {
@@ -59,7 +59,7 @@ public final class Agent {
         private final Class<?> applicationClass;
         private final CountDownLatch latch = new CountDownLatch(1);
         private AgentGateway gateway;
-        private Class<? extends AgentConfigManager> agentConfigManagerClass;
+        private Class<? extends AgentConfigLoader> agentConfigManagerClass;
         private Class<? extends AgentGateway> gatewayClass;
         private Class<? extends AgentExceptionCallback> agentExceptionCallbackClass;
 
@@ -86,7 +86,7 @@ public final class Agent {
         }
 
         @Override
-        public AgentGatewayStep setAgentConfigManager(Class<? extends AgentConfigManager> agentConfigManager) {
+        public AgentGatewayStep setAgentConfigManager(Class<? extends AgentConfigLoader> agentConfigManager) {
             this.agentConfigManagerClass = agentConfigManager;
             return this;
         }
@@ -134,7 +134,7 @@ public final class Agent {
 
         private void beforeLaunch() {
             try {
-                AgentConfigManager.setINSTANCE(agentConfigManagerClass.getDeclaredConstructor().newInstance());
+                AgentConfigLoader.setINSTANCE(agentConfigManagerClass.getDeclaredConstructor().newInstance());
                 log.info("配置管理器设置完毕: {}", agentConfigManagerClass.getSimpleName());
                 GlobalExceptionHandler.setExceptionCallback(agentExceptionCallbackClass.getDeclaredConstructor().newInstance());
                 log.info("异常处理回调设置完毕: {}", agentExceptionCallbackClass.getSimpleName());

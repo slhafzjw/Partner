@@ -4,7 +4,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.api.agent.factory.AgentComponent
 import work.slhaf.partner.api.agent.factory.module.annotation.Init
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader
 import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext
 import work.slhaf.partner.api.chat.ChatClient
 import work.slhaf.partner.api.chat.constant.ChatConstant
@@ -47,7 +47,7 @@ interface ActivateModel {
 
     companion object {
         val modelMap: MutableMap<String, Model> = mutableMapOf()
-        private val configManager: AgentConfigManager = AgentConfigManager.INSTANCE
+        private val configManager: AgentConfigLoader = AgentConfigLoader.INSTANCE
     }
 
     @Init(order = -1)

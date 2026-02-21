@@ -342,8 +342,8 @@ public class LocalRunnerClient extends RunnerClient {
     @Override
     public JSONObject listSysDependencies() {
         // 先只列出系统/环境的 Python 依赖
-        // TODO 在 AgentConfigManager 内配置启用的脚本语言及对应的扩展名
-        // 这里的逻辑后续需要替换为“根据 AgentConfigManager 读取到的脚本语言启用情况，遍历并列出当前系统环境依赖”
+        // TODO 在 AgentConfigLoader 内配置启用的脚本语言及对应的扩展名
+        // 这里的逻辑后续需要替换为“根据 AgentConfigLoader 读取到的脚本语言启用情况，遍历并列出当前系统环境依赖”
         // 还需要将返回值调整为相应的数据类
         // 后续还需要将不同语言的处理逻辑分散到不同方法内，这里为了验证，先写死在当前方法
         JSONObject sysDependencies = new JSONObject();

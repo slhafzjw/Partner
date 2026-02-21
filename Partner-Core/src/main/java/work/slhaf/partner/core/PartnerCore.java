@@ -3,9 +3,9 @@ package work.slhaf.partner.core;
 import cn.hutool.core.bean.BeanUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigManager;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.common.entity.PersistableObject;
-import work.slhaf.partner.common.config.PartnerAgentConfigManager;
+import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -18,7 +18,7 @@ import static work.slhaf.partner.common.Constant.Path.MEMORY_DATA;
 @Slf4j
 public abstract class PartnerCore<T extends PartnerCore<T>> extends PersistableObject {
 
-    private final String id = ((PartnerAgentConfigManager) AgentConfigManager.INSTANCE).getConfig().getAgentId();
+    private final String id = ((PartnerAgentConfigLoader) AgentConfigLoader.INSTANCE).getConfig().getAgentId();
 
     public PartnerCore() throws IOException, ClassNotFoundException {
         createStorageDirectory();

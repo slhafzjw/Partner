@@ -4,7 +4,7 @@ import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.config.exception.ConfigNotExistException;
-import work.slhaf.partner.api.agent.runtime.config.FileAgentConfigManager;
+import work.slhaf.partner.api.agent.runtime.config.FileAgentConfigLoader;
 import work.slhaf.partner.common.exception.ConfigLoadFailedException;
 
 import java.io.File;
@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public final class PartnerAgentConfigManager extends FileAgentConfigManager {
+public final class PartnerAgentConfigLoader extends FileAgentConfigLoader {
 
     private static final String COMMON_CONFIG_FILE = CONFIG_DIR + "common_config.json";
 

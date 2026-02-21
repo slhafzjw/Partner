@@ -13,7 +13,7 @@ public class AgentRegisterContext {
     private Reflections reflections;
     private CapabilityFactoryContext capabilityFactoryContext = new CapabilityFactoryContext();
     private ConfigFactoryContext configFactoryContext = new ConfigFactoryContext();
-    private ModuleFactoryContext moduleFactoryContext = new ModuleFactoryContext();
+    private AgentContext agentContext = AgentContext.INSTANCE;
 
     public AgentRegisterContext(List<URL> urls) {
         reflections = new Reflections(new ConfigurationBuilder().setScanners(
