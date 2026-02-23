@@ -16,9 +16,9 @@ object AgentContext {
         get() = _modules
 
     private val _capabilities =
-        mutableMapOf<String, MutableSet<CapabilityImplementation>>()
+        mutableMapOf<String, CapabilityImplementation>()
 
-    val capabilities: Map<String, Set<CapabilityImplementation>>
+    val capabilities: Map<String, CapabilityImplementation>
         get() = _capabilities
 
     private val _additionalComponents = mutableSetOf<Any>()
@@ -36,9 +36,8 @@ object AgentContext {
     }
 
     fun addCapability(capability: String, instance: Any, methods: Map<String, Method>) {
-        val capabilityImpls = _capabilities.computeIfAbsent(capability) { mutableSetOf() }
         val newImpl = CapabilityImplementation(instance.javaClass, instance, methods)
-        capabilityImpls.add(newImpl)
+        _capabilities[capability] = newImpl
     }
 
     fun addAdditionalComponent(instance: Any): Boolean {
