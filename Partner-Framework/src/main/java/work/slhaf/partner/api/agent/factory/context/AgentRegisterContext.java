@@ -11,7 +11,6 @@ import java.util.List;
 @Data
 public class AgentRegisterContext {
     private Reflections reflections;
-    private CapabilityFactoryContext capabilityFactoryContext = new CapabilityFactoryContext();
     private ConfigFactoryContext configFactoryContext = new ConfigFactoryContext();
     private AgentContext agentContext = AgentContext.INSTANCE;
 
