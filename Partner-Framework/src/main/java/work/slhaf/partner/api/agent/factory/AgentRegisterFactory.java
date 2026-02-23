@@ -2,7 +2,7 @@ package work.slhaf.partner.api.agent.factory;
 
 import org.reflections.util.ClasspathHelper;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityAnnotationValidatorFactory;
-import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectFactory;
+import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectorFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityRegisterFactory;
 import work.slhaf.partner.api.agent.factory.component.ComponentAnnotationValidatorFactory;
 import work.slhaf.partner.api.agent.factory.component.ComponentInjectorFactory;
@@ -50,8 +50,8 @@ public class AgentRegisterFactory {
         new CapabilityAnnotationValidatorFactory().execute(registerContext);
         //5. 根据 Capability 相关的扫描结果构造 Capability 实例
         new CapabilityRegisterFactory().execute(registerContext);
-        //. 先一步注入Capability,避免因前hook逻辑存在针对能力的引用而报错
-        new CapabilityInjectFactory().execute(registerContext);
+        //6. 将 Capability 实例注入至各个 AgentComponent 中
+        new CapabilityInjectorFactory().execute(registerContext);
         //. 执行模块PreHook逻辑
         new ModuleInitHookExecuteFactory().execute(registerContext);
 
