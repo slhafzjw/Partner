@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONArray
 import com.alibaba.fastjson2.JSONObject
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
+import java.lang.reflect.Method
 import java.time.ZonedDateTime
 
 object AgentContext {
@@ -15,9 +16,9 @@ object AgentContext {
         get() = _modules
 
     private val _capabilities =
-        mutableMapOf<Class<*>, Any>()
+        mutableMapOf<String, MutableSet<CapabilityImplementation>>()
 
-    val capabilities: Map<Class<*>, Any>
+    val capabilities: Map<String, Set<CapabilityImplementation>>
         get() = _capabilities
 
     private val _additionalComponents = mutableSetOf<Any>()
@@ -34,8 +35,10 @@ object AgentContext {
         _modules[name] = module
     }
 
-    fun addCapability(value: Any) {
-        _capabilities[value::class.java] = value
+    fun addCapability(capability: String, instance: Any, methods: Map<String, Method>) {
+        val capabilityImpls = _capabilities.computeIfAbsent(capability) { mutableSetOf() }
+        val newImpl = CapabilityImplementation(instance.javaClass, instance, methods)
+        capabilityImpls.add(newImpl)
     }
 
     fun addAdditionalComponent(instance: Any): Boolean {
@@ -55,6 +58,12 @@ object AgentContext {
     data class MetaDataContent(
         val clazz: Class<*>,
         val value: String
+    )
+
+    data class CapabilityImplementation(
+        val clazz: Class<*>,
+        val instance: Any,
+        val methods: Map<String, Method>
     )
 }
 
