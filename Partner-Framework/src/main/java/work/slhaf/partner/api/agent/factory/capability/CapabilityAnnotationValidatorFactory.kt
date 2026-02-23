@@ -20,11 +20,13 @@ class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
         val reflections = context.reflections
         val cores = loadCores(reflections)
         val capabilities = loadCapabilities(reflections)
+        val methods = loadCapabilityMethods(reflections)
 
         checkCapabilityUniqueByValue(capabilities)
-        checkCapabilityMethodLocation(reflections)
+        checkCapabilityMethodLocation(methods)
         checkCapabilityMethodsImplementedUniquely(cores, capabilities)
         checkInjectCapability(reflections)
+        storeValidatedScanResult(context, cores, capabilities, methods)
     }
 
     private fun loadCores(reflections: Reflections): Set<Class<*>> {
@@ -35,6 +37,10 @@ class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
 
     private fun loadCapabilities(reflections: Reflections): Set<Class<*>> {
         return reflections.getTypesAnnotatedWith(Capability::class.java).toSet()
+    }
+
+    private fun loadCapabilityMethods(reflections: Reflections): Set<java.lang.reflect.Method> {
+        return reflections.getMethodsAnnotatedWith(CapabilityMethod::class.java).toSet()
     }
 
     /**
@@ -54,17 +60,16 @@ class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
     /**
      * 规则3.1: @CapabilityMethod 仅能用于 @CapabilityCore 类
      */
-    private fun checkCapabilityMethodLocation(reflections: Reflections) {
-        reflections.getMethodsAnnotatedWith(CapabilityMethod::class.java)
-            .forEach { method ->
-                val declaringClass = method.declaringClass
-                if (!declaringClass.isAnnotationPresent(CapabilityCore::class.java)) {
-                    throw UnMatchedCapabilityException(
-                        "@CapabilityMethod 仅能用于 @CapabilityCore 所标注类中: " +
-                                "${declaringClass.name}#${method.name}"
-                    )
-                }
+    private fun checkCapabilityMethodLocation(methods: Set<java.lang.reflect.Method>) {
+        methods.forEach { method ->
+            val declaringClass = method.declaringClass
+            if (!declaringClass.isAnnotationPresent(CapabilityCore::class.java)) {
+                throw UnMatchedCapabilityException(
+                    "@CapabilityMethod 仅能用于 @CapabilityCore 所标注类中: " +
+                            "${declaringClass.name}#${method.name}"
+                )
             }
+        }
     }
 
     /**
@@ -120,5 +125,20 @@ class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
                 )
             }
         }
+    }
+
+    private fun storeValidatedScanResult(
+        context: AgentRegisterContext,
+        cores: Set<Class<*>>,
+        capabilities: Set<Class<*>>,
+        methods: Set<java.lang.reflect.Method>
+    ) {
+        val capabilityFactoryContext = context.capabilityFactoryContext
+        capabilityFactoryContext.cores.clear()
+        capabilityFactoryContext.capabilities.clear()
+        capabilityFactoryContext.methods.clear()
+        capabilityFactoryContext.cores.addAll(cores)
+        capabilityFactoryContext.capabilities.addAll(capabilities)
+        capabilityFactoryContext.methods.addAll(methods)
     }
 }
