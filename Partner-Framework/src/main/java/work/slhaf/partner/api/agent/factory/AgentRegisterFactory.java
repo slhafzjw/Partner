@@ -1,7 +1,7 @@
 package work.slhaf.partner.api.agent.factory;
 
 import org.reflections.util.ClasspathHelper;
-import work.slhaf.partner.api.agent.factory.capability.CapabilityCheckFactory;
+import work.slhaf.partner.api.agent.factory.capability.CapabilityAnnotationValidatorFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityRegisterFactory;
 import work.slhaf.partner.api.agent.factory.component.ComponentAnnotationValidatorFactory;
@@ -47,7 +47,7 @@ public class AgentRegisterFactory {
         //3. 对模块与额外组件进行模块依赖注入
         new ComponentInjectorFactory().execute(registerContext);
         //4. 加载检查Capability层内容后进行能力层的内容注册
-        new CapabilityCheckFactory().execute(registerContext);
+        new CapabilityAnnotationValidatorFactory().execute(registerContext);
         new CapabilityRegisterFactory().execute(registerContext);
         //. 先一步注入Capability,避免因前hook逻辑存在针对能力的引用而报错
         new CapabilityInjectFactory().execute(registerContext);
