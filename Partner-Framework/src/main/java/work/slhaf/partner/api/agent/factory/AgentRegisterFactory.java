@@ -5,9 +5,9 @@ import work.slhaf.partner.api.agent.factory.capability.CapabilityAnnotationValid
 import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectorFactory;
 import work.slhaf.partner.api.agent.factory.capability.CapabilityRegisterFactory;
 import work.slhaf.partner.api.agent.factory.component.ComponentAnnotationValidatorFactory;
+import work.slhaf.partner.api.agent.factory.component.ComponentInitHookExecuteFactory;
 import work.slhaf.partner.api.agent.factory.component.ComponentInjectorFactory;
 import work.slhaf.partner.api.agent.factory.component.ComponentRegisterFactory;
-import work.slhaf.partner.api.agent.factory.component.ModuleInitHookExecuteFactory;
 import work.slhaf.partner.api.agent.factory.config.ConfigLoaderFactory;
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext;
 import work.slhaf.partner.api.agent.factory.exception.ExternalModuleLoadFailedException;
@@ -52,8 +52,8 @@ public class AgentRegisterFactory {
         new CapabilityRegisterFactory().execute(registerContext);
         //6. 将 Capability 实例注入至各个 AgentComponent 中
         new CapabilityInjectorFactory().execute(registerContext);
-        //. 执行模块PreHook逻辑
-        new ModuleInitHookExecuteFactory().execute(registerContext);
+        //7. 执行模块PreHook逻辑
+        new ComponentInitHookExecuteFactory().execute(registerContext);
 
     }
 

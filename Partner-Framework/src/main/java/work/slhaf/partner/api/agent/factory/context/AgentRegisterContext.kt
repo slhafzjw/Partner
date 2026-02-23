@@ -20,6 +20,7 @@ class AgentRegisterContext(urls: List<URL>) {
 
     val configFactoryContext: ConfigFactoryContext = ConfigFactoryContext()
     val capabilityFactoryContext: CapabilityFactoryContext = CapabilityFactoryContext()
+    val componentFactoryContext: ComponentFactoryContext = ComponentFactoryContext()
     val agentContext: AgentContext = AgentContext
 }
 
@@ -32,4 +33,8 @@ class CapabilityFactoryContext {
     val cores: MutableSet<Class<*>> = LinkedHashSet()
     val capabilities: MutableSet<Class<*>> = LinkedHashSet()
     val methods: MutableSet<Method> = LinkedHashSet()
+}
+
+class ComponentFactoryContext {
+    val initMethodsByDeclaringType: MutableMap<Class<*>, MutableSet<Method>> = LinkedHashMap()
 }

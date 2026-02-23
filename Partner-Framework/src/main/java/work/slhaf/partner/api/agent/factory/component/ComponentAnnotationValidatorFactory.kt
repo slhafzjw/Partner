@@ -12,6 +12,8 @@ import work.slhaf.partner.api.agent.util.AgentUtil
 class ComponentAnnotationValidatorFactory : AgentBaseFactory() {
     override fun execute(context: AgentRegisterContext) {
         val reflections = context.reflections
+        val componentFactoryContext = context.componentFactoryContext
+        componentFactoryContext.initMethodsByDeclaringType.clear()
 
         reflections.getMethodsAnnotatedWith(Init::class.java)
             .forEach { method ->
@@ -22,6 +24,10 @@ class ComponentAnnotationValidatorFactory : AgentBaseFactory() {
                                 "${declaringClass.name}#${method.name}"
                     )
                 }
+                val methods = componentFactoryContext
+                    .initMethodsByDeclaringType
+                    .getOrPut(declaringClass) { LinkedHashSet() }
+                methods.add(method)
             }
 
         reflections.getFieldsAnnotatedWith(InjectModule::class.java)
