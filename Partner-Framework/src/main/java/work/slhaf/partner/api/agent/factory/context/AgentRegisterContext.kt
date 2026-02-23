@@ -33,4 +33,3 @@ class CapabilityFactoryContext {
     val capabilities: MutableSet<Class<*>> = LinkedHashSet()
     val methods: MutableSet<Method> = LinkedHashSet()
 }
-

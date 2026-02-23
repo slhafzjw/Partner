@@ -48,6 +48,7 @@ public class AgentRegisterFactory {
         new ComponentInjectorFactory().execute(registerContext);
         //4. 加载检查Capability层内容后进行能力层的内容注册
         new CapabilityAnnotationValidatorFactory().execute(registerContext);
+        //5. 根据 Capability 相关的扫描结果构造 Capability 实例
         new CapabilityRegisterFactory().execute(registerContext);
         //. 先一步注入Capability,避免因前hook逻辑存在针对能力的引用而报错
         new CapabilityInjectFactory().execute(registerContext);
