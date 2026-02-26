@@ -93,6 +93,32 @@ object AgentContext {
 
     private fun installShutdownHook() {
 
+        class Instances(
+            val running: MutableMap<Class<out AbstractAgentModule.Running<out RunningFlowContext>>, Any> = mutableMapOf(),
+            val standalone: MutableMap<Class<out AbstractAgentModule.Standalone>, Any> = mutableMapOf(),
+            val sub: MutableMap<Class<out AbstractAgentModule.Sub<*, *>>, Any> = mutableMapOf(),
+            val additional: MutableMap<Class<*>, Any> = mutableMapOf(),
+            val capability: MutableMap<Class<*>, Any> = mutableMapOf()
+        )
+
+        fun computeInstances(): Instances {
+            val instances = Instances()
+            modules.values.forEach {
+                when (it) {
+                    is ModuleContextData.Running<*> -> instances.running[it.clazz] = it.instance
+                    is ModuleContextData.Standalone<*> -> instances.standalone[it.clazz] = it.instance
+                    is ModuleContextData.Sub<*> -> instances.sub[it.clazz] = it.instance
+                }
+
+            }
+            instances.additional.putAll(additionalComponents)
+            capabilities.values.forEach {
+                instances.capability.putAll(it.cores)
+            }
+            return instances
+        }
+
+
         fun getModuleInstance(clazz: Class<*>, instances: Instances): Any? {
             return if (AbstractAgentModule.Running::class.java.isAssignableFrom(clazz)) {
                 instances.running[clazz]
@@ -140,32 +166,6 @@ object AgentContext {
             shutdownHooks[ShutdownHookDesc.Type.CAPABILITY]?.let { trigger(it, instances) }
         })
     }
-
-    private fun computeInstances(): Instances {
-        val instances = Instances()
-        modules.values.forEach {
-            when (it) {
-                is ModuleContextData.Running<*> -> instances.running[it.clazz] = it.instance
-                is ModuleContextData.Standalone<*> -> instances.standalone[it.clazz] = it.instance
-                is ModuleContextData.Sub<*> -> instances.sub[it.clazz] = it.instance
-            }
-
-        }
-        instances.additional.putAll(additionalComponents)
-        capabilities.values.forEach {
-            instances.capability.putAll(it.cores)
-        }
-        return instances
-    }
-
-    private class Instances(
-        val running: MutableMap<Class<out AbstractAgentModule.Running<out RunningFlowContext>>, Any> = mutableMapOf(),
-        val standalone: MutableMap<Class<out AbstractAgentModule.Standalone>, Any> = mutableMapOf(),
-        val sub: MutableMap<Class<out AbstractAgentModule.Sub<*, *>>, Any> = mutableMapOf(),
-        val additional: MutableMap<Class<*>, Any> = mutableMapOf(),
-        val capability: MutableMap<Class<*>, Any> = mutableMapOf()
-    )
-
 
     data class MetaDataContent(
         val clazz: Class<*>,
