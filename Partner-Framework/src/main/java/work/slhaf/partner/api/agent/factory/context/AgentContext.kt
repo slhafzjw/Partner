@@ -35,8 +35,13 @@ object AgentContext {
         _modules[name] = module
     }
 
-    fun addCapability(capability: String, instance: Any, methods: Map<String, Method>) {
-        val newImpl = CapabilityImplementation(instance.javaClass, instance, methods)
+    fun addCapability(
+        capability: String,
+        instance: Any,
+        cores: Map<Class<*>, Any>,
+        methods: Map<String, Method>
+    ) {
+        val newImpl = CapabilityImplementation(instance.javaClass, instance, cores, methods)
         _capabilities[capability] = newImpl
     }
 
@@ -62,6 +67,7 @@ object AgentContext {
     data class CapabilityImplementation(
         val clazz: Class<*>,
         val instance: Any,
+        val cores: Map<Class<*>, Any>,
         val methods: Map<String, Method>
     )
 }

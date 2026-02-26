@@ -34,7 +34,8 @@ class CapabilityRegisterFactory : AgentBaseFactory() {
             val capabilityValue = capabilityType.getAnnotation(Capability::class.java).value
             val proxy = createCapabilityProxy(capabilityType, capabilityValue, methodsRouterTable)
             val methods = buildCapabilityMethodMap(capabilityType, capabilityValue, methodBindingMap)
-            agentContext.addCapability(capabilityValue, proxy, methods)
+            val cores = buildCapabilityCoreMap(capabilityValue, coreInstances)
+            agentContext.addCapability(capabilityValue, proxy, cores, methods)
         }
     }
 
@@ -122,6 +123,17 @@ class CapabilityRegisterFactory : AgentBaseFactory() {
             methods[key] = binding.method
         }
         return methods
+    }
+
+    private fun buildCapabilityCoreMap(
+        capabilityValue: String,
+        coreInstances: Map<Class<*>, Any>
+    ): Map<Class<*>, Any> {
+        return coreInstances
+            .filterKeys { coreType ->
+                coreType.getAnnotation(CapabilityCore::class.java)?.value == capabilityValue
+            }
+            .toMap()
     }
 
     private fun invokeMethod(instance: Any, method: Method, args: Array<Any?>): Any? {
