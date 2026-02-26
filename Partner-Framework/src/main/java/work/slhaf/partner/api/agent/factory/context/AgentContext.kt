@@ -21,9 +21,9 @@ object AgentContext {
     val capabilities: Map<String, CapabilityImplementation>
         get() = _capabilities
 
-    private val _additionalComponents = mutableSetOf<Any>()
+    private val _additionalComponents = mutableMapOf<Class<*>, Any>()
 
-    val additionalComponents: Set<Any>
+    val additionalComponents: Map<Class<*>, Any>
         get() = _additionalComponents
 
     private val _metadata: MutableMap<String, MetaDataContent> = mutableMapOf()
@@ -45,7 +45,7 @@ object AgentContext {
         if (type.isAnnotationPresent(AgentComponent::class.java)) {
             return false
         }
-        _additionalComponents.add(instance)
+        _additionalComponents[type] = instance
         return true
     }
 

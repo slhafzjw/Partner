@@ -37,7 +37,7 @@ class ComponentInjectorFactory : AgentBaseFactory() {
             subModules.forEach { it.injectTarget.add(standalone.instance) }
         }
 
-        agentContext.additionalComponents.forEach { additional ->
+        agentContext.additionalComponents.values.forEach { additional ->
             injectIntoTarget(additional, providersForAdditional)
         }
     }

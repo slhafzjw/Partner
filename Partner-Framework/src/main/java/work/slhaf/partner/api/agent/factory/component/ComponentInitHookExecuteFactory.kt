@@ -21,7 +21,7 @@ class ComponentInitHookExecuteFactory : AgentBaseFactory() {
 
     private fun buildTargets(agentContext: AgentContext): List<Any> {
         val moduleInstances = agentContext.modules.values.map { it.instance }
-        return moduleInstances + agentContext.additionalComponents
+        return moduleInstances + agentContext.additionalComponents.values
     }
 
     private fun collectInitMethods(
