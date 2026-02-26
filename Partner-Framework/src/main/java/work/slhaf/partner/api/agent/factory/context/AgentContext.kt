@@ -2,8 +2,12 @@ package work.slhaf.partner.api.agent.factory.context
 
 import com.alibaba.fastjson2.JSONArray
 import com.alibaba.fastjson2.JSONObject
+import org.slf4j.LoggerFactory
+import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
+import work.slhaf.partner.api.agent.runtime.exception.AgentRunningFailedException
+import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext
 import java.lang.reflect.Method
 import java.time.ZonedDateTime
 
@@ -30,6 +34,12 @@ object AgentContext {
 
     val metadata: Map<String, MetaDataContent>
         get() = _metadata
+
+    private val shutdownHooks = mutableMapOf<ShutdownHookDesc.Type, MutableList<ShutdownHookDesc>>()
+
+    init {
+        installShutdownHook()
+    }
 
     fun addModule(name: String, module: ModuleContextData<AbstractAgentModule>) {
         _modules[name] = module
@@ -58,6 +68,104 @@ object AgentContext {
         val content = MetaDataContent(value::class.java, JSONObject.toJSONString(value))
         _metadata[name] = content
     }
+
+    fun addShutdownHook(method: Method, order: Int): Boolean {
+        if (!method.isAnnotationPresent(Shutdown::class.java)) {
+            return false
+        }
+        val clazz = method.declaringClass
+        val type = if (AbstractAgentModule.Running::class.java.isAssignableFrom(clazz)) {
+            ShutdownHookDesc.Type.RUNNING
+        } else if (AbstractAgentModule.Sub::class.java.isAssignableFrom(clazz)) {
+            ShutdownHookDesc.Type.SUB
+        } else if (AbstractAgentModule.Standalone::class.java.isAssignableFrom(clazz)) {
+            ShutdownHookDesc.Type.STANDALONE
+        } else if (clazz.isAnnotationPresent(AgentComponent::class.java)) {
+            ShutdownHookDesc.Type.ADDITIONAL
+        } else if (clazz.isAnnotationPresent(CapabilityCore::class.java)) {
+            ShutdownHookDesc.Type.CAPABILITY
+        } else {
+            return false
+        }
+        shutdownHooks.computeIfAbsent(type) { mutableListOf() }.add(ShutdownHookDesc(clazz, order, method, type))
+        return true
+    }
+
+    private fun installShutdownHook() {
+
+        fun getModuleInstance(clazz: Class<*>, instances: Instances): Any? {
+            return if (AbstractAgentModule.Running::class.java.isAssignableFrom(clazz)) {
+                instances.running[clazz]
+            } else if (AbstractAgentModule.Sub::class.java.isAssignableFrom(clazz)) {
+                instances.sub[clazz]
+            } else if (AbstractAgentModule.Standalone::class.java.isAssignableFrom(clazz)) {
+                instances.standalone[clazz]
+            } else {
+                null
+            }
+        }
+
+        fun getInstanceOf(clazz: Class<*>, type: ShutdownHookDesc.Type, instances: Instances): Any {
+            val instance = when (type) {
+                ShutdownHookDesc.Type.RUNNING -> getModuleInstance(clazz, instances)
+                ShutdownHookDesc.Type.STANDALONE -> getModuleInstance(clazz, instances)
+                ShutdownHookDesc.Type.SUB -> getModuleInstance(clazz, instances)
+                ShutdownHookDesc.Type.ADDITIONAL -> instances.additional[clazz]
+                ShutdownHookDesc.Type.CAPABILITY -> instances.capability[clazz]
+            }
+            if (instance == null) {
+                throw AgentRunningFailedException("Instance of type $type not found")
+            }
+            return instance
+        }
+
+        fun trigger(hooks: List<ShutdownHookDesc>, instances: Instances) {
+            val log = LoggerFactory.getLogger(AgentContext::class.java)
+            hooks.sortedBy { it.order }
+                .forEach {
+                    try {
+                        it.method.invoke(getInstanceOf(it.clazz, it.type, instances))
+                    } catch (e: Exception) {
+                        log.error("Failed to invoke shutdown hook ${it.clazz.simpleName}#${it.method.name}", e)
+                    }
+                }
+        }
+
+        Runtime.getRuntime().addShutdownHook(Thread {
+            val instances = computeInstances()
+            shutdownHooks[ShutdownHookDesc.Type.RUNNING]?.let { trigger(it, instances) }
+            shutdownHooks[ShutdownHookDesc.Type.ADDITIONAL]?.let { trigger(it, instances) }
+            shutdownHooks[ShutdownHookDesc.Type.STANDALONE]?.let { trigger(it, instances) }
+            shutdownHooks[ShutdownHookDesc.Type.SUB]?.let { trigger(it, instances) }
+            shutdownHooks[ShutdownHookDesc.Type.CAPABILITY]?.let { trigger(it, instances) }
+        })
+    }
+
+    private fun computeInstances(): Instances {
+        val instances = Instances()
+        modules.values.forEach {
+            when (it) {
+                is ModuleContextData.Running<*> -> instances.running[it.clazz] = it.instance
+                is ModuleContextData.Standalone<*> -> instances.standalone[it.clazz] = it.instance
+                is ModuleContextData.Sub<*> -> instances.sub[it.clazz] = it.instance
+            }
+
+        }
+        instances.additional.putAll(additionalComponents)
+        capabilities.values.forEach {
+            instances.capability.putAll(it.cores)
+        }
+        return instances
+    }
+
+    private class Instances(
+        val running: MutableMap<Class<out AbstractAgentModule.Running<out RunningFlowContext>>, Any> = mutableMapOf(),
+        val standalone: MutableMap<Class<out AbstractAgentModule.Standalone>, Any> = mutableMapOf(),
+        val sub: MutableMap<Class<out AbstractAgentModule.Sub<*, *>>, Any> = mutableMapOf(),
+        val additional: MutableMap<Class<*>, Any> = mutableMapOf(),
+        val capability: MutableMap<Class<*>, Any> = mutableMapOf()
+    )
+
 
     data class MetaDataContent(
         val clazz: Class<*>,
@@ -126,3 +234,18 @@ sealed class ModuleContextData<out T : AbstractAgentModule> {
 annotation class Shutdown(
     val order: Int = 0,
 )
+
+data class ShutdownHookDesc(
+    val clazz: Class<*>,
+    val order: Int,
+    val method: Method,
+    val type: Type
+) {
+    enum class Type {
+        RUNNING,
+        ADDITIONAL,
+        STANDALONE,
+        SUB,
+        CAPABILITY
+    }
+}
