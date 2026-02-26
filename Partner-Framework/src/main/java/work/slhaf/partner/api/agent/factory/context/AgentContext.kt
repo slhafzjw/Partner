@@ -42,7 +42,7 @@ object AgentContext {
 
     fun addAdditionalComponent(instance: Any): Boolean {
         val type = instance::class.java
-        if (type.isAnnotationPresent(AgentComponent::class.java)) {
+        if (!type.isAnnotationPresent(AgentComponent::class.java)) {
             return false
         }
         _additionalComponents[type] = instance
