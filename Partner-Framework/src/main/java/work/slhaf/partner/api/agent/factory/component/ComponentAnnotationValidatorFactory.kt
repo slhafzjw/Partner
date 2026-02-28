@@ -24,6 +24,12 @@ class ComponentAnnotationValidatorFactory : AgentBaseFactory() {
                                 "${declaringClass.name}#${method.name}"
                     )
                 }
+                if (method.parameterCount > 0) {
+                    throw ModuleCheckException(
+                        "@Init 标注的方法不能包含形参: " +
+                                "${declaringClass.name}#${method.name}"
+                    )
+                }
                 val methods = componentFactoryContext
                     .initMethodsByDeclaringType
                     .getOrPut(declaringClass) { LinkedHashSet() }
