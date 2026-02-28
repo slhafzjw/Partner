@@ -10,6 +10,7 @@ import work.slhaf.partner.api.agent.factory.component.ComponentInjectorFactory
 import work.slhaf.partner.api.agent.factory.component.ComponentRegisterFactory
 import work.slhaf.partner.api.agent.factory.config.ConfigLoaderFactory
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
+import work.slhaf.partner.api.agent.factory.context.ShutdownHookCollectorFactory
 import work.slhaf.partner.api.agent.factory.exception.ExternalModuleLoadFailedException
 import work.slhaf.partner.api.agent.factory.exception.ExternalModulePathNotExistException
 import java.io.File
@@ -38,6 +39,8 @@ object AgentRegisterFactory {
         CapabilityInjectorFactory().execute(registerContext)
         // 7. 执行模块 Init Hook 逻辑
         ComponentInitHookExecuteFactory().execute(registerContext)
+        // 8. 校验并收集 Shutdown Hook 逻辑，并添加至 AgentContext 中
+        ShutdownHookCollectorFactory().execute(registerContext)
     }
 
     @JvmStatic
