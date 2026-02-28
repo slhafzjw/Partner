@@ -74,6 +74,12 @@ class ComponentRegisterFactory : AgentBaseFactory() {
         modelPromptMap: Map<String, List<Message>>,
         defaultConfig: ModelConfig
     ) {
+        if (agentContext.modules.containsKey(module.moduleName)) {
+            throw ModuleFactoryInitFailedException(
+                "模块注册失败, 存在重复 moduleName: ${module.moduleName} (class=${componentClass.name})"
+            )
+        }
+
         val launchTime = ZonedDateTime.now()
         val modelInfo = if (module is ActivateModel) {
             val modelKey = module.modelKey()
