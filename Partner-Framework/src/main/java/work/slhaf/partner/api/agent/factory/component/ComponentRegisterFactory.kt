@@ -16,6 +16,14 @@ import work.slhaf.partner.api.chat.pojo.Message
 import java.lang.reflect.Modifier
 import java.time.ZonedDateTime
 
+/**
+ * 扫描并实例化 `@AgentComponent` 具体类，写入 [work.slhaf.partner.api.agent.factory.context.AgentContext]。
+ *
+ * 行为:
+ * - 若实例是 [AbstractAgentModule]，按 Running/Sub/Standalone 构造 `ModuleContextData` 并注册到 modules。
+ * - 若实现了 [ActivateModel]，必须存在对应 `modelPromptMap` 条目，随后构建 `modelInfo`。
+ * - 若不是模块类型，尝试注册为 additional component（失败仅记录错误日志）。
+ */
 class ComponentRegisterFactory : AgentBaseFactory() {
     companion object {
         private val log = LoggerFactory.getLogger(ComponentRegisterFactory::class.java)

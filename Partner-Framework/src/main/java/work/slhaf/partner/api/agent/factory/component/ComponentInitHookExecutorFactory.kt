@@ -8,6 +8,12 @@ import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.api.agent.util.AgentUtil.methodSignature
 import java.lang.reflect.Method
 
+/**
+ * 执行 Component 的 `@Init` 生命周期方法。
+ *
+ * `@Init` 方法来源于 [work.slhaf.partner.api.agent.factory.context.ComponentFactoryContext]，
+ * 执行目标包括 modules 与 additionalComponents，按 `order` 升序执行。
+ */
 class ComponentInitHookExecutorFactory : AgentBaseFactory() {
     override fun execute(context: AgentRegisterContext) {
         val initMethodsByDeclaringType = context.componentFactoryContext.initMethodsByDeclaringType
@@ -63,4 +69,3 @@ class ComponentInitHookExecutorFactory : AgentBaseFactory() {
         }
     }
 }
-

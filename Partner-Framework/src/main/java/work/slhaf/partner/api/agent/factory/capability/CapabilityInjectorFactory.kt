@@ -9,6 +9,12 @@ import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
+/**
+ * 将 Capability 代理注入到 `@InjectCapability` 字段。
+ *
+ * 注入目标来源于 `AgentContext` 的 modules 与 additionalComponents，
+ * 注入值来源于 `AgentContext.capabilities`。
+ */
 class CapabilityInjectorFactory : AgentBaseFactory() {
     override fun execute(context: AgentRegisterContext) {
         val agentContext = context.agentContext

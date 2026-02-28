@@ -6,6 +6,15 @@ import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.api.agent.factory.component.exception.ModuleCheckException
 import work.slhaf.partner.api.agent.util.AgentUtil
 
+/**
+ * 校验并收集 `@Shutdown` 方法。
+ *
+ * 当前规则:
+ * - `@Shutdown` 仅允许位于 `@AgentComponent` 相关类或 `@CapabilityCore` 相关类。
+ * - `@Shutdown` 方法不能包含形参。
+ *
+ * 收集通过后，统一调用 `AgentContext.addShutdownHook` 注册。
+ */
 class ShutdownHookCollectorFactory : AgentBaseFactory() {
     override fun execute(context: AgentRegisterContext) {
         val reflections = context.reflections

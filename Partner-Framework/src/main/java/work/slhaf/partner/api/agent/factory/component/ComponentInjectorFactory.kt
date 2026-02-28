@@ -8,6 +8,16 @@ import work.slhaf.partner.api.agent.factory.context.ModuleContextData
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
+/**
+ * 处理 `@InjectModule` 依赖注入。
+ *
+ * 注入关系:
+ * - `sub + standalone -> running`
+ * - `sub -> standalone`
+ * - `sub + standalone -> additionalComponent`
+ *
+ * 当注入目标无匹配实例或存在多个匹配实例时抛出异常。
+ */
 class ComponentInjectorFactory : AgentBaseFactory() {
     override fun execute(context: AgentRegisterContext) {
         val agentContext = context.agentContext

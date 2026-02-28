@@ -16,6 +16,20 @@ import work.slhaf.partner.api.agent.factory.exception.ExternalModulePathNotExist
 import java.io.File
 import java.net.URL
 
+/**
+ * Agent 注册总入口，按固定顺序串联各 Factory。
+ *
+ * 启动流程:
+ * 1. 加载配置
+ * 2. 校验 Component 注解
+ * 3. 注册 Component/Module
+ * 4. 完成 Module 注入
+ * 5. 校验 Capability 注解
+ * 6. 注册 Capability 代理与路由
+ * 7. 注入 Capability
+ * 8. 执行 Init Hook
+ * 9. 收集 Shutdown Hook
+ */
 object AgentRegisterFactory {
     private val urls: MutableList<URL> = mutableListOf()
 
@@ -72,4 +86,3 @@ object AgentRegisterFactory {
         return ClasspathHelper.forPackage(packageName).toList()
     }
 }
-

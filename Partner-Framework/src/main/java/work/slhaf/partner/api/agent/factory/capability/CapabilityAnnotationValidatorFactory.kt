@@ -15,6 +15,15 @@ import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.api.agent.util.AgentUtil.isAssignableFromAnnotation
 import work.slhaf.partner.api.agent.util.AgentUtil.methodSignature
 
+/**
+ * 校验 Capability 体系注解关系，并将扫描结果写入 `CapabilityFactoryContext`。
+ *
+ * 当前规则:
+ * - `@Capability` 的 value 全局唯一。
+ * - `@CapabilityMethod` 仅允许出现在 `@CapabilityCore` 类中。
+ * - 每个 `@Capability` 接口方法必须在同 value 的 core 集合中存在且仅存在一个实现。
+ * - `@InjectCapability` 字段仅允许位于 `@AgentComponent` 相关类中。
+ */
 class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
     override fun execute(context: AgentRegisterContext) {
         val reflections = context.reflections

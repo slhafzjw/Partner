@@ -13,6 +13,15 @@ import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import java.util.function.Function
 
+/**
+ * 基于 `CapabilityFactoryContext` 中已校验结果构建 Capability 运行时对象。
+ *
+ * 行为:
+ * - 实例化所有 `@CapabilityCore`。
+ * - 构建方法路由表（`value + methodSignature`）并检测重复路由。
+ * - 为每个 `@Capability` 生成 JDK 动态代理，将接口调用路由到对应 core 方法。
+ * - 将 capability 代理、cores 与方法映射注册到 `AgentContext`。
+ */
 class CapabilityRegisterFactory : AgentBaseFactory() {
     override fun execute(context: AgentRegisterContext) {
         val capabilityFactoryContext = context.capabilityFactoryContext

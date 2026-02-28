@@ -10,9 +10,13 @@ import work.slhaf.partner.api.agent.runtime.config.FileAgentConfigLoader
 import java.lang.reflect.Modifier
 
 /**
- * <h2>Agent启动流程 0</h2>
+ * Agent 启动阶段的配置加载工厂。
  *
- * 通过指定的 [AgentConfigLoader] 或默认的 [FileAgentConfigLoader] 加载配置文件。
+ * 行为:
+ * - 使用全局 `AgentConfigLoader.INSTANCE`，为空时退回 [FileAgentConfigLoader]。
+ * - 加载并写入 `modelConfigMap`、`modelPromptMap` 到 `ConfigFactoryContext`。
+ * - 校验 `default` 配置与 `basic` 提示词是否存在。
+ * - 反射读取配置加载器实现类（相对基类新增）的静态字段，并写入 `AgentContext.metadata`。
  */
 class ConfigLoaderFactory : AgentBaseFactory() {
 
@@ -72,4 +76,3 @@ class ConfigLoaderFactory : AgentBaseFactory() {
             }
     }
 }
-
