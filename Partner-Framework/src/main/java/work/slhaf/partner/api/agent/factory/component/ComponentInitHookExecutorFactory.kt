@@ -8,7 +8,7 @@ import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.api.agent.util.AgentUtil.methodSignature
 import java.lang.reflect.Method
 
-class ComponentInitHookExecuteFactory : AgentBaseFactory() {
+class ComponentInitHookExecutorFactory : AgentBaseFactory() {
     override fun execute(context: AgentRegisterContext) {
         val initMethodsByDeclaringType = context.componentFactoryContext.initMethodsByDeclaringType
         val targets = buildTargets(context.agentContext)

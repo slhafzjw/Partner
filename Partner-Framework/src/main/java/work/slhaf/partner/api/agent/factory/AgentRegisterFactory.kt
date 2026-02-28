@@ -5,7 +5,7 @@ import work.slhaf.partner.api.agent.factory.capability.CapabilityAnnotationValid
 import work.slhaf.partner.api.agent.factory.capability.CapabilityInjectorFactory
 import work.slhaf.partner.api.agent.factory.capability.CapabilityRegisterFactory
 import work.slhaf.partner.api.agent.factory.component.ComponentAnnotationValidatorFactory
-import work.slhaf.partner.api.agent.factory.component.ComponentInitHookExecuteFactory
+import work.slhaf.partner.api.agent.factory.component.ComponentInitHookExecutorFactory
 import work.slhaf.partner.api.agent.factory.component.ComponentInjectorFactory
 import work.slhaf.partner.api.agent.factory.component.ComponentRegisterFactory
 import work.slhaf.partner.api.agent.factory.config.ConfigLoaderFactory
@@ -38,7 +38,7 @@ object AgentRegisterFactory {
         // 6. 将 Capability 实例注入至各个 AgentComponent 中
         CapabilityInjectorFactory().execute(registerContext)
         // 7. 执行模块 Init Hook 逻辑
-        ComponentInitHookExecuteFactory().execute(registerContext)
+        ComponentInitHookExecutorFactory().execute(registerContext)
         // 8. 校验并收集 Shutdown Hook 逻辑，并添加至 AgentContext 中
         ShutdownHookCollectorFactory().execute(registerContext)
     }
