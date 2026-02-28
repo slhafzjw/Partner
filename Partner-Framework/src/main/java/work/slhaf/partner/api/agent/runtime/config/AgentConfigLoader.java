@@ -3,13 +3,12 @@ package work.slhaf.partner.api.agent.runtime.config;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.factory.component.pojo.MetaModule;
-import work.slhaf.partner.api.agent.factory.config.exception.ConfigUpdateFailedException;
 import work.slhaf.partner.api.agent.factory.config.exception.PromptNotExistException;
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
 import work.slhaf.partner.api.chat.pojo.Message;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
 
 @Slf4j
 @Data
@@ -20,9 +19,6 @@ public abstract class AgentConfigLoader {
     public static AgentConfigLoader INSTANCE;
     protected HashMap<String, ModelConfig> modelConfigMap;
     protected HashMap<String, List<Message>> modelPromptMap;
-    protected HashMap<String, Boolean> moduleEnabledStatus;
-    protected Map<Integer, List<MetaModule>> moduleOrderedMap = new LinkedHashMap<>();
-    protected Map<String, MetaModule> moduleMap = new HashMap<>();
 
     public void load() {
         modelConfigMap = loadModelConfig();
@@ -34,42 +30,6 @@ public abstract class AgentConfigLoader {
     protected abstract HashMap<String, ModelConfig> loadModelConfig();
 
     public abstract void dumpModelConfig(String key);
-
-    protected abstract void dumpModuleEnabledStatus();
-
-    protected abstract HashMap<String, Boolean> loadModuleEnabledStatusMap(List<MetaModule> moduleList);
-
-    public void moduleEnabledStatusFilterAndRecord(List<MetaModule> moduleList) {
-        updateModuleMap(moduleList);
-        updateModuleEnabledStatus(moduleList);
-    }
-
-    private void updateModuleMap(List<MetaModule> moduleList) {
-        //在ModuleRegisterFactory已进行过排序操作
-        for (MetaModule module : moduleList) {
-            int k = module.getOrder();
-            moduleOrderedMap.computeIfAbsent(k, order -> new ArrayList<>()).add(module);
-            moduleMap.put(module.getName(), module);
-        }
-    }
-
-    private void updateModuleEnabledStatus(List<MetaModule> moduleList) {
-        this.moduleEnabledStatus = loadModuleEnabledStatusMap(moduleList);
-
-        boolean unmatch = false;
-        for (MetaModule metaModule : moduleList) {
-            String moduleName = metaModule.getName();
-            if (moduleEnabledStatus.containsKey(moduleName)) {
-                metaModule.setEnabled(moduleEnabledStatus.get(moduleName));
-            } else {
-                log.warn("缺少Module {} 启用配置! 将触发更新操作!", moduleName);
-                unmatch = true;
-            }
-        }
-        if (unmatch) {
-            dumpModuleEnabledStatus();
-        }
-    }
 
     public List<Message> loadModelPrompt(String modelKey) {
         if (!modelPromptMap.containsKey(modelKey)) {
@@ -88,15 +48,6 @@ public abstract class AgentConfigLoader {
     public void updateModelConfig(String modelKey, ModelConfig config) {
         modelConfigMap.put(modelKey, config);
         dumpModelConfig(modelKey);
-    }
-
-    public void updateModuleEnabledStatus(String key, boolean status) {
-        if (!moduleEnabledStatus.containsKey(key)) {
-            throw new ConfigUpdateFailedException("模块状态更新失败! 不存在的ModuleKey: " + key);
-        }
-        moduleEnabledStatus.put(key, status);
-        dumpModuleEnabledStatus();
-        moduleMap.get(key).setEnabled(status);
     }
 
 }
