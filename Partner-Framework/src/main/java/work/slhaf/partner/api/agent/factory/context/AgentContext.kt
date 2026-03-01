@@ -7,7 +7,7 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.api.agent.runtime.exception.AgentRunningFailedException
-import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext
+import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
 import java.lang.reflect.Method
 import java.time.ZonedDateTime
 

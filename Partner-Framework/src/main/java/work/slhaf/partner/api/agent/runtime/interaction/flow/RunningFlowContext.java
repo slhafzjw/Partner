@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.agent.runtime.interaction.flow.entity;
+package work.slhaf.partner.api.agent.runtime.interaction.flow;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

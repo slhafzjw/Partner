@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.api.agent.factory.component.annotation.Init
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader
-import work.slhaf.partner.api.agent.runtime.interaction.flow.entity.RunningFlowContext
+import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
 import work.slhaf.partner.api.chat.ChatClient
 import work.slhaf.partner.api.chat.constant.ChatConstant
 import work.slhaf.partner.api.chat.pojo.ChatResponse
