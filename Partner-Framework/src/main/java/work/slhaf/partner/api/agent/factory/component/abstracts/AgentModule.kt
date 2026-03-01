@@ -35,7 +35,6 @@ sealed class AbstractAgentModule {
 
     abstract class Standalone : AbstractAgentModule()
 
-    // TODO 后续于此处扩展生命周期内容
 }
 
 interface ActivateModel {
