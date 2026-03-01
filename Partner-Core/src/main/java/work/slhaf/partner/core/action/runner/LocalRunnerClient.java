@@ -895,7 +895,7 @@ public class LocalRunnerClient extends RunnerClient {
                 this.mcpDescServer = mcpDescServer;
             }
 
-            private McpStatelessServerFeatures.@NotNull AsyncResourceSpecification buildAsyncResourceSpecification(String name, String uri) {
+            private McpStatelessServerFeatures.AsyncResourceSpecification buildAsyncResourceSpecification(String name, String uri) {
                 McpSchema.Resource resource = McpSchema.Resource.builder()
                         .name(name)
                         .title(name)
