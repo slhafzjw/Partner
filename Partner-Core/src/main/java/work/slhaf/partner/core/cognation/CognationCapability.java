@@ -1,7 +1,6 @@
 package work.slhaf.partner.core.cognation;
 
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
-import work.slhaf.partner.api.agent.factory.capability.annotation.ToCoordinated;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 
@@ -32,6 +31,4 @@ public interface CognationCapability {
 
     String getCurrentMemoryId();
 
-    @ToCoordinated
-    boolean isSingleUser();
 }
