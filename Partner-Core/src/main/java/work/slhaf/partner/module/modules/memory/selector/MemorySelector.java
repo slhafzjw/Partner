@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
@@ -22,6 +23,8 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 
 import java.time.LocalDate;
 import java.util.*;
+
+import static work.slhaf.partner.common.util.ExtractUtil.extractUserId;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -130,7 +133,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
             map.put("[记忆缓存] <你最近两日和所有聊天者的对话记忆印象>", dialogMapStr);
         }
         String userDialogMapStr = memoryCapability.getUserDialogMapStr(userId);
-        if (userDialogMapStr != null && !userDialogMapStr.isEmpty() && !cognationCapability.isSingleUser()) {
+        if (userDialogMapStr != null && !userDialogMapStr.isEmpty() && !isSingleUser()) {
             map.put("[用户记忆缓存] <与最新一条消息的发送者的近两天对话记忆印象, 可能与[记忆缓存]稍有重复>", userDialogMapStr);
         }
         String sliceStr = memoryCapability.getActivatedSlicesStr(userId);
@@ -138,6 +141,22 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
             map.put("[记忆切片] <你与最新一条消息的发送者的相关回忆, 不会与[记忆缓存]重复, 如果有重复你也可以指出来>", sliceStr);
         }
         return map;
+    }
+
+    // TODO 本次重构暂时仅以 chatMessages 用作判定基准，原实现额外结合了近两日的对话缓存(但缓存结构的引用确实存在问题)
+    private boolean isSingleUser() {
+        Set<String> userIdSet = new HashSet<>();
+        cognationCapability.getChatMessages().forEach(m -> {
+            if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+                return;
+            }
+            String userId = extractUserId(m.getContent());
+            if (userId == null || userId.isEmpty()) {
+                return;
+            }
+            userIdSet.add(userId);
+        });
+        return userIdSet.size() <= 1;
     }
 
     @Override
