@@ -100,9 +100,9 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
                 updateUserDialogMap(memorySlice);
             }
         } catch (Exception e) {
-            log.error("[CoordinatedManager] 插入记忆时出错: ", e);
+            log.error("插入记忆时出错: ", e);
         }
-        log.debug("[CoordinatedManager] 插入切片: {}, 路径: {}", memorySlice, topicPath);
+        log.debug("插入切片: {}, 路径: {}", memorySlice, topicPath);
         sliceInsertLock.unlock();
     }
 
