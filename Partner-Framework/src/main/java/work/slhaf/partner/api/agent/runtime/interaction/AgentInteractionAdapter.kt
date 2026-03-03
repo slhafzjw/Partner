@@ -1,6 +1,5 @@
 package work.slhaf.partner.api.agent.runtime.interaction
 
-import kotlinx.coroutines.runBlocking
 import work.slhaf.partner.api.agent.runtime.interaction.data.AgentInputData
 import work.slhaf.partner.api.agent.runtime.interaction.data.AgentOutputData
 import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
@@ -16,9 +15,7 @@ abstract class AgentInteractionAdapter<
     fun submit(inputData: I): O {
         val ctx = parseInputData(inputData)
 
-        val result = runBlocking {
-            runtime.submit(ctx)
-        }
+        val result = runtime.submit(ctx)
 
         return parseOutputData(result)
     }

@@ -32,11 +32,11 @@ object AgentRuntime {
         runningModules = buildRunningModules()
     }
 
-    suspend fun <C : RunningFlowContext> submit(context: C): C {
+    fun <C : RunningFlowContext> submit(context: C): C = runBlocking {
         val deferred = CompletableDeferred<RunningFlowContext>()
         channel.send(TurnRequest(context, deferred))
         @Suppress("UNCHECKED_CAST")
-        return deferred.await() as C
+        (return@runBlocking deferred.await() as C)
     }
 
     private suspend fun executeTurn(
