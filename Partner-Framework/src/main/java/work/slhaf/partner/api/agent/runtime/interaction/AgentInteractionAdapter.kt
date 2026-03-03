@@ -13,17 +13,16 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
 
 abstract class AgentInteractionAdapter<I : AgentInputData, O : AgentOutputData, C : RunningFlowContext> {
 
-    private val runningModules =
-        mutableMapOf<Int, MutableList<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>>()
-
     fun call(runningFlowContext: C): C = runBlocking {
-        if (runningModules.isEmpty()) {
-            AgentContext.modules
-                .filter { ModuleContextData.Running::class.java.isAssignableFrom(it.value.javaClass) }
-                .map { it.value as ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>> }
-                .sortedBy { it.order }
-                .forEach { runningModules.computeIfAbsent(it.order) { mutableListOf() }.add(it) }
-        }
+        val runningModules =
+            mutableMapOf<Int, MutableList<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>>()
+
+        AgentContext.modules
+            .filter { ModuleContextData.Running::class.java.isAssignableFrom(it.value.javaClass) }
+            .map { it.value as ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>> }
+            .filter { it.enabled }
+            .sortedBy { it.order }
+            .forEach { runningModules.computeIfAbsent(it.order) { mutableListOf() }.add(it) }
 
         try {
             for (modules in runningModules.values) {
@@ -34,7 +33,7 @@ abstract class AgentInteractionAdapter<I : AgentInputData, O : AgentOutputData, 
             runningFlowContext.ok = 0
             runningFlowContext.errMsg.add(e.localizedMessage)
         }
-        
+
         return@runBlocking runningFlowContext
     }
 
