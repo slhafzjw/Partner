@@ -15,6 +15,27 @@ abstract class AgentInteractionAdapter<I : AgentInputData, O : AgentOutputData, 
 
     // TODO whether to support message queue, to avoid concurrence problem in data and agent stats
 
+    companion object {
+        @Volatile
+        private var runningModules:
+                Map<Int, List<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>> = emptyMap()
+
+        fun refreshRunningModules() {
+            val newMap = buildRunningModules()
+            runningModules = newMap
+        }
+
+        private fun buildRunningModules():
+                Map<Int, List<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>> {
+            return AgentContext.modules
+                .values
+                .filterIsInstance<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>()
+                .filter { it.enabled }
+                .groupBy { it.order }
+                .toSortedMap()
+        }
+    }
+
     fun submit(inputData: I): O {
         val finalInputData: C = parseInputData(inputData)
         val outputContext: C = call(finalInputData)
@@ -22,15 +43,10 @@ abstract class AgentInteractionAdapter<I : AgentInputData, O : AgentOutputData, 
     }
 
     private fun call(runningFlowContext: C): C = runBlocking {
-        val runningModules =
-            mutableMapOf<Int, MutableList<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>>()
 
-        AgentContext.modules
-            .filter { ModuleContextData.Running::class.java.isAssignableFrom(it.value.javaClass) }
-            .map { it.value as ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>> }
-            .filter { it.enabled }
-            .sortedBy { it.order }
-            .forEach { runningModules.computeIfAbsent(it.order) { mutableListOf() }.add(it) }
+        if (runningModules.isEmpty()) {
+            buildRunningModules()
+        }
 
         try {
             for (modules in runningModules.values) {
@@ -45,8 +61,9 @@ abstract class AgentInteractionAdapter<I : AgentInputData, O : AgentOutputData, 
         return@runBlocking runningFlowContext
     }
 
+
     private suspend fun executeOrder(
-        modules: MutableList<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>,
+        modules: List<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>,
         runningFlowContext: C
     ) {
 
