@@ -13,7 +13,13 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
 
 abstract class AgentInteractionAdapter<I : AgentInputData, O : AgentOutputData, C : RunningFlowContext> {
 
-    fun call(runningFlowContext: C): C = runBlocking {
+    fun submit(inputData: I): O {
+        val finalInputData: C = parseInputData(inputData)
+        val outputContext: C = call(finalInputData)
+        return parseOutputData(outputContext)
+    }
+
+    private fun call(runningFlowContext: C): C = runBlocking {
         val runningModules =
             mutableMapOf<Int, MutableList<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>>()
 

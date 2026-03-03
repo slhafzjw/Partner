@@ -9,9 +9,7 @@ public interface AgentGateway<I extends AgentInputData, O extends AgentOutputDat
     void launch();
 
     default void receive(I inputData) {
-        C finalInputData = adapter().parseInputData(inputData);
-        C outputContext = adapter().call(finalInputData);
-        O outputData = adapter().parseOutputData(outputContext);
+        O outputData = adapter().submit(inputData);
         send(outputData);
     }
 
