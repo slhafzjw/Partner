@@ -13,6 +13,8 @@ import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
 
 abstract class AgentInteractionAdapter<I : AgentInputData, O : AgentOutputData, C : RunningFlowContext> {
 
+    // TODO whether to support message queue, to avoid concurrence problem in data and agent stats
+
     fun submit(inputData: I): O {
         val finalInputData: C = parseInputData(inputData)
         val outputContext: C = call(finalInputData)
