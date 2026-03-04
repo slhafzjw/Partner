@@ -10,7 +10,6 @@ import work.slhaf.partner.runtime.interaction.data.context.subcontext.ModuleCont
 
 import java.io.Serial;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,8 +19,6 @@ public class PartnerRunningFlowContext extends RunningFlowContext {
 
     @Serial
     private static final long serialVersionUID = 1L;
-
-    private static HashMap<String, PartnerRunningFlowContext> activeContext = new HashMap<>();
 
     protected String userId;
     protected String userNickname;
@@ -38,14 +35,6 @@ public class PartnerRunningFlowContext extends RunningFlowContext {
 
     protected String uuid = UUID.randomUUID().toString();
 
-    public PartnerRunningFlowContext() {
-        activeContext.put(userId, this);
-    }
-
-    public static HashMap<String, PartnerRunningFlowContext> getInstance() {
-        return activeContext;
-    }
-
     public boolean isFinished() {
         return moduleContext.isFinished();
     }
@@ -57,10 +46,6 @@ public class PartnerRunningFlowContext extends RunningFlowContext {
     public void setAppendedPrompt(AppendPromptData appendedPrompt) {
         List<AppendPromptData> appendPromptList = moduleContext.getAppendedPrompt();
         appendPromptList.addFirst(appendedPrompt);
-    }
-
-    public void clearUp() {
-        activeContext.remove(userId);
     }
 
 }
