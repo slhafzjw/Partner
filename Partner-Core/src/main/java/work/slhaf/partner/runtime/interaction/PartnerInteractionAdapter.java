@@ -32,11 +32,9 @@ public class PartnerInteractionAdapter extends AgentInteractionAdapter<PartnerIn
     @NotNull
     @Override
     protected PartnerRunningFlowContext parseInputData(PartnerInputData inputData) {
-        return new PartnerRunningFlowContext(
-                inputData.getUserInfo(),
+        return PartnerRunningFlowContext.Companion.fromUser(inputData.getUserInfo(),
                 inputData.getContent(),
                 inputData.getPlatform(),
-                inputData.getUserNickName()
-        );
+                inputData.getUserNickName());
     }
 }
