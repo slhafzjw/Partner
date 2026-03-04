@@ -168,6 +168,7 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
             }
         });
         //添加时间标志
+        // TODO 此处的时间标识应当采用 RunningFlowContext 携带时间
         String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("\r\n**[yyyy-MM-dd HH:mm:ss]"));
         Message primaryUserMessage = new Message(ChatConstant.Character.USER, runningFlowContext.getCoreContext().getText() + dateTime);
         chatMessages.add(primaryUserMessage);
