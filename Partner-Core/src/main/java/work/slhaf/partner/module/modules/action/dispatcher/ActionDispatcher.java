@@ -40,7 +40,7 @@ public class ActionDispatcher extends PostRunningAbstractAgentModuleAbstract {
         // 对于将触发的PLANNING
         // action，理想做法是将执行工具做成执行链的形式，模型的自对话流程、是否通知用户都做成与普通工具同等的通用可选能力，避免绑定固定流程
         executor.execute(() -> {
-            String userId = context.getUserId();
+            String userId = context.getSource();
             val preparedActions = actionCapability.listActions(ExecutableAction.Status.PREPARE, userId);
             // 分类成PLANNING和IMMEDIATE两类
             Set<SchedulableExecutableAction> scheduledActions = new HashSet<>();

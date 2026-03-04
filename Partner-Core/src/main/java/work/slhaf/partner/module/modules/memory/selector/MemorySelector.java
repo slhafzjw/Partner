@@ -40,7 +40,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
 
     @Override
     public void doExecute(PartnerRunningFlowContext runningFlowContext) {
-        String userId = runningFlowContext.getUserId();
+        String userId = runningFlowContext.getSource();
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(runningFlowContext);
         if (extractorResult.isRecall() || !extractorResult.getMatches().isEmpty()) {
@@ -54,7 +54,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
     private List<EvaluatedSlice> selectAndEvaluateMemory(PartnerRunningFlowContext runningFlowContext, ExtractorResult extractorResult) {
         log.debug("[MemorySelector] 触发记忆回溯...");
         //查找切片
-        String userId = runningFlowContext.getUserId();
+        String userId = runningFlowContext.getSource();
         List<MemoryResult> memoryResultList = new ArrayList<>();
         setMemoryResultList(memoryResultList, extractorResult.getMatches(), userId);
         //评估切片
@@ -70,7 +70,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
     }
 
     private void setModuleContextRecall(PartnerRunningFlowContext runningFlowContext) {
-        String userId = runningFlowContext.getUserId();
+        String userId = runningFlowContext.getSource();
         boolean recall = memoryCapability.hasActivatedSlices(userId);
         runningFlowContext.getModuleContext().getExtraContext().put("recall", recall);
         if (recall) {
@@ -127,7 +127,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
-        String userId = context.getUserId();
+        String userId = context.getSource();
         String dialogMapStr = memoryCapability.getDialogMapStr();
         if (!dialogMapStr.isEmpty()) {
             map.put("[记忆缓存] <你最近两日和所有聊天者的对话记忆印象>", dialogMapStr);

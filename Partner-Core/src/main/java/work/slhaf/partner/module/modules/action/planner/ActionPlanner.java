@@ -83,7 +83,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             if (extractorResult.getTendencies().isEmpty()) {
                 return null;
             }
-            EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult, context.getUserId());
+            EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult, context.getSource());
             List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); // 并发操作均为访问
             putActionData(evaluatorResults, context);
             updateTendencyCache(evaluatorResults, context.getInput(), extractorResult);
@@ -134,7 +134,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
         if (uuids == null) {
             return;
         }
-        List<ExecutableAction> pendingActions = actionCapability.popPendingAction(context.getUserId());
+        List<ExecutableAction> pendingActions = actionCapability.popPendingAction(context.getSource());
         for (ExecutableAction executableAction : pendingActions) {
             if (uuids.contains(executableAction.getUuid())) {
                 actionCapability.putAction(executableAction);
@@ -144,9 +144,9 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
 
     private void putActionData(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
-            ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, context.getUserId());
+            ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, context.getSource());
             if (evaluatorResult.isNeedConfirm()) {
-                actionCapability.putPendingActions(context.getUserId(), executableAction);
+                actionCapability.putPendingActions(context.getSource(), executableAction);
             } else {
                 actionCapability.putAction(executableAction);
             }
@@ -156,7 +156,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
-        String userId = context.getUserId();
+        String userId = context.getSource();
         setupPendingActions(map, userId);
         setupPreparedActions(map, userId);
         return map;
@@ -327,7 +327,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
         private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
             ConfirmerInput confirmerInput = new ConfirmerInput();
             confirmerInput.setInput(context.getInput());
-            List<ExecutableAction> pendingActions = actionCapability.listPendingAction(context.getUserId());
+            List<ExecutableAction> pendingActions = actionCapability.listPendingAction(context.getSource());
             confirmerInput.setExecutableActionData(pendingActions);
             return confirmerInput;
         }

@@ -15,7 +15,7 @@ public abstract class PreRunningAbstractAgentModuleAbstract extends AbstractAgen
         data.setModuleName(moduleName());
         Map<String, String> map = getPromptDataMap(context);
         data.setAppendedPrompt(map);
-        context.setAppendedPrompt(data);
+        context.appendPrompt(data);
     }
 
     private synchronized void setActiveModule(PartnerRunningFlowContext context) {

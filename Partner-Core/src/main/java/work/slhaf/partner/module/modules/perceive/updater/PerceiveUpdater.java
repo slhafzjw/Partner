@@ -47,7 +47,7 @@ public class PerceiveUpdater extends PostRunningAbstractAgentModuleAbstract {
         executor.execute(() -> {
             ReentrantLock userLock = new ReentrantLock();
             User user = new User();
-            user.setUuid(context.getUserId());
+            user.setUuid(context.getSource());
             List<Callable<Void>> tasks = new ArrayList<>();
             tasks.add(() -> {
                 runStaticExtractorAction(context, userLock, user);

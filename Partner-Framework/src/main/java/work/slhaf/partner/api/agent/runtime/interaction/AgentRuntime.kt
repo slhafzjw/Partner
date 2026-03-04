@@ -51,10 +51,9 @@ object AgentRuntime {
             for (modules in runningModules.values) {
                 executeOrder(modules, runningFlowContext)
             }
-            runningFlowContext.ok = 1
         } catch (e: Exception) {
-            runningFlowContext.ok = 0
-            runningFlowContext.errMsg.add(e.localizedMessage)
+            runningFlowContext.status.ok = false
+            runningFlowContext.status.errMsg.add(e.localizedMessage)
         }
 
         return runningFlowContext

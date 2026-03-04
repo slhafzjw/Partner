@@ -22,7 +22,7 @@ public class PerceiveSelector extends PreRunningAbstractAgentModuleAbstract {
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         HashMap<String, String> map = new HashMap<>();
-        User user = perceiveCapability.getUser(context.getUserId());
+        User user = perceiveCapability.getUser(context.getSource());
         map.put("[关系] <你与最新聊天用户的关系>", user.getRelation());
         map.put("[态度] <你对于最新聊天用户的态度>", user.getAttitude().toString());
         map.put("[印象] <你对于最新聊天用户的印象>", user.getImpressions().toString());

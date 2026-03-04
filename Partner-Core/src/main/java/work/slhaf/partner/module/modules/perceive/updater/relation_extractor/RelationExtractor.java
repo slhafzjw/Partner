@@ -31,7 +31,7 @@ public class RelationExtractor extends AbstractAgentModule.Sub<PartnerRunningFlo
     @Override
     public RelationExtractResult execute(PartnerRunningFlowContext context) {
         tempMessages = new ArrayList<>(cognationCapability.getChatMessages());
-        String userId = context.getUserId();
+        String userId = context.getSource();
         RelationExtractInput input = getRelationInput(userId);
         RelationExtractResult relationExtractResult = getRelationResult(input);
         User user = getTempUser(context, relationExtractResult);
@@ -41,7 +41,7 @@ public class RelationExtractor extends AbstractAgentModule.Sub<PartnerRunningFlo
 
     private User getTempUser(PartnerRunningFlowContext context, RelationExtractResult relationExtractResult) {
         User user = new User();
-        user.setUuid(context.getUserId());
+        user.setUuid(context.getSource());
         user.setRelation(relationExtractResult.getRelation());
         user.setImpressions(relationExtractResult.getImpressions());
         user.setAttitude(relationExtractResult.getAttitude());

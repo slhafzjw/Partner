@@ -37,9 +37,9 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
         log.debug("[MemorySelectExtractor] 主题提取模块开始...");
         // 结构化为指定格式
         List<Message> chatMessages = new ArrayList<>();
-        List<MetaMessage> metaMessages = cognationCapability.getSingleMetaMessageMap().get(context.getUserId());
+        List<MetaMessage> metaMessages = cognationCapability.getSingleMetaMessageMap().get(context.getSource());
         if (metaMessages == null) {
-            cognationCapability.getSingleMetaMessageMap().put(context.getUserId(), new ArrayList<>());
+            cognationCapability.getSingleMetaMessageMap().put(context.getSource(), new ArrayList<>());
         } else {
             for (MetaMessage metaMessage : metaMessages) {
                 chatMessages.add(metaMessage.getUserMessage());
@@ -48,10 +48,10 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
         }
         ExtractorResult extractorResult;
         try {
-            List<EvaluatedSlice> activatedMemorySlices = memoryCapability.getActivatedSlices(context.getUserId());
+            List<EvaluatedSlice> activatedMemorySlices = memoryCapability.getActivatedSlices(context.getSource());
             ExtractorInput extractorInput = ExtractorInput.builder()
                     .text(context.getInput())
-                    .date(context.getDateTime().toLocalDate())
+                    .date(context.getInfo().getDateTime().toLocalDate())
                     .history(chatMessages)
                     .topic_tree(memoryCapability.getTopicTree())
                     .activatedMemorySlices(activatedMemorySlices)

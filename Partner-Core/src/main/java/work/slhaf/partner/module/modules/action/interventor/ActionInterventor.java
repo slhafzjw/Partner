@@ -58,8 +58,8 @@ public class ActionInterventor extends PreRunningAbstractAgentModuleAbstract imp
         // 首先通过recognizer进行快速意图识别，识别成功则步入评估阶段，评估成功则直接作用于目标行动链
         // 进行快速意图识别时必须结合近期对话与进行中行动链情况
         // 干预意图识别
-        String uuid = context.getUuid();
-        String userId = context.getUserId();
+        String uuid = context.getInfo().getUuid();
+        String userId = context.getSource();
         RecognizerResult recognizerResult = interventionRecognizer
                 .execute(assemblyHelper.buildRecognizerInput(userId, context.getInput())); // 此处的输入内容携带了所有 PhaserRecord
         if (!recognizerResult.isOk()) {
@@ -141,7 +141,7 @@ public class ActionInterventor extends PreRunningAbstractAgentModuleAbstract imp
 
     @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
-        return interventionPrompt.remove(context.getUuid());
+        return interventionPrompt.remove(context.getInfo().getUuid());
     }
 
     @Override

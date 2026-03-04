@@ -1,51 +1,33 @@
-package work.slhaf.partner.runtime.interaction.data.context;
+package work.slhaf.partner.runtime.interaction.data.context
 
-import com.alibaba.fastjson2.JSONObject;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext;
-import work.slhaf.partner.module.common.entity.AppendPromptData;
-import work.slhaf.partner.runtime.interaction.data.context.subcontext.CoreContext;
-import work.slhaf.partner.runtime.interaction.data.context.subcontext.ModuleContext;
+import com.alibaba.fastjson2.JSONObject
+import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
+import work.slhaf.partner.module.common.entity.AppendPromptData
+import work.slhaf.partner.runtime.interaction.data.context.subcontext.CoreContext
+import work.slhaf.partner.runtime.interaction.data.context.subcontext.ModuleContext
 
-import java.io.Serial;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+class PartnerRunningFlowContext(
+    override val source: String,
+    override val input: String,
+    platform: String,
+    nickName: String
+) : RunningFlowContext() {
 
-@EqualsAndHashCode(callSuper = true)
-@Data
-public class PartnerRunningFlowContext extends RunningFlowContext {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
-
-    protected String userId;
-    protected String userNickname;
-    protected String userInfo;
-    protected String platform;
-    protected LocalDateTime dateTime;
-    protected boolean single;
-
-    protected String input;
-
-    protected CoreContext coreContext = new CoreContext();
-    protected ModuleContext moduleContext = new ModuleContext();
-    protected JSONObject coreResponse = new JSONObject();
-
-    protected String uuid = UUID.randomUUID().toString();
-
-    public boolean isFinished() {
-        return moduleContext.isFinished();
+    init {
+        putUserInfo("platform", platform)
+        putUserInfo("nickname", nickName)
     }
 
-    public void setFinished(boolean finished) {
-        moduleContext.setFinished(finished);
-    }
+    val moduleContext = ModuleContext()
+    val coreContext = CoreContext()
+    val coreResponse = JSONObject()
 
-    public void setAppendedPrompt(AppendPromptData appendedPrompt) {
-        List<AppendPromptData> appendPromptList = moduleContext.getAppendedPrompt();
-        appendPromptList.addFirst(appendedPrompt);
-    }
+    var finished: Boolean
+        get() = moduleContext.isFinished
+        set(value) {
+            moduleContext.isFinished = value
+        }
+
+    fun appendPrompt(appendPromptData: AppendPromptData) = moduleContext.appendPromptData(appendPromptData)
 
 }

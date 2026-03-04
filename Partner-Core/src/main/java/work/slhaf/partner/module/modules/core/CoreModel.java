@@ -61,7 +61,7 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
 
     @Override
     public void execute(PartnerRunningFlowContext runningFlowContext) {
-        String userId = runningFlowContext.getUserId();
+        String userId = runningFlowContext.getSource();
         log.debug("[CoreModel] 主对话流程开始: {}", userId);
         beforeChat(runningFlowContext);
         executeChat(runningFlowContext);
@@ -144,8 +144,8 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
 
     @Override
     public @NotNull ChatResponse chat() {
-        List<@NotNull Message> baseMessages = getModel().getBaseMessages();
-        List<@NotNull Message> chatMessages = getModel().getChatMessages();
+        List<Message> baseMessages = getModel().getBaseMessages();
+        List<Message> chatMessages = getModel().getChatMessages();
         List<Message> temp = new ArrayList<>(baseMessages.subList(0, baseMessages.size() - 2));
         temp.addAll(appendedMessages);
         temp.addAll(baseMessages.subList(baseMessages.size() - 2, baseMessages.size()));
@@ -155,7 +155,7 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
 
     private void updateModuleContextAndChatMessages(PartnerRunningFlowContext runningFlowContext, String response, ChatResponse chatResponse) {
         cognationCapability.getMessageLock().lock();
-        List<@NotNull Message> chatMessages = getModel().getChatMessages();
+        List<Message> chatMessages = getModel().getChatMessages();
         chatMessages.removeIf(m -> {
             if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
                 return false;
@@ -178,10 +178,10 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
         //设置上下文
         runningFlowContext.getModuleContext().getExtraContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
         //区分单人聊天场景
-        if (runningFlowContext.isSingle()) {
+//        if (runningFlowContext.isSingle()) {
             MetaMessage metaMessage = new MetaMessage(primaryUserMessage, assistantMessage);
-            cognationCapability.addMetaMessage(runningFlowContext.getUserId(), metaMessage);
-        }
+        cognationCapability.addMetaMessage(runningFlowContext.getSource(), metaMessage);
+//        }
     }
 
     private void setMessage(String coreContextStr) {

@@ -86,7 +86,7 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
 
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
-        if (context.isFinished()) {
+        if (context.getFinished()) {
             log.warn("[MemoryUpdater] 流程强制结束, 不触发记忆被动更新机制");
             return;
         }

@@ -26,9 +26,9 @@ public class StaticMemoryExtractor extends AbstractAgentModule.Sub<PartnerRunnin
     @Override
     public HashMap<String, String> execute(PartnerRunningFlowContext context) {
         StaticMemoryExtractInput input = StaticMemoryExtractInput.builder()
-                .userId(context.getUserId())
+                .userId(context.getSource())
                 .messages(cognationCapability.getChatMessages())
-                .existedStaticMap(perceiveCapability.getUser(context.getUserId()).getStaticMemory())
+                .existedStaticMap(perceiveCapability.getUser(context.getSource()).getStaticMemory())
                 .build();
         ChatResponse response = singleChat(JSONUtil.toJsonPrettyStr(input));
         JSONObject jsonObject = JSONObject.parseObject(response.getMessage());

@@ -20,4 +20,8 @@ public class ModuleContext extends PersistableObject {
     private List<AppendPromptData> appendedPrompt = new ArrayList<>();
     private JSONObject extraContext = new JSONObject();
     private boolean finished = false;
+
+    public void appendPromptData(AppendPromptData appendPromptData) {
+        this.appendedPrompt.addFirst(appendPromptData);
+    }
 }
