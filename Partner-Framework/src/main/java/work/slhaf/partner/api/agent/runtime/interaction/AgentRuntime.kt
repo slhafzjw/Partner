@@ -52,8 +52,7 @@ object AgentRuntime {
                 executeOrder(modules, runningFlowContext)
             }
         } catch (e: Exception) {
-            runningFlowContext.status.ok = false
-            runningFlowContext.status.errMsg.add(e.localizedMessage)
+            runningFlowContext.status.errors.add(e.localizedMessage)
         }
 
         return runningFlowContext
