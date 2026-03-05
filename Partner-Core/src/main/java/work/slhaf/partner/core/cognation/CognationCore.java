@@ -7,9 +7,11 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.api.agent.runtime.interaction.AgentRuntime;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.PartnerCore;
+import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.io.IOException;
 import java.io.Serial;
@@ -41,6 +43,13 @@ public class CognationCore extends PartnerCore<CognationCore> {
     private long lastUpdatedTime;
 
     public CognationCore() throws IOException, ClassNotFoundException {
+    }
+
+    @CapabilityMethod
+    public String initiateTurn(String input) {
+        PartnerRunningFlowContext primaryContext = PartnerRunningFlowContext.Companion.fromSelf(input);
+        PartnerRunningFlowContext executedContext = AgentRuntime.INSTANCE.submit(primaryContext);
+        return executedContext.getCoreResponse().getString("text");
     }
 
     @CapabilityMethod

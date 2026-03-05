@@ -11,6 +11,8 @@ import java.util.concurrent.locks.Lock;
 @Capability("cognation")
 public interface CognationCapability {
 
+    String initiateTurn(String input);
+
     List<Message> getChatMessages();
 
     void cleanMessage(List<Message> messages);
