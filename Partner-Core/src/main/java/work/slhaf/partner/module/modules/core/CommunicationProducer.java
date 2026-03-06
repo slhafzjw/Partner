@@ -27,7 +27,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowContext> implements ActivateModel {
+public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRunningFlowContext> implements ActivateModel {
 
     @InjectCapability
     private CognationCapability cognationCapability;
@@ -39,7 +39,7 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
         this.getModel().getChatMessages().addAll(chatMessages);
 
         updateChatClientSettings();
-        log.info("[CoreModel] CoreModel注册完毕...");
+        log.info("CommunicationProducer 注册完毕...");
     }
 
     @Override
@@ -51,7 +51,7 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
 
     @Override
     public @NotNull String modelKey() {
-        return "core_model";
+        return "communication_producer";
     }
 
     @Override
@@ -62,10 +62,10 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
     @Override
     public void execute(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getSource();
-        log.debug("[CoreModel] 主对话流程开始: {}", userId);
+        log.debug("[CommunicationProducer] 主对话流程开始: {}", userId);
         beforeChat(runningFlowContext);
         executeChat(runningFlowContext);
-        log.debug("[CoreModel] 主对话流程({})结束...", userId);
+        log.debug("[CommunicationProducer] 主对话流程({})结束...", userId);
     }
 
     private void beforeChat(PartnerRunningFlowContext runningFlowContext) {
@@ -73,8 +73,8 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
         activateModule(runningFlowContext);
         setMessageCount(runningFlowContext);
 
-        log.debug("[CoreModel] 当前消息列表大小: {}", getModel().getChatMessages().size());
-        log.debug("[CoreModel] 当前核心prompt内容: {}", runningFlowContext.getCoreContext().toString());
+        log.debug("[CommunicationProducer] 当前消息列表大小: {}", getModel().getChatMessages().size());
+        log.debug("[CommunicationProducer] 当前核心prompt内容: {}", runningFlowContext.getCoreContext().toString());
 
         setMessage(runningFlowContext.getCoreContext().toString());
     }
@@ -100,12 +100,12 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
                     log.warn("主模型回复格式出错, 将直接作为消息返回, 建议尝试更换主模型...");
                     handleExceptionResponse(response, chatResponse.getMessage());
                 }
-                log.debug("[CoreModel] CoreModel 响应内容: {}", response);
+                log.debug("[CommunicationProducer] CommunicationProducer 响应内容: {}", response);
                 updateModuleContextAndChatMessages(runningFlowContext, response.getString("text"), chatResponse);
                 break;
             } catch (Exception e) {
                 count++;
-                log.error("[CoreModel] CoreModel执行异常: {}", e.getLocalizedMessage());
+                log.error("[CommunicationProducer] CoreModel执行异常: {}", e.getLocalizedMessage());
                 if (count > 3) {
                     handleExceptionResponse(response, "主模型交互出错: " + e.getLocalizedMessage());
                     getModel().getChatMessages().removeLast();
@@ -114,7 +114,7 @@ public class CoreModel extends AbstractAgentModule.Running<PartnerRunningFlowCon
             } finally {
                 updateCoreResponse(runningFlowContext, response);
                 resetAppendedMessages();
-                log.debug("[CoreModel] 消息列表更新大小: {}", getModel().getChatMessages().size());
+                log.debug("[CommunicationProducer] 消息列表更新大小: {}", getModel().getChatMessages().size());
             }
         }
     }
