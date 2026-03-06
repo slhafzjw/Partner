@@ -24,7 +24,7 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput, Void> {
+public class ActionExecutor extends AbstractAgentModule.Standalone {
     private final AssemblyHelper assemblyHelper = new AssemblyHelper();
     @InjectCapability
     private ActionCapability actionCapability;
@@ -57,7 +57,6 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
      * @param input ActionExecutor 输入内容
      * @return 无返回，执行结果回写至 input 内部携带的 actionData 中
      */
-    @Override
     public Void execute(ActionExecutorInput input) {
         val actions = input.getActions();
         // 异步执行所有行动
