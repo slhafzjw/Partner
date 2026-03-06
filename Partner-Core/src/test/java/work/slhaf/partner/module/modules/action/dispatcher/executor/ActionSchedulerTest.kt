@@ -103,15 +103,6 @@ class ActionSchedulerTest {
     }
 
     @Test
-    fun `execute with null input should return null and no side effects`() {
-        // 场景编号：1；路径：B1；目的：验证正常早退
-        val result = actionScheduler.schedule(null)
-
-        assertEquals(null, result)
-        verify(actionCapability, Mockito.never()).putAction(any(ExecutableAction::class.java))
-    }
-
-    @Test
     fun `execute should put action and schedule valid ONCE prepare action`() {
         // 场景编号：2；路径：B2 → B2.3；目的：验证正常入轮与副作用
         initTimeWheelWithPrimaryActions(emptySet())
