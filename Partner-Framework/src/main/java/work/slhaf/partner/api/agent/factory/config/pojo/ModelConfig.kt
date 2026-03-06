@@ -1,10 +1,10 @@
-package work.slhaf.partner.api.agent.factory.config.pojo;
+package work.slhaf.partner.api.agent.factory.config.pojo
 
-import lombok.Data;
+import lombok.Data
 
 @Data
-public class ModelConfig {
-    private String baseUrl;
-    private String apikey;
-    private String model;
-}
+data class ModelConfig(
+    val baseUrl: String,
+    val apikey: String,
+    val model: String
+)
