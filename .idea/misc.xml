@@ -20,6 +20,7 @@
     </list>
     <writeAnnotations>
       <writeAnnotation name="work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability" />
+      <writeAnnotation name="work.slhaf.partner.api.agent.factory.component.annotation.InjectModule" />
       <writeAnnotation name="work.slhaf.partner.api.agent.factory.module.annotation.InjectModule" />
     </writeAnnotations>
   </component>
