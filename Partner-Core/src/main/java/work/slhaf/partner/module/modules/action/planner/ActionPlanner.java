@@ -16,6 +16,9 @@ import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
+import work.slhaf.partner.module.modules.action.dispatcher.executor.ActionExecutor;
+import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ActionExecutorInput;
+import work.slhaf.partner.module.modules.action.dispatcher.scheduler.ActionScheduler;
 import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerResult;
@@ -33,10 +36,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * 负责针对本次输入生成基础的行动计划，在主模型传达意愿后，执行行动或者放入计划池
+ * 负责针对本次输入生成基础的行动计划
  */
 public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
+
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
+
     @InjectCapability
     private CognationCapability cognationCapability;
     @InjectCapability
@@ -45,12 +50,18 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
     private PerceiveCapability perceiveCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
+
     @InjectModule
     private ActionEvaluator actionEvaluator;
     @InjectModule
     private ActionExtractor actionExtractor;
     @InjectModule
     private ActionConfirmer actionConfirmer;
+    @InjectModule
+    private ActionScheduler actionScheduler;
+    @InjectModule
+    private ActionExecutor actionExecutor;
+
     private ExecutorService executor;
 
     @Init
@@ -136,8 +147,16 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
         }
         List<ExecutableAction> pendingActions = actionCapability.popPendingAction(context.getSource());
         for (ExecutableAction executableAction : pendingActions) {
+            // put action into ActionCore to record
             if (uuids.contains(executableAction.getUuid())) {
                 actionCapability.putAction(executableAction);
+            }
+            // execute or schedule it immediately
+            switch (executableAction) {
+                case SchedulableExecutableAction action -> actionScheduler.schedule(Set.of(action));
+                case ImmediateExecutableAction action ->
+                        actionExecutor.execute(new ActionExecutorInput(Set.of(action)));
+                default -> log.error("unknown executable action type: {}", executableAction.getClass().getSimpleName());
             }
         }
     }
