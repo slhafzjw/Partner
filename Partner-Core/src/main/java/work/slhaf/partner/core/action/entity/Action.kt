@@ -32,6 +32,7 @@ sealed interface Schedulable {
     val scheduleType: ScheduleType
     val scheduleContent: String
     val uuid: String
+    var enabled: Boolean
 
     enum class ScheduleType {
         CYCLE,
@@ -116,6 +117,7 @@ data class SchedulableExecutableAction(
     override val scheduleContent: String
 ) : ExecutableAction(), Schedulable {
 
+    override var enabled = true
     val scheduleHistories = ArrayList<ScheduleHistory>()
 
     fun recordAndReset() {
@@ -162,6 +164,8 @@ data class StateAction(
 
     override val scheduleType: Schedulable.ScheduleType,
     override val scheduleContent: String,
+
+    override var enabled: Boolean = true,
 
     val trigger: Trigger
 ) : Action(), Schedulable {

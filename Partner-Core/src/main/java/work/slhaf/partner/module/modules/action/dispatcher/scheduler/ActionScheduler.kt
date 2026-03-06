@@ -81,6 +81,9 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
 
     fun schedule(input: Set<Schedulable>) = schedulerScope.launch {
         for (schedulableData in input) {
+            if (!schedulableData.enabled) {
+                continue
+            }
             log.debug("New data to schedule: {}", schedulableData)
             timeWheel.schedule(schedulableData)
             if (schedulableData is SchedulableExecutableAction) {
@@ -143,7 +146,7 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                     for (i in previousTick..tick) {
                         val bucket = wheel[i]
                         if (bucket.isNotEmpty()) {
-                            toTrigger.addAll(bucket)
+                            toTrigger.addAll(bucket.filter { it.enabled })
                             val bucketUuids = bucket.asSequence().map { it.uuid }.toHashSet()
                             schedulableGroupByHour[triggerHour].removeIf { it.uuid in bucketUuids }
                             bucket.clear() // 避免重复触发
