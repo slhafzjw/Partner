@@ -144,7 +144,7 @@ public class ActionExecutor extends AbstractAgentModule.Sub<ActionExecutorInput,
                     // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
                     if (executableAction instanceof SchedulableExecutableAction scheduledActionData) {
                         scheduledActionData.recordAndReset();
-                        actionScheduler.execute(Set.of(scheduledActionData));
+                        actionScheduler.schedule(Set.of(scheduledActionData));
                     } else {
                         executableAction.setStatus(Status.SUCCESS);
                     }

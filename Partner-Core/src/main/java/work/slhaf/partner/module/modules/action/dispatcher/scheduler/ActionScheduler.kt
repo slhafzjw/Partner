@@ -79,7 +79,7 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
         })
     }
 
-    fun execute(input: Set<Schedulable>) = schedulerScope.launch {
+    fun schedule(input: Set<Schedulable>) = schedulerScope.launch {
         for (schedulableData in input) {
             log.debug("New data to schedule: {}", schedulableData)
             timeWheel.schedule(schedulableData)

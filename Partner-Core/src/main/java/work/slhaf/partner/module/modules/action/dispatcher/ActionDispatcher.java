@@ -53,7 +53,7 @@ public class ActionDispatcher extends PostRunningAbstractAgentModuleAbstract {
                 }
             }
             actionExecutor.execute(new ActionExecutorInput(immediateActions));
-            actionScheduler.execute(scheduledActions);
+            actionScheduler.schedule(scheduledActions);
         });
     }
 

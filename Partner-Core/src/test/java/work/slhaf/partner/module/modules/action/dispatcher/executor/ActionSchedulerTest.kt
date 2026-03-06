@@ -93,7 +93,7 @@ class ActionSchedulerTest {
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineName("ActionSchedulerTest"))
         scope.launch {
-            actionScheduler.execute(
+            actionScheduler.schedule(
                 setOf(
                     buildAction(now.plusSeconds(5)),
                 )
@@ -105,7 +105,7 @@ class ActionSchedulerTest {
     @Test
     fun `execute with null input should return null and no side effects`() {
         // 场景编号：1；路径：B1；目的：验证正常早退
-        val result = actionScheduler.execute(null)
+        val result = actionScheduler.schedule(null)
 
         assertEquals(null, result)
         verify(actionCapability, Mockito.never()).putAction(any(ExecutableAction::class.java))
@@ -120,7 +120,7 @@ class ActionSchedulerTest {
             ZonedDateTime.now().plusHours(1).toString()
         )
 
-        actionScheduler.execute(setOf(action))
+        actionScheduler.schedule(setOf(action))
 
         verify(actionCapability, times(1)).putAction(action)
         val timeWheel = timeWheel()
@@ -136,7 +136,7 @@ class ActionSchedulerTest {
             type = Schedulable.ScheduleType.ONCE
         )
 
-        actionScheduler.execute(setOf(action))
+        actionScheduler.schedule(setOf(action))
 
         verify(actionCapability, times(1)).putAction(action)
         val allScheduled = allScheduledActions(timeWheel())
@@ -151,7 +151,7 @@ class ActionSchedulerTest {
             type = Schedulable.ScheduleType.ONCE
         )
 
-        actionScheduler.execute(setOf(action))
+        actionScheduler.schedule(setOf(action))
 
         val allScheduled = allScheduledActions(timeWheel())
         assertFalse(allScheduled.contains(action))
@@ -166,7 +166,7 @@ class ActionSchedulerTest {
             scheduleContentOverride = "invalid-cron"
         )
 
-        actionScheduler.execute(setOf(action))
+        actionScheduler.schedule(setOf(action))
 
         val allScheduled = allScheduledActions(timeWheel())
         assertFalse(allScheduled.contains(action))
@@ -184,7 +184,7 @@ class ActionSchedulerTest {
             .putAction(action)
 
         assertThrows(RuntimeException::class.java) {
-            actionScheduler.execute(setOf(action))
+            actionScheduler.schedule(setOf(action))
         }
     }
 
@@ -202,7 +202,7 @@ class ActionSchedulerTest {
         setCurrentHour(timeWheel, actionHour)
         setWheelState(timeWheel, "SLEEPING")
 
-        actionScheduler.execute(setOf(action))
+        actionScheduler.schedule(setOf(action))
 
         assertEquals("ACTIVE", wheelStateName(timeWheel))
     }
@@ -225,7 +225,7 @@ class ActionSchedulerTest {
             scheduleContentOverride = "invalid-cron"
         )
 
-        actionScheduler.execute(setOf(ok, nonPrepare, invalid))
+        actionScheduler.schedule(setOf(ok, nonPrepare, invalid))
 
         verify(actionCapability, times(1)).putAction(ok)
         verify(actionCapability, times(1)).putAction(nonPrepare)
