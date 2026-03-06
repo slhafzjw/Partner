@@ -1,6 +1,6 @@
 package work.slhaf.partner.core.action.entity
 
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.HistoryAction
+import work.slhaf.partner.module.modules.action.executor.entity.HistoryAction
 import java.time.ZonedDateTime
 import java.util.*
 

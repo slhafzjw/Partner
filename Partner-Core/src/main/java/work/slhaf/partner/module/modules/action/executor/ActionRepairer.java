@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.dispatcher.executor;
+package work.slhaf.partner.module.modules.action.executor;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -16,11 +16,11 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorInput;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorResult;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.RepairerInput;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.RepairerResult;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.RepairerResult.RepairerStatus;
+import work.slhaf.partner.module.modules.action.executor.entity.GeneratorInput;
+import work.slhaf.partner.module.modules.action.executor.entity.GeneratorResult;
+import work.slhaf.partner.module.modules.action.executor.entity.RepairerInput;
+import work.slhaf.partner.module.modules.action.executor.entity.RepairerResult;
+import work.slhaf.partner.module.modules.action.executor.entity.RepairerResult.RepairerStatus;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;

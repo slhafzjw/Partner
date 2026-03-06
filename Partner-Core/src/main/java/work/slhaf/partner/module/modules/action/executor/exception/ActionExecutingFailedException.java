@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.dispatcher.executor.exception;
+package work.slhaf.partner.module.modules.action.executor.exception;
 
 import work.slhaf.partner.api.agent.runtime.exception.AgentRuntimeException;
 

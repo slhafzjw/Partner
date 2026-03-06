@@ -13,10 +13,14 @@ import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ActionExecutorInput;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.CorrectorResult;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ExtractorResult;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.RepairerResult;
+import work.slhaf.partner.module.modules.action.executor.ActionCorrector;
+import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
+import work.slhaf.partner.module.modules.action.executor.ActionRepairer;
+import work.slhaf.partner.module.modules.action.executor.ParamsExtractor;
+import work.slhaf.partner.module.modules.action.executor.entity.ActionExecutorInput;
+import work.slhaf.partner.module.modules.action.executor.entity.CorrectorResult;
+import work.slhaf.partner.module.modules.action.executor.entity.ExtractorResult;
+import work.slhaf.partner.module.modules.action.executor.entity.RepairerResult;
 
 import java.util.*;
 import java.util.concurrent.*;

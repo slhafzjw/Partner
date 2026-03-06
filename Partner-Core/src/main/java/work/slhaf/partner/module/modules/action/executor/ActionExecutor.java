@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.dispatcher.executor;
+package work.slhaf.partner.module.modules.action.executor;
 
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
@@ -12,8 +12,8 @@ import work.slhaf.partner.core.action.entity.ExecutableAction.Status;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.*;
-import work.slhaf.partner.module.modules.action.dispatcher.scheduler.ActionScheduler;
+import work.slhaf.partner.module.modules.action.executor.entity.*;
+import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 
 import java.util.ArrayList;
 import java.util.List;

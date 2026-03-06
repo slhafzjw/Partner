@@ -16,9 +16,8 @@ import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.ActionExecutor;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ActionExecutorInput;
-import work.slhaf.partner.module.modules.action.dispatcher.scheduler.ActionScheduler;
+import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
+import work.slhaf.partner.module.modules.action.executor.entity.ActionExecutorInput;
 import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerResult;
@@ -28,6 +27,7 @@ import work.slhaf.partner.module.modules.action.planner.evaluator.entity.Evaluat
 import work.slhaf.partner.module.modules.action.planner.extractor.ActionExtractor;
 import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorInput;
 import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorResult;
+import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.*;

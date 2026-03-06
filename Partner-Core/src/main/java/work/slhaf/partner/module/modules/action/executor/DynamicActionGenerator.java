@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.dispatcher.executor;
+package work.slhaf.partner.module.modules.action.executor;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.val;
@@ -12,8 +12,8 @@ import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.GeneratedData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.runner.RunnerClient;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorInput;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.GeneratorResult;
+import work.slhaf.partner.module.modules.action.executor.entity.GeneratorInput;
+import work.slhaf.partner.module.modules.action.executor.entity.GeneratorResult;
 
 /**
  * 负责依据输入内容生成可执行的动态行动单元，并选择是否持久化至 SandboxRunner 容器内

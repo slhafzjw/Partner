@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.dispatcher.executor;
+package work.slhaf.partner.module.modules.action.executor;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
@@ -6,9 +6,9 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ExtractorInput;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.ExtractorResult;
-import work.slhaf.partner.module.modules.action.dispatcher.executor.entity.HistoryAction;
+import work.slhaf.partner.module.modules.action.executor.entity.ExtractorInput;
+import work.slhaf.partner.module.modules.action.executor.entity.ExtractorResult;
+import work.slhaf.partner.module.modules.action.executor.entity.HistoryAction;
 
 import java.util.HashMap;
 import java.util.List;

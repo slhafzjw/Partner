@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.dispatcher.executor.entity;
+package work.slhaf.partner.module.modules.action.executor.entity;
 
 import lombok.Builder;
 import lombok.Data;

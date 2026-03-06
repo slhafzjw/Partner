@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.dispatcher.executor.entity
+package work.slhaf.partner.module.modules.action.executor.entity
 
 import work.slhaf.partner.core.action.entity.ExecutableAction
 
