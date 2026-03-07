@@ -16,9 +16,7 @@ import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Phaser;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -50,7 +48,19 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     }
 
     public void execute(Action action) {
-        virtualExecutor.execute(actionExecutionRouter(action));
+
+        Future<?> future = virtualExecutor.submit(actionExecutionRouter(action));
+
+        virtualExecutor.execute(() -> {
+            try {
+                future.get(action.getTimeoutMills(), TimeUnit.MILLISECONDS);
+            } catch (TimeoutException e) {
+                future.cancel(true);
+                action.setStatus(Action.Status.FAILED);
+                log.warn("Action timeout, uuid: {}", action.getUuid());
+            } catch (Exception ignored) {
+            }
+        });
     }
 
     private Runnable actionExecutionRouter(Action action) {

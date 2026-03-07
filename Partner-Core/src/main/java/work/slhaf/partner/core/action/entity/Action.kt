@@ -27,6 +27,11 @@ sealed class Action {
      */
     abstract val description: String
 
+    abstract val timeout: Duration
+
+    val timeoutMills: Long
+        get() = timeout.inWholeMilliseconds
+
     /**
      * 行动状态
      */
@@ -66,6 +71,7 @@ sealed interface Schedulable {
     val scheduleContent: String
     val uuid: String
     val timeout: Duration
+    val timeoutMills: Long
     var enabled: Boolean
 
     enum class ScheduleType {
@@ -105,6 +111,7 @@ sealed class ExecutableAction : Action() {
      */
     val additionalContext: MutableMap<Int, MutableList<String>> = mutableMapOf()
 
+    override val timeout: Duration = 10.minutes
 }
 
 /**
@@ -118,7 +125,6 @@ data class SchedulableExecutableAction @JvmOverloads constructor(
     override val source: String,
     override val scheduleType: Schedulable.ScheduleType,
     override val scheduleContent: String,
-    override val timeout: Duration = 10.minutes
 ) : ExecutableAction(), Schedulable {
 
     override var enabled = true
@@ -157,7 +163,7 @@ data class ImmediateExecutableAction(
 ) : ExecutableAction()
 
 /**
- * 用于计时的一次性触发或者针对某一数据源进行内容更新的行动
+ * 用于计时的一次性或周期性触发或者针对某一数据源进行内容更新的行动
  */
 data class StateAction @JvmOverloads constructor(
     override val source: String,
