@@ -25,56 +25,10 @@ sealed class Action {
      */
     abstract val description: String
 
-}
-
-sealed interface Schedulable {
-
-    val scheduleType: ScheduleType
-    val scheduleContent: String
-    val uuid: String
-    var enabled: Boolean
-
-    enum class ScheduleType {
-        CYCLE,
-        ONCE
-    }
-}
-
-/**
- * 行动模块传递的行动数据，包含行动uuid、倾向、状态、行动链、结果、发起原因、行动描述等信息。
- */
-sealed class ExecutableAction : Action() {
-    /**
-     * 行动倾向
-     */
-    abstract val tendency: String
-
     /**
      * 行动状态
      */
     var status: Status = Status.PREPARE
-
-    /**
-     * 行动链
-     */
-    abstract val actionChain: MutableMap<Int, MutableList<MetaAction>>
-
-    /**
-     * 行动阶段（当前阶段）
-     */
-    var executingStage: Int = 0
-
-    /**
-     * 行动结果
-     */
-    lateinit var result: String
-
-    val history: MutableMap<Int, MutableList<HistoryAction>> = mutableMapOf()
-
-    /**
-     * 修复上下文
-     */
-    val additionalContext: MutableMap<Int, MutableList<String>> = mutableMapOf()
 
     enum class Status {
         /**
@@ -102,6 +56,52 @@ sealed class ExecutableAction : Action() {
          */
         PREPARE
     }
+}
+
+sealed interface Schedulable {
+
+    val scheduleType: ScheduleType
+    val scheduleContent: String
+    val uuid: String
+    var enabled: Boolean
+
+    enum class ScheduleType {
+        CYCLE,
+        ONCE
+    }
+}
+
+/**
+ * 行动模块传递的行动数据，包含行动uuid、倾向、状态、行动链、结果、发起原因、行动描述等信息。
+ */
+sealed class ExecutableAction : Action() {
+    /**
+     * 行动倾向
+     */
+    abstract val tendency: String
+
+    /**
+     * 行动链
+     */
+    abstract val actionChain: MutableMap<Int, MutableList<MetaAction>>
+
+    /**
+     * 行动阶段（当前阶段）
+     */
+    var executingStage: Int = 0
+
+    /**
+     * 行动结果
+     */
+    lateinit var result: String
+
+    val history: MutableMap<Int, MutableList<HistoryAction>> = mutableMapOf()
+
+    /**
+     * 修复上下文
+     */
+    val additionalContext: MutableMap<Int, MutableList<String>> = mutableMapOf()
+
 }
 
 /**

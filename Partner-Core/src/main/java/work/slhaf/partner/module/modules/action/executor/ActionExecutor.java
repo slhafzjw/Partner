@@ -8,7 +8,6 @@ import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
-import work.slhaf.partner.core.action.entity.ExecutableAction.Status;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
@@ -62,19 +61,19 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         for (ExecutableAction executableAction : actions) {
             platformExecutor.execute(() -> {
                 val source = executableAction.getSource();
-                if (executableAction.getStatus() != Status.PREPARE) {
+                if (executableAction.getStatus() != Action.Status.PREPARE) {
                     return;
                 }
                 val actionChain = executableAction.getActionChain();
                 if (actionChain.isEmpty()) {
-                    executableAction.setStatus(Status.FAILED);
+                    executableAction.setStatus(Action.Status.FAILED);
                     executableAction.setResult("行动链为空");
                     return;
                 }
                 // 注册执行中行动
                 val phaser = new Phaser();
                 val phaserRecord = actionCapability.putPhaserRecord(phaser, executableAction);
-                executableAction.setStatus(Status.EXECUTING);
+                executableAction.setStatus(Action.Status.EXECUTING);
                 // 开始执行
                 val stageCursor = new Object() {
                     int stageCount;
@@ -138,13 +137,13 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 } while (stageCursor.next());
                 // 结束
                 actionCapability.removePhaserRecord(phaser);
-                if (executableAction.getStatus() != Status.FAILED) {
+                if (executableAction.getStatus() != Action.Status.FAILED) {
                     // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
                     if (executableAction instanceof SchedulableExecutableAction scheduledActionData) {
                         scheduledActionData.recordAndReset();
                         actionScheduler.schedule(Set.of(scheduledActionData));
                     } else {
-                        executableAction.setStatus(Status.SUCCESS);
+                        executableAction.setStatus(Action.Status.SUCCESS);
                     }
                     // TODO 执行过后需要回写至任务上下文（recentCompletedTask），同时触发自对话信号进行确认并记录以及是否通知用户（触发与否需要机制进行匹配，在模块链路可增加 interaction gate 门控，判断此次对话作用于谁、由谁发出、何种性质、是否需要回应等）
                 }
