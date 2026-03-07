@@ -152,7 +152,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             }
             // execute or schedule it immediately
             switch (executableAction) {
-                case SchedulableExecutableAction action -> actionScheduler.schedule(Set.of(action));
+                case SchedulableExecutableAction action -> actionScheduler.schedule(action);
                 case ImmediateExecutableAction action -> actionExecutor.execute(action);
                 default -> log.error("unknown executable action type: {}", executableAction.getClass().getSimpleName());
             }

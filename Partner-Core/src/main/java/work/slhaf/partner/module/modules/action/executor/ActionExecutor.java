@@ -16,7 +16,6 @@ import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
@@ -160,7 +159,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
             if (executableAction instanceof SchedulableExecutableAction scheduledActionData) {
                 scheduledActionData.recordAndReset();
-                actionScheduler.schedule(Set.of(scheduledActionData));
+                actionScheduler.schedule(scheduledActionData);
             } else {
                 executableAction.setStatus(Action.Status.SUCCESS);
             }

@@ -70,16 +70,14 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
 
     // TODO any implementations of Action should be record into ActionCore
     // TODO the method in ActionCapability should be compatible with different Action types
-    fun schedule(input: Set<Schedulable>) = schedulerScope.launch {
-        for (schedulableData in input) {
-            if (!schedulableData.enabled) {
-                continue
-            }
-            log.debug("New data to schedule: {}", schedulableData)
-            timeWheel.schedule(schedulableData)
-            if (schedulableData is SchedulableExecutableAction) {
-                actionCapability.putAction(schedulableData)
-            }
+    fun <T> schedule(schedulableAction: T) where T : Action, T : Schedulable = schedulerScope.launch {
+        if (!schedulableAction.enabled) {
+            return@launch
+        }
+        log.debug("New data to schedule: {}", schedulableAction)
+        timeWheel.schedule(schedulableAction)
+        if (schedulableAction is SchedulableExecutableAction) {
+            actionCapability.putAction(schedulableAction)
         }
     }
 

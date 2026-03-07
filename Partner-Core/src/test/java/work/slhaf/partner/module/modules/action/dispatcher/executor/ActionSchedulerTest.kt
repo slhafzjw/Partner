@@ -14,11 +14,11 @@ import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.core.action.ActionCapability
+import work.slhaf.partner.core.action.entity.Action
 import work.slhaf.partner.core.action.entity.ExecutableAction
 import work.slhaf.partner.core.action.entity.Schedulable
 import work.slhaf.partner.core.action.entity.SchedulableExecutableAction
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor
-import work.slhaf.partner.module.modules.action.executor.entity.ActionExecutorInput
 import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -83,10 +83,8 @@ class ActionSchedulerTest {
             .thenReturn(actions as Set<ExecutableAction>)
         Mockito.`when`(actionExecutor.execute(any()))
             .thenAnswer {
-                val input = it.arguments[0] as ActionExecutorInput
-                for (actionData in input.actions) {
-                    log.info("Executed action $actionData at ${ZonedDateTime.now()}")
-                }
+                val actionData = it.arguments[0] as ExecutableAction
+                log.info("Executed action $actionData at ${ZonedDateTime.now()}")
                 null
             }
         actionScheduler.init()
@@ -94,11 +92,7 @@ class ActionSchedulerTest {
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineName("ActionSchedulerTest"))
         scope.launch {
-            actionScheduler.schedule(
-                setOf(
-                    buildAction(now.plusSeconds(5)),
-                )
-            )
+            actionScheduler.schedule(buildAction(now.plusSeconds(5)))
         }
         readlnOrNull()
     }
@@ -112,7 +106,7 @@ class ActionSchedulerTest {
             ZonedDateTime.now().plusHours(1).toString()
         )
 
-        actionScheduler.schedule(setOf(action))
+        actionScheduler.schedule(action)
 
         verify(actionCapability, times(1)).putAction(action)
         val timeWheel = timeWheel()
@@ -128,7 +122,7 @@ class ActionSchedulerTest {
             type = Schedulable.ScheduleType.ONCE
         )
 
-        actionScheduler.schedule(setOf(action))
+        actionScheduler.schedule(action)
 
         verify(actionCapability, times(1)).putAction(action)
         val allScheduled = allScheduledActions(timeWheel())
@@ -143,7 +137,7 @@ class ActionSchedulerTest {
             type = Schedulable.ScheduleType.ONCE
         )
 
-        actionScheduler.schedule(setOf(action))
+        actionScheduler.schedule(action)
 
         val allScheduled = allScheduledActions(timeWheel())
         assertFalse(allScheduled.contains(action))
@@ -158,7 +152,7 @@ class ActionSchedulerTest {
             scheduleContentOverride = "invalid-cron"
         )
 
-        actionScheduler.schedule(setOf(action))
+        actionScheduler.schedule(action)
 
         val allScheduled = allScheduledActions(timeWheel())
         assertFalse(allScheduled.contains(action))
@@ -176,7 +170,7 @@ class ActionSchedulerTest {
             .putAction(action)
 
         assertThrows(RuntimeException::class.java) {
-            actionScheduler.schedule(setOf(action))
+            actionScheduler.schedule(action)
         }
     }
 
@@ -194,7 +188,7 @@ class ActionSchedulerTest {
         setCurrentHour(timeWheel, actionHour)
         setWheelState(timeWheel, "SLEEPING")
 
-        actionScheduler.schedule(setOf(action))
+        actionScheduler.schedule(action)
 
         assertEquals("ACTIVE", wheelStateName(timeWheel))
     }
@@ -211,13 +205,15 @@ class ActionSchedulerTest {
             type = Schedulable.ScheduleType.ONCE,
             scheduleContentOverride = ZonedDateTime.now().plusMinutes(2).toString()
         )
-        nonPrepare.status = ExecutableAction.Status.FAILED
+        nonPrepare.status = Action.Status.FAILED
         val invalid = buildScheduledAction(
             type = Schedulable.ScheduleType.CYCLE,
             scheduleContentOverride = "invalid-cron"
         )
 
-        actionScheduler.schedule(setOf(ok, nonPrepare, invalid))
+        actionScheduler.schedule(ok)
+        actionScheduler.schedule(nonPrepare)
+        actionScheduler.schedule(invalid)
 
         verify(actionCapability, times(1)).putAction(ok)
         verify(actionCapability, times(1)).putAction(nonPrepare)
