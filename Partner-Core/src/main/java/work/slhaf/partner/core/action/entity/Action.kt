@@ -110,7 +110,7 @@ sealed class ExecutableAction : Action() {
 /**
  * 计划行动数据类，继承自[Action]，扩展了[Schedulable]相关调度属性，用于标识计划类型(单次还是周期性任务)和计划内容
  */
-data class SchedulableExecutableAction(
+data class SchedulableExecutableAction @JvmOverloads constructor(
     override val tendency: String,
     override val actionChain: MutableMap<Int, MutableList<MetaAction>>,
     override val reason: String,
@@ -159,7 +159,7 @@ data class ImmediateExecutableAction(
 /**
  * 用于计时的一次性触发或者针对某一数据源进行内容更新的行动
  */
-data class StateAction(
+data class StateAction @JvmOverloads constructor(
     override val source: String,
     override val reason: String,
     override val description: String,
