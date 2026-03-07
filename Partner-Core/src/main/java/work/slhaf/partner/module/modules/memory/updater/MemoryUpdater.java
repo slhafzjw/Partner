@@ -136,11 +136,9 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
         // 对剩下的多人聊天记录进行进行摘要
         Callable<Void> task = () -> {
             log.debug("[MemoryUpdater] 多人聊天记忆更新流程开始...");
-            List<Message> chatMessages;
             cognationCapability.getMessageLock().lock();
-            chatMessages = new ArrayList<>(cognationCapability.getChatMessages());
+            List<Message> chatMessages = getCleanedMessages(cognationCapability.getChatMessages());
             cognationCapability.getMessageLock().unlock();
-            cleanMessage(chatMessages);
             if (!chatMessages.isEmpty()) {
                 log.debug("[MemoryUpdater] 存在多人聊天记录, 流程正常进行...");
                 // 以第一条user对应的id为发起用户
@@ -168,15 +166,16 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
         executor.invokeAll(List.of(task));
     }
 
-    private void cleanMessage(List<Message> chatMessages) {
-        // 清理时间标识
-        for (Message message : chatMessages) {
-            if (message.getRole().equals(ChatConstant.Character.ASSISTANT)) {
-                continue;
-            }
-            String time = Arrays.stream(message.getContent().split("\\*\\*")).toList().getLast();
-            message.setContent(message.getContent().replace("\r\n**" + time, ""));
-        }
+    // TODO need to move time information into perceive core
+    private List<Message> getCleanedMessages(List<Message> chatMessages) {
+        return chatMessages.stream()
+                .map(message -> {
+                    if (message.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+                        return message;
+                    }
+                    String time = Arrays.stream(message.getContent().split("\\*\\*")).toList().getLast();
+                    return new Message(ChatConstant.Character.USER, message.getContent().replace("\r\n**" + time, ""));
+                }).toList();
     }
 
     private void clearChatMessages() {
