@@ -61,8 +61,12 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                     case StateAction stateAction -> handleStateAction(stateAction);
                     default -> handleUnknownAction(action);
                 }
+                if (action.getStatus() == Action.Status.FAILED) {
+                    return;
+                }
+                action.setStatus(Action.Status.SUCCESS);
             } catch (Exception e) {
-                log.warn("Action execute failure, uuid: {}, description: {}, failure reason: {}", action.getUuid(), action.getDescription(), e.getLocalizedMessage());
+                log.warn("Unexpected action execution failure, uuid: {}, description: {}, failure reason: {}", action.getUuid(), action.getDescription(), e.getLocalizedMessage());
                 action.setStatus(Action.Status.FAILED);
             }
         };
@@ -155,16 +159,11 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         } while (stageCursor.next());
         // 结束
         actionCapability.removePhaserRecord(phaser);
-        if (executableAction.getStatus() != Action.Status.FAILED) {
-            // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
-            if (executableAction instanceof SchedulableExecutableAction scheduledActionData) {
-                scheduledActionData.recordAndReset();
-                actionScheduler.schedule(scheduledActionData);
-            } else {
-                executableAction.setStatus(Action.Status.SUCCESS);
-            }
-            // TODO 执行过后需要回写至任务上下文（recentCompletedTask），同时触发自对话信号进行确认并记录以及是否通知用户（触发与否需要机制进行匹配，在模块链路可增加 interaction gate 门控，判断此次对话作用于谁、由谁发出、何种性质、是否需要回应等）
+        // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
+        if (executableAction instanceof SchedulableExecutableAction scheduledActionData) {
+            scheduledActionData.recordAndReset();
         }
+        // TODO 执行过后需要回写至任务上下文（recentCompletedTask），同时触发自对话信号进行确认并记录以及是否通知用户（触发与否需要机制进行匹配，在模块链路可增加 interaction gate 门控，判断此次对话作用于谁、由谁发出、何种性质、是否需要回应等）
     }
 
     private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, PhaserRecord phaserRecord, String source) {

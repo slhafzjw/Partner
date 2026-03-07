@@ -3,6 +3,8 @@ package work.slhaf.partner.core.action.entity
 import work.slhaf.partner.module.modules.action.executor.entity.HistoryAction
 import java.time.ZonedDateTime
 import java.util.*
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 sealed class Action {
     /**
@@ -63,6 +65,7 @@ sealed interface Schedulable {
     val scheduleType: ScheduleType
     val scheduleContent: String
     val uuid: String
+    val timeout: Duration
     var enabled: Boolean
 
     enum class ScheduleType {
@@ -114,7 +117,8 @@ data class SchedulableExecutableAction(
     override val description: String,
     override val source: String,
     override val scheduleType: Schedulable.ScheduleType,
-    override val scheduleContent: String
+    override val scheduleContent: String,
+    override val timeout: Duration = 10.minutes
 ) : ExecutableAction(), Schedulable {
 
     override var enabled = true
@@ -132,8 +136,6 @@ data class SchedulableExecutableAction(
                 action.result.reset()
             }
         }
-
-        status = Status.PREPARE
     }
 
     data class ScheduleHistory(
@@ -166,6 +168,7 @@ data class StateAction(
     override val scheduleContent: String,
 
     override var enabled: Boolean = true,
+    override val timeout: Duration = 5.minutes,
 
     val trigger: Trigger
 ) : Action(), Schedulable {

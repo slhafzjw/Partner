@@ -26,6 +26,7 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.stream.Collectors
 import kotlin.jvm.optionals.getOrNull
+import kotlin.time.Duration.Companion.milliseconds
 
 class ActionScheduler : AbstractAgentModule.Standalone() {
     @InjectCapability
@@ -55,7 +56,13 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                 schedulableSet.filterIsInstance<Action>()
                     .forEach { actionExecutor.execute(it) }
             }
-            timeWheel = TimeWheel(listScheduledActions, onTrigger)
+            val doneCondition: (Schedulable) -> Boolean = { schedulable ->
+                if (schedulable is Action) {
+                    schedulable.status == Action.Status.FAILED || schedulable.status == Action.Status.SUCCESS
+                }
+                true
+            }
+            timeWheel = TimeWheel(listScheduledActions, onTrigger, doneCondition)
         }
         loadScheduledActions()
         setupShutdownHook()
@@ -83,7 +90,8 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
 
     private class TimeWheel(
         val listSource: () -> Set<Schedulable>,
-        val onTrigger: (toTrigger: Set<Schedulable>) -> Unit
+        val onTrigger: (toTrigger: Set<Schedulable>) -> Unit,
+        val doneCondition: (schedulable: Schedulable) -> Boolean
     ) : Closeable {
         private val schedulableGroupByHour = Array<MutableSet<Schedulable>>(24) { mutableSetOf() }
         private val wheel = Array<MutableSet<Schedulable>>(60 * 60) { mutableSetOf() }
@@ -146,6 +154,29 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                 return null
             }
 
+            fun handleToTrigger(toTrigger: Set<Schedulable>) {
+                timeWheelScope.launch {
+                    onTrigger(toTrigger)
+                }
+                for (schedulable in toTrigger) timeWheelScope.launch {
+                    if (schedulable.scheduleType == Schedulable.ScheduleType.ONCE) {
+                        return@launch
+                    }
+
+                    withTimeoutOrNull(schedulable.timeout) {
+                        while (!doneCondition(schedulable)) {
+                            delay(50.milliseconds)
+                        }
+                    }
+
+                    if (!schedulable.enabled) {
+                        return@launch
+                    }
+
+                    this@TimeWheel.schedule(schedulable)
+                }
+            }
+
             suspend fun CoroutineScope.wheel(launchingTime: ZonedDateTime, primaryTickAdvanceTime: Long) {
                 val launchingHour = launchingTime.hour
                 var tick = launchingTime.minute * 60 + launchingTime.second
@@ -183,11 +214,7 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                         }
                         WheelStepResult(toTrigger, shouldBreak)
                     }
-                    stepResult.toTrigger?.let { trigger ->
-                        timeWheelScope.launch {
-                            onTrigger(trigger)
-                        }
-                    }
+                    stepResult.toTrigger?.let { handleToTrigger(it) }
                     if (stepResult.shouldBreak) {
                         log.debug("Wheel stopped at tick {}", tick)
                         break
