@@ -55,9 +55,8 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
      * 执行行动
      *
      * @param input ActionExecutor 输入内容
-     * @return 无返回，执行结果回写至 input 内部携带的 actionData 中
      */
-    public Void execute(ActionExecutorInput input) {
+    public void execute(ActionExecutorInput input) {
         val actions = input.getActions();
         // 异步执行所有行动
         for (ExecutableAction executableAction : actions) {
@@ -151,7 +150,6 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 }
             });
         }
-        return null;
     }
 
     private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, PhaserRecord phaserRecord, String source) {
