@@ -16,12 +16,10 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.annotation.Init
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule
 import work.slhaf.partner.core.action.ActionCapability
-import work.slhaf.partner.core.action.ActionCore
+import work.slhaf.partner.core.action.entity.Action
 import work.slhaf.partner.core.action.entity.Schedulable
 import work.slhaf.partner.core.action.entity.SchedulableExecutableAction
-import work.slhaf.partner.core.action.entity.StateAction
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor
-import work.slhaf.partner.module.modules.action.executor.entity.ActionExecutorInput
 import java.io.Closeable
 import java.time.Duration
 import java.time.ZonedDateTime
@@ -54,17 +52,8 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                     .collect(Collectors.toSet())
             }
             val onTrigger: (Set<Schedulable>) -> Unit = { schedulableSet ->
-                val executableActions = mutableSetOf<SchedulableExecutableAction>()
-                val stateActions = mutableSetOf<StateAction>()
-                for (schedulable in schedulableSet) {
-                    when (schedulable) {
-                        is SchedulableExecutableAction -> executableActions.add(schedulable)
-                        is StateAction -> stateActions.add(schedulable)
-                    }
-                }
-                actionExecutor.execute(ActionExecutorInput(executableActions))
-                actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL)
-                    .execute { stateActions.forEach { it.trigger.onTrigger() } }
+                schedulableSet.filterIsInstance<Action>()
+                    .forEach { actionExecutor.execute(it) }
             }
             timeWheel = TimeWheel(listScheduledActions, onTrigger)
         }

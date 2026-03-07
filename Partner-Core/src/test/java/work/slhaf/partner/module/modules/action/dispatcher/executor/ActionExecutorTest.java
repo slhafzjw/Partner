@@ -17,7 +17,6 @@ import work.slhaf.partner.module.modules.action.executor.ActionCorrector;
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
 import work.slhaf.partner.module.modules.action.executor.ActionRepairer;
 import work.slhaf.partner.module.modules.action.executor.ParamsExtractor;
-import work.slhaf.partner.module.modules.action.executor.entity.ActionExecutorInput;
 import work.slhaf.partner.module.modules.action.executor.entity.CorrectorResult;
 import work.slhaf.partner.module.modules.action.executor.entity.ExtractorResult;
 import work.slhaf.partner.module.modules.action.executor.entity.RepairerResult;
@@ -97,7 +96,6 @@ class ActionExecutorTest {
         stubExecutors(directExecutor, directExecutor);
 
         ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
-        ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult extractorResult = new ExtractorResult();
         extractorResult.setOk(true);
@@ -109,7 +107,7 @@ class ActionExecutorTest {
         }).when(runnerClient).submit(any(MetaAction.class));
 
         actionExecutor.init();
-        actionExecutor.execute(input);
+        actionExecutor.execute(actionData);
 
         verify(runnerClient, times(1)).submit(any(MetaAction.class));
         verify(actionCapability, times(1)).removePhaserRecord(any(Phaser.class));
@@ -125,10 +123,9 @@ class ActionExecutorTest {
 
         ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
         actionData.setStatus(ExecutableAction.Status.EXECUTING);
-        ActionExecutorInput input = buildInput("u1", actionData);
 
         actionExecutor.init();
-        actionExecutor.execute(input);
+        actionExecutor.execute(actionData);
 
         verify(actionCapability, never()).putPhaserRecord(any(Phaser.class), any(ExecutableAction.class));
         verify(runnerClient, never()).submit(any(MetaAction.class));
@@ -145,7 +142,6 @@ class ActionExecutorTest {
         chain.put(0, List.of(buildMetaAction("a1", false)));
         chain.put(1, List.of(buildMetaAction("a2", false)));
         ImmediateExecutableAction actionData = buildActionData(chain);
-        ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult extractorResult = new ExtractorResult();
         extractorResult.setOk(true);
@@ -158,7 +154,7 @@ class ActionExecutorTest {
         }).when(runnerClient).submit(any(MetaAction.class));
 
         actionExecutor.init();
-        actionExecutor.execute(input);
+        actionExecutor.execute(actionData);
 
         verify(runnerClient, timeout(5000).times(2)).submit(any(MetaAction.class));
         verify(actionCorrector, timeout(5000).times(2)).execute(any());
@@ -174,7 +170,6 @@ class ActionExecutorTest {
         stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateExecutableAction actionData = buildActionData(singleStageChain(true));
-        ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult extractorResult = new ExtractorResult();
         extractorResult.setOk(true);
@@ -186,7 +181,7 @@ class ActionExecutorTest {
         }).when(runnerClient).submit(any(MetaAction.class));
 
         actionExecutor.init();
-        actionExecutor.execute(input);
+        actionExecutor.execute(actionData);
 
         verify(actionCapability, times(1)).getExecutor(ActionCore.ExecutorType.VIRTUAL);
         shutdownExecutor(virtualExecutor);
@@ -200,7 +195,6 @@ class ActionExecutorTest {
         stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
-        ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult fail = new ExtractorResult();
         fail.setOk(false);
@@ -220,7 +214,7 @@ class ActionExecutorTest {
         }).when(runnerClient).submit(any(MetaAction.class));
 
         actionExecutor.init();
-        actionExecutor.execute(input);
+        actionExecutor.execute(actionData);
 
         try {
             Thread.sleep(500);
@@ -238,7 +232,6 @@ class ActionExecutorTest {
         stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
-        ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult fail = new ExtractorResult();
         fail.setOk(false);
@@ -249,13 +242,13 @@ class ActionExecutorTest {
         when(actionRepairer.execute(any())).thenReturn(repairerResult);
 
         actionExecutor.init();
-        actionExecutor.execute(input);
+        actionExecutor.execute(actionData);
 
         try {
             Thread.sleep(500);
         } catch (InterruptedException ignored) {
         }
-        MetaAction metaAction = actionData.getActionChain().get(0).get(0);
+        MetaAction metaAction = actionData.getActionChain().get(0).getFirst();
         assertEquals(MetaAction.Result.Status.FAILED, metaAction.getResult().getStatus());
         verify(runnerClient, never()).submit(any(MetaAction.class));
     }
@@ -269,7 +262,6 @@ class ActionExecutorTest {
         stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
-        ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult fail = new ExtractorResult();
         fail.setOk(false);
@@ -305,7 +297,7 @@ class ActionExecutorTest {
         });
 
         actionExecutor.init();
-        actionExecutor.execute(input);
+        actionExecutor.execute(actionData);
 
         assertTrue(doneLatch.await(2, TimeUnit.SECONDS));
         shutdownExecutor(platformExecutor);
@@ -323,7 +315,6 @@ class ActionExecutorTest {
         stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateExecutableAction actionData = buildActionData(singleStageChain(false));
-        ActionExecutorInput input = buildInput("u1", actionData);
 
         ExtractorResult ok = new ExtractorResult();
         ok.setOk(true);
@@ -337,7 +328,7 @@ class ActionExecutorTest {
         lenient().doThrow(new RuntimeException("boom")).when(actionCorrector).execute(any());
 
         actionExecutor.init();
-        actionExecutor.execute(input);
+        actionExecutor.execute(actionData);
 
         try {
             Thread.sleep(500);
@@ -356,10 +347,9 @@ class ActionExecutorTest {
         stubExecutors(platformExecutor, virtualExecutor);
 
         ImmediateExecutableAction actionData = buildActionData(new HashMap<>());
-        ActionExecutorInput input = buildInput("u1", actionData);
 
         actionExecutor.init();
-        actionExecutor.execute(input);
+        actionExecutor.execute(actionData);
 
         try {
             Thread.sleep(500);
@@ -371,10 +361,6 @@ class ActionExecutorTest {
         when(actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM)).thenReturn(platformExecutor);
         when(actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL)).thenReturn(virtualExecutor);
         when(actionCapability.runnerClient()).thenReturn(runnerClient);
-    }
-
-    private ActionExecutorInput buildInput(String userId, ImmediateExecutableAction actionData) {
-        return new ActionExecutorInput(Set.of(actionData));
     }
 
     private ImmediateExecutableAction buildActionData(Map<Integer, List<MetaAction>> actionChain) {

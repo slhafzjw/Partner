@@ -17,7 +17,6 @@ import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
-import work.slhaf.partner.module.modules.action.executor.entity.ActionExecutorInput;
 import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerResult;
@@ -154,8 +153,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             // execute or schedule it immediately
             switch (executableAction) {
                 case SchedulableExecutableAction action -> actionScheduler.schedule(Set.of(action));
-                case ImmediateExecutableAction action ->
-                        actionExecutor.execute(new ActionExecutorInput(Set.of(action)));
+                case ImmediateExecutableAction action -> actionExecutor.execute(action);
                 default -> log.error("unknown executable action type: {}", executableAction.getClass().getSimpleName());
             }
         }
