@@ -79,6 +79,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         setMessage(runningFlowContext.getCoreContext().toString());
     }
 
+    // TODO need to update message appending logic
     private void setAppendedPromptMessage(PartnerRunningFlowContext runningFlowContext) {
         List<AppendPromptData> appendedPrompt = runningFlowContext.getModuleContext().getAppendedPrompt();
         int appendedPromptSize = getAppendedPromptSize(appendedPrompt);
@@ -179,7 +180,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         runningFlowContext.getModuleContext().getExtraContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
         //区分单人聊天场景
 //        if (runningFlowContext.isSingle()) {
-            MetaMessage metaMessage = new MetaMessage(primaryUserMessage, assistantMessage);
+        MetaMessage metaMessage = new MetaMessage(primaryUserMessage, assistantMessage);
         cognationCapability.addMetaMessage(runningFlowContext.getSource(), metaMessage);
 //        }
     }
@@ -199,10 +200,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private void setAppendedPromptMessage(List<AppendPromptData> appendPrompt) {
-        Message appendDeclareMessage = Message.builder()
-                .role(ChatConstant.Character.USER)
-                .content(ModelConstant.CharacterPrefix.SYSTEM + "认知补充开始")
-                .build();
+        Message appendDeclareMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + "认知补充开始");
         this.appendedMessages.add(appendDeclareMessage);
         for (AppendPromptData data : appendPrompt) {
             setStartMessage(data);
@@ -210,43 +208,29 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             setEndMessage(data);
             setAssistantMessage();
         }
-        Message appendEndMessage = Message.builder()
-                .role(ChatConstant.Character.USER)
-                .content(ModelConstant.CharacterPrefix.SYSTEM + "认知补充结束")
-                .build();
+        Message appendEndMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + "认知补充结束");
         this.appendedMessages.add(appendEndMessage);
     }
 
     private void setAssistantMessage() {
-        appendedMessages.add(Message.builder()
-                .role(ChatConstant.Character.ASSISTANT)
-                .content("嗯，明白了")
-                .build());
+        Message message = new Message(ChatConstant.Character.ASSISTANT, "嗯，明白了");
+        appendedMessages.add(message);
     }
 
     private void setEndMessage(AppendPromptData data) {
-        Message endMessage = Message.builder()
-                .role(ChatConstant.Character.USER)
-                .content(ModelConstant.CharacterPrefix.SYSTEM + data.getModuleName() + "认知补充结束.")
-                .build();
+        Message endMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + data.getModuleName() + "认知补充结束.");
         appendedMessages.add(endMessage);
     }
 
     private void setContentMessage(AppendPromptData data) {
         data.getAppendedPrompt().forEach((k, v) -> {
-            Message contentMessage = Message.builder()
-                    .role(ChatConstant.Character.USER)
-                    .content(ModelConstant.CharacterPrefix.SYSTEM + k + v + "\r\n")
-                    .build();
+            Message contentMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + k + v + "\r\n");
             appendedMessages.add(contentMessage);
         });
     }
 
     private void setStartMessage(AppendPromptData data) {
-        Message startMessage = Message.builder()
-                .role(ChatConstant.Character.USER)
-                .content(ModelConstant.CharacterPrefix.SYSTEM + data.getModuleName() + "以下为" + data.getModuleName() + "相关认知.")
-                .build();
+        Message startMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + data.getModuleName() + "以下为" + data.getModuleName() + "相关认知.");
         appendedMessages.add(startMessage);
     }
 
