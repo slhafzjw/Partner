@@ -15,10 +15,7 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 
 import java.io.IOException;
 import java.io.Serial;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -58,6 +55,38 @@ public class CognationCore extends PartnerCore<CognationCore> {
     }
 
     @CapabilityMethod
+    public List<Message> snapshotChatMessages() {
+        messageLock.lock();
+        try {
+            return List.copyOf(chatMessages);
+        } finally {
+            messageLock.unlock();
+        }
+    }
+
+    @CapabilityMethod
+    public void rollChatMessagesWithSnapshot(int snapshotSize, int retainDivisor) {
+        messageLock.lock();
+        try {
+            int safeSnapshotSize = Math.max(0, Math.min(snapshotSize, chatMessages.size()));
+            if (safeSnapshotSize == 0) {
+                return;
+            }
+            int safeDivisor = Math.max(retainDivisor, 1);
+            int retainCount = safeSnapshotSize / safeDivisor;
+            int retainStart = Math.max(0, safeSnapshotSize - retainCount);
+
+            List<Message> rolled = new ArrayList<>(chatMessages.subList(retainStart, safeSnapshotSize));
+            if (chatMessages.size() > safeSnapshotSize) {
+                rolled.addAll(chatMessages.subList(safeSnapshotSize, chatMessages.size()));
+            }
+            chatMessages = rolled;
+        } finally {
+            messageLock.unlock();
+        }
+    }
+
+    @CapabilityMethod
     public long getLastUpdatedTime() {
         return lastUpdatedTime;
     }
@@ -75,9 +104,11 @@ public class CognationCore extends PartnerCore<CognationCore> {
     @CapabilityMethod
     public void cleanMessage(List<Message> messages) {
         messageLock.lock();
-        this.getChatMessages().removeAll(messages);
-        messageLock.unlock();
-
+        try {
+            this.getChatMessages().removeAll(messages);
+        } finally {
+            messageLock.unlock();
+        }
     }
 
     @CapabilityMethod
@@ -88,24 +119,67 @@ public class CognationCore extends PartnerCore<CognationCore> {
     @CapabilityMethod
     public void addMetaMessage(String userId, MetaMessage metaMessage) {
         log.debug("[{}] 当前会话历史: {}", getCoreKey(), JSONObject.toJSONString(singleMetaMessageMap));
-        if (singleMetaMessageMap.containsKey(userId)) {
-            singleMetaMessageMap.get(userId).add(metaMessage);
-        } else {
-            singleMetaMessageMap.put(userId, new java.util.ArrayList<>());
-            singleMetaMessageMap.get(userId).add(metaMessage);
+        messageLock.lock();
+        try {
+            if (singleMetaMessageMap.containsKey(userId)) {
+                singleMetaMessageMap.get(userId).add(metaMessage);
+            } else {
+                singleMetaMessageMap.put(userId, new java.util.ArrayList<>());
+                singleMetaMessageMap.get(userId).add(metaMessage);
+            }
+        } finally {
+            messageLock.unlock();
         }
         log.debug("[{}] 会话历史更新: {}", getCoreKey(), JSONObject.toJSONString(singleMetaMessageMap));
     }
 
     @CapabilityMethod
     public List<Message> unpackAndClear(String userId) {
-        List<Message> messages = new ArrayList<>();
-        for (MetaMessage metaMessage : singleMetaMessageMap.get(userId)) {
-            messages.add(metaMessage.getUserMessage());
-            messages.add(metaMessage.getAssistantMessage());
+        messageLock.lock();
+        try {
+            List<Message> messages = new ArrayList<>();
+            List<MetaMessage> metaMessages = singleMetaMessageMap.get(userId);
+            if (metaMessages == null) {
+                return messages;
+            }
+            for (MetaMessage metaMessage : metaMessages) {
+                messages.add(metaMessage.getUserMessage());
+                messages.add(metaMessage.getAssistantMessage());
+            }
+            singleMetaMessageMap.remove(userId);
+            return messages;
+        } finally {
+            messageLock.unlock();
         }
-        singleMetaMessageMap.remove(userId);
-        return messages;
+    }
+
+    @CapabilityMethod
+    public Map<String, List<MetaMessage>> drainSingleMetaMessages() {
+        messageLock.lock();
+        try {
+            Map<String, List<MetaMessage>> drained = new HashMap<>();
+            for (Map.Entry<String, List<MetaMessage>> entry : singleMetaMessageMap.entrySet()) {
+                drained.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+            }
+            singleMetaMessageMap.clear();
+            return drained;
+        } finally {
+            messageLock.unlock();
+        }
+    }
+
+    @CapabilityMethod
+    public List<MetaMessage> snapshotSingleMetaMessages(String userId) {
+        messageLock.lock();
+        try {
+            List<MetaMessage> metaMessages = singleMetaMessageMap.get(userId);
+            if (metaMessages == null) {
+                return List.of();
+            }
+            return List.copyOf(metaMessages);
+        } finally {
+            messageLock.unlock();
+        }
     }
 
     @CapabilityMethod

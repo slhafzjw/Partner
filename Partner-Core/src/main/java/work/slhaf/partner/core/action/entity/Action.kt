@@ -173,10 +173,10 @@ data class StateAction @JvmOverloads constructor(
     override val scheduleType: Schedulable.ScheduleType,
     override val scheduleContent: String,
 
+    val trigger: Trigger,
+
     override var enabled: Boolean = true,
     override val timeout: Duration = 5.minutes,
-
-    val trigger: Trigger
 ) : Action(), Schedulable {
 
     sealed interface Trigger {

@@ -24,6 +24,7 @@ import java.io.Closeable
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+import java.util.*
 import java.util.stream.Collectors
 import kotlin.jvm.optionals.getOrNull
 import kotlin.time.Duration.Companion.milliseconds
@@ -35,6 +36,8 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
     @InjectModule
     private lateinit var actionExecutor: ActionExecutor
     private lateinit var timeWheel: TimeWheel
+    private val runtimeSchedulables: MutableSet<Schedulable> =
+        Collections.synchronizedSet(mutableSetOf())
     private val schedulerScope =
         CoroutineScope(Dispatchers.Default + SupervisorJob() + CoroutineName("ActionScheduler"))
 
@@ -45,12 +48,18 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
     @Init
     fun init() {
         fun loadScheduledActions() {
-            val listScheduledActions: () -> Set<SchedulableExecutableAction> = {
-                actionCapability.listActions(null, null)
+            val listScheduledActions: () -> Set<Schedulable> = {
+                val persistedExecutable = actionCapability.listActions(null, null)
                     .stream()
                     .filter { it is SchedulableExecutableAction }
                     .map { it as SchedulableExecutableAction }
-                    .collect(Collectors.toSet())
+                    .collect(Collectors.toSet<SchedulableExecutableAction>())
+                val persisted: MutableSet<Schedulable> = mutableSetOf()
+                persisted.addAll(persistedExecutable)
+                synchronized(runtimeSchedulables) {
+                    persisted.addAll(runtimeSchedulables.filter { it.enabled })
+                }
+                persisted
             }
             val onTrigger: (Set<Schedulable>) -> Unit = { schedulableSet ->
                 schedulableSet.filterIsInstance<Action>()
@@ -81,6 +90,7 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
         if (!schedulableAction.enabled) {
             return@launch
         }
+        runtimeSchedulables.add(schedulableAction)
         log.debug("New data to schedule: {}", schedulableAction)
         timeWheel.schedule(schedulableAction)
         if (schedulableAction is SchedulableExecutableAction) {

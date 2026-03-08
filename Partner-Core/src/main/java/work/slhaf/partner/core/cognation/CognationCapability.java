@@ -6,6 +6,7 @@ import work.slhaf.partner.api.chat.pojo.MetaMessage;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 @Capability("cognation")
@@ -14,6 +15,10 @@ public interface CognationCapability {
     String initiateTurn(String input);
 
     List<Message> getChatMessages();
+
+    List<Message> snapshotChatMessages();
+
+    void rollChatMessagesWithSnapshot(int snapshotSize, int retainDivisor);
 
     void cleanMessage(List<Message> messages);
 
@@ -30,6 +35,10 @@ public interface CognationCapability {
     long getLastUpdatedTime();
 
     HashMap<String, List<MetaMessage>> getSingleMetaMessageMap();
+
+    Map<String, List<MetaMessage>> drainSingleMetaMessages();
+
+    List<MetaMessage> snapshotSingleMetaMessages(String userId);
 
     String getCurrentMemoryId();
 

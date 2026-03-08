@@ -224,7 +224,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
         private ExtractorInput buildExtractorInput(PartnerRunningFlowContext context) {
             ExtractorInput input = new ExtractorInput();
             input.setInput(context.getInput());
-            List<Message> chatMessages = cognationCapability.getChatMessages();
+            List<Message> chatMessages = cognationCapability.snapshotChatMessages();
             List<Message> recentMessages = new ArrayList<>();
             if (chatMessages.size() > 5) {
                 recentMessages.addAll(chatMessages.subList(chatMessages.size() - 5, chatMessages.size() - 1));
@@ -239,7 +239,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
             EvaluatorInput input = new EvaluatorInput();
             input.setTendencies(extractorResult.getTendencies());
             input.setUser(perceiveCapability.getUser(userId));
-            input.setRecentMessages(cognationCapability.getChatMessages());
+            input.setRecentMessages(cognationCapability.snapshotChatMessages());
             input.setActivatedSlices(memoryCapability.getActivatedSlices(userId));
             return input;
         }
