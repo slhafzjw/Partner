@@ -51,12 +51,6 @@ class PartnerRunningFlowContext private constructor(
     val coreContext = CoreContext()
     val coreResponse = JSONObject()
 
-    var finished: Boolean
-        get() = moduleContext.isFinished
-        set(value) {
-            moduleContext.isFinished = value
-        }
-
     fun appendPrompt(appendPromptData: AppendPromptData) = moduleContext.appendPromptData(appendPromptData)
 
 }

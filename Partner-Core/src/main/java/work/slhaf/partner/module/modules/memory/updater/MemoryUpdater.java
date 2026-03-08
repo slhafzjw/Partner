@@ -86,10 +86,6 @@ public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
 
     @Override
     public void doExecute(PartnerRunningFlowContext context) {
-        if (context.getFinished()) {
-            log.warn("[MemoryUpdater] 流程强制结束, 不触发记忆被动更新机制");
-            return;
-        }
         executor.execute(() -> {
             // 如果token 大于阈值，则更新记忆
             JSONObject moduleContext = context.getModuleContext().getExtraContext();
