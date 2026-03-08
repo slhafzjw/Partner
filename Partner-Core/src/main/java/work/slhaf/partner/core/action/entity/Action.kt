@@ -117,7 +117,7 @@ sealed class ExecutableAction : Action() {
 /**
  * 计划行动数据类，继承自[Action]，扩展了[Schedulable]相关调度属性，用于标识计划类型(单次还是周期性任务)和计划内容
  */
-data class SchedulableExecutableAction @JvmOverloads constructor(
+data class SchedulableExecutableAction(
     override val tendency: String,
     override val actionChain: MutableMap<Int, MutableList<MetaAction>>,
     override val reason: String,
