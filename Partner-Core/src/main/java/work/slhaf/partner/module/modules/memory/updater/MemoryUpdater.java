@@ -13,7 +13,7 @@ import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
-import work.slhaf.partner.module.common.module.PostRunningAbstractAgentModuleAbstract;
+import work.slhaf.partner.module.common.module.PostRunningAgentModule;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.MultiSummarizer;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.SingleSummarizer;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.TotalSummarizer;
@@ -30,7 +30,7 @@ import static work.slhaf.partner.common.util.ExtractUtil.extractUserId;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class MemoryUpdater extends PostRunningAbstractAgentModuleAbstract {
+public class MemoryUpdater extends PostRunningAgentModule {
 
     private static final long SCHEDULED_UPDATE_INTERVAL = 10 * 1000;
     private static final long UPDATE_TRIGGER_INTERVAL = 60 * 60 * 1000;

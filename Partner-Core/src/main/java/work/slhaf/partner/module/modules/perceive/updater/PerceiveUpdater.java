@@ -9,7 +9,7 @@ import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.core.perceive.pojo.User;
-import work.slhaf.partner.module.common.module.PostRunningAbstractAgentModuleAbstract;
+import work.slhaf.partner.module.common.module.PostRunningAgentModule;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.RelationExtractor;
 import work.slhaf.partner.module.modules.perceive.updater.relation_extractor.entity.RelationExtractResult;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.StaticMemoryExtractor;
@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class PerceiveUpdater extends PostRunningAbstractAgentModuleAbstract {
+public class PerceiveUpdater extends PostRunningAgentModule {
     @InjectCapability
     private PerceiveCapability perceiveCapability;
     @InjectCapability
