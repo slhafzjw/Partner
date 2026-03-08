@@ -46,6 +46,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
 
     private static final long PENDING_TTL_MILLIS = 30 * 60 * 1000L;
     private static final long PENDING_REMINDER_ADVANCE_MILLIS = 5 * 60 * 1000L;
+    private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";
 
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
@@ -180,7 +181,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
                 );
                 schedulePendingLifecycleActions(pendingAction);
             } else {
-                actionCapability.putAction(executableAction);
+                executeOrSchedule(executableAction);
             }
         }
     }
@@ -245,11 +246,58 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
     }
 
     private void executeOrSchedule(ExecutableAction executableAction) {
-        actionCapability.putAction(executableAction);
         switch (executableAction) {
+            case ImmediateExecutableAction action -> executeImmediateWithWatcher(action);
             case SchedulableExecutableAction action -> actionScheduler.schedule(action);
-            case ImmediateExecutableAction action -> actionExecutor.execute(action);
             default -> log.error("unknown executable action type: {}", executableAction.getClass().getSimpleName());
+        }
+    }
+
+    private void executeImmediateWithWatcher(ImmediateExecutableAction action) {
+        actionCapability.putAction(action);
+        actionExecutor.execute(action);
+
+        AtomicBoolean notified = new AtomicBoolean(false);
+        final StateAction[] watcherRef = new StateAction[1];
+        StateAction watcher = new StateAction(
+                action.getSource(),
+                "immediate-action-watcher:" + action.getUuid(),
+                "轮询即时行动执行结果",
+                Schedulable.ScheduleType.CYCLE,
+                IMMEDIATE_WATCHER_CRON,
+                new StateAction.Trigger.Call(() -> {
+                    Action.Status status = action.getStatus();
+                    if (status != Action.Status.SUCCESS && status != Action.Status.FAILED) {
+                        return Unit.INSTANCE;
+                    }
+                    if (watcherRef[0] != null) {
+                        watcherRef[0].setEnabled(false);
+                    }
+                    if (!notified.compareAndSet(false, true)) {
+                        return Unit.INSTANCE;
+                    }
+                    watcherSelfTalk(action);
+                    return Unit.INSTANCE;
+                })
+        );
+        watcherRef[0] = watcher;
+        actionScheduler.schedule(watcher);
+    }
+
+    private void watcherSelfTalk(ImmediateExecutableAction action) {
+        String result = action.getResult();
+        String structuredSignal = String.format(
+                "{event=immediate_action_finished,actionUuid=%s,tendency=%s,status=%s,source=%s,result=%s}",
+                action.getUuid(),
+                action.getTendency(),
+                action.getStatus(),
+                action.getSource(),
+                result == null ? "" : result //将会在 ActionExecutor
+        );
+        try {
+            cognationCapability.initiateTurn(structuredSignal);
+        } catch (Exception e) {
+            log.warn("触发 immediate 行动完成自对话失败, actionUuid: {}", action.getUuid(), e);
         }
     }
 

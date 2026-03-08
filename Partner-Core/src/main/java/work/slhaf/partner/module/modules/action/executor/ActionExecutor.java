@@ -57,6 +57,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             } catch (TimeoutException e) {
                 future.cancel(true);
                 action.setStatus(Action.Status.FAILED);
+                if (action instanceof ExecutableAction executableAction) {
+                    ensureExecutableResult(executableAction, true, "行动执行超时");
+                }
                 log.warn("Action timeout, uuid: {}", action.getUuid());
             } catch (Exception ignored) {
             }
@@ -71,6 +74,13 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                     case StateAction stateAction -> handleStateAction(stateAction);
                     default -> handleUnknownAction(action);
                 }
+                if (action instanceof ExecutableAction executableAction) {
+                    if (action.getStatus() == Action.Status.FAILED) {
+                        ensureExecutableResult(executableAction, true, null);
+                        return;
+                    }
+                    ensureExecutableResult(executableAction, false, null);
+                }
                 if (action.getStatus() == Action.Status.FAILED) {
                     return;
                 }
@@ -78,6 +88,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             } catch (Exception e) {
                 log.warn("Unexpected action execution failure, uuid: {}, description: {}, failure reason: {}", action.getUuid(), action.getDescription(), e.getLocalizedMessage());
                 action.setStatus(Action.Status.FAILED);
+                if (action instanceof ExecutableAction executableAction) {
+                    ensureExecutableResult(executableAction, true, e.getLocalizedMessage());
+                }
             }
         };
     }
@@ -173,7 +186,6 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         if (executableAction instanceof SchedulableExecutableAction scheduledActionData) {
             scheduledActionData.recordAndReset();
         }
-        // TODO 执行过后需要回写至任务上下文（recentCompletedTask），同时触发自对话信号进行确认并记录以及是否通知用户（触发与否需要机制进行匹配，在模块链路可增加 interaction gate 门控，判断此次对话作用于谁、由谁发出、何种性质、是否需要回应等）
     }
 
     private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, PhaserRecord phaserRecord, String source) {
@@ -268,6 +280,69 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 phaser.arriveAndDeregister();
             }
         };
+    }
+
+    private void ensureExecutableResult(ExecutableAction executableAction, boolean failed, String failureReason) {
+        if (hasExecutableResult(executableAction)) {
+            return;
+        }
+        executableAction.setResult(resolveExecutableResult(executableAction, failed, failureReason));
+    }
+
+    private String resolveExecutableResult(ExecutableAction executableAction, boolean failed, String failureReason) {
+        String extracted = extractLastMetaActionResult(executableAction);
+        if (extracted != null && !extracted.isBlank()) {
+            return extracted;
+        }
+        if (!failed) {
+            return "行动执行成功";
+        }
+        if (failureReason != null && !failureReason.isBlank()) {
+            return "行动执行失败: " + failureReason;
+        }
+        return "行动执行失败";
+    }
+
+    private String extractLastMetaActionResult(ExecutableAction executableAction) {
+        if (!executableAction.getHistory().isEmpty()) {
+            Integer lastStage = executableAction.getHistory().keySet().stream()
+                    .max(Integer::compareTo)
+                    .orElse(null);
+            if (lastStage != null) {
+                List<HistoryAction> historyActions = executableAction.getHistory().get(lastStage);
+                if (historyActions != null && !historyActions.isEmpty()) {
+                    String result = historyActions.getLast().result();
+                    if (result != null && !result.isBlank()) {
+                        return result;
+                    }
+                }
+            }
+        }
+
+        if (!executableAction.getActionChain().isEmpty()) {
+            Integer lastStage = executableAction.getActionChain().keySet().stream()
+                    .max(Integer::compareTo)
+                    .orElse(null);
+            if (lastStage != null) {
+                List<MetaAction> metaActions = executableAction.getActionChain().get(lastStage);
+                if (metaActions != null && !metaActions.isEmpty()) {
+                    String result = metaActions.getLast().getResult().getData();
+                    if (result != null && !result.isBlank()) {
+                        return result;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean hasExecutableResult(ExecutableAction executableAction) {
+        try {
+            String result = executableAction.getResult();
+            return result != null && !result.isBlank();
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private record MetaActionsListeningRecord(AtomicBoolean accepting, int phase) {
