@@ -2,13 +2,13 @@ package work.slhaf.partner.module.modules.action.planner.confirmer.entity;
 
 import lombok.Data;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.action.entity.ExecutableAction;
+import work.slhaf.partner.core.action.entity.PendingActionRecord;
 
 import java.util.List;
 
 @Data
 public class ConfirmerInput {
     private String input;
-    private List<ExecutableAction> executableActionData;
+    private List<PendingActionRecord> pendingActions;
     private List<Message> recentMessages;
 }

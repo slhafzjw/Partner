@@ -3,10 +3,7 @@ package work.slhaf.partner.core.action;
 import lombok.NonNull;
 import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
-import work.slhaf.partner.core.action.entity.ExecutableAction;
-import work.slhaf.partner.core.action.entity.MetaAction;
-import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.entity.PhaserRecord;
+import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
@@ -24,11 +21,19 @@ public interface ActionCapability {
 
     Set<ExecutableAction> listActions(@Nullable ExecutableAction.Status status, @Nullable String source);
 
-    List<ExecutableAction> popPendingAction(String userId);
+    PendingActionRecord createPendingAction(String userId, ExecutableAction executableAction, long ttlMillis, long reminderBeforeMillis);
 
-    List<ExecutableAction> listPendingAction(String userId);
+    List<PendingActionRecord> listActivePendingActions(String userId);
 
-    void putPendingActions(String userId, ExecutableAction executableAction);
+    PendingActionRecord resolvePendingDecision(String userId, String pendingId, PendingActionRecord.Decision decision, String reason);
+
+    boolean markPendingReminded(String pendingId);
+
+    PendingActionRecord expirePendingIfWaiting(String pendingId);
+
+    void bindPendingLifecycleActions(String pendingId, StateAction reminderAction, StateAction expireAction);
+
+    void cancelPendingLifecycleActions(String pendingId);
 
     List<String> selectTendencyCache(String input);
 

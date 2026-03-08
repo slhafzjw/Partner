@@ -10,8 +10,10 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
+import work.slhaf.partner.core.action.entity.PendingActionRecord;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerResult;
+import work.slhaf.partner.module.modules.action.planner.confirmer.entity.PendingDecisionItem;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -25,22 +27,33 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
 
     @Override
     public ConfirmerResult execute(ConfirmerInput data) {
-        List<ExecutableAction> executableActionList = data.getExecutableActionData();
+        List<PendingActionRecord> pendingActions = data.getPendingActions();
+        if (pendingActions == null || pendingActions.isEmpty()) {
+            return new ConfirmerResult();
+        }
         ExecutorService executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
-        CountDownLatch latch = new CountDownLatch(executableActionList.size());
+        CountDownLatch latch = new CountDownLatch(pendingActions.size());
         ConfirmerResult result = new ConfirmerResult();
-        List<String> uuids = result.getUuids();
-        for (ExecutableAction executableAction : executableActionList) {
+        List<PendingDecisionItem> decisions = result.getDecisions();
+        for (PendingActionRecord pendingAction : pendingActions) {
             executor.execute(() -> {
                 try {
+                    ExecutableAction executableAction = pendingAction.getExecutableAction();
                     String prompt = buildPrompt(executableAction, data.getInput(), data.getRecentMessages());
                     ChatResponse response = this.singleChat(prompt);
                     JSONObject tempResult = JSONObject.parseObject(extractJson(response.getMessage()));
-                    if (tempResult.getBoolean("confirmed")) {
-                        executableAction.setStatus(ExecutableAction.Status.PREPARE);
-                        synchronized (uuids) {
-                            uuids.add(executableAction.getUuid());
-                        }
+                    PendingActionRecord.Decision decision = parseDecision(tempResult);
+                    String reason = tempResult == null ? null : tempResult.getString("reason");
+                    synchronized (decisions) {
+                        decisions.add(new PendingDecisionItem(pendingAction.getPendingId(), decision, reason));
+                    }
+                } catch (Exception e) {
+                    synchronized (decisions) {
+                        decisions.add(new PendingDecisionItem(
+                                pendingAction.getPendingId(),
+                                PendingActionRecord.Decision.HOLD,
+                                "确认解析失败: " + e.getLocalizedMessage()
+                        ));
                     }
                 } finally {
                     latch.countDown();
@@ -55,6 +68,30 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
         return result;
     }
 
+    private PendingActionRecord.Decision parseDecision(JSONObject tempResult) {
+        if (tempResult == null) {
+            return PendingActionRecord.Decision.HOLD;
+        }
+        String decisionText = tempResult.getString("decision");
+        if (decisionText != null) {
+            String upperDecision = decisionText.toUpperCase();
+            if (upperDecision.contains("CONFIRM")) {
+                return PendingActionRecord.Decision.CONFIRM;
+            }
+            if (upperDecision.contains("REJECT")) {
+                return PendingActionRecord.Decision.REJECT;
+            }
+            if (upperDecision.contains("HOLD")) {
+                return PendingActionRecord.Decision.HOLD;
+            }
+        }
+        Boolean confirmed = tempResult.getBoolean("confirmed");
+        if (Boolean.TRUE.equals(confirmed)) {
+            return PendingActionRecord.Decision.CONFIRM;
+        }
+        return PendingActionRecord.Decision.HOLD;
+    }
+
     private String buildPrompt(ExecutableAction data, String input, List<Message> recentMessages) {
         JSONObject prompt = new JSONObject();
         prompt.put("[用户输入]", input);
@@ -63,8 +100,14 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
         actionData.put("[行动原因]", data.getReason());
         actionData.put("[行动来源]", data.getSource());
         actionData.put("[行动描述]", data.getDescription());
+        JSONArray decisionEnums = prompt.putArray("[决策选项]");
+        decisionEnums.add("CONFIRM");
+        decisionEnums.add("REJECT");
+        decisionEnums.add("HOLD");
         JSONArray messageData = prompt.putArray("[近期对话]");
-        messageData.addAll(recentMessages);
+        if (recentMessages != null) {
+            messageData.addAll(recentMessages);
+        }
         return prompt.toString();
     }
 

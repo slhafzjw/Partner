@@ -1,5 +1,6 @@
 package work.slhaf.partner.module.modules.action.planner;
 
+import kotlin.Unit;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
@@ -20,6 +21,7 @@ import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
 import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerResult;
+import work.slhaf.partner.module.modules.action.planner.confirmer.entity.PendingDecisionItem;
 import work.slhaf.partner.module.modules.action.planner.evaluator.ActionEvaluator;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorResult;
@@ -29,6 +31,9 @@ import work.slhaf.partner.module.modules.action.planner.extractor.entity.Extract
 import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +43,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 负责针对本次输入生成基础的行动计划
  */
 public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
+
+    private static final long PENDING_TTL_MILLIS = 30 * 60 * 1000L;
+    private static final long PENDING_REMINDER_ADVANCE_MILLIS = 5 * 60 * 1000L;
 
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
@@ -139,22 +147,23 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
     }
 
     private void setupConfirmedActionInfo(PartnerRunningFlowContext context, ConfirmerResult result) {
-        // TODO 需考虑未确认任务的失效或者拒绝时机，在action core中实现
-        List<String> uuids = result.getUuids();
-        if (uuids == null) {
+        List<PendingDecisionItem> decisions = result.getDecisions();
+        if (decisions == null || decisions.isEmpty()) {
             return;
         }
-        List<ExecutableAction> pendingActions = actionCapability.popPendingAction(context.getSource());
-        for (ExecutableAction executableAction : pendingActions) {
-            // put action into ActionCore to record
-            if (uuids.contains(executableAction.getUuid())) {
-                actionCapability.putAction(executableAction);
+        for (PendingDecisionItem decisionItem : decisions) {
+            PendingActionRecord pendingAction = actionCapability.resolvePendingDecision(
+                    context.getSource(),
+                    decisionItem.getPendingId(),
+                    decisionItem.getDecision(),
+                    decisionItem.getReason()
+            );
+            if (pendingAction == null) {
+                continue;
             }
-            // execute or schedule it immediately
-            switch (executableAction) {
-                case SchedulableExecutableAction action -> actionScheduler.schedule(action);
-                case ImmediateExecutableAction action -> actionExecutor.execute(action);
-                default -> log.error("unknown executable action type: {}", executableAction.getClass().getSimpleName());
+            if (decisionItem.getDecision() == PendingActionRecord.Decision.CONFIRM
+                    && pendingAction.getStatus() == PendingActionRecord.Status.CONFIRMED) {
+                executeOrSchedule(pendingAction.getExecutableAction());
             }
         }
     }
@@ -163,10 +172,84 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
             ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, context.getSource());
             if (evaluatorResult.isNeedConfirm()) {
-                actionCapability.putPendingActions(context.getSource(), executableAction);
+                PendingActionRecord pendingAction = actionCapability.createPendingAction(
+                        context.getSource(),
+                        executableAction,
+                        PENDING_TTL_MILLIS,
+                        PENDING_REMINDER_ADVANCE_MILLIS
+                );
+                schedulePendingLifecycleActions(pendingAction);
             } else {
                 actionCapability.putAction(executableAction);
             }
+        }
+    }
+
+    private void schedulePendingLifecycleActions(PendingActionRecord pendingAction) {
+        StateAction reminderAction = buildPendingReminderAction(pendingAction);
+        StateAction expireAction = buildPendingExpireAction(pendingAction);
+        actionCapability.bindPendingLifecycleActions(pendingAction.getPendingId(), reminderAction, expireAction);
+        actionScheduler.schedule(reminderAction);
+        actionScheduler.schedule(expireAction);
+    }
+
+    private StateAction buildPendingReminderAction(PendingActionRecord pendingAction) {
+        return new StateAction(
+                pendingAction.getUserId(),
+                "pending-action-reminder:" + pendingAction.getPendingId(),
+                "待确认行动提醒",
+                Schedulable.ScheduleType.ONCE,
+                asScheduleContent(pendingAction.getRemindAt()),
+                new StateAction.Trigger.Call(() -> {
+                    handlePendingReminder(pendingAction.getPendingId());
+                    return Unit.INSTANCE;
+                })
+        );
+    }
+
+    private StateAction buildPendingExpireAction(PendingActionRecord pendingAction) {
+        return new StateAction(
+                pendingAction.getUserId(),
+                "pending-action-expire:" + pendingAction.getPendingId(),
+                "待确认行动失效",
+                Schedulable.ScheduleType.ONCE,
+                asScheduleContent(pendingAction.getExpireAt()),
+                new StateAction.Trigger.Call(() -> {
+                    handlePendingExpire(pendingAction.getPendingId());
+                    return Unit.INSTANCE;
+                })
+        );
+    }
+
+    private void handlePendingReminder(String pendingId) {
+        boolean marked = actionCapability.markPendingReminded(pendingId);
+        if (!marked) {
+            return;
+        }
+        try {
+            // TODO target 指定行为待补充; 主动回复链路待补充
+            cognationCapability.initiateTurn("系统提醒：存在待确认行动即将过期，请确认是否继续执行。pendingId=" + pendingId);
+        } catch (Exception e) {
+            log.warn("触发待确认行动提醒失败, pendingId: {}", pendingId, e);
+        }
+    }
+
+    private void handlePendingExpire(String pendingId) {
+        actionCapability.expirePendingIfWaiting(pendingId);
+    }
+
+    private String asScheduleContent(long targetTimeMillis) {
+        long now = System.currentTimeMillis();
+        long safeTarget = Math.max(targetTimeMillis, now + 1000L);
+        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(safeTarget), ZoneId.systemDefault()).toString();
+    }
+
+    private void executeOrSchedule(ExecutableAction executableAction) {
+        actionCapability.putAction(executableAction);
+        switch (executableAction) {
+            case SchedulableExecutableAction action -> actionScheduler.schedule(action);
+            case ImmediateExecutableAction action -> actionExecutor.execute(action);
+            default -> log.error("unknown executable action type: {}", executableAction.getClass().getSimpleName());
         }
     }
 
@@ -180,13 +263,16 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
     }
 
     private void setupPendingActions(HashMap<String, String> map, String userId) {
-        List<ExecutableAction> executableActionData = actionCapability.listPendingAction(userId);
-        if (executableActionData == null || executableActionData.isEmpty()) {
+        List<PendingActionRecord> pendingActions = actionCapability.listActivePendingActions(userId);
+        if (pendingActions.isEmpty()) {
             map.put("[待确认行动] <等待用户确认的行动信息>", "无待确认行动");
             return;
         }
-        for (int i = 0; i < executableActionData.size(); i++) {
-            map.put("[待确认行动 " + (i + 1) + " ] <等待用户确认的行动信息>", generateActionStr(executableActionData.get(i)));
+        for (int i = 0; i < pendingActions.size(); i++) {
+            map.put(
+                    "[待确认行动 " + (i + 1) + " ] <等待用户确认的行动信息>",
+                    generateActionStr(pendingActions.get(i).getExecutableAction())
+            );
         }
     }
 
@@ -344,8 +430,9 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
         private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
             ConfirmerInput confirmerInput = new ConfirmerInput();
             confirmerInput.setInput(context.getInput());
-            List<ExecutableAction> pendingActions = actionCapability.listPendingAction(context.getSource());
-            confirmerInput.setExecutableActionData(pendingActions);
+            List<PendingActionRecord> pendingActions = actionCapability.listActivePendingActions(context.getSource());
+            confirmerInput.setRecentMessages(cognationCapability.snapshotChatMessages());
+            confirmerInput.setPendingActions(pendingActions);
             return confirmerInput;
         }
     }

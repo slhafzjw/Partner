@@ -7,5 +7,5 @@ import java.util.List;
 
 @Data
 public class ConfirmerResult {
-    private List<String> uuids = new ArrayList<>();
+    private List<PendingDecisionItem> decisions = new ArrayList<>();
 }
