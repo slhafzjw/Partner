@@ -31,6 +31,15 @@ public abstract class AgentConfigLoader {
 
     public abstract void dumpModelConfig(String key);
 
+    // Keep explicit getters for Kotlin compilation phase (without Lombok-generated methods).
+    public HashMap<String, ModelConfig> getModelConfigMap() {
+        return modelConfigMap;
+    }
+
+    public HashMap<String, List<Message>> getModelPromptMap() {
+        return modelPromptMap;
+    }
+
     public List<Message> loadModelPrompt(String modelKey) {
         if (!modelPromptMap.containsKey(modelKey)) {
             throw new PromptNotExistException("不存在的modelPrompt: " + modelKey);

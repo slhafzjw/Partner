@@ -1,6 +1,6 @@
 package work.slhaf.partner.core.action.entity;
 
-import work.slhaf.partner.core.action.entity.ExecutableAction.Status;
+import work.slhaf.partner.core.action.entity.Action.Status;
 
 import java.util.concurrent.Phaser;
 

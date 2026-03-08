@@ -18,6 +18,9 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
+    private static final String INFO_PLATFORM = "platform";
+    private static final String INFO_NICKNAME = "nickname";
+
     @InjectCapability
     private CognationCapability cognationCapability;
     @InjectCapability
@@ -38,17 +41,26 @@ public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
 
     private void getInteractionContext(PartnerRunningFlowContext context) {
         log.debug("[PreprocessExecutor] 预处理原始输入: {}", context);
-        User user = perceiveCapability.getUser(context.getUserInfo(), context.getPlatform());
+        String platform = context.getAdditionalUserInfo().getOrDefault(INFO_PLATFORM, "");
+        String nickName = context.getAdditionalUserInfo().getOrDefault(INFO_NICKNAME, "");
+        String sourceUserId = parseSourceUserId(context.getSource());
+        User user = perceiveCapability.getUser(sourceUserId, platform);
         if (user == null) {
-            user = perceiveCapability.addUser(context.getUserInfo(), context.getPlatform(), context.getUserNickname());
+            user = perceiveCapability.addUser(sourceUserId, platform, nickName);
         }
         String userId = user.getUuid();
-        context.setUserId(userId);
-        String userStr = "[" + context.getUserNickname() + "(" + userId + ")]";
+        String userStr = "[" + nickName + "(" + userId + ")]";
         String input = userStr + " " + context.getInput();
-        context.setInput(input);
-        setCoreContext(context);
+        setCoreContext(context, input, nickName, userId);
         log.debug("[PreprocessExecutor] 预处理结果: {}", context);
+    }
+
+    private String parseSourceUserId(String source) {
+        int split = source.indexOf(':');
+        if (split < 0 || split + 1 >= source.length()) {
+            return source;
+        }
+        return source.substring(split + 1).trim();
     }
 
     @Override
@@ -68,12 +80,12 @@ public class PreprocessExecutor extends PreRunningAbstractAgentModuleAbstract {
         return "[基础模块]";
     }
 
-    private void setCoreContext(PartnerRunningFlowContext context) {
+    private void setCoreContext(PartnerRunningFlowContext context, String input, String nickName, String userId) {
         CoreContext coreContext = context.getCoreContext();
-        coreContext.setText(context.getInput());
+        coreContext.setText(input);
         coreContext.setDateTime(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        coreContext.setUserNick(context.getUserNickname());
-        coreContext.setUserId(context.getUserId());
+        coreContext.setUserNick(nickName);
+        coreContext.setUserId(userId);
     }
 
     @Override

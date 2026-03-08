@@ -32,14 +32,17 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
         log.debug("[MemorySummarizer] 长文本摘要开始...");
         List<Callable<Void>> tasks = new ArrayList<>();
         AtomicInteger counter = new AtomicInteger();
-        for (Message chatMessage : chatMessages) {
+        for (int i = 0; i < chatMessages.size(); i++) {
+            Message chatMessage = chatMessages.get(i);
             if (chatMessage.getRole().equals(ChatConstant.Character.ASSISTANT)) {
                 String content = chatMessage.getContent();
                 if (chatMessage.getContent().length() > 500) {
+                    int index = i;
                     tasks.add(() -> {
                         int thisCount = counter.incrementAndGet();
                         log.debug("[MemorySummarizer] 长文本摘要[{}]启动", thisCount);
-                        chatMessage.setContent(singleExecute(JSONObject.of("content", content).toString()));
+                        String summarized = singleExecute(JSONObject.of("content", content).toString());
+                        chatMessages.set(index, new Message(chatMessage.getRole(), summarized));
                         log.debug("[MemorySummarizer] 长文本摘要[{}]完成", thisCount);
                         return null;
                     });
