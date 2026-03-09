@@ -1,12 +1,12 @@
 package work.slhaf.partner.module.modules.memory.selector.extractor;
 
 import cn.hutool.json.JSONUtil;
-import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -20,7 +20,6 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 import java.util.ArrayList;
 import java.util.List;
 
-import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 
 @EqualsAndHashCode(callSuper = true)
@@ -52,9 +51,11 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
                     .topic_tree(memoryCapability.getTopicTree())
                     .activatedMemorySlices(activatedMemorySlices)
                     .build();
-            log.debug("[MemorySelectExtractor] 主题提取输入: {}", JSONObject.toJSONString(extractorInput));
-            String responseStr = extractJson(singleChat(JSONUtil.toJsonPrettyStr(extractorInput)).getMessage());
-            extractorResult = JSONObject.parseObject(responseStr, ExtractorResult.class);
+            log.debug("[MemorySelectExtractor] 主题提取输入: {}", JSONUtil.toJsonStr(extractorInput));
+            extractorResult = formattedChat(
+                    List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(extractorInput))),
+                    ExtractorResult.class
+            );
             log.debug("[MemorySelectExtractor] 主题提取结果: {}", extractorResult);
         } catch (Exception e) {
             log.error("[MemorySelectExtractor] 主题提取出错: ", e);
@@ -82,10 +83,5 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
     @Override
     public String modelKey() {
         return "topic_extractor";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
     }
 }

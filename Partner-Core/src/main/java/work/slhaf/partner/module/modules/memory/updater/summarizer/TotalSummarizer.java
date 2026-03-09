@@ -1,29 +1,24 @@
 package work.slhaf.partner.module.modules.memory.updater.summarizer;
 
 import cn.hutool.json.JSONUtil;
-import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.util.HashMap;
-
-import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TotalSummarizer extends AbstractAgentModule.Sub<HashMap<String, String>, String> implements ActivateModel {
-    @Init
-    public void init() {
-        updateChatClientSettings();
-    }
-
     public String execute(HashMap<String, String> singleMemorySummary) {
-        ChatResponse response = this.singleChat(JSONUtil.toJsonPrettyStr(singleMemorySummary));
-        return JSONObject.parseObject(extractJson(response.getMessage())).getString("content");
+        return formattedChat(
+                List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(singleMemorySummary))),
+                SummaryContent.class
+        ).getContent();
     }
 
     @Override
@@ -31,8 +26,8 @@ public class TotalSummarizer extends AbstractAgentModule.Sub<HashMap<String, Str
         return "total_summarizer";
     }
 
-    @Override
-    public boolean withBasicPrompt() {
-        return true;
+    @lombok.Data
+    private static class SummaryContent {
+        private String content;
     }
 }

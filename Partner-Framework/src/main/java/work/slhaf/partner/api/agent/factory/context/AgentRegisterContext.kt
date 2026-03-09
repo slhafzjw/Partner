@@ -4,7 +4,6 @@ import org.reflections.Reflections
 import org.reflections.scanners.Scanners
 import org.reflections.util.ConfigurationBuilder
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig
-import work.slhaf.partner.api.chat.pojo.Message
 import java.lang.reflect.Method
 import java.net.URL
 
@@ -25,7 +24,6 @@ class AgentRegisterContext(urls: List<URL>) {
 }
 
 class ConfigFactoryContext {
-    val modelPromptMap: HashMap<String, List<Message>> = HashMap()
     val modelConfigMap: HashMap<String, ModelConfig> = HashMap()
 }
 

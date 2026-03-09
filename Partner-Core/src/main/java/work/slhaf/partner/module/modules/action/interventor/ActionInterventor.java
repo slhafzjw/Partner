@@ -135,11 +135,6 @@ public class ActionInterventor extends PreRunningAbstractAgentModuleAbstract imp
     }
 
     @Override
-    public boolean withBasicPrompt() {
-        return false;
-    }
-
-    @Override
     protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
         return interventionPrompt.remove(context.getInfo().getUuid());
     }

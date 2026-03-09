@@ -6,31 +6,27 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeInput;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeResult;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, SummarizeResult> implements ActivateModel {
-    @Init
-    public void init() {
-        updateChatClientSettings();
-    }
-
     @Override
     public SummarizeResult execute(SummarizeInput input) {
         log.debug("[MemorySummarizer] 整体摘要开始...");
-        ChatResponse response = this.singleChat(JSONUtil.toJsonPrettyStr(input));
-        log.debug("[MemorySummarizer] 整体摘要结果: {}", JSONObject.toJSONString(response));
-        SummarizeResult result = JSONObject.parseObject(extractJson(response.getMessage()), SummarizeResult.class);
+        SummarizeResult result = formattedChat(
+                List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(input))),
+                SummarizeResult.class
+        );
+        log.debug("[MemorySummarizer] 整体摘要结果: {}", JSONObject.toJSONString(result));
         return fix(result);
     }
 
@@ -51,10 +47,5 @@ public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, Sum
     @Override
     public String modelKey() {
         return "multi_summarizer";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return true;
     }
 }

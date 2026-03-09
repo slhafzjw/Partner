@@ -7,7 +7,6 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 
@@ -56,8 +55,7 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
 
     private String singleExecute(String primaryContent) {
         try {
-            ChatResponse response = this.singleChat(primaryContent);
-            return response.getMessage();
+            return chat(List.of(new Message(ChatConstant.Character.USER, primaryContent)));
         } catch (Exception e) {
             log.error("[SingleSummarizer] 单消息总结出错: ", e);
             return primaryContent;
@@ -67,10 +65,5 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
     @Override
     public String modelKey() {
         return "single_summarizer";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
     }
 }

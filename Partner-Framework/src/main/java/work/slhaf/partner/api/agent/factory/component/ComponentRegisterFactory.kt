@@ -8,11 +8,9 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.api.agent.factory.component.exception.ModuleFactoryInitFailedException
-import work.slhaf.partner.api.agent.factory.config.exception.PromptNotExistException
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.api.agent.factory.context.ModuleContextData
-import work.slhaf.partner.api.chat.pojo.Message
 import java.lang.reflect.Modifier
 import java.time.ZonedDateTime
 
@@ -21,7 +19,7 @@ import java.time.ZonedDateTime
  *
  * 行为:
  * - 若实例是 [AbstractAgentModule]，按 Running/Sub/Standalone 构造 `ModuleContextData` 并注册到 modules。
- * - 若实现了 [ActivateModel]，必须存在对应 `modelPromptMap` 条目，随后构建 `modelInfo`。
+ * - 若实现了 [ActivateModel]，使用模块提供的 prompt 元数据构建 `modelInfo`。
  * - 若不是模块类型，尝试注册为 additional component（失败仅记录错误日志）。
  */
 class ComponentRegisterFactory : AgentBaseFactory() {
@@ -35,7 +33,6 @@ class ComponentRegisterFactory : AgentBaseFactory() {
         val agentContext = context.agentContext
 
         val modelConfigMap = configFactoryContext.modelConfigMap
-        val modelPromptMap = configFactoryContext.modelPromptMap
         val defaultConfig = modelConfigMap["default"]!!
 
         reflections.getTypesAnnotatedWith(AgentComponent::class.java)
@@ -56,7 +53,6 @@ class ComponentRegisterFactory : AgentBaseFactory() {
                         componentClass,
                         componentInstance,
                         modelConfigMap,
-                        modelPromptMap,
                         defaultConfig
                     )
                 } else {
@@ -71,7 +67,6 @@ class ComponentRegisterFactory : AgentBaseFactory() {
         componentClass: Class<*>,
         module: AbstractAgentModule,
         modelConfigMap: Map<String, ModelConfig>,
-        modelPromptMap: Map<String, List<Message>>,
         defaultConfig: ModelConfig
     ) {
         if (agentContext.modules.containsKey(module.moduleName)) {
@@ -84,12 +79,10 @@ class ComponentRegisterFactory : AgentBaseFactory() {
         val modelInfo = if (module is ActivateModel) {
             val modelKey = module.modelKey()
             val modelConfig = modelConfigMap[modelKey] ?: defaultConfig
-            val modelPrompt = modelPromptMap[modelKey]
-                ?: throw PromptNotExistException("不存在的modelPrompt: $modelKey")
             ModuleContextData.ModelInfo(
                 modelConfig.baseUrl,
                 modelConfig.model,
-                JSONArray.parseArray(JSONObject.toJSONString(modelPrompt))
+                JSONArray.parseArray(JSONObject.toJSONString(module.modulePrompt()))
             )
         } else {
             null

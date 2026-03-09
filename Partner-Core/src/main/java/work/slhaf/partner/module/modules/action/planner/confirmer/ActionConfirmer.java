@@ -5,7 +5,7 @@ import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
@@ -18,8 +18,6 @@ import work.slhaf.partner.module.modules.action.planner.confirmer.entity.Pending
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-
-import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 
 public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, ConfirmerResult> implements ActivateModel {
     @InjectCapability
@@ -40,10 +38,12 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
                 try {
                     ExecutableAction executableAction = pendingAction.getExecutableAction();
                     String prompt = buildPrompt(executableAction, data.getInput(), data.getRecentMessages());
-                    ChatResponse response = this.singleChat(prompt);
-                    JSONObject tempResult = JSONObject.parseObject(extractJson(response.getMessage()));
+                    DecisionResponse tempResult = formattedChat(
+                            List.of(new Message(ChatConstant.Character.USER, prompt)),
+                            DecisionResponse.class
+                    );
                     PendingActionRecord.Decision decision = parseDecision(tempResult);
-                    String reason = tempResult == null ? null : tempResult.getString("reason");
+                    String reason = tempResult.getReason();
                     synchronized (decisions) {
                         decisions.add(new PendingDecisionItem(pendingAction.getPendingId(), decision, reason));
                     }
@@ -68,11 +68,11 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
         return result;
     }
 
-    private PendingActionRecord.Decision parseDecision(JSONObject tempResult) {
+    private PendingActionRecord.Decision parseDecision(DecisionResponse tempResult) {
         if (tempResult == null) {
             return PendingActionRecord.Decision.HOLD;
         }
-        String decisionText = tempResult.getString("decision");
+        String decisionText = tempResult.getDecision();
         if (decisionText != null) {
             String upperDecision = decisionText.toUpperCase();
             if (upperDecision.contains("CONFIRM")) {
@@ -85,7 +85,7 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
                 return PendingActionRecord.Decision.HOLD;
             }
         }
-        Boolean confirmed = tempResult.getBoolean("confirmed");
+        Boolean confirmed = tempResult.getConfirmed();
         if (Boolean.TRUE.equals(confirmed)) {
             return PendingActionRecord.Decision.CONFIRM;
         }
@@ -116,8 +116,10 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
         return "action-confirmer";
     }
 
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
+    @lombok.Data
+    private static class DecisionResponse {
+        private String decision;
+        private String reason;
+        private Boolean confirmed;
     }
 }

@@ -7,7 +7,8 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
@@ -48,8 +49,10 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
         List<Callable<EvaluatorResult>> list = new ArrayList<>();
         for (EvaluatorBatchInput batchInput : batchInputs) {
             list.add(() -> {
-                ChatResponse response = this.singleChat(buildPrompt(batchInput));
-                EvaluatorResult evaluatorResult = JSONObject.parseObject(response.getMessage(), EvaluatorResult.class);
+                EvaluatorResult evaluatorResult = formattedChat(
+                        List.of(new Message(ChatConstant.Character.USER, buildPrompt(batchInput))),
+                        EvaluatorResult.class
+                );
                 evaluatorResult.setTendency(batchInput.getTendency());
                 return evaluatorResult;
             });
@@ -88,10 +91,5 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
     @Override
     public String modelKey() {
         return "action_evaluator";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return true;
     }
 }

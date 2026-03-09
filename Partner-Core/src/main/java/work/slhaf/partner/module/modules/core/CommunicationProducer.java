@@ -8,9 +8,7 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.ChatClient;
 import work.slhaf.partner.api.chat.constant.ChatConstant;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -31,22 +29,14 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     @InjectCapability
     private CognationCapability cognationCapability;
-    private List<Message> appendedMessages = new ArrayList<>();
+    private final List<Message> appendedMessages = new ArrayList<>();
+    private final List<Message> chatMessages = new ArrayList<>();
 
     @Init
     public void init() {
-        List<Message> chatMessages = this.cognationCapability.getChatMessages();
-        this.getModel().getChatMessages().addAll(chatMessages);
-
-        updateChatClientSettings();
+        this.chatMessages.clear();
+        this.chatMessages.addAll(this.cognationCapability.getChatMessages());
         log.info("CommunicationProducer 注册完毕...");
-    }
-
-    @Override
-    public void updateChatClientSettings() {
-        ChatClient chatClient = getModel().getChatClient();
-        chatClient.setTemperature(0.3);
-        chatClient.setTop_p(0.7);
     }
 
     @Override
@@ -55,7 +45,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     @Override
-    public boolean withBasicPrompt() {
+    public boolean useStreaming() {
         return true;
     }
 
@@ -73,7 +63,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         activateModule(runningFlowContext);
         setMessageCount(runningFlowContext);
 
-        log.debug("[CommunicationProducer] 当前消息列表大小: {}", getModel().getChatMessages().size());
+        log.debug("[CommunicationProducer] 当前消息列表大小: {}", chatMessages.size());
         log.debug("[CommunicationProducer] 当前核心prompt内容: {}", runningFlowContext.getCoreContext().toString());
 
         setMessage(runningFlowContext.getCoreContext().toString());
@@ -94,28 +84,28 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         int count = 0;
         while (true) {
             try {
-                ChatResponse chatResponse = this.chat();
+                String chatResponse = this.chat(buildChatMessages());
                 try {
-                    response.putAll(JSONObject.parse(extractJson(chatResponse.getMessage())));
+                    response.putAll(JSONObject.parse(extractJson(chatResponse)));
                 } catch (Exception e) {
                     log.warn("主模型回复格式出错, 将直接作为消息返回, 建议尝试更换主模型...");
-                    handleExceptionResponse(response, chatResponse.getMessage());
+                    handleExceptionResponse(response, chatResponse);
                 }
                 log.debug("[CommunicationProducer] CommunicationProducer 响应内容: {}", response);
-                updateModuleContextAndChatMessages(runningFlowContext, response.getString("text"), chatResponse);
+                updateModuleContextAndChatMessages(runningFlowContext, response.getString("text"));
                 break;
             } catch (Exception e) {
                 count++;
                 log.error("[CommunicationProducer] CoreModel执行异常: {}", e.getLocalizedMessage());
                 if (count > 3) {
                     handleExceptionResponse(response, "主模型交互出错: " + e.getLocalizedMessage());
-                    getModel().getChatMessages().removeLast();
+                    chatMessages.removeLast();
                     break;
                 }
             } finally {
                 updateCoreResponse(runningFlowContext, response);
                 resetAppendedMessages();
-                log.debug("[CommunicationProducer] 消息列表更新大小: {}", getModel().getChatMessages().size());
+                log.debug("[CommunicationProducer] 消息列表更新大小: {}", chatMessages.size());
             }
         }
     }
@@ -143,20 +133,15 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         this.appendedMessages.clear();
     }
 
-    @Override
-    public @NotNull ChatResponse chat() {
-        List<Message> baseMessages = getModel().getBaseMessages();
-        List<Message> chatMessages = getModel().getChatMessages();
-        List<Message> temp = new ArrayList<>(baseMessages.subList(0, baseMessages.size() - 2));
+    private List<Message> buildChatMessages() {
+        List<Message> temp = new ArrayList<>(appendedMessages.size() + chatMessages.size());
         temp.addAll(appendedMessages);
-        temp.addAll(baseMessages.subList(baseMessages.size() - 2, baseMessages.size()));
         temp.addAll(chatMessages);
-        return getModel().getChatClient().runChat(temp);
+        return temp;
     }
 
-    private void updateModuleContextAndChatMessages(PartnerRunningFlowContext runningFlowContext, String response, ChatResponse chatResponse) {
+    private void updateModuleContextAndChatMessages(PartnerRunningFlowContext runningFlowContext, String response) {
         cognationCapability.getMessageLock().lock();
-        List<Message> chatMessages = getModel().getChatMessages();
         chatMessages.removeIf(m -> {
             if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
                 return false;
@@ -176,8 +161,6 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         Message assistantMessage = new Message(ChatConstant.Character.ASSISTANT, response);
         chatMessages.add(assistantMessage);
         cognationCapability.getMessageLock().unlock();
-        //设置上下文
-        runningFlowContext.getModuleContext().getExtraContext().put("total_token", chatResponse.getUsageBean().getTotal_tokens());
         //区分单人聊天场景
 //        if (runningFlowContext.isSingle()) {
         MetaMessage metaMessage = new MetaMessage(primaryUserMessage, assistantMessage);
@@ -187,7 +170,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     private void setMessage(String coreContextStr) {
         Message userMessage = new Message(ChatConstant.Character.USER, coreContextStr);
-        getModel().getChatMessages().add(userMessage);
+        chatMessages.add(userMessage);
     }
 
     private void handleExceptionResponse(JSONObject response, String chatResponse) {
@@ -196,7 +179,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private void setMessageCount(PartnerRunningFlowContext runningFlowContext) {
-        runningFlowContext.getModuleContext().getExtraContext().put("message_count", getModel().getChatMessages().size());
+        runningFlowContext.getModuleContext().getExtraContext().put("message_count", chatMessages.size());
     }
 
     private void setAppendedPromptMessage(List<AppendPromptData> appendPrompt) {

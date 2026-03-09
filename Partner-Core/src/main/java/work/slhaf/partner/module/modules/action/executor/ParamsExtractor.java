@@ -4,7 +4,8 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.module.modules.action.executor.entity.ExtractorInput;
 import work.slhaf.partner.module.modules.action.executor.entity.ExtractorResult;
@@ -20,12 +21,11 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
     @Override
     public ExtractorResult execute(ExtractorInput input) {
         String prompt = buildPrompt(input);
-        ChatResponse response = this.singleChat(prompt);
         ExtractorResult result;
         try {
-            result = JSONObject.parseObject(response.getMessage(), ExtractorResult.class);
+            result = formattedChat(List.of(new Message(ChatConstant.Character.USER, prompt)), ExtractorResult.class);
         } catch (Exception e) {
-            log.error("ParamsExtractor解析结果失败，返回内容：{}", response.getMessage(), e);
+            log.error("ParamsExtractor解析结果失败", e);
             result = new ExtractorResult();
             result.setOk(false);
             result.setParams(new HashMap<>());
@@ -56,10 +56,5 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
     @Override
     public String modelKey() {
         return "params_extractor";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
     }
 }

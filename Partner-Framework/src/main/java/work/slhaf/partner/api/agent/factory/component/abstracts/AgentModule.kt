@@ -3,13 +3,10 @@ package work.slhaf.partner.api.agent.factory.component.abstracts
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
-import work.slhaf.partner.api.agent.factory.component.annotation.Init
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader
 import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
-import work.slhaf.partner.api.chat.ChatClient
-import work.slhaf.partner.api.chat.constant.ChatConstant
-import work.slhaf.partner.api.chat.pojo.ChatResponse
 import work.slhaf.partner.api.chat.pojo.Message
+import work.slhaf.partner.api.chat.runtime.OpenAiChatRuntime
 
 /**
  * 模块基类
@@ -39,58 +36,37 @@ sealed class AbstractAgentModule {
 
 interface ActivateModel {
 
-    val model: Model
-        get() = modelMap.computeIfAbsent(modelKey()) {
-            buildModel()
+    val runtime: OpenAiChatRuntime
+        get() = runtimeMap.computeIfAbsent(modelKey()) {
+            buildRuntime()
         }
 
     companion object {
-        val modelMap: MutableMap<String, Model> = mutableMapOf()
+        val runtimeMap: MutableMap<String, OpenAiChatRuntime> = mutableMapOf()
         private val configManager: AgentConfigLoader = AgentConfigLoader.INSTANCE
     }
 
-    @Init(order = -1)
-    fun modelSettings() {
-        modelMap[modelKey()] = buildModel()
-    }
-
-    fun buildModel(): Model {
+    fun buildRuntime(): OpenAiChatRuntime {
         val modelConfig = configManager.loadModelConfig(modelKey())
-        val chatClient = ChatClient(modelConfig.baseUrl, modelConfig.apikey, modelConfig.model)
-        val model = Model(chatClient)
+        return OpenAiChatRuntime(modelConfig.baseUrl, modelConfig.apikey, modelConfig.model)
+    }
 
-        val baseMessages = if (withBasicPrompt()) {
-            loadSpecificPromptAndBasicPrompt(modelKey())
-        } else {
-            configManager.loadModelPrompt(modelKey())
+    fun chat(messages: List<Message>): String {
+        return runtime.chat(mergeMessages(messages), useStreaming())
+    }
+
+    fun <T : Any> formattedChat(messages: List<Message>, responseType: Class<T>): T {
+        return runtime.formattedChat(mergeMessages(messages), useStreaming(), responseType)
+    }
+
+    fun mergeMessages(messages: List<Message>): List<Message> {
+        if (modulePrompt().isEmpty()) {
+            return messages
         }
-        model.baseMessages.addAll(baseMessages)
-        return model
-    }
-
-    private fun loadSpecificPromptAndBasicPrompt(modelKey: String): MutableList<Message> {
-        val messages: MutableList<Message> = ArrayList()
-        messages.addAll(configManager.loadModelPrompt("basic"))
-        messages.addAll(configManager.loadModelPrompt(modelKey))
-        return messages
-    }
-
-    fun chat(): ChatResponse {
-        val temp = ArrayList<Message?>()
-        temp.addAll(model.baseMessages)
-        temp.addAll(model.chatMessages)
-        return model.chatClient.runChat(temp)
-    }
-
-    fun singleChat(input: String): ChatResponse {
-        val temp = ArrayList<Message>(model.baseMessages)
-        temp.add(Message(ChatConstant.Character.USER, input))
-        return model.chatClient.runChat(temp)
-    }
-
-    fun updateChatClientSettings() {
-        model.chatClient.temperature = 0.4
-        model.chatClient.top_p = 0.8
+        return buildList {
+            addAll(modulePrompt())
+            addAll(messages)
+        }
     }
 
     /**
@@ -104,11 +80,7 @@ interface ActivateModel {
         }
     }
 
-    fun withBasicPrompt(): Boolean
+    fun modulePrompt(): List<Message> = emptyList()
 
-    data class Model(
-        val chatClient: ChatClient,
-        val chatMessages: MutableList<Message> = mutableListOf(),
-        val baseMessages: MutableList<Message> = mutableListOf()
-    )
+    fun useStreaming(): Boolean = false
 }

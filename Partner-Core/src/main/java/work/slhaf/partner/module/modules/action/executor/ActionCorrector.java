@@ -4,8 +4,12 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.module.modules.action.executor.entity.CorrectorInput;
 import work.slhaf.partner.module.modules.action.executor.entity.CorrectorResult;
+
+import java.util.List;
 
 /**
  * 负责在单组行动执行后，根据行动意图与结果检查后续行动是否符合目的，必要时直接调整行动链，或发起自对话请求进行干预
@@ -14,8 +18,7 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Cor
     @Override
     public CorrectorResult execute(CorrectorInput input) {
         val prompt = buildPrompt(input);
-        val chatResponse = singleChat(prompt);
-        return JSONObject.parseObject(chatResponse.getMessage(), CorrectorResult.class);
+        return formattedChat(List.of(new Message(ChatConstant.Character.USER, prompt)), CorrectorResult.class);
     }
 
     private String buildPrompt(CorrectorInput input) {
@@ -36,10 +39,5 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Cor
     @Override
     public String modelKey() {
         return "action_corrector";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
     }
 }

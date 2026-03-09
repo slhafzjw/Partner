@@ -8,6 +8,8 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.core.memory.pojo.MemoryResult;
@@ -23,8 +25,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -61,7 +61,10 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
                             .history(evaluatorInput.getMessages())
                             .build();
                     log.debug("[SliceSelectEvaluator] 评估[{}]输入: {}", thisCount, JSONObject.toJSONString(batchInput));
-                    EvaluatorResult evaluatorResult = JSONObject.parseObject(extractJson(singleChat(JSONUtil.toJsonStr(batchInput)).getMessage()), EvaluatorResult.class);
+                    EvaluatorResult evaluatorResult = formattedChat(
+                            List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonStr(batchInput))),
+                            EvaluatorResult.class
+                    );
                     log.debug("[SliceSelectEvaluator] 评估[{}]结果: {}", thisCount, JSONObject.toJSONString(evaluatorResult));
                     for (Long result : evaluatorResult.getResults()) {
                         SliceSummary sliceSummary = map.get(result);
@@ -116,10 +119,5 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
 
     public String modelKey() {
         return "slice_evaluator";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
     }
 }

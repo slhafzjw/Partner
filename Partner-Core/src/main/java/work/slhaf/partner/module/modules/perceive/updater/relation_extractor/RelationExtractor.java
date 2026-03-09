@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
@@ -49,8 +49,10 @@ public class RelationExtractor extends AbstractAgentModule.Sub<PartnerRunningFlo
     }
 
     private RelationExtractResult getRelationResult(RelationExtractInput input) {
-        ChatResponse response = singleChat(JSONObject.toJSONString(input));
-        return JSONObject.parseObject(response.getMessage(), RelationExtractResult.class);
+        return formattedChat(
+                List.of(new Message(ChatConstant.Character.USER, JSONObject.toJSONString(input))),
+                RelationExtractResult.class
+        );
     }
 
     private RelationExtractInput getRelationInput(String userId) {
@@ -70,10 +72,5 @@ public class RelationExtractor extends AbstractAgentModule.Sub<PartnerRunningFlo
     @Override
     public String modelKey() {
         return "relation_extractor";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return true;
     }
 }

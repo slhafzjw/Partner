@@ -9,7 +9,8 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
 import work.slhaf.partner.core.action.entity.MetaAction;
@@ -61,8 +62,10 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
         RepairerResult result;
         try {
             String prompt = assemblyHelper.buildPrompt(data, null);
-            ChatResponse response = this.singleChat(prompt);
-            RepairerData repairerData = JSONObject.parseObject(response.getMessage(), RepairerData.class);
+            RepairerData repairerData = formattedChat(
+                    List.of(new Message(ChatConstant.Character.USER, prompt)),
+                    RepairerData.class
+            );
             result = switch (repairerData.getRepairerType()) {
                 case ACTION_GENERATION ->
                         handleActionGeneration(JSONObject.parseObject(repairerData.getData(), GeneratorInput.class));
@@ -75,8 +78,10 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
                     && result.getStatus().equals(RepairerResult.RepairerStatus.FAILED)) {
                 log.warn("常规行动修复失败，将尝试自对话通道");
                 prompt = assemblyHelper.buildPrompt(data, "常规行动修复失败，请尝试通过自对话通道获取必要的信息以完成行动参数的修复");
-                response = this.singleChat(prompt);
-                repairerData = JSONObject.parseObject(response.getMessage(), RepairerData.class);
+                repairerData = formattedChat(
+                        List.of(new Message(ChatConstant.Character.USER, prompt)),
+                        RepairerData.class
+                );
                 handleUserInteraction(repairerData.getData());
             }
         } catch (Exception e) {
@@ -165,20 +170,14 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
         return "action_repairer";
     }
 
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
-    }
-
     private enum RepairerType {
         ACTION_GENERATION,
         ACTION_INVOCATION,
         USER_INTERACTION
     }
 
-    @SuppressWarnings("InnerClassMayBeStatic")
     @Data
-    private class RepairerData {
+    private static class RepairerData {
         private RepairerType repairerType;
         private String data;
     }

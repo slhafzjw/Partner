@@ -2,17 +2,14 @@ package work.slhaf.partner.api.agent.runtime.config;
 
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import work.slhaf.partner.api.agent.factory.config.exception.*;
+import work.slhaf.partner.api.agent.factory.config.exception.ConfigDirNotExistException;
+import work.slhaf.partner.api.agent.factory.config.exception.ConfigNotExistException;
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig;
 import work.slhaf.partner.api.agent.factory.config.pojo.PrimaryModelConfig;
-import work.slhaf.partner.api.agent.factory.config.pojo.PrimaryModelPrompt;
-import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * 默认配置工厂
@@ -23,28 +20,6 @@ public class FileAgentConfigLoader extends AgentConfigLoader {
 
     protected static final String CONFIG_DIR = "./config/";
     protected static final String MODEL_CONFIG_DIR = "./config/model/";
-    protected static final String PROMPT_CONFIG_DIR = "./config/prompt/";
-
-    @Override
-    protected HashMap<String, List<Message>> loadModelPrompt() {
-        File file = new File(PROMPT_CONFIG_DIR);
-        if (!file.exists() && !file.isDirectory()) {
-            throw new PromptDirNotExistException("未找到提示词目录: " + PROMPT_CONFIG_DIR + " 请手动创建!");
-        }
-        File[] files = file.listFiles();
-        if (files == null || files.length == 0) {
-            throw new PromptNotExistException("在目录 " + PROMPT_CONFIG_DIR + " 中未找到提示词配置!");
-        }
-        HashMap<String, List<Message>> promptMap = new HashMap<>();
-        for (File f : files) {
-            if (f.isDirectory()) {
-                continue;
-            }
-            PrimaryModelPrompt primaryModelPrompt = JSONUtil.readJSONObject(f, StandardCharsets.UTF_8).toBean(PrimaryModelPrompt.class);
-            promptMap.put(primaryModelPrompt.getKey(), primaryModelPrompt.getMessages());
-        }
-        return promptMap;
-    }
 
     @Override
     protected HashMap<String, ModelConfig> loadModelConfig() {
@@ -66,18 +41,5 @@ public class FileAgentConfigLoader extends AgentConfigLoader {
             configMap.put(primaryModelConfig.getKey(), primaryModelConfig.getModelConfig());
         }
         return configMap;
-    }
-
-    @Override
-    public void dumpModelConfig(String key) {
-        try {
-            File file = new File(MODEL_CONFIG_DIR + key + ".json");
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-            FileUtils.writeStringToFile(file, JSONUtil.toJsonPrettyStr(modelConfigMap.get(key)), StandardCharsets.UTF_8, false);
-        } catch (Exception e) {
-            throw new ConfigUpdateFailedException("ModelConfig 配置文件更新失败!");
-        }
     }
 }

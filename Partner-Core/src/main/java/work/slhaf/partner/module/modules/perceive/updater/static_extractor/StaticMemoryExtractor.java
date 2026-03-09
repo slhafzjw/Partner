@@ -7,13 +7,15 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.modules.perceive.updater.static_extractor.entity.StaticMemoryExtractInput;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.HashMap;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -30,8 +32,8 @@ public class StaticMemoryExtractor extends AbstractAgentModule.Sub<PartnerRunnin
                 .messages(cognationCapability.getChatMessages())
                 .existedStaticMap(perceiveCapability.getUser(context.getSource()).getStaticMemory())
                 .build();
-        ChatResponse response = singleChat(JSONUtil.toJsonPrettyStr(input));
-        JSONObject jsonObject = JSONObject.parseObject(response.getMessage());
+        String response = chat(List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(input))));
+        JSONObject jsonObject = JSONObject.parseObject(response);
         HashMap<String, String> result = new HashMap<>();
         jsonObject.forEach((k, v) -> result.put(k, (String) v));
         return result;
@@ -40,10 +42,5 @@ public class StaticMemoryExtractor extends AbstractAgentModule.Sub<PartnerRunnin
     @Override
     public String modelKey() {
         return "static_extractor";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return true;
     }
 }

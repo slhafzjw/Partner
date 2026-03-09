@@ -4,7 +4,8 @@ import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
@@ -48,8 +49,10 @@ public class InterventionRecognizer extends AbstractAgentModule.Sub<RecognizerIn
             executor.execute(() -> {
                 try {
                     String prompt = buildPrompt(data, input);
-                    ChatResponse response = this.singleChat(prompt);
-                    MetaRecognizerResult result = JSONObject.parseObject(response.getMessage(), MetaRecognizerResult.class);
+                    MetaRecognizerResult result = formattedChat(
+                            List.of(new Message(ChatConstant.Character.USER, prompt)),
+                            MetaRecognizerResult.class
+                    );
                     if (result.isOk()) {
                         synchronized (interventionsMap) {
                             interventionsMap.put(result.getIntervention(), data);
@@ -82,10 +85,5 @@ public class InterventionRecognizer extends AbstractAgentModule.Sub<RecognizerIn
     @Override
     public String modelKey() {
         return "intervention_recognizer";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
     }
 }

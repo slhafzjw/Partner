@@ -4,7 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.pojo.ChatResponse;
+import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
@@ -53,8 +53,8 @@ public class InterventionEvaluator extends AbstractAgentModule.Sub<EvaluatorInpu
         interventionMap.forEach((tendency, actionData) -> executor.execute(() -> {
             try {
                 String prompt = buildPrompt(input.getRecentMessages(), input.getActivatedSlices(), actionData, tendency);
-                ChatResponse response = this.singleChat(prompt);
-                EvaluatedInterventionData evaluatedData = JSONObject.parseObject(response.getMessage(),
+                EvaluatedInterventionData evaluatedData = formattedChat(
+                        List.of(new Message(ChatConstant.Character.USER, prompt)),
                         EvaluatedInterventionData.class);
                 synchronized (evaluatedDataList) {
                     evaluatedDataList.add(evaluatedData);
@@ -80,10 +80,5 @@ public class InterventionEvaluator extends AbstractAgentModule.Sub<EvaluatorInpu
     @Override
     public String modelKey() {
         return "intervention_evaluator";
-    }
-
-    @Override
-    public boolean withBasicPrompt() {
-        return false;
     }
 }
