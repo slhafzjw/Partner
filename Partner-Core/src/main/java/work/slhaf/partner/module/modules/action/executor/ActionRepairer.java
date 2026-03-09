@@ -9,7 +9,6 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
@@ -63,7 +62,7 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
         try {
             String prompt = assemblyHelper.buildPrompt(data, null);
             RepairerData repairerData = formattedChat(
-                    List.of(new Message(ChatConstant.Character.USER, prompt)),
+                    List.of(new Message(Message.Character.USER, prompt)),
                     RepairerData.class
             );
             result = switch (repairerData.getRepairerType()) {
@@ -79,7 +78,7 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
                 log.warn("常规行动修复失败，将尝试自对话通道");
                 prompt = assemblyHelper.buildPrompt(data, "常规行动修复失败，请尝试通过自对话通道获取必要的信息以完成行动参数的修复");
                 repairerData = formattedChat(
-                        List.of(new Message(ChatConstant.Character.USER, prompt)),
+                        List.of(new Message(Message.Character.USER, prompt)),
                         RepairerData.class
                 );
                 handleUserInteraction(repairerData.getData());

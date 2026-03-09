@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 
@@ -33,7 +32,7 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
         AtomicInteger counter = new AtomicInteger();
         for (int i = 0; i < chatMessages.size(); i++) {
             Message chatMessage = chatMessages.get(i);
-            if (chatMessage.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+            if (chatMessage.getRole() == Message.Character.ASSISTANT) {
                 String content = chatMessage.getContent();
                 if (chatMessage.getContent().length() > 500) {
                     int index = i;
@@ -41,7 +40,7 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
                         int thisCount = counter.incrementAndGet();
                         log.debug("[MemorySummarizer] 长文本摘要[{}]启动", thisCount);
                         String summarized = singleExecute(JSONObject.of("content", content).toString());
-                        chatMessages.set(index, new Message(chatMessage.getRole(), summarized));
+                        chatMessages.set(index, new Message(Message.Character.ASSISTANT, summarized));
                         log.debug("[MemorySummarizer] 长文本摘要[{}]完成", thisCount);
                         return null;
                     });
@@ -55,7 +54,7 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
 
     private String singleExecute(String primaryContent) {
         try {
-            return chat(List.of(new Message(ChatConstant.Character.USER, primaryContent)));
+            return chat(List.of(new Message(Message.Character.USER, primaryContent)));
         } catch (Exception e) {
             log.error("[SingleSummarizer] 单消息总结出错: ", e);
             return primaryContent;

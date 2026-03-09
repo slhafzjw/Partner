@@ -5,7 +5,6 @@ import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
@@ -39,7 +38,7 @@ public class ActionConfirmer extends AbstractAgentModule.Sub<ConfirmerInput, Con
                     ExecutableAction executableAction = pendingAction.getExecutableAction();
                     String prompt = buildPrompt(executableAction, data.getInput(), data.getRecentMessages());
                     DecisionResponse tempResult = formattedChat(
-                            List.of(new Message(ChatConstant.Character.USER, prompt)),
+                            List.of(new Message(Message.Character.USER, prompt)),
                             DecisionResponse.class
                     );
                     PendingActionRecord.Decision decision = parseDecision(tempResult);

@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.util.HashMap;
@@ -16,7 +15,7 @@ import java.util.List;
 public class TotalSummarizer extends AbstractAgentModule.Sub<HashMap<String, String>, String> implements ActivateModel {
     public String execute(HashMap<String, String> singleMemorySummary) {
         return formattedChat(
-                List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(singleMemorySummary))),
+                List.of(new Message(Message.Character.USER, JSONUtil.toJsonPrettyStr(singleMemorySummary))),
                 SummaryContent.class
         ).getContent();
     }

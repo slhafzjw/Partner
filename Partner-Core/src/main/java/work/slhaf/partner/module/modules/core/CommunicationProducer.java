@@ -8,7 +8,6 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -143,7 +142,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     private void updateModuleContextAndChatMessages(PartnerRunningFlowContext runningFlowContext, String response) {
         cognationCapability.getMessageLock().lock();
         chatMessages.removeIf(m -> {
-            if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+            if (m.getRole() == Message.Character.ASSISTANT) {
                 return false;
             }
             try {
@@ -156,9 +155,9 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         //添加时间标志
         // TODO 此处的时间标识应当采用 RunningFlowContext 携带时间
         String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("\r\n**[yyyy-MM-dd HH:mm:ss]"));
-        Message primaryUserMessage = new Message(ChatConstant.Character.USER, runningFlowContext.getCoreContext().getText() + dateTime);
+        Message primaryUserMessage = new Message(Message.Character.USER, runningFlowContext.getCoreContext().getText() + dateTime);
         chatMessages.add(primaryUserMessage);
-        Message assistantMessage = new Message(ChatConstant.Character.ASSISTANT, response);
+        Message assistantMessage = new Message(Message.Character.ASSISTANT, response);
         chatMessages.add(assistantMessage);
         cognationCapability.getMessageLock().unlock();
         //区分单人聊天场景
@@ -169,7 +168,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private void setMessage(String coreContextStr) {
-        Message userMessage = new Message(ChatConstant.Character.USER, coreContextStr);
+        Message userMessage = new Message(Message.Character.USER, coreContextStr);
         chatMessages.add(userMessage);
     }
 
@@ -183,7 +182,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private void setAppendedPromptMessage(List<AppendPromptData> appendPrompt) {
-        Message appendDeclareMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + "认知补充开始");
+        Message appendDeclareMessage = new Message(Message.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + "认知补充开始");
         this.appendedMessages.add(appendDeclareMessage);
         for (AppendPromptData data : appendPrompt) {
             setStartMessage(data);
@@ -191,29 +190,29 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             setEndMessage(data);
             setAssistantMessage();
         }
-        Message appendEndMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + "认知补充结束");
+        Message appendEndMessage = new Message(Message.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + "认知补充结束");
         this.appendedMessages.add(appendEndMessage);
     }
 
     private void setAssistantMessage() {
-        Message message = new Message(ChatConstant.Character.ASSISTANT, "嗯，明白了");
+        Message message = new Message(Message.Character.ASSISTANT, "嗯，明白了");
         appendedMessages.add(message);
     }
 
     private void setEndMessage(AppendPromptData data) {
-        Message endMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + data.getModuleName() + "认知补充结束.");
+        Message endMessage = new Message(Message.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + data.getModuleName() + "认知补充结束.");
         appendedMessages.add(endMessage);
     }
 
     private void setContentMessage(AppendPromptData data) {
         data.getAppendedPrompt().forEach((k, v) -> {
-            Message contentMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + k + v + "\r\n");
+            Message contentMessage = new Message(Message.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + k + v + "\r\n");
             appendedMessages.add(contentMessage);
         });
     }
 
     private void setStartMessage(AppendPromptData data) {
-        Message startMessage = new Message(ChatConstant.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + data.getModuleName() + "以下为" + data.getModuleName() + "相关认知.");
+        Message startMessage = new Message(Message.Character.USER, ModelConstant.CharacterPrefix.SYSTEM + data.getModuleName() + "以下为" + data.getModuleName() + "相关认知.");
         appendedMessages.add(startMessage);
     }
 

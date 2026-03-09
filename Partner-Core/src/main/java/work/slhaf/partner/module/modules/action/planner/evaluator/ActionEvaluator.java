@@ -7,7 +7,6 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -50,7 +49,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
         for (EvaluatorBatchInput batchInput : batchInputs) {
             list.add(() -> {
                 EvaluatorResult evaluatorResult = formattedChat(
-                        List.of(new Message(ChatConstant.Character.USER, buildPrompt(batchInput))),
+                        List.of(new Message(Message.Character.USER, buildPrompt(batchInput))),
                         EvaluatorResult.class
                 );
                 evaluatorResult.setTendency(batchInput.getTendency());

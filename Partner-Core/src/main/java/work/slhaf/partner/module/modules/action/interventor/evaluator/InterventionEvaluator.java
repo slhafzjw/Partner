@@ -4,7 +4,6 @@ import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
@@ -54,7 +53,7 @@ public class InterventionEvaluator extends AbstractAgentModule.Sub<EvaluatorInpu
             try {
                 String prompt = buildPrompt(input.getRecentMessages(), input.getActivatedSlices(), actionData, tendency);
                 EvaluatedInterventionData evaluatedData = formattedChat(
-                        List.of(new Message(ChatConstant.Character.USER, prompt)),
+                        List.of(new Message(Message.Character.USER, prompt)),
                         EvaluatedInterventionData.class);
                 synchronized (evaluatedDataList) {
                     evaluatedDataList.add(evaluatedData);

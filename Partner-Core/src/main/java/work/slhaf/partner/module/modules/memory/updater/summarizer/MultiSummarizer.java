@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeInput;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeResult;
@@ -23,7 +22,7 @@ public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, Sum
     public SummarizeResult execute(SummarizeInput input) {
         log.debug("[MemorySummarizer] 整体摘要开始...");
         SummarizeResult result = formattedChat(
-                List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(input))),
+                List.of(new Message(Message.Character.USER, JSONUtil.toJsonPrettyStr(input))),
                 SummarizeResult.class
         );
         log.debug("[MemorySummarizer] 整体摘要结果: {}", JSONObject.toJSONString(result));

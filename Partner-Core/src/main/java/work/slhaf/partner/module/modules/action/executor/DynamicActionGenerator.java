@@ -6,7 +6,6 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.GeneratedData;
@@ -40,7 +39,7 @@ public class DynamicActionGenerator extends AbstractAgentModule.Sub<GeneratorInp
             String prompt = buildPrompt(input);
             // 响应结果需要包含几个特殊数据: 依赖项、代码内容、是否序列化、响应数据释义
             GeneratedData generatorData = formattedChat(
-                    List.of(new Message(ChatConstant.Character.USER, prompt)),
+                    List.of(new Message(Message.Character.USER, prompt)),
                     GeneratedData.class
             );
             val location = runnerClient.buildTmpPath(input.getActionName(), generatorData.getCodeType());

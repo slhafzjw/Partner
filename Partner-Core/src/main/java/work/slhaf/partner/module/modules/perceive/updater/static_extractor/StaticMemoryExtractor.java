@@ -7,7 +7,6 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
@@ -32,7 +31,7 @@ public class StaticMemoryExtractor extends AbstractAgentModule.Sub<PartnerRunnin
                 .messages(cognationCapability.getChatMessages())
                 .existedStaticMap(perceiveCapability.getUser(context.getSource()).getStaticMemory())
                 .build();
-        String response = chat(List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(input))));
+        String response = chat(List.of(new Message(Message.Character.USER, JSONUtil.toJsonPrettyStr(input))));
         JSONObject jsonObject = JSONObject.parseObject(response);
         HashMap<String, String> result = new HashMap<>();
         jsonObject.forEach((k, v) -> result.put(k, (String) v));

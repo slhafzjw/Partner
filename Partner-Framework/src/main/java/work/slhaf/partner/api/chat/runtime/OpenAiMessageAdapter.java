@@ -4,7 +4,6 @@ import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;
 import com.openai.models.chat.completions.ChatCompletionSystemMessageParam;
 import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.util.ArrayList;
@@ -25,16 +24,15 @@ public final class OpenAiMessageAdapter {
 
     public static ChatCompletionMessageParam toParam(Message message) {
         return switch (message.getRole()) {
-            case ChatConstant.Character.SYSTEM -> ChatCompletionMessageParam.ofSystem(
+            case SYSTEM -> ChatCompletionMessageParam.ofSystem(
                     ChatCompletionSystemMessageParam.builder().content(message.getContent()).build()
             );
-            case ChatConstant.Character.ASSISTANT -> ChatCompletionMessageParam.ofAssistant(
+            case ASSISTANT -> ChatCompletionMessageParam.ofAssistant(
                     ChatCompletionAssistantMessageParam.builder().content(message.getContent()).build()
             );
-            case ChatConstant.Character.USER -> ChatCompletionMessageParam.ofUser(
+            case USER -> ChatCompletionMessageParam.ofUser(
                     ChatCompletionUserMessageParam.builder().content(message.getContent()).build()
             );
-            default -> throw new IllegalArgumentException("Unsupported message role: " + message.getRole());
         };
     }
 }

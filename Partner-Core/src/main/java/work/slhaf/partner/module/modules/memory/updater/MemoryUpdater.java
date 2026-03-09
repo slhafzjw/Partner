@@ -7,7 +7,6 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
@@ -215,7 +214,7 @@ public class MemoryUpdater extends PostRunningAgentModule {
     private List<Message> getCleanedMessages(List<Message> chatMessages) {
         return chatMessages.stream()
                 .map(message -> {
-                    if (message.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+                    if (message.getRole() == Message.Character.ASSISTANT) {
                         return message;
                     }
                     List<String> splitResult = Arrays.stream(message.getContent().split("\\*\\*")).toList();
@@ -223,13 +222,13 @@ public class MemoryUpdater extends PostRunningAgentModule {
                         return message;
                     }
                     String time = splitResult.getLast();
-                    return new Message(ChatConstant.Character.USER, message.getContent().replace("\r\n**" + time, ""));
+                    return new Message(Message.Character.USER, message.getContent().replace("\r\n**" + time, ""));
                 }).toList();
     }
 
     private void setInvolvedUserId(String startUserId, MemorySlice memorySlice, List<Message> chatMessages) {
         for (Message chatMessage : chatMessages) {
-            if (chatMessage.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+            if (chatMessage.getRole() == Message.Character.ASSISTANT) {
                 continue;
             }
             // 匹配userId

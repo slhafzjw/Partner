@@ -4,7 +4,6 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.module.modules.action.executor.entity.ExtractorInput;
@@ -23,7 +22,7 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
         String prompt = buildPrompt(input);
         ExtractorResult result;
         try {
-            result = formattedChat(List.of(new Message(ChatConstant.Character.USER, prompt)), ExtractorResult.class);
+            result = formattedChat(List.of(new Message(Message.Character.USER, prompt)), ExtractorResult.class);
         } catch (Exception e) {
             log.error("ParamsExtractor解析结果失败", e);
             result = new ExtractorResult();

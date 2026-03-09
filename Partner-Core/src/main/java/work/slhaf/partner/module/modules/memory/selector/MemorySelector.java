@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
@@ -147,7 +147,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
     private boolean isSingleUser() {
         Set<String> userIdSet = new HashSet<>();
         cognationCapability.getChatMessages().forEach(m -> {
-            if (m.getRole().equals(ChatConstant.Character.ASSISTANT)) {
+            if (m.getRole() == Message.Character.ASSISTANT) {
                 return;
             }
             String userId = extractUserId(m.getContent());

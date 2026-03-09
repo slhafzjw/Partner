@@ -4,7 +4,6 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.module.modules.action.executor.entity.CorrectorInput;
 import work.slhaf.partner.module.modules.action.executor.entity.CorrectorResult;
@@ -18,7 +17,7 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Cor
     @Override
     public CorrectorResult execute(CorrectorInput input) {
         val prompt = buildPrompt(input);
-        return formattedChat(List.of(new Message(ChatConstant.Character.USER, prompt)), CorrectorResult.class);
+        return formattedChat(List.of(new Message(Message.Character.USER, prompt)), CorrectorResult.class);
     }
 
     private String buildPrompt(CorrectorInput input) {

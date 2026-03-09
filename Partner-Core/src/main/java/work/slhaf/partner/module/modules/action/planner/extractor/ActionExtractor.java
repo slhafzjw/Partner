@@ -4,7 +4,6 @@ import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorInput;
@@ -27,7 +26,7 @@ public class ActionExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
         for (int i = 0; i < 3; i++) {
             try {
                 return formattedChat(
-                        List.of(new Message(ChatConstant.Character.USER, JSONObject.toJSONString(data))),
+                        List.of(new Message(Message.Character.USER, JSONObject.toJSONString(data))),
                         ExtractorResult.class
                 );
             } catch (Exception e) {

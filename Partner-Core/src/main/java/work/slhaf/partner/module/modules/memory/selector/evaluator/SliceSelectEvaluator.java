@@ -8,7 +8,6 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
@@ -62,7 +61,7 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
                             .build();
                     log.debug("[SliceSelectEvaluator] 评估[{}]输入: {}", thisCount, JSONObject.toJSONString(batchInput));
                     EvaluatorResult evaluatorResult = formattedChat(
-                            List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonStr(batchInput))),
+                            List.of(new Message(Message.Character.USER, JSONUtil.toJsonStr(batchInput))),
                             EvaluatorResult.class
                     );
                     log.debug("[SliceSelectEvaluator] 评估[{}]结果: {}", thisCount, JSONObject.toJSONString(evaluatorResult));

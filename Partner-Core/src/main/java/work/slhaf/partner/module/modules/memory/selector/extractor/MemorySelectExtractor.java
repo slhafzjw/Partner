@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
-import work.slhaf.partner.api.chat.constant.ChatConstant;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
@@ -53,7 +52,7 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
                     .build();
             log.debug("[MemorySelectExtractor] 主题提取输入: {}", JSONUtil.toJsonStr(extractorInput));
             extractorResult = formattedChat(
-                    List.of(new Message(ChatConstant.Character.USER, JSONUtil.toJsonPrettyStr(extractorInput))),
+                    List.of(new Message(Message.Character.USER, JSONUtil.toJsonPrettyStr(extractorInput))),
                     ExtractorResult.class
             );
             log.debug("[MemorySelectExtractor] 主题提取结果: {}", extractorResult);
