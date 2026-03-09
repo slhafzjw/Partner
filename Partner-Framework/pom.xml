@@ -73,6 +73,11 @@
             <artifactId>kotlinx-coroutines-test</artifactId>
             <version>1.10.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.openai</groupId>
+            <artifactId>openai-java</artifactId>
+            <version>4.26.0</version>
+        </dependency>
     </dependencies>
 
     <properties>
