@@ -25,7 +25,6 @@ import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.Summar
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -134,15 +133,14 @@ public class MemoryUpdater extends PostRunningAgentModule {
 
     private void updateMemory(List<Message> chatSnapshot) {
         log.debug("[MemoryUpdater] 记忆更新流程开始...");
-        List<Message> chatMessages = getCleanedMessages(chatSnapshot);
-        if (chatMessages.isEmpty()) {
+        if (chatSnapshot.isEmpty()) {
             return;
         }
-        SummarizeInput summarizeInput = new SummarizeInput(chatMessages, memoryRuntime.getTopicTree());
+        SummarizeInput summarizeInput = new SummarizeInput(chatSnapshot, memoryRuntime.getTopicTree());
         log.debug("[MemoryUpdater] 记忆更新-总结流程-输入: {}", JSONObject.toJSONString(summarizeInput));
         SummarizeResult summarizeResult = summarize(summarizeInput);
         log.debug("[MemoryUpdater] 记忆更新-总结流程-输出: {}", JSONObject.toJSONString(summarizeResult));
-        MemoryUnit memoryUnit = buildMemoryUnit(chatMessages, summarizeResult);
+        MemoryUnit memoryUnit = buildMemoryUnit(chatSnapshot, summarizeResult);
         memoryRuntime.recordMemory(
                 memoryUnit,
                 summarizeResult.getTopicPath(),
@@ -151,21 +149,6 @@ public class MemoryUpdater extends PostRunningAgentModule {
         );
         lastUpdatedTime = System.currentTimeMillis();
         log.debug("[MemoryUpdater] 记忆更新流程结束...");
-    }
-
-    private List<Message> getCleanedMessages(List<Message> chatMessages) {
-        return chatMessages.stream()
-                .map(message -> {
-                    if (message.getRole() == Message.Character.ASSISTANT) {
-                        return message;
-                    }
-                    List<String> splitResult = Arrays.stream(message.getContent().split("\\*\\*")).toList();
-                    if (splitResult.isEmpty()) {
-                        return message;
-                    }
-                    String time = splitResult.getLast();
-                    return new Message(Message.Character.USER, message.getContent().replace("\r\n**" + time, ""));
-                }).toList();
     }
 
     private SummarizeResult summarize(SummarizeInput summarizeInput) {
