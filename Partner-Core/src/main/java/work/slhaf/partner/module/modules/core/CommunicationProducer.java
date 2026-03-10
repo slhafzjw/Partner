@@ -23,13 +23,8 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
@@ -76,7 +71,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     @Override
     public void execute(PartnerRunningFlowContext runningFlowContext) {
-        log.debug("Communicating with: {}",runningFlowContext.getSource());
+        log.debug("Communicating with: {}", runningFlowContext.getSource());
         executeChat(runningFlowContext);
     }
 
@@ -124,11 +119,9 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         cognationCapability.getMessageLock().lock();
         try {
             chatMessages.removeIf(this::isStructuredUserMessage);
-            // TODO 此处的时间标识应当采用 RunningFlowContext 携带时间
-            String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("\r\n**[yyyy-MM-dd HH:mm:ss]"));
             Message primaryUserMessage = new Message(
                     Message.Character.USER,
-                    formatConversationUserMessage(runningFlowContext) + dateTime
+                    formatConversationUserMessage(runningFlowContext)
             );
             chatMessages.add(primaryUserMessage);
             Message assistantMessage = new Message(Message.Character.ASSISTANT, response);
@@ -218,7 +211,8 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private String formatConversationUserMessage(PartnerRunningFlowContext runningFlowContext) {
-        return runningFlowContext.getSource() + ": " + runningFlowContext.getInput();
+        String datetime = runningFlowContext.getInfo().getDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        return "[" + runningFlowContext.getSource() + " " + "(" + datetime + ")" + "]" + ": " + runningFlowContext.getInput();
     }
 
     private Document newDocument() throws Exception {
