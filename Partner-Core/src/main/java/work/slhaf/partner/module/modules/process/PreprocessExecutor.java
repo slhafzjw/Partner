@@ -25,16 +25,9 @@ public class PreprocessExecutor extends AbstractAgentModule.Running<PartnerRunni
 
     @Override
     public void execute(PartnerRunningFlowContext context) {
-        checkAndSetMemoryId();
         getInteractionContext(context);
     }
 
-    private void checkAndSetMemoryId() {
-        String currentMemoryId = memoryCapability.getCurrentMemoryId();
-        if (currentMemoryId == null || cognationCapability.getChatMessages().isEmpty()) {
-            memoryCapability.refreshMemoryId();
-        }
-    }
 
     private void getInteractionContext(PartnerRunningFlowContext context) {
         log.debug("[PreprocessExecutor] 预处理原始输入: {}", context);

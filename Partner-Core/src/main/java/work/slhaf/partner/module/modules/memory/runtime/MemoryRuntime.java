@@ -4,11 +4,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
+import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
@@ -36,6 +39,11 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
 
     private static final String RUNTIME_KEY = "memory-runtime";
 
+    @InjectCapability
+    private MemoryCapability memoryCapability;
+    @InjectCapability
+    private CognationCapability cognationCapability;
+
     private final ReentrantLock runtimeLock = new ReentrantLock();
     private Map<String, CopyOnWriteArrayList<SliceRef>> topicSlices = new HashMap<>();
     private Map<LocalDate, CopyOnWriteArrayList<SliceRef>> dateIndex = new HashMap<>();
@@ -44,7 +52,15 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
     @Init
     public void init() {
         loadState();
+        checkAndSetMemoryId();
         Runtime.getRuntime().addShutdownHook(new Thread(this::saveStateSafely));
+    }
+
+    private void checkAndSetMemoryId() {
+        String currentMemoryId = memoryCapability.getCurrentMemoryId();
+        if (currentMemoryId == null || cognationCapability.getChatMessages().isEmpty()) {
+            memoryCapability.refreshMemoryId();
+        }
     }
 
     public void bindTopic(String topicPath, SliceRef sliceRef) {
