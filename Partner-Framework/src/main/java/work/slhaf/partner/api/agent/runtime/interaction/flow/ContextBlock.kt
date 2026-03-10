@@ -22,7 +22,7 @@ abstract class ContextBlock {
         SUPPLY
     }
 
-    fun encodeToXml(): String {
+    fun encodeToXml(): Element {
         val document = DocumentBuilderFactory.newInstance()
             .newDocumentBuilder()
             .newDocument()
@@ -33,7 +33,7 @@ abstract class ContextBlock {
 
         fillXml(document, root)
 
-        return document.toXmlString()
+        return root
     }
 
     protected abstract fun fillXml(document: Document, root: Element)

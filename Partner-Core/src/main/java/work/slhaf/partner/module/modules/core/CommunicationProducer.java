@@ -22,9 +22,7 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayInputStream;
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -166,8 +164,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             contextBlocks.stream()
                     .sorted(Comparator.comparingInt(ContextBlock::getPriority))
                     .map(ContextBlock::encodeToXml)
-                    .forEach(blockXml -> {
-                        Element blockElement = parseElement(blockXml);
+                    .forEach(blockElement -> {
                         root.appendChild(document.importNode(blockElement, true));
                     });
 
@@ -236,17 +233,6 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         parent.appendChild(element);
     }
 
-    private Element parseElement(String xml) {
-        try {
-            Document parsedDocument = DocumentBuilderFactory.newInstance()
-                    .newDocumentBuilder()
-                    .parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
-            return parsedDocument.getDocumentElement();
-        } catch (Exception e) {
-            throw new IllegalStateException("解析 ContextBlock XML 失败", e);
-        }
-    }
-
     private void appendSupplyBlocks(Document document, Element inputRoot, List<ContextBlock> contextBlocks) {
         Map<String, List<ContextBlock>> groupedBlocks = filterContextBlocks(contextBlocks, ContextBlock.Type.SUPPLY).stream()
                 .collect(Collectors.groupingBy(
@@ -259,7 +245,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             Element groupElement = document.createElement(entry.getKey());
             inputRoot.appendChild(groupElement);
             for (ContextBlock block : entry.getValue()) {
-                Element blockElement = parseElement(block.encodeToXml());
+                Element blockElement = block.encodeToXml();
                 groupElement.appendChild(document.importNode(blockElement, true));
             }
         }
