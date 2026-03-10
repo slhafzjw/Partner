@@ -5,6 +5,7 @@ import kotlin.Unit;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -16,7 +17,6 @@ import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
-import work.slhaf.partner.module.common.module.PostRunningAgentModule;
 import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 import work.slhaf.partner.module.modules.memory.runtime.MemoryRuntime;
 import work.slhaf.partner.module.modules.memory.updater.summarizer.MultiSummarizer;
@@ -32,11 +32,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class MemoryUpdater extends PostRunningAgentModule {
+public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final String AUTO_UPDATE_CRON = "0/10 * * * * ?";
     private static final long UPDATE_TRIGGER_INTERVAL = 60 * 60 * 1000;
     private static final int CONTEXT_RETAIN_DIVISOR = 6;
+    private static final int MEMORY_UPDATE_TRIGGER_ROLL_LIMIT = 36;
 
     @InjectCapability
     private CognationCapability cognationCapability;
@@ -80,26 +81,15 @@ public class MemoryUpdater extends PostRunningAgentModule {
     }
 
     @Override
-    public void doExecute(PartnerRunningFlowContext context) {
+    public void execute(PartnerRunningFlowContext context) {
+        boolean trigger = cognationCapability.getChatMessages().size() >= MEMORY_UPDATE_TRIGGER_ROLL_LIMIT;
+        if (!trigger) {
+            return;
+        }
         executor.execute(() -> {
-            JSONObject moduleContext = context.getModuleContext().getExtraContext();
-            boolean recall = moduleContext.getBoolean("recall");
-            if (recall) {
-                int recallCount = moduleContext.getIntValue("recall_count");
-                log.debug("[MemoryUpdater] 当前激活记忆数量 [{}]", recallCount);
-            }
-            boolean trigger = moduleContext.getBoolean("post_process_trigger");
-            if (!trigger) {
-                return;
-            }
             log.debug("[MemoryUpdater] 记忆更新触发");
             triggerMemoryUpdate(false);
         });
-    }
-
-    @Override
-    protected boolean relyOnMessage() {
-        return true;
     }
 
     private void tryAutoUpdate() {
