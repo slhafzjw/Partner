@@ -22,7 +22,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -213,8 +212,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private String formatConversationUserMessage(PartnerRunningFlowContext runningFlowContext) {
-        String datetime = runningFlowContext.getInfo().getDateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        return "[" + runningFlowContext.getSource() + " " + "(" + datetime + ")" + "]" + ": " + runningFlowContext.getInput();
+        return "[" + runningFlowContext.getSource() + "]" + ": " + runningFlowContext.getInput();
     }
 
     private Document newDocument() throws Exception {
