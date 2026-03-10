@@ -367,7 +367,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         private ExtractorInput buildExtractorInput(MetaAction action, String source, List<HistoryAction> historyActionResults,
                                                    List<String> additionalContext) {
             ExtractorInput input = new ExtractorInput();
-            input.setEvaluatedSlices(memoryCapability.getActivatedSlices(source));
+            input.setActivatedMemorySlices(memoryCapability.getActivatedSlices());
             input.setRecentMessages(cognationCapability.getChatMessages());
             input.setMetaActionInfo(actionCapability.loadMetaActionInfo(action.getKey()));
             input.setHistoryActionResults(historyActionResults);
@@ -384,7 +384,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                     .history(executableAction.getHistory().get(executableAction.getExecutingStage()))
                     .status(executableAction.getStatus())
                     .recentMessages(cognationCapability.getChatMessages())
-                    .activatedSlices(memoryCapability.getActivatedSlices(source))
+                    .activatedSlices(memoryCapability.getActivatedSlices())
                     .build();
         }
     }

@@ -1,17 +1,15 @@
 package work.slhaf.partner.module.modules.core;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.jetbrains.annotations.NotNull;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.ContextBlock;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
@@ -19,13 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CommunicationProducerTest {
@@ -100,12 +93,6 @@ class CommunicationProducerTest {
         Message lastAssistantMessage = producer.getChatMessages().get(3);
         assertEquals("收到", lastAssistantMessage.getContent());
 
-        ArgumentCaptor<MetaMessage> metaMessageCaptor = ArgumentCaptor.forClass(MetaMessage.class);
-        verify(cognationCapability).addMetaMessage(anyString(), metaMessageCaptor.capture());
-        MetaMessage metaMessage = metaMessageCaptor.getValue();
-        assertNotNull(metaMessage);
-        assertTrue(metaMessage.getUserMessage().getContent().startsWith("[USER]: u-1: 你好，介绍一下你现在看到的上下文"));
-        assertEquals("收到", metaMessage.getAssistantMessage().getContent());
         assertEquals("收到", context.getCoreResponse().getString("text"));
     }
 

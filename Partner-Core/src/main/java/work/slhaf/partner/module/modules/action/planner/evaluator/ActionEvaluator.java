@@ -10,7 +10,7 @@ import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.action.ActionCapability;
-import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorBatchInput;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorResult;
@@ -77,7 +77,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
         JSONObject prompt = new JSONObject();
         prompt.put("[行动倾向]", batchInput.getTendency());
         JSONArray memoryData = prompt.putArray("[相关记忆切片]");
-        for (EvaluatedSlice evaluatedSlice : batchInput.getActivatedSlices()) {
+        for (ActivatedMemorySlice evaluatedSlice : batchInput.getActivatedSlices()) {
             JSONObject memory = memoryData.addObject();
             memory.put("[日期]", evaluatedSlice.getDate());
             memory.put("[摘要]", evaluatedSlice.getSummary());

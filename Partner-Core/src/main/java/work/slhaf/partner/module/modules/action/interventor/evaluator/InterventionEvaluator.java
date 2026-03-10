@@ -8,7 +8,7 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore.ExecutorType;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
-import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorResult;
 import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.EvaluatorResult.EvaluatedInterventionData;
@@ -66,7 +66,7 @@ public class InterventionEvaluator extends AbstractAgentModule.Sub<EvaluatorInpu
         }));
     }
 
-    private String buildPrompt(List<Message> recentMessages, List<EvaluatedSlice> activatedSlices,
+    private String buildPrompt(List<Message> recentMessages, List<ActivatedMemorySlice> activatedSlices,
                                ExecutableAction executableAction, String tendency) {
         JSONObject json = new JSONObject();
         json.put("干预倾向", tendency);

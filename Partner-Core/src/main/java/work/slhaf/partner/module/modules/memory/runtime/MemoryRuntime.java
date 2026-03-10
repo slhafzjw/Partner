@@ -1,0 +1,247 @@
+package work.slhaf.partner.module.modules.memory.runtime;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.api.agent.factory.component.annotation.Init;
+import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
+import work.slhaf.partner.api.common.entity.PersistableObject;
+import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
+import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
+import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
+import work.slhaf.partner.core.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.core.memory.pojo.SliceRef;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static work.slhaf.partner.common.Constant.Path.MEMORY_DATA;
+
+@EqualsAndHashCode(callSuper = true)
+@Data
+@Slf4j
+public class MemoryRuntime extends AbstractAgentModule.Standalone {
+
+    private static final String RUNTIME_KEY = "memory-runtime";
+
+    private final ReentrantLock runtimeLock = new ReentrantLock();
+    private Map<String, CopyOnWriteArrayList<SliceRef>> topicSlices = new HashMap<>();
+    private Map<LocalDate, CopyOnWriteArrayList<SliceRef>> dateIndex = new HashMap<>();
+    private HashMap<LocalDateTime, String> dialogMap = new HashMap<>();
+
+    @Init
+    public void init() {
+        loadState();
+        Runtime.getRuntime().addShutdownHook(new Thread(this::saveStateSafely));
+    }
+
+    public void bindTopic(String topicPath, SliceRef sliceRef) {
+        String normalizedPath = normalizeTopicPath(topicPath);
+        runtimeLock.lock();
+        try {
+            CopyOnWriteArrayList<SliceRef> refs = topicSlices.computeIfAbsent(normalizedPath, key -> new CopyOnWriteArrayList<>());
+            boolean exists = refs.stream().anyMatch(ref -> Objects.equals(ref.getUnitId(), sliceRef.getUnitId())
+                    && Objects.equals(ref.getSliceId(), sliceRef.getSliceId()));
+            if (!exists) {
+                refs.add(sliceRef);
+            }
+            saveState();
+        } finally {
+            runtimeLock.unlock();
+        }
+    }
+
+    public void indexMemoryUnit(MemoryUnit memoryUnit) {
+        runtimeLock.lock();
+        try {
+            for (CopyOnWriteArrayList<SliceRef> refs : dateIndex.values()) {
+                refs.removeIf(ref -> memoryUnit.getId().equals(ref.getUnitId()));
+            }
+            if (memoryUnit.getSlices() != null) {
+                for (MemorySlice slice : memoryUnit.getSlices()) {
+                    LocalDate date = Instant.ofEpochMilli(slice.getTimestamp())
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate();
+                    dateIndex.computeIfAbsent(date, key -> new CopyOnWriteArrayList<>())
+                            .addIfAbsent(new SliceRef(memoryUnit.getId(), slice.getId()));
+                }
+            }
+            saveState();
+        } finally {
+            runtimeLock.unlock();
+        }
+    }
+
+    public List<SliceRef> findByTopicPath(String topicPath) {
+        String normalizedPath = normalizeTopicPath(topicPath);
+        List<SliceRef> refs = topicSlices.get(normalizedPath);
+        if (refs == null || refs.isEmpty()) {
+            throw new UnExistedTopicException("不存在的主题: " + normalizedPath);
+        }
+        return new ArrayList<>(refs);
+    }
+
+    public List<SliceRef> findByDate(LocalDate date) {
+        List<SliceRef> refs = dateIndex.get(date);
+        if (refs == null || refs.isEmpty()) {
+            throw new UnExistedDateIndexException("不存在的日期索引: " + date);
+        }
+        return new ArrayList<>(refs);
+    }
+
+    public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
+        runtimeLock.lock();
+        try {
+            List<LocalDateTime> keysToRemove = new ArrayList<>();
+            dialogMap.forEach((k, v) -> {
+                if (dateTime.minusDays(2).isAfter(k)) {
+                    keysToRemove.add(k);
+                }
+            });
+            for (LocalDateTime temp : keysToRemove) {
+                dialogMap.remove(temp);
+            }
+            dialogMap.put(dateTime, newDialogCache);
+            saveState();
+        } finally {
+            runtimeLock.unlock();
+        }
+    }
+
+    public HashMap<LocalDateTime, String> getDialogMap() {
+        return dialogMap;
+    }
+
+    public String getDialogMapStr() {
+        StringBuilder str = new StringBuilder();
+        dialogMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> str.append("\n\n[")
+                        .append(entry.getKey())
+                        .append("]\n")
+                        .append(entry.getValue()));
+        return str.toString();
+    }
+
+    public String getTopicTree() {
+        TopicTreeNode root = new TopicTreeNode();
+        for (Map.Entry<String, CopyOnWriteArrayList<SliceRef>> entry : topicSlices.entrySet()) {
+            String[] parts = entry.getKey().split("->");
+            TopicTreeNode current = root;
+            for (String part : parts) {
+                current = current.children.computeIfAbsent(part, key -> new TopicTreeNode());
+            }
+            current.count += entry.getValue().size();
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        List<Map.Entry<String, TopicTreeNode>> roots = new ArrayList<>(root.children.entrySet());
+        for (Map.Entry<String, TopicTreeNode> entry : roots) {
+            stringBuilder.append(entry.getKey()).append("[root]").append("\r\n");
+            printSubTopicsTreeFormat(entry.getValue(), "", stringBuilder);
+        }
+        return stringBuilder.toString();
+    }
+
+    private void printSubTopicsTreeFormat(TopicTreeNode node, String prefix, StringBuilder stringBuilder) {
+        List<Map.Entry<String, TopicTreeNode>> entries = new ArrayList<>(node.children.entrySet());
+        for (int i = 0; i < entries.size(); i++) {
+            boolean last = i == entries.size() - 1;
+            Map.Entry<String, TopicTreeNode> entry = entries.get(i);
+            stringBuilder.append(prefix)
+                    .append(last ? "└── " : "├── ")
+                    .append(entry.getKey())
+                    .append("[")
+                    .append(entry.getValue().count)
+                    .append("]")
+                    .append("\r\n");
+            printSubTopicsTreeFormat(entry.getValue(), prefix + (last ? "    " : "│   "), stringBuilder);
+        }
+    }
+
+    private String normalizeTopicPath(String topicPath) {
+        return topicPath == null ? "" : topicPath.trim();
+    }
+
+    private void loadState() {
+        Path filePath = getFilePath();
+        if (!Files.exists(filePath)) {
+            return;
+        }
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath.toFile()))) {
+            RuntimeState state = (RuntimeState) ois.readObject();
+            topicSlices = state.topicSlices;
+            dateIndex = state.dateIndex;
+            dialogMap = state.dialogMap;
+        } catch (Exception e) {
+            log.error("[MemoryRuntime] 加载运行态失败", e);
+            topicSlices = new HashMap<>();
+            dateIndex = new HashMap<>();
+            dialogMap = new HashMap<>();
+        }
+    }
+
+    private void saveStateSafely() {
+        runtimeLock.lock();
+        try {
+            saveState();
+        } finally {
+            runtimeLock.unlock();
+        }
+    }
+
+    private void saveState() {
+        Path filePath = getFilePath();
+        Path tempPath = getTempFilePath();
+        try {
+            Files.createDirectories(Paths.get(MEMORY_DATA));
+            FileUtils.createParentDirectories(filePath.toFile());
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(tempPath.toFile()))) {
+                RuntimeState state = new RuntimeState();
+                state.topicSlices = new HashMap<>(topicSlices);
+                state.dateIndex = new HashMap<>(dateIndex);
+                state.dialogMap = new HashMap<>(dialogMap);
+                oos.writeObject(state);
+            }
+            Files.move(tempPath, filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.error("[MemoryRuntime] 保存运行态失败", e);
+        }
+    }
+
+    private Path getFilePath() {
+        String id = ((PartnerAgentConfigLoader) AgentConfigLoader.INSTANCE).getConfig().getAgentId();
+        return Paths.get(MEMORY_DATA, id + "-" + RUNTIME_KEY + ".memory");
+    }
+
+    private Path getTempFilePath() {
+        String id = ((PartnerAgentConfigLoader) AgentConfigLoader.INSTANCE).getConfig().getAgentId();
+        return Paths.get(MEMORY_DATA, id + "-" + RUNTIME_KEY + "-temp.memory");
+    }
+
+    private static final class TopicTreeNode {
+        private final Map<String, TopicTreeNode> children = new LinkedHashMap<>();
+        private int count;
+    }
+
+    private static final class RuntimeState extends PersistableObject {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        private Map<String, CopyOnWriteArrayList<SliceRef>> topicSlices = new HashMap<>();
+        private Map<LocalDate, CopyOnWriteArrayList<SliceRef>> dateIndex = new HashMap<>();
+        private HashMap<LocalDateTime, String> dialogMap = new HashMap<>();
+    }
+}

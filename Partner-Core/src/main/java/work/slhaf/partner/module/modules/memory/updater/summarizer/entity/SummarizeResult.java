@@ -9,5 +9,4 @@ public class SummarizeResult {
     private String summary;
     private String topicPath;
     private List<String> relatedTopicPath;
-    private boolean isPrivate;
 }

@@ -22,6 +22,7 @@ import work.slhaf.partner.module.modules.action.interventor.evaluator.entity.Eva
 import work.slhaf.partner.module.modules.action.interventor.recognizer.InterventionRecognizer;
 import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerInput;
 import work.slhaf.partner.module.modules.action.interventor.recognizer.entity.RecognizerResult;
+import work.slhaf.partner.module.modules.memory.runtime.MemoryRuntime;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.ArrayList;
@@ -51,6 +52,8 @@ public class ActionInterventor extends AbstractAgentModule.Running<PartnerRunnin
     private CognationCapability cognationCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
+    @InjectModule
+    private MemoryRuntime memoryRuntime;
 
     @Override
     public void execute(PartnerRunningFlowContext context) {
@@ -146,7 +149,7 @@ public class ActionInterventor extends AbstractAgentModule.Running<PartnerRunnin
         private RecognizerInput buildRecognizerInput(String userId, String input) {
             RecognizerInput recognizerInput = new RecognizerInput();
             recognizerInput.setInput(input);
-            recognizerInput.setUserDialogMapStr(memoryCapability.getUserDialogMapStr(userId));
+            recognizerInput.setUserDialogMapStr(memoryRuntime.getDialogMapStr());
             // 参考的对话列表大小或需调整
             recognizerInput.setRecentMessages(cognationCapability.getChatMessages());
             recognizerInput.setExecutingActions(actionCapability.listPhaserRecords().stream().map(PhaserRecord::executableAction).toList());
@@ -159,7 +162,7 @@ public class ActionInterventor extends AbstractAgentModule.Running<PartnerRunnin
             input.setExecutingInterventions(recognizerResult.getExecutingInterventions());
             input.setPreparedInterventions(recognizerResult.getPreparedInterventions());
             input.setRecentMessages(cognationCapability.getChatMessages());
-            input.setActivatedSlices(memoryCapability.getActivatedSlices(userId));
+            input.setActivatedSlices(memoryCapability.getActivatedSlices());
             return input;
         }
     }

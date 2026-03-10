@@ -1,51 +1,36 @@
 package work.slhaf.partner.core.memory;
 
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
-import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
-import work.slhaf.partner.core.memory.pojo.MemoryResult;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Capability(value = "memory")
 public interface MemoryCapability {
 
-    void cleanSelectedSliceFilter();
+    void clearActivatedSlices();
 
-    String getTopicTree();
+    void updateActivatedSlices(List<ActivatedMemorySlice> memorySlices);
 
-    HashMap<LocalDateTime, String> getDialogMap();
+    boolean hasActivatedSlices();
 
-    ConcurrentHashMap<LocalDateTime, String> getUserDialogMap(String userId);
+    int getActivatedSlicesSize();
 
-    void updateDialogMap(LocalDateTime dateTime, String newDialogCache);
+    List<ActivatedMemorySlice> getActivatedSlices();
 
-    String getDialogMapStr();
+    void saveMemoryUnit(MemoryUnit memoryUnit);
 
-    String getUserDialogMapStr(String userId);
+    MemoryUnit getMemoryUnit(String unitId);
 
-    void updateActivatedSlices(String userId, List<EvaluatedSlice> memorySlices);
+    MemorySlice getMemorySlice(String unitId, String sliceId);
 
-    String getActivatedSlicesStr(String userId);
+    Collection<MemoryUnit> listMemoryUnits();
 
-    HashMap<String, List<EvaluatedSlice>> getActivatedSlices();
+    void refreshMemoryId();
 
-    void clearActivatedSlices(String userId);
-
-    boolean hasActivatedSlices(String userId);
-
-    int getActivatedSlicesSize(String userId);
-
-    List<EvaluatedSlice> getActivatedSlices(String userId);
-
-    MemoryResult selectMemory(String topicPathStr);
-
-    MemoryResult selectMemory(LocalDate date);
-
-    void insertSlice(MemorySlice memorySlice, String topicPath);
+    String getCurrentMemoryId();
 
 }

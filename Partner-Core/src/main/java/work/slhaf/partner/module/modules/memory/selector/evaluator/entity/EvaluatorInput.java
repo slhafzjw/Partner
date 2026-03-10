@@ -3,7 +3,7 @@ package work.slhaf.partner.module.modules.memory.selector.evaluator.entity;
 import lombok.Builder;
 import lombok.Data;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.memory.pojo.MemoryResult;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 
 import java.util.List;
 
@@ -12,5 +12,5 @@ import java.util.List;
 public class EvaluatorInput {
     private String input;
     private List<Message> messages;
-    private List<MemoryResult> memoryResults;
+    private List<ActivatedMemorySlice> memorySlices;
 }

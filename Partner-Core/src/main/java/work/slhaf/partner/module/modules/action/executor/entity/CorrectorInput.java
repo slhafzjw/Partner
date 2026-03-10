@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Data;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
-import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 
 import java.util.List;
 
@@ -20,5 +20,5 @@ public class CorrectorInput {
     private ExecutableAction.Status status;
 
     private List<Message> recentMessages;
-    private List<EvaluatedSlice> activatedSlices;
+    private List<ActivatedMemorySlice> activatedSlices;
 }

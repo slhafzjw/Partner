@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.core.perceive.pojo.User;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
@@ -18,6 +19,8 @@ public class PreprocessExecutor extends AbstractAgentModule.Running<PartnerRunni
     @InjectCapability
     private CognationCapability cognationCapability;
     @InjectCapability
+    private MemoryCapability memoryCapability;
+    @InjectCapability
     private PerceiveCapability perceiveCapability;
 
     @Override
@@ -27,9 +30,9 @@ public class PreprocessExecutor extends AbstractAgentModule.Running<PartnerRunni
     }
 
     private void checkAndSetMemoryId() {
-        String currentMemoryId = cognationCapability.getCurrentMemoryId();
+        String currentMemoryId = memoryCapability.getCurrentMemoryId();
         if (currentMemoryId == null || cognationCapability.getChatMessages().isEmpty()) {
-            cognationCapability.refreshMemoryId();
+            memoryCapability.refreshMemoryId();
         }
     }
 

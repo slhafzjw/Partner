@@ -3,20 +3,25 @@ package work.slhaf.partner.core.memory.pojo;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.common.entity.PersistableObject;
 
 import java.io.Serial;
 import java.time.LocalDate;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Builder
-public class EvaluatedSlice extends PersistableObject {
+public class ActivatedMemorySlice extends PersistableObject {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    //    private List<Message> chatMessages;
+    private String unitId;
+    private String sliceId;
     private LocalDate date;
+    private Long timestamp;
     private String summary;
+    private List<Message> messages;
 }

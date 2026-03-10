@@ -328,7 +328,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             input.setTendencies(extractorResult.getTendencies());
             input.setUser(perceiveCapability.getUser(userId));
             input.setRecentMessages(cognationCapability.snapshotChatMessages());
-            input.setActivatedSlices(memoryCapability.getActivatedSlices(userId));
+            input.setActivatedSlices(memoryCapability.getActivatedSlices());
             return input;
         }
 

@@ -12,7 +12,6 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.ContextBlock;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
@@ -126,8 +125,6 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             chatMessages.add(primaryUserMessage);
             Message assistantMessage = new Message(Message.Character.ASSISTANT, response);
             chatMessages.add(assistantMessage);
-            MetaMessage metaMessage = new MetaMessage(primaryUserMessage, assistantMessage);
-            cognationCapability.addMetaMessage(runningFlowContext.getSource(), metaMessage);
         } finally {
             cognationCapability.getMessageLock().unlock();
         }

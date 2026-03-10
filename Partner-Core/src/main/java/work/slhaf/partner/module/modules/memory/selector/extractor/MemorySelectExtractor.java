@@ -6,17 +6,17 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
+import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.api.chat.pojo.MetaMessage;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
+import work.slhaf.partner.module.modules.memory.runtime.MemoryRuntime;
 import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorInput;
 import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorMatchData;
 import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
@@ -29,25 +29,21 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognationCapability cognationCapability;
+    @InjectModule
+    private MemoryRuntime memoryRuntime;
 
     @Override
     public ExtractorResult execute(PartnerRunningFlowContext context) {
         log.debug("[MemorySelectExtractor] 主题提取模块开始...");
-        // 结构化为指定格式
-        List<Message> chatMessages = new ArrayList<>();
-        List<MetaMessage> metaMessages = cognationCapability.snapshotSingleMetaMessages(context.getSource());
-        for (MetaMessage metaMessage : metaMessages) {
-            chatMessages.add(metaMessage.getUserMessage());
-            chatMessages.add(metaMessage.getAssistantMessage());
-        }
+        List<Message> chatMessages = cognationCapability.snapshotChatMessages();
         ExtractorResult extractorResult;
         try {
-            List<EvaluatedSlice> activatedMemorySlices = memoryCapability.getActivatedSlices(context.getSource());
+            List<ActivatedMemorySlice> activatedMemorySlices = memoryCapability.getActivatedSlices();
             ExtractorInput extractorInput = ExtractorInput.builder()
                     .text(context.getInput())
                     .date(context.getInfo().getDateTime().toLocalDate())
                     .history(chatMessages)
-                    .topic_tree(memoryCapability.getTopicTree())
+                    .topic_tree(memoryRuntime.getTopicTree())
                     .activatedMemorySlices(activatedMemorySlices)
                     .build();
             log.debug("[MemorySelectExtractor] 主题提取输入: {}", JSONUtil.toJsonStr(extractorInput));

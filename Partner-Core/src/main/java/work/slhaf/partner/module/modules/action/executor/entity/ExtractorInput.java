@@ -3,7 +3,7 @@ package work.slhaf.partner.module.modules.action.executor.entity;
 import lombok.Data;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 
 import java.util.List;
 
@@ -16,7 +16,7 @@ public class ExtractorInput {
     /**
      * 可参考的记忆切片
      */
-    private List<EvaluatedSlice> evaluatedSlices;
+    private List<ActivatedMemorySlice> activatedMemorySlices;
     /**
      * 历史行动执行结果
      */

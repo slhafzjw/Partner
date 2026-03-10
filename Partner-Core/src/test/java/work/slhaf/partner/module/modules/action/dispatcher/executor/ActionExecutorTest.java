@@ -74,7 +74,7 @@ class ActionExecutorTest {
     @BeforeEach
     void setUp() {
         lenient().when(cognationCapability.getChatMessages()).thenReturn(Collections.emptyList());
-        lenient().when(memoryCapability.getActivatedSlices(anyString())).thenReturn(Collections.emptyList());
+        lenient().when(memoryCapability.getActivatedSlices()).thenReturn(Collections.emptyList());
         lenient().when(actionCapability.putPhaserRecord(any(Phaser.class), any(ExecutableAction.class)))
                 .thenAnswer(inv -> new PhaserRecord(inv.getArgument(0), inv.getArgument(1)));
         lenient().when(actionCapability.loadMetaActionInfo(anyString())).thenAnswer(inv -> {

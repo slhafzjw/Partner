@@ -1,6 +1,5 @@
 package work.slhaf.partner.module.modules.memory.selector.evaluator;
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
@@ -10,10 +9,7 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
-import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
-import work.slhaf.partner.core.memory.pojo.MemoryResult;
-import work.slhaf.partner.core.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.memory.pojo.MemorySliceResult;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.entity.EvaluatorBatchInput;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.entity.EvaluatorResult;
@@ -27,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<EvaluatedSlice>> implements ActivateModel {
+public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<ActivatedMemorySlice>> implements ActivateModel {
     private InteractionThreadPoolExecutor executor;
 
     @Init
@@ -36,83 +32,58 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
     }
 
     @Override
-    public List<EvaluatedSlice> execute(EvaluatorInput evaluatorInput) {
+    public List<ActivatedMemorySlice> execute(EvaluatorInput evaluatorInput) {
         log.debug("[SliceSelectEvaluator] 切片评估模块开始...");
-        List<MemoryResult> memoryResultList = evaluatorInput.getMemoryResults();
+        List<ActivatedMemorySlice> memorySlices = evaluatorInput.getMemorySlices();
         List<Callable<Void>> tasks = new ArrayList<>();
-        Queue<EvaluatedSlice> queue = new ConcurrentLinkedDeque<>();
+        Queue<ActivatedMemorySlice> queue = new ConcurrentLinkedDeque<>();
         AtomicInteger count = new AtomicInteger(0);
-        for (MemoryResult memoryResult : memoryResultList) {
-            if (memoryResult.getMemorySliceResult().isEmpty() && memoryResult.getRelatedMemorySliceResult().isEmpty()) {
-                continue;
-            }
-            tasks.add(() -> {
-                int thisCount = count.incrementAndGet();
-                log.debug("[SliceSelectEvaluator] 评估[{}]开始", thisCount);
-                List<SliceSummary> sliceSummaryList = new ArrayList<>();
-                //映射查找键值
-                Map<Long, SliceSummary> map = new HashMap<>();
-                try {
-                    setSliceSummaryList(memoryResult, sliceSummaryList, map);
-                    EvaluatorBatchInput batchInput = EvaluatorBatchInput.builder()
-                            .text(evaluatorInput.getInput())
-                            .memory_slices(sliceSummaryList)
-                            .history(evaluatorInput.getMessages())
-                            .build();
-                    log.debug("[SliceSelectEvaluator] 评估[{}]输入: {}", thisCount, JSONObject.toJSONString(batchInput));
-                    EvaluatorResult evaluatorResult = formattedChat(
-                            List.of(new Message(Message.Character.USER, JSONUtil.toJsonStr(batchInput))),
-                            EvaluatorResult.class
-                    );
-                    log.debug("[SliceSelectEvaluator] 评估[{}]结果: {}", thisCount, JSONObject.toJSONString(evaluatorResult));
-                    for (Long result : evaluatorResult.getResults()) {
-                        SliceSummary sliceSummary = map.get(result);
-                        EvaluatedSlice evaluatedSlice = EvaluatedSlice.builder()
-                                .summary(sliceSummary.getSummary())
-                                .date(sliceSummary.getDate())
-                                .build();
-//                        setEvaluatedSliceMessages(evaluatedSlice, memoryResult, sliceSummary.getId());
-                        queue.offer(evaluatedSlice);
-                    }
-                } catch (Exception e) {
-                    log.error("[SliceSelectEvaluator] 评估[{}]出现错误: {}", thisCount, e.getLocalizedMessage());
-                }
-                return null;
-            });
+        if (memorySlices == null || memorySlices.isEmpty()) {
+            return List.of();
         }
+        tasks.add(() -> {
+            int thisCount = count.incrementAndGet();
+            log.debug("[SliceSelectEvaluator] 评估[{}]开始", thisCount);
+            List<SliceSummary> sliceSummaryList = new ArrayList<>();
+            Map<Long, ActivatedMemorySlice> map = new HashMap<>();
+            try {
+                setSliceSummaryList(memorySlices, sliceSummaryList, map);
+                EvaluatorBatchInput batchInput = EvaluatorBatchInput.builder()
+                        .text(evaluatorInput.getInput())
+                        .memory_slices(sliceSummaryList)
+                        .history(evaluatorInput.getMessages())
+                        .build();
+                log.debug("[SliceSelectEvaluator] 评估[{}]输入: {}", thisCount, JSONObject.toJSONString(batchInput));
+                EvaluatorResult evaluatorResult = formattedChat(
+                        List.of(new Message(Message.Character.USER, JSONUtil.toJsonStr(batchInput))),
+                        EvaluatorResult.class
+                );
+                log.debug("[SliceSelectEvaluator] 评估[{}]结果: {}", thisCount, JSONObject.toJSONString(evaluatorResult));
+                for (Long result : evaluatorResult.getResults()) {
+                    ActivatedMemorySlice slice = map.get(result);
+                    if (slice != null) {
+                        queue.offer(slice);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("[SliceSelectEvaluator] 评估[{}]出现错误: {}", thisCount, e.getLocalizedMessage());
+            }
+            return null;
+        });
         executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
         log.debug("[SliceSelectEvaluator] 评估模块结束, 输出队列: {}", queue);
-        List<EvaluatedSlice> temp = queue.stream().toList();
-        return new ArrayList<>(temp);
+        return new ArrayList<>(queue);
     }
 
-    private void setSliceSummaryList(MemoryResult memoryResult, List<SliceSummary> sliceSummaryList, Map<Long, SliceSummary> map) {
-        for (MemorySliceResult memorySliceResult : memoryResult.getMemorySliceResult()) {
-            SliceSummary sliceSummary = new SliceSummary();
-            sliceSummary.setId(memorySliceResult.getMemorySlice().getTimestamp());
-            StringBuilder stringBuilder = new StringBuilder();
-            if (memorySliceResult.getSliceBefore() != null) {
-                stringBuilder.append(memorySliceResult.getSliceBefore().getSummary())
-                        .append("\r\n");
-            }
-            stringBuilder.append(memorySliceResult.getMemorySlice().getSummary());
-            if (memorySliceResult.getSliceAfter() != null) {
-                stringBuilder.append("\r\n")
-                        .append(memorySliceResult.getSliceAfter().getSummary())
-                        .append("\r\n");
-            }
-            sliceSummary.setSummary(stringBuilder.toString());
-            Long timestamp = memorySliceResult.getMemorySlice().getTimestamp();
-            sliceSummary.setDate(DateUtil.date(timestamp).toLocalDateTime().toLocalDate());
-            sliceSummaryList.add(sliceSummary);
-            map.put(timestamp, sliceSummary);
-        }
-        for (MemorySlice memorySlice : memoryResult.getRelatedMemorySliceResult()) {
+    private void setSliceSummaryList(List<ActivatedMemorySlice> memorySlices, List<SliceSummary> sliceSummaryList,
+                                     Map<Long, ActivatedMemorySlice> map) {
+        for (ActivatedMemorySlice memorySlice : memorySlices) {
             SliceSummary sliceSummary = new SliceSummary();
             sliceSummary.setId(memorySlice.getTimestamp());
             sliceSummary.setSummary(memorySlice.getSummary());
+            sliceSummary.setDate(memorySlice.getDate());
             sliceSummaryList.add(sliceSummary);
-            map.put(memorySlice.getTimestamp(), sliceSummary);
+            map.put(memorySlice.getTimestamp(), memorySlice);
         }
     }
 
