@@ -2,7 +2,6 @@ package work.slhaf.partner.runtime.interaction.data.context
 
 import com.alibaba.fastjson2.JSONObject
 import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
-import work.slhaf.partner.runtime.interaction.data.context.subcontext.ModuleContext
 
 class PartnerRunningFlowContext private constructor(
     override val source: String,
@@ -45,7 +44,6 @@ class PartnerRunningFlowContext private constructor(
             }
     }
 
-    val moduleContext = ModuleContext()
     val coreResponse = JSONObject()
 
 }

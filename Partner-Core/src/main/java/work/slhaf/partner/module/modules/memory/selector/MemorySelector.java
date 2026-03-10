@@ -47,7 +47,6 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
             List<ActivatedMemorySlice> activatedSlices = selectAndEvaluateMemory(runningFlowContext, extractorResult);
             memoryCapability.updateActivatedSlices(activatedSlices);
         }
-        setModuleContextRecall(runningFlowContext);
     }
 
     private List<ActivatedMemorySlice> selectAndEvaluateMemory(PartnerRunningFlowContext runningFlowContext,
@@ -65,14 +64,6 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
         List<ActivatedMemorySlice> memorySlices = sliceSelectEvaluator.execute(evaluatorInput);
         log.debug("[MemorySelector] 切片评估结果: {}", JSONObject.toJSONString(memorySlices));
         return memorySlices;
-    }
-
-    private void setModuleContextRecall(PartnerRunningFlowContext runningFlowContext) {
-        boolean recall = memoryCapability.hasActivatedSlices();
-        runningFlowContext.getModuleContext().getExtraContext().put("recall", recall);
-        if (recall) {
-            runningFlowContext.getModuleContext().getExtraContext().put("recall_count", memoryCapability.getActivatedSlicesSize());
-        }
     }
 
     private void setMemoryCandidates(LinkedHashMap<String, ActivatedMemorySlice> candidates,
