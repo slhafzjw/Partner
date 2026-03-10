@@ -11,6 +11,9 @@ import work.slhaf.partner.core.perceive.pojo.User;
 
 import java.io.IOException;
 import java.io.Serial;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +29,8 @@ public class PerceiveCore extends PartnerCore<PerceiveCore> {
     @Serial
     private static final long serialVersionUID = 1L;
     private static final ReentrantLock usersLock = new ReentrantLock();
+
+    private Instant lastInteractTime;
 
     /**
      * 用户列表
@@ -90,6 +95,18 @@ public class PerceiveCore extends PartnerCore<PerceiveCore> {
         user.setStaticMemory(temp.getStaticMemory());
         user.updateRelationChange(user.getRelationChange());
         usersLock.unlock();
+    }
+
+    @CapabilityMethod
+    public String refreshInteract() {
+        String last = lastInteractTime.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        lastInteractTime = Instant.now();
+        return last;
+    }
+
+    @CapabilityMethod
+    public long showLastInteract() {
+        return lastInteractTime.toEpochMilli();
     }
 
     @Override

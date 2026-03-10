@@ -15,6 +15,7 @@ import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.common.module.PostRunningAgentModule;
 import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 import work.slhaf.partner.module.modules.memory.runtime.MemoryRuntime;
@@ -41,6 +42,8 @@ public class MemoryUpdater extends PostRunningAgentModule {
     private CognationCapability cognationCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
+    @InjectCapability
+    private PerceiveCapability perceiveCapability;
 
     @InjectModule
     private MemoryRuntime memoryRuntime;
@@ -53,7 +56,6 @@ public class MemoryUpdater extends PostRunningAgentModule {
 
     private final AtomicBoolean updating = new AtomicBoolean(false);
     private InteractionThreadPoolExecutor executor;
-    private volatile long lastUpdatedTime;
 
     @Init
     public void init() {
@@ -103,7 +105,7 @@ public class MemoryUpdater extends PostRunningAgentModule {
     private void tryAutoUpdate() {
         long currentTime = System.currentTimeMillis();
         int chatCount = cognationCapability.snapshotChatMessages().size();
-        if (lastUpdatedTime != 0 && currentTime - lastUpdatedTime > UPDATE_TRIGGER_INTERVAL && chatCount > 1) {
+        if (currentTime - perceiveCapability.showLastInteract() > UPDATE_TRIGGER_INTERVAL && chatCount > 1) {
             triggerMemoryUpdate(true);
             log.info("[MemoryUpdater] 记忆更新: 自动触发");
         }
@@ -122,7 +124,7 @@ public class MemoryUpdater extends PostRunningAgentModule {
             updateMemory(chatSnapshot);
             cognationCapability.rollChatMessagesWithSnapshot(chatSnapshot.size(), CONTEXT_RETAIN_DIVISOR);
             if (refreshMemoryId) {
-                memoryCapability.refreshMemoryId();
+                memoryCapability.refreshMemorySession();
             }
         } catch (Exception e) {
             log.error("[MemoryUpdater] 记忆更新线程出错: ", e);
@@ -147,7 +149,6 @@ public class MemoryUpdater extends PostRunningAgentModule {
                 summarizeResult.getRelatedTopicPath(),
                 summarizeResult.getSummary()
         );
-        lastUpdatedTime = System.currentTimeMillis();
         log.debug("[MemoryUpdater] 记忆更新流程结束...");
     }
 
@@ -166,7 +167,7 @@ public class MemoryUpdater extends PostRunningAgentModule {
         memorySlice.setTimestamp(now);
 
         MemoryUnit memoryUnit = new MemoryUnit();
-        String memoryId = memoryCapability.getCurrentMemoryId();
+        String memoryId = memoryCapability.getMemorySessionId();
         memoryUnit.setId(memoryId == null || memoryId.isBlank() ? UUID.randomUUID().toString() : memoryId);
         memoryUnit.setTimestamp(now);
         memoryUnit.setConversationMessages(new ArrayList<>(chatMessages));

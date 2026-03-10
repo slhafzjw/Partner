@@ -13,6 +13,7 @@ import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 
 import java.io.IOException;
 import java.io.Serial;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,7 +33,10 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
     private final Lock memoryLock = new ReentrantLock();
     private ConcurrentHashMap<String, MemoryUnit> memoryUnits = new ConcurrentHashMap<>();
     private List<ActivatedMemorySlice> activatedSlices = new CopyOnWriteArrayList<>();
-    private String currentMemoryId;
+
+    // 默认值一般只存在于智能体初次启动时
+    private String memorySessionId = UUID.randomUUID().toString();
+    private Instant memorySessionStartTime = Instant.now();
 
     public MemoryCore() throws IOException, ClassNotFoundException {
     }
@@ -98,13 +102,14 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
     }
 
     @CapabilityMethod
-    public void refreshMemoryId() {
-        currentMemoryId = UUID.randomUUID().toString();
+    public void refreshMemorySession() {
+        memorySessionId = UUID.randomUUID().toString();
+        memorySessionStartTime = Instant.now();
     }
 
     @CapabilityMethod
-    public String getCurrentMemoryId() {
-        return currentMemoryId;
+    public String getMemorySessionId() {
+        return memorySessionId;
     }
 
     private void normalizeMemoryUnit(MemoryUnit memoryUnit) {

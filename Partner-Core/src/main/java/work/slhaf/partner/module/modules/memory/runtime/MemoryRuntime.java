@@ -56,9 +56,9 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
     }
 
     private void checkAndSetMemoryId() {
-        String currentMemoryId = memoryCapability.getCurrentMemoryId();
+        String currentMemoryId = memoryCapability.getMemorySessionId();
         if (currentMemoryId == null || cognationCapability.getChatMessages().isEmpty()) {
-            memoryCapability.refreshMemoryId();
+            memoryCapability.refreshMemorySession();
         }
     }
 

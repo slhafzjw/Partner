@@ -20,6 +20,6 @@ public class ReflectionTest {
             }
             return null;
         });
-        memory.getCurrentMemoryId();
+        memory.getMemorySessionId();
     }
 }

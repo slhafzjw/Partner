@@ -29,8 +29,8 @@ public interface MemoryCapability {
 
     Collection<MemoryUnit> listMemoryUnits();
 
-    void refreshMemoryId();
+    void refreshMemorySession();
 
-    String getCurrentMemoryId();
+    String getMemorySessionId();
 
 }

@@ -12,4 +12,8 @@ public interface PerceiveCapability {
     User addUser(String userInfo, String platform, String userNickName);
 
     void updateUser(User user);
+
+    String refreshInteract();
+
+    long showLastInteract();
 }
