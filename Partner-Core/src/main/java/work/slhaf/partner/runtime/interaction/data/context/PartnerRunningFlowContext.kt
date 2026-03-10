@@ -2,8 +2,6 @@ package work.slhaf.partner.runtime.interaction.data.context
 
 import com.alibaba.fastjson2.JSONObject
 import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
-import work.slhaf.partner.module.common.entity.AppendPromptData
-import work.slhaf.partner.runtime.interaction.data.context.subcontext.CoreContext
 import work.slhaf.partner.runtime.interaction.data.context.subcontext.ModuleContext
 
 class PartnerRunningFlowContext private constructor(
@@ -48,9 +46,6 @@ class PartnerRunningFlowContext private constructor(
     }
 
     val moduleContext = ModuleContext()
-    val coreContext = CoreContext()
     val coreResponse = JSONObject()
-
-    fun appendPrompt(appendPromptData: AppendPromptData) = moduleContext.appendPromptData(appendPromptData)
 
 }

@@ -1,9 +1,9 @@
 package work.slhaf.partner.module.modules.action.planner;
 
 import kotlin.Unit;
-import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -16,7 +16,6 @@ import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
-import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
 import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
@@ -42,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * 负责针对本次输入生成基础的行动计划
  */
-public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
+public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final long PENDING_TTL_MILLIS = 30 * 60 * 1000L;
     private static final long PENDING_REMINDER_ADVANCE_MILLIS = 5 * 60 * 1000L;
@@ -78,7 +77,7 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
     }
 
     @Override
-    protected void doExecute(PartnerRunningFlowContext context) {
+    public void execute(PartnerRunningFlowContext context) {
         try {
             List<Callable<Void>> tasks = new ArrayList<>();
             addConfirmTask(tasks, context);
@@ -299,51 +298,6 @@ public class ActionPlanner extends PreRunningAbstractAgentModuleAbstract {
         } catch (Exception e) {
             log.warn("触发 immediate 行动完成自对话失败, actionUuid: {}", action.getUuid(), e);
         }
-    }
-
-    @Override
-    protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
-        HashMap<String, String> map = new HashMap<>();
-        String userId = context.getSource();
-        setupPendingActions(map, userId);
-        setupPreparedActions(map, userId);
-        return map;
-    }
-
-    private void setupPendingActions(HashMap<String, String> map, String userId) {
-        List<PendingActionRecord> pendingActions = actionCapability.listActivePendingActions(userId);
-        if (pendingActions.isEmpty()) {
-            map.put("[待确认行动] <等待用户确认的行动信息>", "无待确认行动");
-            return;
-        }
-        for (int i = 0; i < pendingActions.size(); i++) {
-            map.put(
-                    "[待确认行动 " + (i + 1) + " ] <等待用户确认的行动信息>",
-                    generateActionStr(pendingActions.get(i).getExecutableAction())
-            );
-        }
-    }
-
-    private void setupPreparedActions(HashMap<String, String> map, String userId) {
-        val preparedActions = actionCapability.listActions(ExecutableAction.Status.PREPARE, userId).stream().toList();
-        if (preparedActions.isEmpty()) {
-            map.put("[预备行动] <预备执行或放入计划池的行动信息>", "无预备行动");
-            return;
-        }
-        for (int i = 0; i < preparedActions.size(); i++) {
-            map.put("[预备行动 " + (i + 1) + " ] <预备执行或放入计划池的行动信息>", generateActionStr(preparedActions.get(i)));
-        }
-    }
-
-    private String generateActionStr(ExecutableAction executableAction) {
-        return "<行动倾向>" + " : " + executableAction.getTendency() +
-                "<行动原因>" + " : " + executableAction.getReason() +
-                "<工具描述>" + " : " + executableAction.getDescription();
-    }
-
-    @Override
-    protected String moduleName() {
-        return "[行动模块]";
     }
 
     @Override

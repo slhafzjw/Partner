@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.val;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -12,7 +13,6 @@ import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.PhaserRecord;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.module.modules.action.interventor.entity.InterventionType;
 import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
 import work.slhaf.partner.module.modules.action.interventor.evaluator.InterventionEvaluator;
@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 /**
  * 负责识别潜在的行动干预信息，作用于正在进行或已存在的行动池中内容
  */
-public class ActionInterventor extends PreRunningAbstractAgentModuleAbstract implements ActivateModel {
+public class ActionInterventor extends AbstractAgentModule.Running<PartnerRunningFlowContext> implements ActivateModel {
     private final AssemblyHelper assemblyHelper = new AssemblyHelper();
     private final PromptHelper promptHelper = new PromptHelper();
     /**
@@ -53,7 +53,7 @@ public class ActionInterventor extends PreRunningAbstractAgentModuleAbstract imp
     private MemoryCapability memoryCapability;
 
     @Override
-    protected void doExecute(PartnerRunningFlowContext context) {
+    public void execute(PartnerRunningFlowContext context) {
         // 综合当前正在进行的行动链信息、用户交互历史、激活的记忆切片，尝试识别出是否存在行动干预意图
         // 首先通过recognizer进行快速意图识别，识别成功则步入评估阶段，评估成功则直接作用于目标行动链
         // 进行快速意图识别时必须结合近期对话与进行中行动链情况
@@ -132,16 +132,6 @@ public class ActionInterventor extends PreRunningAbstractAgentModuleAbstract imp
     @Override
     public String modelKey() {
         return "action_identifier";
-    }
-
-    @Override
-    protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
-        return interventionPrompt.remove(context.getInfo().getUuid());
-    }
-
-    @Override
-    protected String moduleName() {
-        return "[行动干预识别模块]";
     }
 
     @Override

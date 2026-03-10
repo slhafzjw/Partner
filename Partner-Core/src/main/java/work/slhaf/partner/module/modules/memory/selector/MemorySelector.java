@@ -4,8 +4,8 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
-import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
@@ -13,7 +13,6 @@ import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
 import work.slhaf.partner.core.memory.pojo.EvaluatedSlice;
 import work.slhaf.partner.core.memory.pojo.MemoryResult;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
-import work.slhaf.partner.module.common.module.PreRunningAbstractAgentModuleAbstract;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.SliceSelectEvaluator;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.memory.selector.extractor.MemorySelectExtractor;
@@ -22,13 +21,13 @@ import work.slhaf.partner.module.modules.memory.selector.extractor.entity.Extrac
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.time.LocalDate;
-import java.util.*;
-
-import static work.slhaf.partner.common.util.ExtractUtil.extractUserId;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
-public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
+public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
@@ -39,7 +38,7 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
     private MemorySelectExtractor memorySelectExtractor;
 
     @Override
-    public void doExecute(PartnerRunningFlowContext runningFlowContext) {
+    public void execute(PartnerRunningFlowContext runningFlowContext) {
         String userId = runningFlowContext.getSource();
         //获取主题路径
         ExtractorResult extractorResult = memorySelectExtractor.execute(runningFlowContext);
@@ -117,46 +116,6 @@ public class MemorySelector extends PreRunningAbstractAgentModuleAbstract {
             return memorySlice.getStartUserId().equals(userId);
         }
         return false;
-    }
-
-    @Override
-    public String moduleName() {
-        return "[记忆模块]";
-    }
-
-    @Override
-    protected Map<String, String> getPromptDataMap(PartnerRunningFlowContext context) {
-        HashMap<String, String> map = new HashMap<>();
-        String userId = context.getSource();
-        String dialogMapStr = memoryCapability.getDialogMapStr();
-        if (!dialogMapStr.isEmpty()) {
-            map.put("[记忆缓存] <你最近两日和所有聊天者的对话记忆印象>", dialogMapStr);
-        }
-        String userDialogMapStr = memoryCapability.getUserDialogMapStr(userId);
-        if (userDialogMapStr != null && !userDialogMapStr.isEmpty() && !isSingleUser()) {
-            map.put("[用户记忆缓存] <与最新一条消息的发送者的近两天对话记忆印象, 可能与[记忆缓存]稍有重复>", userDialogMapStr);
-        }
-        String sliceStr = memoryCapability.getActivatedSlicesStr(userId);
-        if (sliceStr != null && !sliceStr.isEmpty()) {
-            map.put("[记忆切片] <你与最新一条消息的发送者的相关回忆, 不会与[记忆缓存]重复, 如果有重复你也可以指出来>", sliceStr);
-        }
-        return map;
-    }
-
-    // TODO 本次重构暂时仅以 chatMessages 用作判定基准，原实现额外结合了近两日的对话缓存(但缓存结构的引用确实存在问题)
-    private boolean isSingleUser() {
-        Set<String> userIdSet = new HashSet<>();
-        cognationCapability.getChatMessages().forEach(m -> {
-            if (m.getRole() == Message.Character.ASSISTANT) {
-                return;
-            }
-            String userId = extractUserId(m.getContent());
-            if (userId == null || userId.isEmpty()) {
-                return;
-            }
-            userIdSet.add(userId);
-        });
-        return userIdSet.size() <= 1;
     }
 
     @Override
