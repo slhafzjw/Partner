@@ -1,6 +1,5 @@
 package work.slhaf.partner.module.modules.memory.runtime;
 
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -14,6 +13,7 @@ import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.core.memory.pojo.SliceRef;
@@ -33,7 +33,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import static work.slhaf.partner.common.Constant.Path.MEMORY_DATA;
 
 @EqualsAndHashCode(callSuper = true)
-@Data
 @Slf4j
 public class MemoryRuntime extends AbstractAgentModule.Standalone {
 
@@ -63,7 +62,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
         }
     }
 
-    public void bindTopic(String topicPath, SliceRef sliceRef) {
+    private void bindTopic(String topicPath, SliceRef sliceRef) {
         String normalizedPath = normalizeTopicPath(topicPath);
         runtimeLock.lock();
         try {
@@ -79,7 +78,21 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
         }
     }
 
-    public void indexMemoryUnit(MemoryUnit memoryUnit) {
+    public void recordMemory(MemoryUnit memoryUnit, String topicPath, List<String> relatedTopicPaths, String dialogSummary) {
+        memoryCapability.saveMemoryUnit(memoryUnit);
+        MemorySlice memorySlice = memoryUnit.getSlices().getFirst();
+        SliceRef sliceRef = new SliceRef(memoryUnit.getId(), memorySlice.getId());
+        indexMemoryUnit(memoryUnit);
+        bindTopic(topicPath, sliceRef);
+        if (relatedTopicPaths != null) {
+            for (String relatedTopicPath : relatedTopicPaths) {
+                bindTopic(relatedTopicPath, sliceRef);
+            }
+        }
+        updateDialogMap(LocalDateTime.now(), dialogSummary);
+    }
+
+    private void indexMemoryUnit(MemoryUnit memoryUnit) {
         runtimeLock.lock();
         try {
             for (CopyOnWriteArrayList<SliceRef> refs : dateIndex.values()) {
@@ -100,7 +113,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
         }
     }
 
-    public List<SliceRef> findByTopicPath(String topicPath) {
+    private List<SliceRef> findByTopicPath(String topicPath) {
         String normalizedPath = normalizeTopicPath(topicPath);
         List<SliceRef> refs = topicSlices.get(normalizedPath);
         if (refs == null || refs.isEmpty()) {
@@ -109,7 +122,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
         return new ArrayList<>(refs);
     }
 
-    public List<SliceRef> findByDate(LocalDate date) {
+    private List<SliceRef> findByDate(LocalDate date) {
         List<SliceRef> refs = dateIndex.get(date);
         if (refs == null || refs.isEmpty()) {
             throw new UnExistedDateIndexException("不存在的日期索引: " + date);
@@ -117,7 +130,15 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
         return new ArrayList<>(refs);
     }
 
-    public void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
+    public List<ActivatedMemorySlice> queryActivatedMemoryByTopicPath(String topicPath) {
+        return buildActivatedMemorySlices(findByTopicPath(topicPath));
+    }
+
+    public List<ActivatedMemorySlice> queryActivatedMemoryByDate(LocalDate date) {
+        return buildActivatedMemorySlices(findByDate(date));
+    }
+
+    private void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
         runtimeLock.lock();
         try {
             List<LocalDateTime> keysToRemove = new ArrayList<>();
@@ -136,10 +157,6 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
         }
     }
 
-    public HashMap<LocalDateTime, String> getDialogMap() {
-        return dialogMap;
-    }
-
     public String getDialogMapStr() {
         StringBuilder str = new StringBuilder();
         dialogMap.entrySet().stream()
@@ -149,6 +166,10 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
                         .append("]\n")
                         .append(entry.getValue()));
         return str.toString();
+    }
+
+    public boolean containsDialogSummary(String summary) {
+        return dialogMap.containsValue(summary);
     }
 
     public String getTopicTree() {
@@ -169,6 +190,50 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
             printSubTopicsTreeFormat(entry.getValue(), "", stringBuilder);
         }
         return stringBuilder.toString();
+    }
+
+    private List<ActivatedMemorySlice> buildActivatedMemorySlices(List<SliceRef> refs) {
+        List<ActivatedMemorySlice> slices = new ArrayList<>();
+        for (SliceRef ref : refs) {
+            ActivatedMemorySlice slice = buildActivatedMemorySlice(ref);
+            if (slice != null) {
+                slices.add(slice);
+            }
+        }
+        return slices;
+    }
+
+    private ActivatedMemorySlice buildActivatedMemorySlice(SliceRef ref) {
+        MemoryUnit memoryUnit = memoryCapability.getMemoryUnit(ref.getUnitId());
+        MemorySlice memorySlice = memoryCapability.getMemorySlice(ref.getUnitId(), ref.getSliceId());
+        if (memoryUnit == null || memorySlice == null) {
+            return null;
+        }
+        List<work.slhaf.partner.api.chat.pojo.Message> messages = sliceMessages(memoryUnit, memorySlice);
+        LocalDate date = Instant.ofEpochMilli(memorySlice.getTimestamp())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+        return ActivatedMemorySlice.builder()
+                .unitId(ref.getUnitId())
+                .sliceId(ref.getSliceId())
+                .summary(memorySlice.getSummary())
+                .timestamp(memorySlice.getTimestamp())
+                .date(date)
+                .messages(messages)
+                .build();
+    }
+
+    private List<work.slhaf.partner.api.chat.pojo.Message> sliceMessages(MemoryUnit memoryUnit, MemorySlice memorySlice) {
+        List<work.slhaf.partner.api.chat.pojo.Message> conversationMessages = memoryUnit.getConversationMessages();
+        if (conversationMessages == null || conversationMessages.isEmpty()) {
+            return List.of();
+        }
+        int start = Math.max(0, memorySlice.getStartIndex());
+        int end = Math.min(conversationMessages.size() - 1, memorySlice.getEndIndex());
+        if (start > end) {
+            return List.of();
+        }
+        return new ArrayList<>(conversationMessages.subList(start, end + 1));
     }
 
     private void printSubTopicsTreeFormat(TopicTreeNode node, String prefix, StringBuilder stringBuilder) {

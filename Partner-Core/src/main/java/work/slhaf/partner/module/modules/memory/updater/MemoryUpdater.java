@@ -15,7 +15,6 @@ import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
-import work.slhaf.partner.core.memory.pojo.SliceRef;
 import work.slhaf.partner.module.common.module.PostRunningAgentModule;
 import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 import work.slhaf.partner.module.modules.memory.runtime.MemoryRuntime;
@@ -25,7 +24,6 @@ import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.Summar
 import work.slhaf.partner.module.modules.memory.updater.summarizer.entity.SummarizeResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -145,24 +143,14 @@ public class MemoryUpdater extends PostRunningAgentModule {
         SummarizeResult summarizeResult = summarize(summarizeInput);
         log.debug("[MemoryUpdater] 记忆更新-总结流程-输出: {}", JSONObject.toJSONString(summarizeResult));
         MemoryUnit memoryUnit = buildMemoryUnit(chatMessages, summarizeResult);
-        memoryCapability.saveMemoryUnit(memoryUnit);
-        MemorySlice memorySlice = memoryUnit.getSlices().getFirst();
-        SliceRef sliceRef = new SliceRef(memoryUnit.getId(), memorySlice.getId());
-        bindTopics(memoryUnit, summarizeResult, sliceRef);
-        memoryRuntime.updateDialogMap(LocalDateTime.now(), summarizeResult.getSummary());
+        memoryRuntime.recordMemory(
+                memoryUnit,
+                summarizeResult.getTopicPath(),
+                summarizeResult.getRelatedTopicPath(),
+                summarizeResult.getSummary()
+        );
         lastUpdatedTime = System.currentTimeMillis();
         log.debug("[MemoryUpdater] 记忆更新流程结束...");
-    }
-
-    private void bindTopics(MemoryUnit memoryUnit, SummarizeResult summarizeResult, SliceRef sliceRef) {
-        memoryRuntime.indexMemoryUnit(memoryUnit);
-        memoryRuntime.bindTopic(summarizeResult.getTopicPath(), sliceRef);
-        if (summarizeResult.getRelatedTopicPath() == null) {
-            return;
-        }
-        for (String relatedTopicPath : summarizeResult.getRelatedTopicPath()) {
-            memoryRuntime.bindTopic(relatedTopicPath, sliceRef);
-        }
     }
 
     private List<Message> getCleanedMessages(List<Message> chatMessages) {

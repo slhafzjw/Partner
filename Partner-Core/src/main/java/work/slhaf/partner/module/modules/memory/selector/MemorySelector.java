@@ -6,15 +6,11 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
-import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
 import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
-import work.slhaf.partner.core.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.memory.pojo.MemoryUnit;
-import work.slhaf.partner.core.memory.pojo.SliceRef;
 import work.slhaf.partner.module.modules.memory.runtime.MemoryRuntime;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.SliceSelectEvaluator;
 import work.slhaf.partner.module.modules.memory.selector.evaluator.entity.EvaluatorInput;
@@ -23,9 +19,7 @@ import work.slhaf.partner.module.modules.memory.selector.extractor.entity.Extrac
 import work.slhaf.partner.module.modules.memory.selector.extractor.entity.ExtractorResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -85,16 +79,15 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
                                      List<ExtractorMatchData> matches) {
         for (ExtractorMatchData match : matches) {
             try {
-                List<SliceRef> refs = switch (match.getType()) {
-                    case ExtractorMatchData.Constant.TOPIC -> memoryRuntime.findByTopicPath(match.getText());
-                    case ExtractorMatchData.Constant.DATE -> memoryRuntime.findByDate(LocalDate.parse(match.getText()));
+                List<ActivatedMemorySlice> recalledSlices = switch (match.getType()) {
+                    case ExtractorMatchData.Constant.TOPIC ->
+                            memoryRuntime.queryActivatedMemoryByTopicPath(match.getText());
+                    case ExtractorMatchData.Constant.DATE ->
+                            memoryRuntime.queryActivatedMemoryByDate(LocalDate.parse(match.getText()));
                     default -> List.of();
                 };
-                for (SliceRef ref : refs) {
-                    ActivatedMemorySlice recalledSlice = buildActivatedMemorySlice(ref);
-                    if (recalledSlice != null) {
-                        candidates.putIfAbsent(ref.getUnitId() + ":" + ref.getSliceId(), recalledSlice);
-                    }
+                for (ActivatedMemorySlice recalledSlice : recalledSlices) {
+                    candidates.putIfAbsent(recalledSlice.getUnitId() + ":" + recalledSlice.getSliceId(), recalledSlice);
                 }
             } catch (UnExistedDateIndexException | UnExistedTopicException e) {
                 log.error("[MemorySelector] 不存在的记忆索引", e);
@@ -103,42 +96,8 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
         }
     }
 
-    private ActivatedMemorySlice buildActivatedMemorySlice(SliceRef ref) {
-        MemoryUnit memoryUnit = memoryCapability.getMemoryUnit(ref.getUnitId());
-        MemorySlice memorySlice = memoryCapability.getMemorySlice(ref.getUnitId(), ref.getSliceId());
-        if (memoryUnit == null || memorySlice == null) {
-            return null;
-        }
-        List<Message> messages = sliceMessages(memoryUnit, memorySlice);
-        LocalDate date = Instant.ofEpochMilli(memorySlice.getTimestamp())
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate();
-        return ActivatedMemorySlice.builder()
-                .unitId(ref.getUnitId())
-                .sliceId(ref.getSliceId())
-                .summary(memorySlice.getSummary())
-                .timestamp(memorySlice.getTimestamp())
-                .date(date)
-                .messages(messages)
-                .build();
-    }
-
-    private List<Message> sliceMessages(MemoryUnit memoryUnit, MemorySlice memorySlice) {
-        List<Message> conversationMessages = memoryUnit.getConversationMessages();
-        if (conversationMessages == null || conversationMessages.isEmpty()) {
-            return List.of();
-        }
-        int start = Math.max(0, memorySlice.getStartIndex());
-        int end = Math.min(conversationMessages.size() - 1, memorySlice.getEndIndex());
-        if (start > end) {
-            return List.of();
-        }
-        return new ArrayList<>(conversationMessages.subList(start, end + 1));
-    }
-
     private void removeDuplicateSlice(Collection<ActivatedMemorySlice> candidates) {
-        Collection<String> values = memoryRuntime.getDialogMap().values();
-        candidates.removeIf(m -> values.contains(m.getSummary()));
+        candidates.removeIf(m -> memoryRuntime.containsDialogSummary(m.getSummary()));
     }
 
     @Override
