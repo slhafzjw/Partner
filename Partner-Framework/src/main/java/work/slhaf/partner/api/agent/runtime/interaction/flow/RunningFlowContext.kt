@@ -24,6 +24,8 @@ abstract class RunningFlowContext {
      */
     var target = source
 
+    val contextBlocks = mutableListOf<ContextBlock>()
+
     private val _additionalUserInfo = mutableMapOf<String, String>()
     val additionalUserInfo: Map<String, String>
         get() = _additionalUserInfo
