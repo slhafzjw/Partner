@@ -44,12 +44,9 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     @InjectCapability
     private CognationCapability cognationCapability;
-    private final List<Message> chatMessages = new ArrayList<>();
 
     @Init
     public void init() {
-        this.chatMessages.clear();
-        this.chatMessages.addAll(this.cognationCapability.getChatMessages());
         log.info("CommunicationProducer 注册完毕...");
     }
 
@@ -104,12 +101,13 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private List<Message> buildChatMessages(PartnerRunningFlowContext runningFlowContext) {
-        List<Message> temp = new ArrayList<>(chatMessages.size() + 2);
+        List<Message> historyMessages = snapshotConversationMessages();
+        List<Message> temp = new ArrayList<>(historyMessages.size() + 2);
         Message contextMessage = buildContextMessage(runningFlowContext);
         if (contextMessage != null) {
             temp.add(contextMessage);
         }
-        temp.addAll(chatMessages);
+        temp.addAll(historyMessages);
         temp.add(buildInputMessage(runningFlowContext));
         return temp;
     }
@@ -117,6 +115,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     private void updateModuleContextAndChatMessages(PartnerRunningFlowContext runningFlowContext, String response) {
         cognationCapability.getMessageLock().lock();
         try {
+            List<Message> chatMessages = cognationCapability.getChatMessages();
             chatMessages.removeIf(this::isStructuredUserMessage);
             Message primaryUserMessage = new Message(
                     Message.Character.USER,
@@ -128,6 +127,12 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         } finally {
             cognationCapability.getMessageLock().unlock();
         }
+    }
+
+    private List<Message> snapshotConversationMessages() {
+        List<Message> snapshot = new ArrayList<>(cognationCapability.snapshotChatMessages());
+        snapshot.removeIf(this::isStructuredUserMessage);
+        return snapshot;
     }
 
     private Message buildContextMessage(PartnerRunningFlowContext runningFlowContext) {
