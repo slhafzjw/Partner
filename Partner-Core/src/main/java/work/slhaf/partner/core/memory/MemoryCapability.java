@@ -15,10 +15,6 @@ public interface MemoryCapability {
 
     void updateActivatedSlices(List<ActivatedMemorySlice> memorySlices);
 
-    boolean hasActivatedSlices();
-
-    int getActivatedSlicesSize();
-
     List<ActivatedMemorySlice> getActivatedSlices();
 
     void saveMemoryUnit(MemoryUnit memoryUnit);

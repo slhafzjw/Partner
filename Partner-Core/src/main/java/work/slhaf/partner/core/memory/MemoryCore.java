@@ -52,16 +52,6 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
     }
 
     @CapabilityMethod
-    public boolean hasActivatedSlices() {
-        return !activatedSlices.isEmpty();
-    }
-
-    @CapabilityMethod
-    public int getActivatedSlicesSize() {
-        return activatedSlices.size();
-    }
-
-    @CapabilityMethod
     public List<ActivatedMemorySlice> getActivatedSlices() {
         return new ArrayList<>(activatedSlices);
     }
