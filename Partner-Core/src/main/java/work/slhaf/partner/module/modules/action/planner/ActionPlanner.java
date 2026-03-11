@@ -326,7 +326,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         private EvaluatorInput buildEvaluatorInput(ExtractorResult extractorResult, String userId) {
             EvaluatorInput input = new EvaluatorInput();
             input.setTendencies(extractorResult.getTendencies());
-            input.setUser(perceiveCapability.getUser(userId));
             input.setRecentMessages(cognationCapability.snapshotChatMessages());
             input.setActivatedSlices(memoryCapability.getActivatedSlices());
             return input;
