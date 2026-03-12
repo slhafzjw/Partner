@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.module.modules.action.builtin.BuiltinActionRegistry;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -838,6 +839,53 @@ public class LocalRunnerClientTest {
                 MetaAction metaAction = buildMetaAction(MetaAction.Type.MCP, "missing-client", "missing-tool", Map.of());
                 client.submit(metaAction);
                 Assertions.assertNotNull(metaAction.getResult().getData());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDoRunWithBuiltin(@TempDir Path tempDir) {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+            BuiltinActionRegistry registry = new BuiltinActionRegistry() {
+                @Override
+                protected List<BuiltinActionDefinition> buildDefinitions() {
+                    return List.of(
+                            definition("echo", buildMetaActionInfo("echo"), params -> params.get("value"))
+                    );
+                }
+            };
+            client.setBuiltinActionRegistry(registry);
+            registry.getDefinitions().put(
+                    "builtin::echo",
+                    BuiltinActionRegistry.definition("echo", buildMetaActionInfo("echo"), params -> params.get("value"))
+            );
+
+            try {
+                MetaAction metaAction = buildMetaAction(MetaAction.Type.BUILTIN, "builtin", "echo", Map.of("value", "ok"));
+                RunnerClient.RunnerResponse response = client.doRun(metaAction);
+                Assertions.assertNotNull(response);
+                Assertions.assertTrue(response.isOk());
+                Assertions.assertEquals("ok", response.getData());
+            } finally {
+                executor.shutdownNow();
+            }
+        }
+
+        @Test
+        void testDoRunWithBuiltinMissingRegistry(@TempDir Path tempDir) {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+
+            try {
+                MetaAction metaAction = buildMetaAction(MetaAction.Type.BUILTIN, "builtin", "echo", Map.of());
+                RunnerClient.RunnerResponse response = client.doRun(metaAction);
+                Assertions.assertNotNull(response);
+                Assertions.assertFalse(response.isOk());
+                Assertions.assertEquals("BuiltinActionRegistry 未初始化", response.getData());
             } finally {
                 executor.shutdownNow();
             }

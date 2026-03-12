@@ -14,12 +14,14 @@ data class MetaAction(
      */
     val io: Boolean = false,
     /**
-     * 行动程序类型，可分为 MCP、ORIGIN 两种，前者对应读取到的 MCP Tool、后者对应生成的临时行动程序
+     * 行动程序类型，可分为 MCP、ORIGIN、BUILTIN 三种，
+     * 分别对应读取到的 MCP Tool、生成的临时行动程序、本地内置行动
      */
     val type: Type,
     /**
      * 当类型为 MCP 时，该字段对应相应 MCP Client 注册时生成的 id;
-     * 当类型为 ORIGIN 时，该字段对应相应的磁盘路径字符串
+     * 当类型为 ORIGIN 时，该字段对应相应的磁盘路径字符串;
+     * 当类型为 BUILTIN 时，该字段固定为 builtin
      */
     val location: String,
 ) {
@@ -67,7 +69,12 @@ data class MetaAction(
         /**
          * 适用于‘临时生成’的行动程序，在生成后根据序列化选项及执行情况，进行持久化
          */
-        ORIGIN
+        ORIGIN,
+
+        /**
+         * 由本地内置注册表直接执行的行动
+         */
+        BUILTIN
     }
 
 }

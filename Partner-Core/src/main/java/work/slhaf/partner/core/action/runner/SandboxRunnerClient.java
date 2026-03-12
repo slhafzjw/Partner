@@ -30,8 +30,13 @@ public class SandboxRunnerClient extends RunnerClient {
     }
 
     protected RunnerResponse doRun(MetaAction metaAction) {
-        // 调用沙盒执行器
-        return null;
+        return switch (metaAction.getType()) {
+            case BUILTIN -> doRunWithBuiltin(metaAction);
+            case MCP, ORIGIN -> {
+                // 调用沙盒执行器
+                yield null;
+            }
+        };
     }
 
     @Override

@@ -224,6 +224,7 @@ public class LocalRunnerClient extends RunnerClient {
             response = switch (metaAction.getType()) {
                 case MetaAction.Type.MCP -> doRunWithMcp(metaAction);
                 case MetaAction.Type.ORIGIN -> doRunWithOrigin(metaAction);
+                case MetaAction.Type.BUILTIN -> doRunWithBuiltin(metaAction);
             };
         } catch (Exception e) {
             response = new RunnerResponse();

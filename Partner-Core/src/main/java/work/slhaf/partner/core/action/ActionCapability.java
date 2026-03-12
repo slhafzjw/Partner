@@ -53,6 +53,8 @@ public interface ActionCapability {
 
     MetaActionInfo loadMetaActionInfo(@NonNull String actionKey);
 
+    void registerMetaActions(@NonNull Map<String, MetaActionInfo> metaActions);
+
     Map<String, MetaActionInfo> listAvailableMetaActions();
 
     boolean checkExists(String... actionKeys);

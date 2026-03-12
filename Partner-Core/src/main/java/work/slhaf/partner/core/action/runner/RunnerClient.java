@@ -1,8 +1,8 @@
 package work.slhaf.partner.core.action.runner;
 
 import com.alibaba.fastjson2.JSONObject;
-import io.modelcontextprotocol.server.McpStatelessAsyncServer;
 import lombok.Data;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.Nullable;
@@ -11,6 +11,7 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
+import work.slhaf.partner.module.modules.action.builtin.BuiltinActionRegistry;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,8 +46,8 @@ public abstract class RunnerClient {
 
     protected final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions;
     protected final ExecutorService executor;
-    //TODO 仍可提供内部 MCP，但调用方式需要结合 AgentContext来获取，否则生命周期不合
-    protected McpStatelessAsyncServer innerMcpServer;
+    @Setter
+    protected BuiltinActionRegistry builtinActionRegistry;
 
     /**
      * ActionCore 将注入虚拟线程池
@@ -81,6 +82,23 @@ public abstract class RunnerClient {
     public abstract void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException;
 
     public abstract void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData);
+
+    protected RunnerResponse doRunWithBuiltin(MetaAction metaAction) {
+        RunnerResponse response = new RunnerResponse();
+        if (builtinActionRegistry == null) {
+            response.setOk(false);
+            response.setData("BuiltinActionRegistry 未初始化");
+            return response;
+        }
+        try {
+            response.setData(builtinActionRegistry.call(metaAction.getKey(), metaAction.getParams()));
+            response.setOk(true);
+        } catch (Exception e) {
+            response.setOk(false);
+            response.setData(e.getLocalizedMessage());
+        }
+        return response;
+    }
 
     protected void createPath(String pathStr) {
         val path = Path.of(pathStr);

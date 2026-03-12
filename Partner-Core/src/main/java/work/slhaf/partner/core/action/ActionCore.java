@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 @CapabilityCore(value = "action")
 @Slf4j
 public class ActionCore extends PartnerCore<ActionCore> {
+    public static final String BUILTIN_LOCATION = "builtin";
 
     private final Lock cacheLock = new ReentrantLock();
     // 由于当前的执行器逻辑实现，平台线程池大小不得小于 2，这里规定为最小为 4
@@ -273,7 +274,12 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public Map<String, MetaActionInfo> listAvailableActions() {
+    public void registerMetaActions(@NonNull Map<String, MetaActionInfo> metaActions) {
+        existedMetaActions.putAll(metaActions);
+    }
+
+    @CapabilityMethod
+    public Map<String, MetaActionInfo> listAvailableMetaActions() {
         return existedMetaActions;
     }
 
@@ -320,10 +326,11 @@ public class ActionCore extends PartnerCore<ActionCore> {
         if (split.length < 2) {
             throw new MetaActionNotFoundException("未找到对应的行动程序，原因: 传入的 actionKey(" + actionKey + ") 存在异常");
         }
+        MetaAction.Type type = BUILTIN_LOCATION.equals(split[0]) ? MetaAction.Type.BUILTIN : MetaAction.Type.MCP;
         return new MetaAction(
                 split[1],
                 metaActionInfo.isIo(),
-                MetaAction.Type.MCP,
+                type,
                 split[0]
         );
     }
