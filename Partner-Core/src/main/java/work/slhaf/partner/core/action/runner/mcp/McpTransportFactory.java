@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.mcp;
 
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.ServerParameters;
@@ -7,13 +7,14 @@ import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequ
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.spec.McpClientTransport;
+import work.slhaf.partner.core.action.runner.policy.RunnerExecutionPolicy;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
 
-class McpTransportFactory {
+public class McpTransportFactory {
 
-    McpClientTransport create(McpTransportConfig config, RunnerExecutionPolicy policy) {
+    public McpClientTransport create(McpTransportConfig config, RunnerExecutionPolicy policy) {
         return switch (config) {
             case McpTransportConfig.Stdio stdio -> {
                 ServerParameters serverParameters = ServerParameters.builder(stdio.command())

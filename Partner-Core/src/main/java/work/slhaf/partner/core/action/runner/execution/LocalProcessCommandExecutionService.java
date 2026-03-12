@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.execution;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class LocalProcessCommandExecutionService implements CommandExecutionService {
+public class LocalProcessCommandExecutionService implements CommandExecutionService {
 
     @Override
     public String[] buildCommands(String ext, Map<String, Object> params, String absolutePath) {

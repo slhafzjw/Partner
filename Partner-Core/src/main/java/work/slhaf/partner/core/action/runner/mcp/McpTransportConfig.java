@@ -1,11 +1,11 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.mcp;
 
 import work.slhaf.partner.common.mcp.InProcessMcpTransport;
 
 import java.util.List;
 import java.util.Map;
 
-sealed interface McpTransportConfig permits McpTransportConfig.Http, McpTransportConfig.Stdio, McpTransportConfig.InProcess {
+public sealed interface McpTransportConfig permits McpTransportConfig.Http, McpTransportConfig.Stdio, McpTransportConfig.InProcess {
 
     int timeout();
 

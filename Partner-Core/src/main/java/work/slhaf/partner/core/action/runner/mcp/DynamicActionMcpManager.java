@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.mcp;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONUtil;
@@ -15,6 +15,8 @@ import reactor.core.scheduler.Schedulers;
 import work.slhaf.partner.common.mcp.InProcessMcpTransport;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
+import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
+import work.slhaf.partner.core.action.runner.support.DirectoryWatchSupport;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
-class DynamicActionMcpManager implements AutoCloseable {
+public class DynamicActionMcpManager implements AutoCloseable {
 
     private final Path root;
     private final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions;
@@ -42,10 +44,10 @@ class DynamicActionMcpManager implements AutoCloseable {
     private final InProcessMcpTransport clientTransport;
     private final DirectoryWatchSupport watchSupport;
 
-    DynamicActionMcpManager(Path root,
-                            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions,
-                            ExecutorService executor,
-                            CommandExecutionService commandExecutionService) throws IOException {
+    public DynamicActionMcpManager(Path root,
+                                   ConcurrentHashMap<String, MetaActionInfo> existedMetaActions,
+                                   ExecutorService executor,
+                                   CommandExecutionService commandExecutionService) throws IOException {
         this.root = root;
         this.existedMetaActions = existedMetaActions;
         this.commandExecutionService = commandExecutionService;
@@ -65,11 +67,11 @@ class DynamicActionMcpManager implements AutoCloseable {
                 .onOverflow((thisDir, context) -> reconcile());
     }
 
-    McpTransportConfig.InProcess clientConfig(int timeout) {
+    public McpTransportConfig.InProcess clientConfig(int timeout) {
         return new McpTransportConfig.InProcess(timeout, clientTransport);
     }
 
-    void start() {
+    public void start() {
         watchSupport.start();
         log.info("DynamicActionMcp 文件监听注册完毕");
     }

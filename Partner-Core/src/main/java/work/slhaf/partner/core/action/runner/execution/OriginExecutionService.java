@@ -1,19 +1,20 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.execution;
 
 import cn.hutool.core.io.FileUtil;
 import work.slhaf.partner.core.action.entity.MetaAction;
+import work.slhaf.partner.core.action.runner.RunnerClient;
 
 import java.io.File;
 
-class OriginExecutionService {
+public class OriginExecutionService {
 
     private final CommandExecutionService commandExecutionService;
 
-    OriginExecutionService(CommandExecutionService commandExecutionService) {
+    public OriginExecutionService(CommandExecutionService commandExecutionService) {
         this.commandExecutionService = commandExecutionService;
     }
 
-    RunnerClient.RunnerResponse run(MetaAction metaAction) {
+    public RunnerClient.RunnerResponse run(MetaAction metaAction) {
         RunnerClient.RunnerResponse response = new RunnerClient.RunnerResponse();
         File file = new File(metaAction.getLocation());
         String ext = FileUtil.getSuffix(file);

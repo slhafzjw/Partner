@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.support;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,45 +12,46 @@ import java.util.stream.Stream;
 import static java.nio.file.StandardWatchEventKinds.*;
 
 @Slf4j
-class DirectoryWatchSupport implements Closeable {
+public class DirectoryWatchSupport implements Closeable {
 
     private final Context ctx;
     private final Map<WatchEvent.Kind<?>, EventHandler> handlers = new HashMap<>();
     private final ExecutorService executor;
     private final boolean watchAll;
     private final InitLoader initLoader;
-    DirectoryWatchSupport(Context ctx, ExecutorService executor, boolean watchAll, InitLoader initLoader) {
+
+    public DirectoryWatchSupport(Context ctx, ExecutorService executor, boolean watchAll, InitLoader initLoader) {
         this.ctx = ctx;
         this.executor = executor;
         this.watchAll = watchAll;
         this.initLoader = initLoader;
     }
 
-    DirectoryWatchSupport onCreate(EventHandler handler) {
+    public DirectoryWatchSupport onCreate(EventHandler handler) {
         ctx.kinds().add(ENTRY_CREATE);
         handlers.put(ENTRY_CREATE, handler);
         return this;
     }
 
-    DirectoryWatchSupport onModify(EventHandler handler) {
+    public DirectoryWatchSupport onModify(EventHandler handler) {
         ctx.kinds().add(ENTRY_MODIFY);
         handlers.put(ENTRY_MODIFY, handler);
         return this;
     }
 
-    DirectoryWatchSupport onDelete(EventHandler handler) {
+    public DirectoryWatchSupport onDelete(EventHandler handler) {
         ctx.kinds().add(ENTRY_DELETE);
         handlers.put(ENTRY_DELETE, handler);
         return this;
     }
 
-    DirectoryWatchSupport onOverflow(EventHandler handler) {
+    public DirectoryWatchSupport onOverflow(EventHandler handler) {
         ctx.kinds().add(OVERFLOW);
         handlers.put(OVERFLOW, handler);
         return this;
     }
 
-    void start() {
+    public void start() {
         registerPath();
         if (initLoader != null) {
             initLoader.load();
@@ -58,15 +59,15 @@ class DirectoryWatchSupport implements Closeable {
         executor.execute(buildWatchTask());
     }
 
-    Context context() {
+    public Context context() {
         return ctx;
     }
 
-    boolean isWatching(Path dir) {
+    public boolean isWatching(Path dir) {
         return ctx.watchKeys().values().stream().anyMatch(dir::equals);
     }
 
-    void registerDirectory(Path dir) throws IOException {
+    public void registerDirectory(Path dir) throws IOException {
         if (!java.nio.file.Files.isDirectory(dir) || isWatching(dir)) {
             return;
         }
@@ -148,16 +149,17 @@ class DirectoryWatchSupport implements Closeable {
         ctx.watchKeys().clear();
     }
 
-    interface EventHandler {
+    public interface EventHandler {
         void handle(Path thisDir, Path context);
     }
 
-    interface InitLoader {
+    public interface InitLoader {
         void load();
     }
 
-    record Context(Path root, WatchService watchService, Map<WatchKey, Path> watchKeys, Set<WatchEvent.Kind<?>> kinds) {
-        Context(Path root) throws IOException {
+    public record Context(Path root, WatchService watchService, Map<WatchKey, Path> watchKeys,
+                          Set<WatchEvent.Kind<?>> kinds) {
+        public Context(Path root) throws IOException {
             this(root, FileSystems.getDefault().newWatchService(), new HashMap<>(), new LinkedHashSet<>());
         }
     }

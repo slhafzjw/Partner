@@ -1,11 +1,11 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.execution;
 
 import lombok.Data;
 
 import java.util.List;
 import java.util.Map;
 
-interface CommandExecutionService {
+public interface CommandExecutionService {
 
     String[] buildCommands(String ext, Map<String, Object> params, String absolutePath);
 

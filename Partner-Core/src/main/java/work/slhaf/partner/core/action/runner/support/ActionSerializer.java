@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.support;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -17,17 +17,17 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 @Slf4j
-class ActionSerializer {
+public class ActionSerializer {
 
     private final String tmpActionPath;
     private final String dynamicActionPath;
 
-    ActionSerializer(String tmpActionPath, String dynamicActionPath) {
+    public ActionSerializer(String tmpActionPath, String dynamicActionPath) {
         this.tmpActionPath = tmpActionPath;
         this.dynamicActionPath = dynamicActionPath;
     }
 
-    static String normalizeCodeType(String codeType) {
+    public static String normalizeCodeType(String codeType) {
         if (codeType == null || codeType.isBlank()) {
             throw new IllegalArgumentException("codeType 不能为空");
         }
@@ -48,11 +48,11 @@ class ActionSerializer {
         }
     }
 
-    String buildTmpPath(String actionKey, String codeType) {
+    public String buildTmpPath(String actionKey, String codeType) {
         return Path.of(tmpActionPath, System.currentTimeMillis() + "-" + actionKey + normalizeCodeType(codeType)).toString();
     }
 
-    void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException {
+    public void tmpSerialize(MetaAction tempAction, String code, String codeType) throws IOException {
         log.debug("行动程序临时序列化: {}", tempAction);
         Path path = Path.of(tempAction.getLocation());
         validateTmpLocation(path, codeType);
@@ -70,7 +70,7 @@ class ActionSerializer {
         }
     }
 
-    void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData) {
+    public void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData) {
         log.debug("行动程序持久序列化: {}", metaActionInfo);
         val baseDir = Path.of(dynamicActionPath);
 

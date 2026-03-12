@@ -1,21 +1,23 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.execution;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import work.slhaf.partner.core.action.entity.MetaAction;
+import work.slhaf.partner.core.action.runner.RunnerClient;
+import work.slhaf.partner.core.action.runner.mcp.McpClientRegistry;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-class McpActionExecutor {
+public class McpActionExecutor {
 
     private final McpClientRegistry mcpClientRegistry;
 
-    McpActionExecutor(McpClientRegistry mcpClientRegistry) {
+    public McpActionExecutor(McpClientRegistry mcpClientRegistry) {
         this.mcpClientRegistry = mcpClientRegistry;
     }
 
-    RunnerClient.RunnerResponse run(MetaAction metaAction) {
+    public RunnerClient.RunnerResponse run(MetaAction metaAction) {
         RunnerClient.RunnerResponse response = new RunnerClient.RunnerResponse();
         McpSyncClient mcpClient = mcpClientRegistry.get(metaAction.getLocation());
         if (mcpClient == null) {

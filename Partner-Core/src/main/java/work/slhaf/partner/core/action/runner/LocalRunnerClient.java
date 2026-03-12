@@ -9,6 +9,12 @@ import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
+import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
+import work.slhaf.partner.core.action.runner.execution.LocalProcessCommandExecutionService;
+import work.slhaf.partner.core.action.runner.execution.McpActionExecutor;
+import work.slhaf.partner.core.action.runner.execution.OriginExecutionService;
+import work.slhaf.partner.core.action.runner.mcp.*;
+import work.slhaf.partner.core.action.runner.support.ActionSerializer;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -22,8 +28,8 @@ import static work.slhaf.partner.common.util.PathUtil.buildPathStr;
 @Slf4j
 public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
 
-    static final String MCP_NAME_DESC = "mcp-desc";
-    static final String MCP_NAME_DYNAMIC = "mcp-dynamic";
+    public static final String MCP_NAME_DESC = "mcp-desc";
+    public static final String MCP_NAME_DYNAMIC = "mcp-dynamic";
 
     private final String tmpActionPath;
     private final String dynamicActionPath;

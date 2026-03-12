@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.mcp;
 
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 
 @Slf4j
-class McpMetaRegistry implements AutoCloseable {
+public class McpMetaRegistry implements AutoCloseable {
 
     private final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions;
     private final ConcurrentHashMap<String, String> descCache = new ConcurrentHashMap<>();
@@ -33,7 +33,7 @@ class McpMetaRegistry implements AutoCloseable {
     private final McpStatelessAsyncServer descServer;
     private final InProcessMcpTransport clientTransport;
 
-    McpMetaRegistry(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions) {
+    public McpMetaRegistry(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions) {
         this.existedMetaActions = existedMetaActions;
         InProcessMcpTransport.Pair pair = InProcessMcpTransport.pair();
         this.clientTransport = pair.clientSide();
@@ -46,11 +46,11 @@ class McpMetaRegistry implements AutoCloseable {
                 .build();
     }
 
-    McpTransportConfig.InProcess clientConfig(String serverName, int timeout) {
+    public McpTransportConfig.InProcess clientConfig(String serverName, int timeout) {
         return new McpTransportConfig.InProcess(timeout, clientTransport);
     }
 
-    void loadDirectory(Path root) {
+    public void loadDirectory(Path root) {
         File[] files = loadFiles(root);
         if (files == null) {
             return;
@@ -60,11 +60,11 @@ class McpMetaRegistry implements AutoCloseable {
         }
     }
 
-    boolean addOrUpdate(Path path) {
+    public boolean addOrUpdate(Path path) {
         return addOrUpdate(path.toFile());
     }
 
-    boolean addOrUpdate(File file) {
+    public boolean addOrUpdate(File file) {
         String name = file.getName();
         if (!isValidDescFile(name)) {
             return false;
@@ -86,7 +86,7 @@ class McpMetaRegistry implements AutoCloseable {
         }
     }
 
-    void remove(Path path) {
+    public void remove(Path path) {
         String uri = path.toUri().toString();
         String actionKey = path.getFileName().toString().replace(".desc.json", "");
         descCache.remove(uri);
@@ -103,7 +103,7 @@ class McpMetaRegistry implements AutoCloseable {
         }
     }
 
-    void reconcile(Path root) {
+    public void reconcile(Path root) {
         File[] files = loadFiles(root);
         if (files == null) {
             return;
@@ -133,7 +133,7 @@ class McpMetaRegistry implements AutoCloseable {
         }
     }
 
-    MetaActionInfo buildMetaActionInfo(String serverId, McpSchema.Tool tool) {
+    public MetaActionInfo buildMetaActionInfo(String serverId, McpSchema.Tool tool) {
         String actionKey = serverId + "::" + tool.name();
         MetaActionInfo baseInfo = buildToolMetaActionInfo(tool);
         originalInfoCache.put(actionKey, copyMetaActionInfo(baseInfo));
@@ -161,7 +161,7 @@ class McpMetaRegistry implements AutoCloseable {
         return new McpStatelessServerFeatures.AsyncResourceSpecification(resource, readHandler);
     }
 
-    boolean isValidDescFile(String fileName) {
+    public boolean isValidDescFile(String fileName) {
         return fileName.endsWith(".desc.json") && fileName.contains("::");
     }
 

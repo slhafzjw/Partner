@@ -1,6 +1,7 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.mcp;
 
 import lombok.extern.slf4j.Slf4j;
+import work.slhaf.partner.core.action.runner.support.DirectoryWatchSupport;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,13 +9,13 @@ import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 
 @Slf4j
-class McpDescWatcher implements AutoCloseable {
+public class McpDescWatcher implements AutoCloseable {
 
     private final Path root;
     private final McpMetaRegistry mcpMetaRegistry;
     private final DirectoryWatchSupport watchSupport;
 
-    McpDescWatcher(Path root, McpMetaRegistry mcpMetaRegistry, ExecutorService executor) throws IOException {
+    public McpDescWatcher(Path root, McpMetaRegistry mcpMetaRegistry, ExecutorService executor) throws IOException {
         this.root = root;
         this.mcpMetaRegistry = mcpMetaRegistry;
         this.watchSupport = new DirectoryWatchSupport(new DirectoryWatchSupport.Context(root), executor, true, () -> mcpMetaRegistry.loadDirectory(root))
@@ -24,7 +25,7 @@ class McpDescWatcher implements AutoCloseable {
                 .onOverflow((thisDir, context) -> mcpMetaRegistry.reconcile(root));
     }
 
-    void start() {
+    public void start() {
         watchSupport.start();
         log.info("DescMcp 文件监听注册完毕");
     }

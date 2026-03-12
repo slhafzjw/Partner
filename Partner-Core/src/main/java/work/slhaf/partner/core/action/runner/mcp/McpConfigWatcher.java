@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.action.runner;
+package work.slhaf.partner.core.action.runner.mcp;
 
 import cn.hutool.json.JSONUtil;
 import io.modelcontextprotocol.client.McpClient;
@@ -6,6 +6,8 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.runner.LocalRunnerClient;
+import work.slhaf.partner.core.action.runner.support.DirectoryWatchSupport;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 @Slf4j
-class McpConfigWatcher implements AutoCloseable {
+public class McpConfigWatcher implements AutoCloseable {
 
     private final Path root;
     private final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions;
@@ -30,12 +32,12 @@ class McpConfigWatcher implements AutoCloseable {
     private final DirectoryWatchSupport watchSupport;
     private final Map<File, McpConfigFileRecord> mcpConfigFileCache = new HashMap<>();
 
-    McpConfigWatcher(Path root,
-                     ConcurrentHashMap<String, MetaActionInfo> existedMetaActions,
-                     McpClientRegistry mcpClientRegistry,
-                     McpTransportFactory mcpTransportFactory,
-                     McpMetaRegistry mcpMetaRegistry,
-                     ExecutorService executor) throws IOException {
+    public McpConfigWatcher(Path root,
+                            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions,
+                            McpClientRegistry mcpClientRegistry,
+                            McpTransportFactory mcpTransportFactory,
+                            McpMetaRegistry mcpMetaRegistry,
+                            ExecutorService executor) throws IOException {
         this.root = root;
         this.existedMetaActions = existedMetaActions;
         this.mcpClientRegistry = mcpClientRegistry;
@@ -48,7 +50,7 @@ class McpConfigWatcher implements AutoCloseable {
                 .onOverflow((thisDir, context) -> checkAndReload(false));
     }
 
-    void start() {
+    public void start() {
         watchSupport.start();
         log.info("CommonMcp 文件监听注册完毕");
     }
