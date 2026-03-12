@@ -1,15 +1,8 @@
 package experimental;
 
-import com.alibaba.fastjson2.JSONObject;
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.runner.LocalRunnerClient;
-import work.slhaf.partner.core.action.runner.RunnerClient;
 
 import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class SystemTest {
     @Test
@@ -34,15 +27,6 @@ public class SystemTest {
             e.printStackTrace();
         }
         return s.toString();
-    }
-
-    @Test
-    void localRunnerClientTest() {
-        ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
-        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-        RunnerClient client = new LocalRunnerClient(existedMetaActions, executor, null);
-        JSONObject res = client.listSysDependencies();
-        System.out.println(res.toString());
     }
 
 }

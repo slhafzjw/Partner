@@ -1,6 +1,5 @@
 package work.slhaf.partner.core.action.runner;
 
-import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
@@ -37,11 +36,6 @@ public class SandboxRunnerClient extends RunnerClient {
                 yield null;
             }
         };
-    }
-
-    @Override
-    public JSONObject listSysDependencies() {
-        return null;
     }
 
     @Override

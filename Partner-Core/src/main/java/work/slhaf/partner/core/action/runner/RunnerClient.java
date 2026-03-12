@@ -1,6 +1,5 @@
 package work.slhaf.partner.core.action.runner;
 
-import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -110,11 +109,6 @@ public abstract class RunnerClient {
             }
         }
     }
-
-    /**
-     * 列出执行环境下的系统依赖情况
-     */
-    public abstract JSONObject listSysDependencies();
 
     @Data
     public static class RunnerResponse {

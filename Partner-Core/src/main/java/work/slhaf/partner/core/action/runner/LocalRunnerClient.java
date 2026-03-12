@@ -1,7 +1,5 @@
 package work.slhaf.partner.core.action.runner;
 
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.Nullable;
@@ -18,7 +16,6 @@ import work.slhaf.partner.core.action.runner.support.ActionSerializer;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -154,29 +151,6 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
     @Override
     public void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData) {
         actionSerializer.persistSerialize(metaActionInfo, fileMetaData);
-    }
-
-    @Override
-    public JSONObject listSysDependencies() {
-        JSONObject sysDependencies = new JSONObject();
-        sysDependencies.put("language", "Python");
-        JSONArray dependencies = sysDependencies.putArray("dependencies");
-        CommandExecutionService.Result pyResult = commandExecutionService.exec("pip", "list", "--format=freeze");
-        if (pyResult.isOk()) {
-            List<String> resultList = pyResult.getResultList();
-            if (resultList != null) {
-                for (String result : resultList) {
-                    JSONObject element = dependencies.addObject();
-                    String[] split = result.split("==");
-                    element.put("name", split[0]);
-                    element.put("version", split.length > 1 ? split[1] : "");
-                }
-            }
-        } else {
-            JSONObject element = dependencies.addObject();
-            element.put("error", pyResult.getTotal());
-        }
-        return sysDependencies;
     }
 
     private void registerMcpClient(McpClientRegistry clientRegistry, McpTransportFactory transportFactory, String id, McpTransportConfig transportConfig) {
