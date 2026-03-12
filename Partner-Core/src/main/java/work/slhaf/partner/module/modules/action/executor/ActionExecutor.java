@@ -12,7 +12,6 @@ import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognation.CognationCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.modules.action.executor.entity.*;
-import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +33,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     private ActionRepairer actionRepairer;
     @InjectModule
     private ActionCorrector actionCorrector;
-    @InjectModule
-    private ActionScheduler actionScheduler;
+
     private ExecutorService virtualExecutor;
     private ExecutorService platformExecutor;
     private RunnerClient runnerClient;
