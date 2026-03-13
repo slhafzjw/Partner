@@ -8,7 +8,6 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
 import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
-import work.slhaf.partner.core.action.runner.execution.LocalProcessCommandExecutionService;
 import work.slhaf.partner.core.action.runner.execution.McpActionExecutor;
 import work.slhaf.partner.core.action.runner.execution.OriginExecutionService;
 import work.slhaf.partner.core.action.runner.mcp.*;
@@ -59,7 +58,7 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
 
         McpClientRegistry clientRegistry = new McpClientRegistry();
         McpTransportFactory transportFactory = new McpTransportFactory();
-        CommandExecutionService commandService = new LocalProcessCommandExecutionService();
+        CommandExecutionService commandService = new CommandExecutionService();
         ActionSerializer serializer = new ActionSerializer(tmpActionPath, dynamicActionPath);
         OriginExecutionService originService = new OriginExecutionService(commandService);
         McpActionExecutor actionExecutor = new McpActionExecutor(clientRegistry);
