@@ -1,5 +1,6 @@
 package work.slhaf.partner.core.action.runner;
 
+import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
@@ -142,15 +143,17 @@ public class LocalRunnerClientTest {
         }
 
         static MetaActionInfo buildMetaActionInfo(String description) {
-            MetaActionInfo info = new MetaActionInfo();
-            info.setIo(true);
-            info.setParams(new HashMap<>());
-            info.setDescription(description);
-            info.setTags(new ArrayList<>(List.of("tag")));
-            info.setPreActions(new ArrayList<>(List.of("pre")));
-            info.setPostActions(new ArrayList<>(List.of("post")));
-            info.setStrictDependencies(true);
-            return info;
+            return new MetaActionInfo(
+                    true,
+                    null,
+                    new HashMap<>(),
+                    description,
+                    new LinkedHashSet<>(List.of("tag")),
+                    new LinkedHashSet<>(List.of("pre")),
+                    new LinkedHashSet<>(List.of("post")),
+                    true,
+                    new JSONObject()
+            );
         }
 
         static String buildCommonMcpConfig(String... serverEntries) {
@@ -181,6 +184,7 @@ public class LocalRunnerClientTest {
             MetaAction metaAction = new MetaAction(
                     name,
                     false,
+                    null,
                     type,
                     location
             );
@@ -402,8 +406,8 @@ public class LocalRunnerClientTest {
                 MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
                 Assertions.assertNotNull(info);
                 Assertions.assertEquals("v1", info.getDescription());
-                Assertions.assertTrue(info.isIo());
-                Assertions.assertTrue(info.isStrictDependencies());
+                Assertions.assertTrue(info.getIo());
+                Assertions.assertTrue(info.getStrictDependencies());
                 Assertions.assertFalse(info.getTags().isEmpty());
 
                 writeDescMcpJson(descDir, actionKey, "v2");
@@ -419,16 +423,16 @@ public class LocalRunnerClientTest {
                 waitForCondition(() -> {
                     MetaActionInfo current = getMetaActionInfo(existedMetaActions, actionKey);
                     return current != null
-                            && !current.isIo()
-                            && !current.isStrictDependencies()
+                            && !current.getIo()
+                            && !current.getStrictDependencies()
                             && current.getTags().isEmpty()
                             && current.getPreActions().isEmpty()
                             && current.getPostActions().isEmpty();
                 }, 2000);
                 info = getMetaActionInfo(existedMetaActions, actionKey);
                 Assertions.assertNotNull(info);
-                Assertions.assertFalse(info.isIo());
-                Assertions.assertFalse(info.isStrictDependencies());
+                Assertions.assertFalse(info.getIo());
+                Assertions.assertFalse(info.getStrictDependencies());
                 Assertions.assertTrue(info.getTags().isEmpty());
                 Assertions.assertTrue(info.getPreActions().isEmpty());
                 Assertions.assertTrue(info.getPostActions().isEmpty());
@@ -453,16 +457,16 @@ public class LocalRunnerClientTest {
                 waitForCondition(() -> {
                     MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
                     return info != null
-                            && !info.isIo()
-                            && !info.isStrictDependencies()
+                            && !info.getIo()
+                            && !info.getStrictDependencies()
                             && info.getTags().isEmpty()
                             && info.getPreActions().isEmpty()
                             && info.getPostActions().isEmpty();
                 }, 2000);
                 MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
                 Assertions.assertNotNull(info);
-                Assertions.assertFalse(info.isIo());
-                Assertions.assertFalse(info.isStrictDependencies());
+                Assertions.assertFalse(info.getIo());
+                Assertions.assertFalse(info.getStrictDependencies());
                 Assertions.assertTrue(info.getTags().isEmpty());
                 Assertions.assertTrue(info.getPreActions().isEmpty());
                 Assertions.assertTrue(info.getPostActions().isEmpty());
@@ -475,8 +479,8 @@ public class LocalRunnerClientTest {
                 info = getMetaActionInfo(existedMetaActions, actionKey);
                 Assertions.assertNotNull(info);
                 Assertions.assertEquals("fixed", info.getDescription());
-                Assertions.assertTrue(info.isIo());
-                Assertions.assertTrue(info.isStrictDependencies());
+                Assertions.assertTrue(info.getIo());
+                Assertions.assertTrue(info.getStrictDependencies());
             } finally {
                 executor.shutdownNow();
             }
@@ -501,7 +505,7 @@ public class LocalRunnerClientTest {
                 MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
                 Assertions.assertNotNull(info);
                 Assertions.assertEquals("base", info.getDescription());
-                Assertions.assertTrue(info.isIo());
+                Assertions.assertTrue(info.getIo());
                 Assertions.assertEquals(1, existedMetaActions.size());
             } finally {
                 executor.shutdownNow();
@@ -545,16 +549,16 @@ public class LocalRunnerClientTest {
                 waitForCondition(() -> {
                     MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
                     return info != null
-                            && !info.isIo()
-                            && !info.isStrictDependencies()
+                            && !info.getIo()
+                            && !info.getStrictDependencies()
                             && info.getTags().isEmpty()
                             && info.getPreActions().isEmpty()
                             && info.getPostActions().isEmpty();
                 }, 2000);
                 MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
                 Assertions.assertNotNull(info);
-                Assertions.assertFalse(info.isIo());
-                Assertions.assertFalse(info.isStrictDependencies());
+                Assertions.assertFalse(info.getIo());
+                Assertions.assertFalse(info.getStrictDependencies());
                 Assertions.assertTrue(info.getTags().isEmpty());
                 Assertions.assertTrue(info.getPreActions().isEmpty());
                 Assertions.assertTrue(info.getPostActions().isEmpty());
@@ -585,8 +589,8 @@ public class LocalRunnerClientTest {
                 waitForCondition(() -> {
                     MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
                     return info != null
-                            && !info.isIo()
-                            && !info.isStrictDependencies()
+                            && !info.getIo()
+                            && !info.getStrictDependencies()
                             && info.getTags().isEmpty()
                             && info.getPreActions().isEmpty()
                             && info.getPostActions().isEmpty();
@@ -628,8 +632,8 @@ public class LocalRunnerClientTest {
                 waitForCondition(() -> {
                     MetaActionInfo info = getMetaActionInfo(existedMetaActions, actionKey);
                     return info != null
-                            && !info.isIo()
-                            && !info.isStrictDependencies()
+                            && !info.getIo()
+                            && !info.getStrictDependencies()
                             && info.getTags().isEmpty()
                             && info.getPreActions().isEmpty()
                             && info.getPostActions().isEmpty();

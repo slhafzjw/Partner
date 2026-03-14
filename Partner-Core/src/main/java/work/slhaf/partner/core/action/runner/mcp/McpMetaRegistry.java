@@ -99,7 +99,7 @@ public class McpMetaRegistry implements AutoCloseable {
         }
         MetaActionInfo info = existedMetaActions.get(actionKey);
         if (info != null) {
-            resetMetaActionInfo(info);
+            existedMetaActions.put(actionKey, resetMetaActionInfo(info));
         }
     }
 
@@ -172,18 +172,18 @@ public class McpMetaRegistry implements AutoCloseable {
         return root.toFile().listFiles();
     }
 
-    private void resetMetaActionInfo(@NotNull MetaActionInfo info) {
-        info.setIo(false);
-        if (info.getTags() != null) {
-            info.getTags().clear();
-        }
-        if (info.getPreActions() != null) {
-            info.getPreActions().clear();
-        }
-        if (info.getPostActions() != null) {
-            info.getPostActions().clear();
-        }
-        info.setStrictDependencies(false);
+    private MetaActionInfo resetMetaActionInfo(@NotNull MetaActionInfo info) {
+        return new MetaActionInfo(
+                false,
+                info.getLauncher(),
+                copyParams(info.getParams()),
+                info.getDescription(),
+                new LinkedHashSet<>(),
+                new LinkedHashSet<>(),
+                new LinkedHashSet<>(),
+                false,
+                copyResponseSchema(info.getResponseSchema())
+        );
     }
 
     @Override
@@ -192,22 +192,32 @@ public class McpMetaRegistry implements AutoCloseable {
     }
 
     private MetaActionInfo buildToolMetaActionInfo(McpSchema.Tool tool) {
-        MetaActionInfo info = new MetaActionInfo();
-        info.setDescription(tool.description());
         Map<String, Object> outputSchema = tool.outputSchema();
-        info.setResponseSchema(outputSchema == null ? JSONObject.of() : JSONObject.from(outputSchema));
-        info.setParams(tool.inputSchema().properties());
-
+        boolean io = false;
+        Set<String> preActions = new LinkedHashSet<>();
+        Set<String> postActions = new LinkedHashSet<>();
+        boolean strictDependencies = false;
+        Set<String> tags = new LinkedHashSet<>();
         Map<String, Object> meta = tool.meta();
         if (meta != null) {
             JSONObject metaJson = JSONObject.from(meta);
-            info.setIo(Boolean.TRUE.equals(metaJson.getBoolean("io")));
-            info.setPreActions(metaJson.getList("pre", String.class));
-            info.setPostActions(metaJson.getList("post", String.class));
-            info.setStrictDependencies(Boolean.TRUE.equals(metaJson.getBoolean("strict")));
-            info.setTags(metaJson.getList("tag", String.class));
+            io = Boolean.TRUE.equals(metaJson.getBoolean("io"));
+            preActions = toOrderedSet(metaJson.getList("pre", String.class));
+            postActions = toOrderedSet(metaJson.getList("post", String.class));
+            strictDependencies = Boolean.TRUE.equals(metaJson.getBoolean("strict"));
+            tags = toOrderedSet(metaJson.getList("tag", String.class));
         }
-        return info;
+        return new MetaActionInfo(
+                io,
+                null,
+                copyParams(tool.inputSchema().properties()),
+                tool.description(),
+                tags,
+                preActions,
+                postActions,
+                strictDependencies,
+                outputSchema == null ? JSONObject.of() : JSONObject.from(outputSchema)
+        );
     }
 
     private MetaActionInfo mergeWithOriginal(String actionKey, MetaActionInfo override) {
@@ -219,15 +229,33 @@ public class McpMetaRegistry implements AutoCloseable {
         if (source == null) {
             return null;
         }
-        MetaActionInfo copy = new MetaActionInfo();
-        copy.setIo(source.isIo());
-        copy.setParams(source.getParams() == null ? null : new HashMap<>(source.getParams()));
-        copy.setDescription(source.getDescription());
-        copy.setTags(source.getTags() == null ? new ArrayList<>() : new ArrayList<>(source.getTags()));
-        copy.setPreActions(source.getPreActions() == null ? new ArrayList<>() : new ArrayList<>(source.getPreActions()));
-        copy.setPostActions(source.getPostActions() == null ? new ArrayList<>() : new ArrayList<>(source.getPostActions()));
-        copy.setStrictDependencies(source.isStrictDependencies());
-        copy.setResponseSchema(source.getResponseSchema() == null ? JSONObject.of() : JSONObject.from(source.getResponseSchema()));
-        return copy;
+        return new MetaActionInfo(
+                source.getIo(),
+                source.getLauncher(),
+                copyParams(source.getParams()),
+                source.getDescription(),
+                toOrderedSet(source.getTags()),
+                toOrderedSet(source.getPreActions()),
+                toOrderedSet(source.getPostActions()),
+                source.getStrictDependencies(),
+                copyResponseSchema(source.getResponseSchema())
+        );
+    }
+
+    private <T> LinkedHashSet<T> toOrderedSet(Collection<T> source) {
+        return source == null ? new LinkedHashSet<>() : new LinkedHashSet<>(source);
+    }
+
+    private Map<String, String> copyParams(Map<String, ?> params) {
+        if (params == null) {
+            return null;
+        }
+        Map<String, String> copied = new LinkedHashMap<>();
+        params.forEach((key, value) -> copied.put(key, value == null ? null : String.valueOf(value)));
+        return copied;
+    }
+
+    private JSONObject copyResponseSchema(JSONObject responseSchema) {
+        return responseSchema == null ? JSONObject.of() : JSONObject.from(responseSchema);
     }
 }

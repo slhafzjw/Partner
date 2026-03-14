@@ -1,5 +1,6 @@
 package work.slhaf.partner.module.modules.action.builtin;
 
+import com.alibaba.fastjson2.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -12,6 +13,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.mockito.Mockito.*;
 
@@ -34,10 +36,17 @@ class BuiltinActionRegistryTest {
     }
 
     private static MetaActionInfo buildMetaActionInfo(String description) {
-        MetaActionInfo info = new MetaActionInfo();
-        info.setDescription(description);
-        info.setParams(new HashMap<>());
-        return info;
+        return new MetaActionInfo(
+                false,
+                null,
+                new HashMap<>(),
+                description,
+                Set.of(),
+                Set.of(),
+                Set.of(),
+                false,
+                new JSONObject()
+        );
     }
 
     @Test

@@ -1,5 +1,6 @@
 package work.slhaf.partner.module.modules.action.dispatcher.executor;
 
+import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.*;
@@ -77,12 +78,17 @@ class ActionExecutorTest {
         lenient().when(memoryCapability.getActivatedSlices()).thenReturn(Collections.emptyList());
         lenient().when(actionCapability.putPhaserRecord(any(Phaser.class), any(ExecutableAction.class)))
                 .thenAnswer(inv -> new PhaserRecord(inv.getArgument(0), inv.getArgument(1)));
-        lenient().when(actionCapability.loadMetaActionInfo(anyString())).thenAnswer(inv -> {
-            MetaActionInfo info = new MetaActionInfo();
-            info.setDescription("desc");
-            info.setParams(Collections.emptyMap());
-            return info;
-        });
+        lenient().when(actionCapability.loadMetaActionInfo(anyString())).thenAnswer(inv -> new MetaActionInfo(
+                false,
+                null,
+                Collections.emptyMap(),
+                "desc",
+                Set.of(),
+                Set.of(),
+                Set.of(),
+                false,
+                new JSONObject()
+        ));
         CorrectorResult correctorResult = new CorrectorResult();
         correctorResult.setMetaInterventionList(Collections.emptyList());
         lenient().when(actionCorrector.execute(any())).thenReturn(correctorResult);
@@ -385,6 +391,7 @@ class ActionExecutorTest {
         return new MetaAction(
                 name,
                 io,
+                null,
                 MetaAction.Type.ORIGIN,
                 "location"
         );
