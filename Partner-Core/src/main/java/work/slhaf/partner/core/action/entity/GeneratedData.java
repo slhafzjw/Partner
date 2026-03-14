@@ -10,6 +10,7 @@ public class GeneratedData {
     private List<String> dependencies;
     private String code;
     private String codeType;
+    private String launcher;
     private boolean serialize;
     private JSONObject responseSchema;
 }

@@ -1,6 +1,5 @@
 package work.slhaf.partner.core.action.runner.mcp;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -292,8 +291,8 @@ public class DynamicActionMcpManager implements AutoCloseable {
         Map<String, Object> additional = Map.of(
                 "pre", info.getPreActions(),
                 "post", info.getPostActions(),
-                "strict_pre", info.isStrictDependencies(),
-                "io", info.isIo()
+                "strict_pre", info.getStrictDependencies(),
+                "io", info.getIo()
         );
         McpSchema.Tool tool = McpSchema.Tool.builder()
                 .name(name)
@@ -305,18 +304,17 @@ public class DynamicActionMcpManager implements AutoCloseable {
                 .build();
         return McpStatelessServerFeatures.AsyncToolSpecification.builder()
                 .tool(tool)
-                .callHandler(buildToolHandler(program))
+                .callHandler(buildToolHandler(program, info.getLauncher()))
                 .build();
     }
 
-    private BiFunction<McpTransportContext, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> buildToolHandler(File program) {
+    private BiFunction<McpTransportContext, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> buildToolHandler(File program, String launcher) {
         return (mcpTransportContext, callToolRequest) -> {
             Map<String, Object> arguments = callToolRequest.arguments();
             if (arguments == null) {
                 arguments = Map.of();
             }
-            String ext = FileUtil.getSuffix(program);
-            String[] commands = commandExecutionService.buildCommands(ext, arguments, program.getAbsolutePath());
+            String[] commands = commandExecutionService.buildCommands(launcher, arguments, program.getAbsolutePath());
             if (commands == null) {
                 return Mono.just(McpSchema.CallToolResult.builder()
                         .addTextContent("未知文件类型: " + program.getName())

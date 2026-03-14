@@ -14,8 +14,12 @@ data class MetaAction(
      */
     val io: Boolean = false,
     /**
+     * 启动器/解释器，对于原生 MCP Tool 、Dynamic Action 来说可忽略，目前仅用于 ORIGIN 类型
+     */
+    val launcher: String? = null,
+    /**
      * 行动程序类型，可分为 MCP、ORIGIN、BUILTIN 三种，
-     * 分别对应读取到的 MCP Tool、生成的临时行动程序、本地内置行动
+     * 分别对应读取到的 MCP Tool、生成的临时行动程序、内置行动
      */
     val type: Type,
     /**

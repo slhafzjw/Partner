@@ -11,18 +11,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CommandExecutionService {
 
-    public String[] buildCommands(String ext, Map<String, Object> params, String absolutePath) {
-        String command = switch (ext) {
-            case "py" -> "python";
-            case "sh" -> "bash";
-            default -> null;
-        };
-        if (command == null) {
-            return null;
-        }
+    public String[] buildCommands(String launcher, Map<String, Object> params, String absolutePath) {
         int paramSize = params == null ? 0 : params.size();
         String[] commands = new String[paramSize + 2];
-        commands[0] = command;
+        commands[0] = launcher;
         commands[1] = absolutePath;
         AtomicInteger paramCount = new AtomicInteger(2);
         if (params != null) {

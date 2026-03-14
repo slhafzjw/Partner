@@ -1,25 +1,44 @@
-package work.slhaf.partner.core.action.entity;
+package work.slhaf.partner.core.action.entity
 
-import com.alibaba.fastjson2.JSONObject;
-import lombok.Data;
+import com.alibaba.fastjson2.JSONObject
 
-import java.util.List;
-import java.util.Map;
 
-@Data
-public class MetaActionInfo {
-    private boolean io;
+data class MetaActionInfo(
+    /**
+     * 是否 IO 密集
+     */
+    val io: Boolean,
+    /**
+     * 所需的启动器/解释器
+     */
+    val launcher: String?,
+    /**
+     * 参数描述
+     */
+    val params: Map<String, String>,
+    /**
+     * 行动功能描述
+     */
+    val description: String,
+    /**
+     * 行动标签
+     */
+    val tags: Set<String>,
+    /**
+     * 前置行动依赖
+     */
+    val preActions: Set<String>,
+    /**
+     * 后置行动依赖
+     */
+    val postActions: Set<String>,
 
-    private Map<String, Object> params;
-    private String description;
-    private List<String> tags;
-
-    private List<String> preActions;
-    private List<String> postActions;
     /**
      * 是否严格依赖前置行动的成功执行，若为true且前置行动失败则不执行该行动，后置任务多为触发式。默认即执行。
      */
-    private boolean strictDependencies;
-
-    private JSONObject responseSchema;
-}
+    val strictDependencies: Boolean,
+    /**
+     * 响应格式说明
+     */
+    val responseSchema: JSONObject,
+)

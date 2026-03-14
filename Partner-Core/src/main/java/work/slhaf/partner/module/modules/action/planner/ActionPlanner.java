@@ -380,12 +380,12 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                     for (String actionKey : actionKeys) {
                         // 根据 actionKey 加载行动信息,并检查是否存在必需前置依赖
                         MetaActionInfo metaActionInfo = actionCapability.loadMetaActionInfo(actionKey);
-                        List<String> preActions = metaActionInfo.getPreActions();
-                        boolean preActionsExist = preActions != null && !preActions.isEmpty();
+                        Set<String> preActions = metaActionInfo.getPreActions();
+                        boolean preActionsExist = preActions.isEmpty();
                         if (!preActionsExist) {
                             continue;
                         }
-                        if (!metaActionInfo.isStrictDependencies()) {
+                        if (!metaActionInfo.getStrictDependencies()) {
                             continue;
                         }
                         if (checkDependenciesExist(lastOrder, preActions, primaryActionChain)) {
@@ -398,8 +398,8 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                         fixed.set(true);
                         List<String> actionsInChain = primaryActionChain.computeIfAbsent(lastOrder,
                                 list -> new ArrayList<>());
-                        preActions = new ArrayList<>(preActions);
-                        preActions.removeAll(actionsInChain);
+                        preActions = new HashSet<>(preActions);
+                        actionsInChain.forEach(preActions::remove);
                         actionsInChain.addAll(preActions);
                         tempOrders.add(lastOrder);
                     }
@@ -418,7 +418,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             }
         }
 
-        private boolean checkDependenciesExist(int lastOrder, List<String> preActions,
+        private boolean checkDependenciesExist(int lastOrder, Set<String> preActions,
                                                Map<Integer, List<String>> primaryActionChain) {
             if (!primaryActionChain.containsKey(lastOrder)) {
                 return false;

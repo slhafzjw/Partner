@@ -46,6 +46,7 @@ public class DynamicActionGenerator extends AbstractAgentModule.Sub<GeneratorInp
             MetaAction tempAction = new MetaAction(
                     input.getActionName(),
                     true,
+                    generatorData.getLauncher(),
                     MetaAction.Type.ORIGIN,
                     location
             );
@@ -63,6 +64,7 @@ public class DynamicActionGenerator extends AbstractAgentModule.Sub<GeneratorInp
         return result;
     }
 
+    // TODO  persist serialize. For now, it can be scheduled as a cycling-triggered StateAction or as a special MetaAction
     private void waitingSerialize() {
         throw new UnsupportedOperationException("Unimplemented method 'waitingSerialize'");
     }

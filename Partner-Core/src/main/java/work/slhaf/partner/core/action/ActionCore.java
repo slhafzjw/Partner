@@ -329,7 +329,8 @@ public class ActionCore extends PartnerCore<ActionCore> {
         MetaAction.Type type = BUILTIN_LOCATION.equals(split[0]) ? MetaAction.Type.BUILTIN : MetaAction.Type.MCP;
         return new MetaAction(
                 split[1],
-                metaActionInfo.isIo(),
+                metaActionInfo.getIo(),
+                metaActionInfo.getLauncher(),
                 type,
                 split[0]
         );

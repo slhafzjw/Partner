@@ -11,7 +11,7 @@ public class RepairerInput {
 
     private String userId;
     private List<Message> recentMessages;
-    private Map<String, Object> params;
+    private Map<String, String> params;
     private String actionDescription;
     private List<HistoryAction> historyActionResults;
 }
