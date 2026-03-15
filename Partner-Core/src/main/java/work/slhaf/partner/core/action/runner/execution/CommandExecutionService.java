@@ -27,13 +27,13 @@ public class CommandExecutionService {
         return exec(commands.toArray(new String[0]));
     }
 
-    public Result exec(String... command) {
+    public Result exec(String... commands) {
         Result result = new Result();
         List<String> output = new ArrayList<>();
         List<String> error = new ArrayList<>();
 
         try {
-            Process process = new ProcessBuilder(command)
+            Process process = new ProcessBuilder(commands)
                     .redirectErrorStream(false)
                     .start();
 
