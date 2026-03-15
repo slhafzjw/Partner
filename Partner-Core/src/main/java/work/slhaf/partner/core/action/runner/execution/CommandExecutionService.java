@@ -23,6 +23,10 @@ public class CommandExecutionService {
         return commands;
     }
 
+    public Result exec(List<String> commands) {
+        return exec(commands.toArray(new String[0]));
+    }
+
     public Result exec(String... command) {
         Result result = new Result();
         List<String> output = new ArrayList<>();
