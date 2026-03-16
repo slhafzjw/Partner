@@ -21,7 +21,7 @@ public class OriginExecutionService {
     public RunnerClient.RunnerResponse run(MetaAction metaAction) {
         RunnerClient.RunnerResponse response = new RunnerClient.RunnerResponse();
         File file = new File(metaAction.getLocation());
-        String[] commands = commandExecutionService.buildCommands(metaAction.getLauncher(), metaAction.getParams(), file.getAbsolutePath());
+        String[] commands = commandExecutionService.buildFileExecutionCommands(metaAction.getLauncher(), metaAction.getParams(), file.getAbsolutePath());
         WrappedLaunchSpec wrapped = ExecutionPolicyRegistry.INSTANCE.prepare(Arrays.stream(commands).toList());
         List<String> wrappedCommands = new ArrayList<>();
         wrappedCommands.add(wrapped.getCommand());

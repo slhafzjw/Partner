@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CommandExecutionService {
 
-    public String[] buildCommands(String launcher, Map<String, Object> params, String absolutePath) {
+    public String[] buildFileExecutionCommands(String launcher, Map<String, Object> params, String absolutePath) {
         int paramSize = params == null ? 0 : params.size();
         String[] commands = new String[paramSize + 2];
         commands[0] = launcher;

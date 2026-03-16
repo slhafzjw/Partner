@@ -314,7 +314,7 @@ public class DynamicActionMcpManager implements AutoCloseable {
             if (arguments == null) {
                 arguments = Map.of();
             }
-            String[] commands = commandExecutionService.buildCommands(launcher, arguments, program.getAbsolutePath());
+            String[] commands = commandExecutionService.buildFileExecutionCommands(launcher, arguments, program.getAbsolutePath());
             if (commands == null) {
                 return Mono.just(McpSchema.CallToolResult.builder()
                         .addTextContent("未知文件类型: " + program.getName())
