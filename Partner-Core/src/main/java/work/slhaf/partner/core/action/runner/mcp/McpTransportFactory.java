@@ -4,32 +4,35 @@ import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 import io.modelcontextprotocol.client.transport.StdioClientTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
+import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class McpTransportFactory {
 
-    public McpClientTransport create(McpTransportConfig config, ExecutionPolicyRegistry policy) {
+    public McpClientTransport create(McpTransportConfig config) {
         return switch (config) {
             case McpTransportConfig.Stdio stdio -> {
-                ServerParameters serverParameters = ServerParameters.builder(stdio.command())
-                        .env(stdio.env())
-                        .args(stdio.args())
+                List<String> commands = new ArrayList<>();
+                commands.add(stdio.command());
+                commands.addAll(stdio.args());
+                WrappedLaunchSpec wrapped = ExecutionPolicyRegistry.INSTANCE.prepare(commands);
+                Map<String, String> env = new HashMap<>(stdio.env());
+                env.putAll(wrapped.getEnvironment());
+                ServerParameters serverParameters = ServerParameters.builder(wrapped.getCommand())
+                        .args(wrapped.getArgs())
+                        .env(env)
                         .build();
                 yield new StdioClientTransport(serverParameters, McpJsonMapper.getDefault());
             }
             case McpTransportConfig.Http http -> {
-                McpSyncHttpClientRequestCustomizer customizer = new McpSyncHttpClientRequestCustomizer() {
-                    @Override
-                    public void customize(HttpRequest.Builder builder, String method, URI endpoint, String body, McpTransportContext context) {
-                        http.headers().forEach(builder::setHeader);
-                    }
-                };
+                McpSyncHttpClientRequestCustomizer customizer = (builder, method, endpoint, body, context) -> http.headers().forEach(builder::setHeader);
                 yield HttpClientSseClientTransport.builder(http.baseUri())
                         .httpRequestCustomizer(customizer)
                         .sseEndpoint(http.endpoint())

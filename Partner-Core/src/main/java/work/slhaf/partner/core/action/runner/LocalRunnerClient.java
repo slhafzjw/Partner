@@ -153,7 +153,7 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
     }
 
     private void registerMcpClient(McpClientRegistry clientRegistry, McpTransportFactory transportFactory, String id, McpTransportConfig transportConfig) {
-        val client = io.modelcontextprotocol.client.McpClient.sync(transportFactory.create(transportConfig, null))
+        val client = io.modelcontextprotocol.client.McpClient.sync(transportFactory.create(transportConfig))
                 .requestTimeout(java.time.Duration.ofSeconds(transportConfig.timeout()))
                 .clientInfo(new io.modelcontextprotocol.spec.McpSchema.Implementation(id, "PARTNER"))
                 .build();

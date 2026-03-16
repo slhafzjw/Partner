@@ -5,8 +5,11 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.runner.LocalRunnerClient;
+import work.slhaf.partner.core.action.runner.policy.ExecutionPolicy;
+import work.slhaf.partner.core.action.runner.policy.RunnerExecutionPolicyListener;
 import work.slhaf.partner.core.action.runner.support.DirectoryWatchSupport;
 
 import java.io.File;
@@ -22,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 @Slf4j
-public class McpConfigWatcher implements AutoCloseable {
+public class McpConfigWatcher implements AutoCloseable, RunnerExecutionPolicyListener {
 
     private final Path root;
     private final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions;
@@ -43,7 +46,7 @@ public class McpConfigWatcher implements AutoCloseable {
         this.mcpClientRegistry = mcpClientRegistry;
         this.mcpTransportFactory = mcpTransportFactory;
         this.mcpMetaRegistry = mcpMetaRegistry;
-        this.watchSupport = new DirectoryWatchSupport(new DirectoryWatchSupport.Context(root), executor, false, () -> loadInitial())
+        this.watchSupport = new DirectoryWatchSupport(new DirectoryWatchSupport.Context(root), executor, false, this::loadInitial)
                 .onCreate(this::handleCreate)
                 .onModify((thisDir, context) -> checkAndReload(true))
                 .onDelete(this::handleDelete)
@@ -108,7 +111,7 @@ public class McpConfigWatcher implements AutoCloseable {
     }
 
     private void registerMcpClient(String id, McpTransportConfig transportConfig) {
-        McpSyncClient client = McpClient.sync(mcpTransportFactory.create(transportConfig, null))
+        McpSyncClient client = McpClient.sync(mcpTransportFactory.create(transportConfig))
                 .requestTimeout(Duration.ofSeconds(transportConfig.timeout()))
                 .clientInfo(new McpSchema.Implementation(id, "PARTNER"))
                 .build();
@@ -287,6 +290,11 @@ public class McpConfigWatcher implements AutoCloseable {
     @Override
     public void close() throws Exception {
         watchSupport.close();
+    }
+
+    @Override
+    public void onPolicyChanged(@NotNull ExecutionPolicy policy) {
+        checkAndReload(false);
     }
 
     private record McpConfigFileRecord(long lastModified, long length, Map<String, McpTransportConfig> paramsCacheMap) {
