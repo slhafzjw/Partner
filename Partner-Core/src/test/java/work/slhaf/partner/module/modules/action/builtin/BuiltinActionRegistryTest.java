@@ -42,7 +42,7 @@ class BuiltinActionRegistryTest {
     private static BuiltinActionRegistry.BuiltinActionDefinition buildDefinition(
             String name,
             MetaActionInfo metaActionInfo,
-            java.util.function.Function<Map<String, Object>, Object> invoker
+            java.util.function.Function<Map<String, Object>, String> invoker
     ) {
         return new BuiltinActionRegistry.BuiltinActionDefinition(
                 BUILTIN_LOCATION + "::" + name,
@@ -59,7 +59,7 @@ class BuiltinActionRegistryTest {
 
         BuiltinActionRegistry registry = spy(new BuiltinActionRegistry());
         doReturn(List.of(
-                buildDefinition("echo", buildMetaActionInfo("echo"), params -> params.get("value"))
+                buildDefinition("echo", buildMetaActionInfo("echo"), params -> params.get("value").toString())
         )).when(registry).buildDefaultActionDefinitions();
         injectActionCapability(registry, actionCapability);
 
@@ -75,8 +75,8 @@ class BuiltinActionRegistryTest {
     @Test
     void testCallReturnsStringifiedResults() {
         BuiltinActionRegistry registry = new BuiltinActionRegistry();
-        registry.defineBuiltinAction("echo", buildMetaActionInfo("echo"), params -> params.get("value"));
-        registry.defineBuiltinAction("json", buildMetaActionInfo("json"), params -> Map.of("ok", true));
+        registry.defineBuiltinAction("echo", buildMetaActionInfo("echo"), params -> params.get("value").toString());
+        registry.defineBuiltinAction("json", buildMetaActionInfo("json"), params -> Map.of("ok", true).toString());
         registry.defineBuiltinAction("nil", buildMetaActionInfo("nil"), params -> null);
 
         Assertions.assertEquals("hello", registry.call("builtin::echo", Map.of("value", "hello")));
