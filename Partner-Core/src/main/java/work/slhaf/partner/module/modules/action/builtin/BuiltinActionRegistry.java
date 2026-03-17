@@ -1,6 +1,5 @@
 package work.slhaf.partner.module.modules.action.builtin;
 
-import com.alibaba.fastjson2.JSONObject;
 import lombok.Getter;
 import lombok.NonNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
@@ -38,27 +37,21 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
         return List.of();
     }
 
-    public void defineBuiltinAction(String name, MetaActionInfo metaActionInfo, Function<Map<String, Object>, Object> invoker) {
+    public void defineBuiltinAction(String name, MetaActionInfo metaActionInfo, Function<Map<String, String>, String> invoker) {
         BuiltinActionDefinition definition = new BuiltinActionDefinition(BUILTIN_LOCATION + "::" + name, metaActionInfo, invoker);
         definitions.put(definition.actionKey(), definition);
     }
 
-    public String call(@NonNull String actionKey, @NonNull Map<String, Object> params) {
+    public String call(@NonNull String actionKey, @NonNull Map<String, String> params) {
         BuiltinActionDefinition definition = definitions.get(actionKey);
         if (definition == null) {
             throw new MetaActionNotFoundException("未找到对应的内置行动程序: " + actionKey);
         }
-        Object result = definition.invoker().apply(params);
+        String result = definition.invoker().apply(params);
         if (result == null) {
             return "null";
         }
-        if (result instanceof String string) {
-            return string;
-        }
-        if (result instanceof Number || result instanceof Boolean || result instanceof Map || result instanceof Iterable) {
-            return JSONObject.toJSONString(result);
-        }
-        return String.valueOf(result);
+        return result;
     }
 
     private Map<String, MetaActionInfo> exportMetaActionInfos() {
@@ -70,7 +63,7 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
     public record BuiltinActionDefinition(
             String actionKey,
             MetaActionInfo metaActionInfo,
-            Function<Map<String, Object>, Object> invoker
+            Function<Map<String, String>, String> invoker
     ) {
     }
 }
