@@ -95,6 +95,7 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
                     executor
             );
             configWatcher.start();
+            configWatcher.registerPolicyListener();
         } catch (Exception e) {
             closeQuietly(configWatcher);
             closeQuietly(dynamicManager);

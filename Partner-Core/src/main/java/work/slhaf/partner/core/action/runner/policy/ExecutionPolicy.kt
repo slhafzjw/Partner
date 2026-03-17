@@ -112,4 +112,8 @@ abstract class PolicyProvider(
 
 interface RunnerExecutionPolicyListener {
     fun onPolicyChanged(policy: ExecutionPolicy)
+
+    fun registerPolicyListener() {
+        ExecutionPolicyRegistry.addListener(this)
+    }
 }
