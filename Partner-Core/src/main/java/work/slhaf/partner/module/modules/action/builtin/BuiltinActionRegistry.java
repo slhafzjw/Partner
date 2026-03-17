@@ -43,6 +43,11 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
         return List.of();
     }
 
+    public void defineBuiltinAction(String name, MetaActionInfo metaActionInfo, Function<Map<String, Object>, Object> invoker) {
+        BuiltinActionDefinition definition = new BuiltinActionDefinition(name, metaActionInfo, invoker);
+        definitions.put(definition.actionKey(), definition);
+    }
+
     public String call(@NonNull String actionKey, @NonNull Map<String, Object> params) {
         BuiltinActionDefinition definition = definitions.get(actionKey);
         if (definition == null) {
