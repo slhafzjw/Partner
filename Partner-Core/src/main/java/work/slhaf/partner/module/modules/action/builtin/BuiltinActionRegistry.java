@@ -65,5 +65,39 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
             MetaActionInfo metaActionInfo,
             Function<Map<String, Object>, String> invoker
     ) {
+
+        static String requireString(Map<String, Object> params, String key) {
+            Object value = params.get(key);
+            if (value == null) {
+                throw new IllegalArgumentException("缺少参数: " + key);
+            }
+            if (!(value instanceof String s)) {
+                throw new IllegalArgumentException("参数 " + key + " 必须为字符串");
+            }
+            return s;
+        }
+
+        static String optionalString(Map<String, Object> params, String key, String defaultValue) {
+            Object value = params.get(key);
+            if (value == null) {
+                return defaultValue;
+            }
+            if (!(value instanceof String s)) {
+                throw new IllegalArgumentException("参数 " + key + " 必须为字符串");
+            }
+            return s;
+        }
+
+        static Integer optionalInt(Map<String, Object> params, String key, Integer defaultValue) {
+            Object value = params.get(key);
+            if (value == null) {
+                return defaultValue;
+            }
+            if (value instanceof Number n) {
+                return n.intValue();
+            }
+            throw new IllegalArgumentException("参数 " + key + " 必须为整数");
+        }
+
     }
 }
