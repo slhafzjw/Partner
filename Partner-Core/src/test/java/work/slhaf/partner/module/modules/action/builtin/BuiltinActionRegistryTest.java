@@ -77,7 +77,7 @@ class BuiltinActionRegistryTest {
                 BuiltinActionRegistry.definition("nil", buildMetaActionInfo("nil"), params -> null)
         ));
 
-        registry.getDefinitions().putAll(indexDefinitions(registry.buildDefinitions()));
+        registry.getDefinitions().putAll(indexDefinitions(registry.buildDefaultActionDefinitions()));
 
         Assertions.assertEquals("hello", registry.call("builtin::echo", Map.of("value", "hello")));
         Assertions.assertEquals("{\"ok\":true}", registry.call("builtin::json", Map.of()));
@@ -97,7 +97,7 @@ class BuiltinActionRegistryTest {
                     throw new IllegalStateException("boom");
                 })
         ));
-        registry.getDefinitions().putAll(indexDefinitions(registry.buildDefinitions()));
+        registry.getDefinitions().putAll(indexDefinitions(registry.buildDefaultActionDefinitions()));
 
         IllegalStateException exception = Assertions.assertThrows(IllegalStateException.class,
                 () -> registry.call("builtin::boom", Map.of()));
@@ -128,7 +128,7 @@ class BuiltinActionRegistryTest {
         }
 
         @Override
-        protected List<BuiltinActionDefinition> buildDefinitions() {
+        protected List<BuiltinActionDefinition> buildDefaultActionDefinitions() {
             return definitions;
         }
     }

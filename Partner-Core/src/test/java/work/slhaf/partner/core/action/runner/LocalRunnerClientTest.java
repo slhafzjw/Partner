@@ -890,7 +890,7 @@ public class LocalRunnerClientTest {
             LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
             BuiltinActionRegistry registry = new BuiltinActionRegistry() {
                 @Override
-                protected List<BuiltinActionDefinition> buildDefinitions() {
+                protected List<BuiltinActionDefinition> buildDefaultActionDefinitions() {
                     return List.of(
                             definition("echo", buildMetaActionInfo("echo"), params -> params.get("value"))
                     );

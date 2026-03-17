@@ -32,14 +32,14 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
     @Init
     public void init() {
         definitions.clear();
-        for (BuiltinActionDefinition definition : buildDefinitions()) {
+        for (BuiltinActionDefinition definition : buildDefaultActionDefinitions()) {
             definitions.put(definition.actionKey(), definition);
         }
         actionCapability.registerMetaActions(exportMetaActionInfos());
         actionCapability.runnerClient().setBuiltinActionRegistry(this);
     }
 
-    protected List<BuiltinActionDefinition> buildDefinitions() {
+    protected List<BuiltinActionDefinition> buildDefaultActionDefinitions() {
         return List.of();
     }
 
