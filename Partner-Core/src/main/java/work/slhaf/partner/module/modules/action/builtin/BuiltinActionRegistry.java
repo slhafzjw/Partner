@@ -24,11 +24,6 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
     @InjectCapability
     private ActionCapability actionCapability;
 
-    public static BuiltinActionDefinition definition(String name, MetaActionInfo metaActionInfo,
-                                                     Function<Map<String, Object>, Object> invoker) {
-        return new BuiltinActionDefinition(BUILTIN_LOCATION + "::" + name, metaActionInfo, invoker);
-    }
-
     @Init
     public void init() {
         definitions.clear();
@@ -44,7 +39,7 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
     }
 
     public void defineBuiltinAction(String name, MetaActionInfo metaActionInfo, Function<Map<String, Object>, Object> invoker) {
-        BuiltinActionDefinition definition = new BuiltinActionDefinition(name, metaActionInfo, invoker);
+        BuiltinActionDefinition definition = new BuiltinActionDefinition(BUILTIN_LOCATION + "::" + name, metaActionInfo, invoker);
         definitions.put(definition.actionKey(), definition);
     }
 

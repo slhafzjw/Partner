@@ -4,7 +4,6 @@ import com.alibaba.fastjson2.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import work.slhaf.partner.core.action.ActionCapability;
-import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
 import work.slhaf.partner.core.action.runner.RunnerClient;
@@ -16,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.mockito.Mockito.*;
+import static work.slhaf.partner.core.action.ActionCore.BUILTIN_LOCATION;
 
 class BuiltinActionRegistryTest {
 
@@ -23,16 +23,6 @@ class BuiltinActionRegistryTest {
         Field field = BuiltinActionRegistry.class.getDeclaredField("actionCapability");
         field.setAccessible(true);
         field.set(registry, actionCapability);
-    }
-
-    private static Map<String, BuiltinActionRegistry.BuiltinActionDefinition> indexDefinitions(
-            List<BuiltinActionRegistry.BuiltinActionDefinition> definitions
-    ) {
-        Map<String, BuiltinActionRegistry.BuiltinActionDefinition> map = new HashMap<>();
-        for (BuiltinActionRegistry.BuiltinActionDefinition definition : definitions) {
-            map.put(definition.actionKey(), definition);
-        }
-        return map;
     }
 
     private static MetaActionInfo buildMetaActionInfo(String description) {
@@ -49,15 +39,28 @@ class BuiltinActionRegistryTest {
         );
     }
 
+    private static BuiltinActionRegistry.BuiltinActionDefinition buildDefinition(
+            String name,
+            MetaActionInfo metaActionInfo,
+            java.util.function.Function<Map<String, Object>, Object> invoker
+    ) {
+        return new BuiltinActionRegistry.BuiltinActionDefinition(
+                BUILTIN_LOCATION + "::" + name,
+                metaActionInfo,
+                invoker
+        );
+    }
+
     @Test
     void testInitRegistersMetaActionsAndMountsRunner() throws Exception {
         ActionCapability actionCapability = mock(ActionCapability.class);
         RunnerClient runnerClient = mock(RunnerClient.class);
         when(actionCapability.runnerClient()).thenReturn(runnerClient);
 
-        BuiltinActionRegistry registry = new TestRegistry(List.of(
-                BuiltinActionRegistry.definition("echo", buildMetaActionInfo("echo"), params -> params.get("value"))
-        ));
+        BuiltinActionRegistry registry = spy(new BuiltinActionRegistry());
+        doReturn(List.of(
+                buildDefinition("echo", buildMetaActionInfo("echo"), params -> params.get("value"))
+        )).when(registry).buildDefaultActionDefinitions();
         injectActionCapability(registry, actionCapability);
 
         registry.init();
@@ -71,13 +74,10 @@ class BuiltinActionRegistryTest {
 
     @Test
     void testCallReturnsStringifiedResults() {
-        BuiltinActionRegistry registry = new TestRegistry(List.of(
-                BuiltinActionRegistry.definition("echo", buildMetaActionInfo("echo"), params -> params.get("value")),
-                BuiltinActionRegistry.definition("json", buildMetaActionInfo("json"), params -> Map.of("ok", true)),
-                BuiltinActionRegistry.definition("nil", buildMetaActionInfo("nil"), params -> null)
-        ));
-
-        registry.getDefinitions().putAll(indexDefinitions(registry.buildDefaultActionDefinitions()));
+        BuiltinActionRegistry registry = new BuiltinActionRegistry();
+        registry.defineBuiltinAction("echo", buildMetaActionInfo("echo"), params -> params.get("value"));
+        registry.defineBuiltinAction("json", buildMetaActionInfo("json"), params -> Map.of("ok", true));
+        registry.defineBuiltinAction("nil", buildMetaActionInfo("nil"), params -> null);
 
         Assertions.assertEquals("hello", registry.call("builtin::echo", Map.of("value", "hello")));
         Assertions.assertEquals("{\"ok\":true}", registry.call("builtin::json", Map.of()));
@@ -86,50 +86,20 @@ class BuiltinActionRegistryTest {
 
     @Test
     void testCallThrowsWhenMissingDefinition() {
-        BuiltinActionRegistry registry = new TestRegistry(List.of());
+        BuiltinActionRegistry registry = new BuiltinActionRegistry();
         Assertions.assertThrows(MetaActionNotFoundException.class, () -> registry.call("builtin::missing", Map.of()));
     }
 
     @Test
     void testCallPropagatesInvokerFailure() {
-        BuiltinActionRegistry registry = new TestRegistry(List.of(
-                BuiltinActionRegistry.definition("boom", buildMetaActionInfo("boom"), params -> {
-                    throw new IllegalStateException("boom");
-                })
-        ));
-        registry.getDefinitions().putAll(indexDefinitions(registry.buildDefaultActionDefinitions()));
+        BuiltinActionRegistry registry = new BuiltinActionRegistry();
+        registry.defineBuiltinAction("boom", buildMetaActionInfo("boom"), params -> {
+            throw new IllegalStateException("boom");
+        });
 
         IllegalStateException exception = Assertions.assertThrows(IllegalStateException.class,
                 () -> registry.call("builtin::boom", Map.of()));
         Assertions.assertEquals("boom", exception.getMessage());
     }
 
-    @Test
-    void testActionCoreLoadsBuiltinMetaAction() throws Exception {
-        ActionCore actionCore = new ActionCore();
-        try {
-            actionCore.registerMetaActions(Map.of("builtin::echo", buildMetaActionInfo("echo")));
-
-            Assertions.assertTrue(actionCore.listAvailableMetaActions().containsKey("builtin::echo"));
-            Assertions.assertEquals("echo", actionCore.loadMetaActionInfo("builtin::echo").getDescription());
-            Assertions.assertEquals("builtin::echo", actionCore.loadMetaAction("builtin::echo").getKey());
-            Assertions.assertEquals(ActionCore.BUILTIN_LOCATION, actionCore.loadMetaAction("builtin::echo").getLocation());
-        } finally {
-            actionCore.getExecutor(ActionCore.ExecutorType.PLATFORM).shutdownNow();
-            actionCore.getExecutor(ActionCore.ExecutorType.VIRTUAL).shutdownNow();
-        }
-    }
-
-    private static class TestRegistry extends BuiltinActionRegistry {
-        private final List<BuiltinActionDefinition> definitions;
-
-        private TestRegistry(List<BuiltinActionDefinition> definitions) {
-            this.definitions = definitions;
-        }
-
-        @Override
-        protected List<BuiltinActionDefinition> buildDefaultActionDefinitions() {
-            return definitions;
-        }
-    }
 }

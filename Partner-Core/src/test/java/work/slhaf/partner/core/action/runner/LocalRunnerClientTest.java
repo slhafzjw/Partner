@@ -888,19 +888,9 @@ public class LocalRunnerClientTest {
             ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
             LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
-            BuiltinActionRegistry registry = new BuiltinActionRegistry() {
-                @Override
-                protected List<BuiltinActionDefinition> buildDefaultActionDefinitions() {
-                    return List.of(
-                            definition("echo", buildMetaActionInfo("echo"), params -> params.get("value"))
-                    );
-                }
-            };
+            BuiltinActionRegistry registry = new BuiltinActionRegistry();
             client.setBuiltinActionRegistry(registry);
-            registry.getDefinitions().put(
-                    "builtin::echo",
-                    BuiltinActionRegistry.definition("echo", buildMetaActionInfo("echo"), params -> params.get("value"))
-            );
+            registry.defineBuiltinAction("echo", buildMetaActionInfo("echo"), params -> params.get("value"));
 
             try {
                 MetaAction metaAction = buildMetaAction(MetaAction.Type.BUILTIN, "builtin", "echo", Map.of("value", "ok"));
