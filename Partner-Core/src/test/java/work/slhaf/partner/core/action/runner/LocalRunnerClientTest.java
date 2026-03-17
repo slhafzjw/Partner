@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.runner.policy.ExecutionPolicy;
+import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
+import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
 import work.slhaf.partner.module.modules.action.builtin.BuiltinActionRegistry;
 
 import java.io.IOException;
@@ -380,6 +383,38 @@ public class LocalRunnerClientTest {
             } finally {
                 executor.shutdownNow();
             }
+        }
+    }
+
+    @Test
+    void testLocalRunnerClientRegisterBwrapPolicyProvider(@TempDir Path tempDir) {
+        ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+             LocalRunnerClient ignored = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString())) {
+            ExecutionPolicyRegistry.INSTANCE.updatePolicy(new ExecutionPolicy(
+                    ExecutionPolicy.Mode.SANDBOX,
+                    "bwrap",
+                    ExecutionPolicy.Network.DISABLE,
+                    false,
+                    Map.of("A", "B"),
+                    tempDir.toString(),
+                    Set.of("/etc"),
+                    Set.of(tempDir.toString())
+            ));
+            WrappedLaunchSpec wrapped = ExecutionPolicyRegistry.INSTANCE.prepare(List.of("python", "demo.py"));
+            Assertions.assertEquals("bwrap", wrapped.getCommand());
+            Assertions.assertTrue(wrapped.getArgs().contains("--unshare-net"));
+        } finally {
+            ExecutionPolicyRegistry.INSTANCE.updatePolicy(new ExecutionPolicy(
+                    ExecutionPolicy.Mode.DIRECT,
+                    "direct",
+                    ExecutionPolicy.Network.ENABLE,
+                    true,
+                    Map.of(),
+                    null,
+                    Set.of(),
+                    Set.of()
+            ));
         }
     }
 

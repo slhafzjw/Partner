@@ -11,6 +11,8 @@ import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
 import work.slhaf.partner.core.action.runner.execution.McpActionExecutor;
 import work.slhaf.partner.core.action.runner.execution.OriginExecutionService;
 import work.slhaf.partner.core.action.runner.mcp.*;
+import work.slhaf.partner.core.action.runner.policy.BwrapPolicyProvider;
+import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
 import work.slhaf.partner.core.action.runner.support.ActionSerializer;
 
 import java.io.IOException;
@@ -69,6 +71,8 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
         McpConfigWatcher configWatcher = null;
 
         try {
+            ExecutionPolicyRegistry.INSTANCE.registerPolicyProvider(BwrapPolicyProvider.INSTANCE);
+
             metaRegistry = new McpMetaRegistry(existedMetaActions);
             registerMcpClient(clientRegistry, transportFactory, MCP_NAME_DESC, metaRegistry.clientConfig(MCP_NAME_DESC, 10));
             log.info("DescMcp 注册完毕");
