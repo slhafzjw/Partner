@@ -1,5 +1,7 @@
 package work.slhaf.partner.core.action.runner;
 
+import cn.hutool.system.OsInfo;
+import cn.hutool.system.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.Nullable;
@@ -71,7 +73,8 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
         McpConfigWatcher configWatcher = null;
 
         try {
-            ExecutionPolicyRegistry.INSTANCE.registerPolicyProvider(BwrapPolicyProvider.INSTANCE);
+
+            registerPolicyProviders();
 
             metaRegistry = new McpMetaRegistry(existedMetaActions);
             registerMcpClient(clientRegistry, transportFactory, MCP_NAME_DESC, metaRegistry.clientConfig(MCP_NAME_DESC, 10));
@@ -121,6 +124,13 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
         this.mcpConfigWatcher = configWatcher;
 
         setupShutdownHook();
+    }
+
+    private void registerPolicyProviders() {
+        OsInfo os = SystemUtil.getOsInfo();
+        if (os.isLinux()) {
+            ExecutionPolicyRegistry.INSTANCE.registerPolicyProvider(BwrapPolicyProvider.INSTANCE);
+        }
     }
 
     @Override
