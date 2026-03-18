@@ -7,9 +7,13 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CommandExecutionService {
+
+    private ExecutorService readerExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     public String[] buildFileExecutionCommands(String launcher, Map<String, Object> params, String absolutePath) {
         int paramSize = params == null ? 0 : params.size();
@@ -57,8 +61,8 @@ public class CommandExecutionService {
                 }
             });
 
-            stdoutThread.start();
-            stderrThread.start();
+            readerExecutor.execute(stdoutThread);
+            readerExecutor.execute(stderrThread);
 
             int exitCode = process.waitFor();
             stdoutThread.join();
@@ -80,5 +84,9 @@ public class CommandExecutionService {
         private boolean ok;
         private String total;
         private List<String> resultList;
+    }
+
+    @Data
+    public static class CommandSessionResult {
     }
 }
