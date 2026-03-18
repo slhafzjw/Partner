@@ -23,6 +23,8 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
     @InjectCapability
     private ActionCapability actionCapability;
 
+    private final BuiltinCommandActionManager builtinCommandActionManager = new BuiltinCommandActionManager();
+
     @Init
     public void init() {
         definitions.clear();
@@ -34,7 +36,14 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
     }
 
     protected List<BuiltinActionDefinition> buildDefaultActionDefinitions() {
-        return List.of();
+        return List.of(
+                builtinCommandActionManager.buildCommandExecuteDefinition(),
+                builtinCommandActionManager.buildCommandStartDefinition(),
+                builtinCommandActionManager.buildCommandInspectDefinition(),
+                builtinCommandActionManager.buildCommandReadDefinition(),
+                builtinCommandActionManager.buildCommandCancelDefinition(),
+                builtinCommandActionManager.buildCommandOverviewDefinition()
+        );
     }
 
     public void defineBuiltinAction(String name, MetaActionInfo metaActionInfo, Function<Map<String, Object>, String> invoker) {
