@@ -9,7 +9,6 @@ import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
-import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
 import work.slhaf.partner.core.action.runner.execution.McpActionExecutor;
 import work.slhaf.partner.core.action.runner.execution.OriginExecutionService;
 import work.slhaf.partner.core.action.runner.mcp.*;
@@ -38,7 +37,6 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
 
     private final McpClientRegistry mcpClientRegistry;
     private final McpTransportFactory mcpTransportFactory;
-    private final CommandExecutionService commandExecutionService;
     private final ActionSerializer actionSerializer;
     private final OriginExecutionService originExecutionService;
     private final McpActionExecutor mcpActionExecutor;
@@ -62,9 +60,8 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
 
         McpClientRegistry clientRegistry = new McpClientRegistry();
         McpTransportFactory transportFactory = new McpTransportFactory();
-        CommandExecutionService commandService = new CommandExecutionService();
         ActionSerializer serializer = new ActionSerializer(tmpActionPath, dynamicActionPath);
-        OriginExecutionService originService = new OriginExecutionService(commandService);
+        OriginExecutionService originService = new OriginExecutionService();
         McpActionExecutor actionExecutor = new McpActionExecutor(clientRegistry);
 
         McpMetaRegistry metaRegistry = null;
@@ -86,8 +83,7 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
             dynamicManager = new DynamicActionMcpManager(
                     Path.of(dynamicActionPath),
                     existedMetaActions,
-                    executor,
-                    commandService
+                    executor
             );
             registerMcpClient(clientRegistry, transportFactory, MCP_NAME_DYNAMIC, dynamicManager.clientConfig(10));
             log.info("DynamicActionMcp 注册完毕");
@@ -114,7 +110,6 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
 
         this.mcpClientRegistry = clientRegistry;
         this.mcpTransportFactory = transportFactory;
-        this.commandExecutionService = commandService;
         this.actionSerializer = serializer;
         this.originExecutionService = originService;
         this.mcpActionExecutor = actionExecutor;

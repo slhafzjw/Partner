@@ -45,11 +45,10 @@ public class DynamicActionMcpManager implements AutoCloseable {
 
     public DynamicActionMcpManager(Path root,
                                    ConcurrentHashMap<String, MetaActionInfo> existedMetaActions,
-                                   ExecutorService executor,
-                                   CommandExecutionService commandExecutionService) throws IOException {
+                                   ExecutorService executor) throws IOException {
         this.root = root;
         this.existedMetaActions = existedMetaActions;
-        this.commandExecutionService = commandExecutionService;
+        this.commandExecutionService = CommandExecutionService.INSTANCE;
         InProcessMcpTransport.Pair pair = InProcessMcpTransport.pair();
         this.clientTransport = pair.clientSide();
         McpSchema.ServerCapabilities serverCapabilities = McpSchema.ServerCapabilities.builder()

@@ -12,7 +12,7 @@ import java.util.Map;
 
 class CommandExecutionServiceTest {
 
-    private final CommandExecutionService service = new CommandExecutionService();
+    private final CommandExecutionService service = CommandExecutionService.INSTANCE;
 
     @Test
     void testBuildFileExecutionCommandsWithOrderedParams() {

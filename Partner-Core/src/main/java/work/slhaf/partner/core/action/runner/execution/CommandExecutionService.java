@@ -13,7 +13,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class CommandExecutionService {
 
-    private ExecutorService readerExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    public static final CommandExecutionService INSTANCE = new CommandExecutionService();
+
+    private final ExecutorService readerExecutor = Executors.newVirtualThreadPerTaskExecutor();
+
+    private CommandExecutionService() {
+    }
 
     public String[] buildFileExecutionCommands(String launcher, Map<String, Object> params, String absolutePath) {
         int paramSize = params == null ? 0 : params.size();

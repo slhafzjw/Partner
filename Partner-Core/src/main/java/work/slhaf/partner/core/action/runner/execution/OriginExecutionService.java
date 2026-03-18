@@ -12,21 +12,18 @@ import java.util.List;
 
 public class OriginExecutionService {
 
-    private final CommandExecutionService commandExecutionService;
-
-    public OriginExecutionService(CommandExecutionService commandExecutionService) {
-        this.commandExecutionService = commandExecutionService;
+    public OriginExecutionService() {
     }
 
     public RunnerClient.RunnerResponse run(MetaAction metaAction) {
         RunnerClient.RunnerResponse response = new RunnerClient.RunnerResponse();
         File file = new File(metaAction.getLocation());
-        String[] commands = commandExecutionService.buildFileExecutionCommands(metaAction.getLauncher(), metaAction.getParams(), file.getAbsolutePath());
+        String[] commands = CommandExecutionService.INSTANCE.buildFileExecutionCommands(metaAction.getLauncher(), metaAction.getParams(), file.getAbsolutePath());
         WrappedLaunchSpec wrapped = ExecutionPolicyRegistry.INSTANCE.prepare(Arrays.stream(commands).toList());
         List<String> wrappedCommands = new ArrayList<>();
         wrappedCommands.add(wrapped.getCommand());
         wrappedCommands.addAll(wrapped.getArgs());
-        CommandExecutionService.Result execResult = commandExecutionService.exec(wrappedCommands);
+        CommandExecutionService.Result execResult = CommandExecutionService.INSTANCE.exec(wrappedCommands);
         response.setOk(execResult.isOk());
         response.setData(execResult.getTotal());
         return response;

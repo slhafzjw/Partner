@@ -890,7 +890,7 @@ public class LocalRunnerClientTest {
             LocalRunnerClient client = new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
             BuiltinActionRegistry registry = new BuiltinActionRegistry();
             client.setBuiltinActionRegistry(registry);
-            registry.defineBuiltinAction("echo", buildMetaActionInfo("echo"), params -> params.get("value"));
+            registry.defineBuiltinAction("echo", buildMetaActionInfo("echo"), params -> params.get("value").toString());
 
             try {
                 MetaAction metaAction = buildMetaAction(MetaAction.Type.BUILTIN, "builtin", "echo", Map.of("value", "ok"));
