@@ -90,4 +90,31 @@ class CommandExecutionServiceTest {
         Assertions.assertEquals(List.of("out"), result.getResultList());
         Assertions.assertEquals("out", result.getTotal());
     }
+
+    @Test
+    void testCreateSessionTaskCollectsStdoutAndStderr() throws Exception {
+        CommandExecutionService.CommandSession session = service.createSessionTask(
+                "sh", "-lc", "printf 'hello\\nworld\\n'; printf 'oops\\n' >&2"
+        );
+
+        session.getProcess().waitFor();
+        waitForBufferContains(session.getStdoutBuffer(), "world");
+        waitForBufferContains(session.getStderrBuffer(), "oops");
+
+        Assertions.assertEquals("hello\nworld", session.getStdoutBuffer().toString());
+        Assertions.assertEquals("oops", session.getStderrBuffer().toString());
+    }
+
+    private void waitForBufferContains(StringBuilder buffer, String expected) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 2000;
+        while (System.currentTimeMillis() < deadline) {
+            synchronized (buffer) {
+                if (buffer.toString().contains(expected)) {
+                    return;
+                }
+            }
+            Thread.sleep(20);
+        }
+        Assertions.fail("buffer did not contain expected text: " + expected);
+    }
 }
