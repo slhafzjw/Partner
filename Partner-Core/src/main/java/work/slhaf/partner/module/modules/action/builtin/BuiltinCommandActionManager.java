@@ -1,15 +1,28 @@
 package work.slhaf.partner.module.modules.action.builtin;
 
+import com.alibaba.fastjson2.JSONObject;
 import lombok.AllArgsConstructor;
+import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
+import java.util.function.Function;
+
+import static work.slhaf.partner.core.action.ActionCore.BUILTIN_LOCATION;
 
 class BuiltinCommandActionManager {
 
+    private static final String COMMAND_LOCATION = BUILTIN_LOCATION + "::" + "command";
+
+    private final Set<String> basicTags = Set.of("Builtin MetaAction", "System Command Tool");
+
     private ConcurrentHashMap<String, CommandHandle> commandHandles = new ConcurrentHashMap<>();
+    private CommandExecutionService commandExecutionService = CommandExecutionService.INSTANCE;
 
     /**
      * 用于直接执行的 Builtin MetaAction
@@ -17,7 +30,31 @@ class BuiltinCommandActionManager {
      * @return 内建 MetaAction 定义数据，参数为常规命令列表，返回值为该命令的响应内容
      */
     BuiltinActionRegistry.BuiltinActionDefinition buildCommandExecuteDefinition() {
-        return null;
+        Set<String> tags = new HashSet<>(basicTags);
+        tags.add("Command Execution");
+        MetaActionInfo info = new MetaActionInfo(
+                false,
+                null,
+                Map.of("Command Arguments", "Command Arguments"),
+                "Execute any allowed system commands and get result instantly, the number of arguments is not limited.",
+                tags,
+                Set.of(),
+                Set.of(createActionKey("inspect")),
+                false,
+                JSONObject.of("result", "Command execution result.")
+        );
+        Function<Map<String, Object>, String> invoker = params -> {
+            List<String> commands = params.keySet().stream()
+                    .map(paramKey -> BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, paramKey))
+                    .toList();
+            CommandExecutionService.Result result = commandExecutionService.exec(commands);
+            return JSONObject.of("result", result.getTotal()).toJSONString();
+        };
+        return new BuiltinActionRegistry.BuiltinActionDefinition(
+                createActionKey("execute"),
+                info,
+                invoker
+        );
     }
 
     /**
@@ -65,6 +102,10 @@ class BuiltinCommandActionManager {
         return null;
     }
 
+    private String createActionKey(String actionName) {
+        return COMMAND_LOCATION + "::" + actionName;
+    }
+
     @AllArgsConstructor
     private static class CommandHandle {
         private String executionId;
@@ -82,9 +123,6 @@ class BuiltinCommandActionManager {
          * stderr 输出内容
          */
         private StringBuilder stderrBuffer;
-
-        private Future<?> stdoutReaderTask;
-        private Future<?> stderrReaderTask;
 
         /**
          * 退出码：进程未结束时可为 null
