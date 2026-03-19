@@ -95,7 +95,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     private void tryAutoUpdate() {
         long currentTime = System.currentTimeMillis();
         int chatCount = cognationCapability.snapshotChatMessages().size();
-        if (currentTime - perceiveCapability.showLastInteract() > UPDATE_TRIGGER_INTERVAL && chatCount > 1) {
+        if (currentTime - perceiveCapability.showLastInteract().toEpochMilli() > UPDATE_TRIGGER_INTERVAL && chatCount > 1) {
             triggerMemoryUpdate(true);
             log.info("[MemoryUpdater] 记忆更新: 自动触发");
         }

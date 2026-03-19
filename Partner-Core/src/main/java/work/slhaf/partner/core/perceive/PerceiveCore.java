@@ -37,8 +37,8 @@ public class PerceiveCore extends PartnerCore<PerceiveCore> {
     }
 
     @CapabilityMethod
-    public long showLastInteract() {
-        return lastInteractTime.toEpochMilli();
+    public Instant showLastInteract() {
+        return lastInteractTime;
     }
 
     @Override
