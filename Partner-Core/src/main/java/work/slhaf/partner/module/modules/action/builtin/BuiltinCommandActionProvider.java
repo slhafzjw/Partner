@@ -54,7 +54,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 Set.of(),
                 Set.of(createActionKey("inspect")),
                 false,
-                JSONObject.of("result", "Command execution result.")
+                JSONObject.of("result", "Command execution result text.")
         );
         Function<Map<String, Object>, String> invoker = params -> {
             List<String> commands = requireCommandArguments(params);
@@ -130,7 +130,17 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 Set.of(createActionKey("overview")),
                 Set.of(),
                 false,
-                JSONObject.of("result", "CommandInspectData")
+                JSONObject.of(
+                        "executionId", "Command execution session id.",
+                        "desc", "Command session description.",
+                        "exitCode", "Process exit code. Null when the process is still running.",
+                        "stdoutSize", "Current stdout buffer size in characters.",
+                        "stderrSize", "Current stderr buffer size in characters.",
+                        "stdoutSummary", "Summary text for stdout output.",
+                        "stderrSummary", "Summary text for stderr output.",
+                        "startAt", "Command session start time.",
+                        "endAt", "Command session end time. Null when the process is still running."
+                )
         );
         Function<Map<String, Object>, String> invoker = params -> {
             CommandHandle handle = requireHandle(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "id"));
@@ -173,7 +183,16 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 Set.of(createActionKey("overview")),
                 Set.of(),
                 false,
-                JSONObject.of("result", "CommandReadData")
+                JSONObject.of(
+                        "executionId", "Command execution session id.",
+                        "desc", "Command session description.",
+                        "stream", "The stream that was read, stdout or stderr.",
+                        "content", "Content read from the selected stream in this call.",
+                        "contentTruncated", "Whether the content was truncated because of the read limit.",
+                        "offset", "Read start offset used in this call.",
+                        "nextOffset", "Suggested next offset for the following read.",
+                        "eof", "Whether the stream has reached end-of-file and the process has already exited."
+                )
         );
         Function<Map<String, Object>, String> invoker = params -> {
             CommandHandle handle = requireHandle(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "id"));
@@ -231,7 +250,10 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 Set.of(),
                 Set.of(createActionKey("overview")),
                 false,
-                JSONObject.of("ok", "Whether the command has been cancelled.", "executionId", "Command execution session id.")
+                JSONObject.of(
+                        "ok", "Whether the command has been cancelled.",
+                        "executionId", "Command execution session id."
+                )
         );
         Function<Map<String, Object>, String> invoker = params -> {
             CommandHandle handle = requireHandle(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "id"));
@@ -278,7 +300,12 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 Set.of(createActionKey("start")),
                 Set.of(createActionKey("inspect"), createActionKey("read"), createActionKey("cancel")),
                 false,
-                JSONObject.of("result", "CommandOverviewItem[]")
+                JSONObject.of(
+                        "result", "Array of command session overview items.",
+                        "result.executionId", "Command execution session id for each overview item.",
+                        "result.desc", "Command session description for each overview item.",
+                        "result.exitCode", "Process exit code for each overview item. Null when still running."
+                )
         );
         Function<Map<String, Object>, String> invoker = params -> {
             List<JSONObject> items = commandHandles.values().stream()
