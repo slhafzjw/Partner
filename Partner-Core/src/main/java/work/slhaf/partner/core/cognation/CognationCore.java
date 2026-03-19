@@ -38,8 +38,9 @@ public class CognationCore extends PartnerCore<CognationCore> {
     }
 
     @CapabilityMethod
-    public String initiateTurn(String input) {
+    public String initiateTurn(String input, String target) {
         PartnerRunningFlowContext primaryContext = PartnerRunningFlowContext.Companion.fromSelf(input);
+        primaryContext.setTarget(target);
         PartnerRunningFlowContext executedContext = AgentRuntime.INSTANCE.submit(primaryContext);
         return executedContext.getCoreResponse().getString("text");
     }

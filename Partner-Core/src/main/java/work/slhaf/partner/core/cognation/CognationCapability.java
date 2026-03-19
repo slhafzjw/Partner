@@ -9,7 +9,7 @@ import java.util.concurrent.locks.Lock;
 @Capability("cognation")
 public interface CognationCapability {
 
-    String initiateTurn(String input);
+    String initiateTurn(String input, String target);
 
     List<Message> getChatMessages();
 

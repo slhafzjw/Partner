@@ -201,7 +201,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 Schedulable.ScheduleType.ONCE,
                 asScheduleContent(pendingAction.getRemindAt()),
                 new StateAction.Trigger.Call(() -> {
-                    handlePendingReminder(pendingAction.getPendingId());
+                    handlePendingReminder(pendingAction.getPendingId(), pendingAction.getUserId());
                     return Unit.INSTANCE;
                 })
         );
@@ -221,14 +221,14 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         );
     }
 
-    private void handlePendingReminder(String pendingId) {
+    private void handlePendingReminder(String pendingId, String userId) {
         boolean marked = actionCapability.markPendingReminded(pendingId);
         if (!marked) {
             return;
         }
         try {
             // TODO target 指定行为待补充; 主动回复链路待补充
-            cognationCapability.initiateTurn("系统提醒：存在待确认行动即将过期，请确认是否继续执行。pendingId=" + pendingId);
+            cognationCapability.initiateTurn("系统提醒：存在待确认行动即将过期，请确认是否继续执行。pendingId=" + pendingId, userId);
         } catch (Exception e) {
             log.warn("触发待确认行动提醒失败, pendingId: {}", pendingId, e);
         }
@@ -294,7 +294,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 result == null ? "" : result //将会在 ActionExecutor
         );
         try {
-            cognationCapability.initiateTurn(structuredSignal);
+            cognationCapability.initiateTurn(structuredSignal, action.getSource());
         } catch (Exception e) {
             log.warn("触发 immediate 行动完成自对话失败, actionUuid: {}", action.getUuid(), e);
         }
