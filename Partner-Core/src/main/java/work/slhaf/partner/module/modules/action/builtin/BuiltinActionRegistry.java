@@ -9,6 +9,7 @@ import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +24,6 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
     @InjectCapability
     private ActionCapability actionCapability;
 
-    private final BuiltinCommandActionManager builtinCommandActionManager = new BuiltinCommandActionManager();
-
     @Init
     public void init() {
         definitions.clear();
@@ -36,14 +35,10 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
     }
 
     protected List<BuiltinActionDefinition> buildDefaultActionDefinitions() {
-        return List.of(
-                builtinCommandActionManager.buildCommandExecuteDefinition(),
-                builtinCommandActionManager.buildCommandStartDefinition(),
-                builtinCommandActionManager.buildCommandInspectDefinition(),
-                builtinCommandActionManager.buildCommandReadDefinition(),
-                builtinCommandActionManager.buildCommandCancelDefinition(),
-                builtinCommandActionManager.buildCommandOverviewDefinition()
-        );
+        List<BuiltinActionDefinition> builtinActionDefinitions = new ArrayList<>();
+        BuiltinActionProvider commandActionProvider = new BuiltinCommandActionProvider();
+        builtinActionDefinitions.addAll(commandActionProvider.provideBuiltinActions());
+        return builtinActionDefinitions;
     }
 
     public void defineBuiltinAction(String name, MetaActionInfo metaActionInfo, Function<Map<String, Object>, String> invoker) {

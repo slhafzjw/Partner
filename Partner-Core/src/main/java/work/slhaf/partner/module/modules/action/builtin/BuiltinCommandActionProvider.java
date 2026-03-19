@@ -12,7 +12,7 @@ import java.util.function.Function;
 
 import static work.slhaf.partner.core.action.ActionCore.BUILTIN_LOCATION;
 
-class BuiltinCommandActionManager {
+class BuiltinCommandActionProvider implements BuiltinActionProvider {
 
     private static final String COMMAND_LOCATION = BUILTIN_LOCATION + "::" + "command";
     private static final String COMMAND_ARG_PREFIX = "arg";
@@ -25,12 +25,24 @@ class BuiltinCommandActionManager {
     private final ConcurrentHashMap<String, CommandHandle> commandHandles = new ConcurrentHashMap<>();
     private final CommandExecutionService commandExecutionService = CommandExecutionService.INSTANCE;
 
+    @Override
+    public List<BuiltinActionRegistry.BuiltinActionDefinition> provideBuiltinActions() {
+        return List.of(
+                buildCommandExecuteDefinition(),
+                buildCommandStartDefinition(),
+                buildCommandInspectDefinition(),
+                buildCommandReadDefinition(),
+                buildCommandCancelDefinition(),
+                buildCommandOverviewDefinition()
+        );
+    }
+
     /**
      * 用于直接执行的 Builtin MetaAction
      *
      * @return 内建 MetaAction 定义数据，参数为常规命令列表，返回值为该命令的响应内容
      */
-    BuiltinActionRegistry.BuiltinActionDefinition buildCommandExecuteDefinition() {
+    private BuiltinActionRegistry.BuiltinActionDefinition buildCommandExecuteDefinition() {
         Set<String> tags = new HashSet<>(basicTags);
         tags.add("Command Execution");
         MetaActionInfo info = new MetaActionInfo(
@@ -61,7 +73,7 @@ class BuiltinCommandActionManager {
      *
      * @return 内建 MetaAction 定义数据，参数为命令列表及进程描述，返回值为进程句柄 id
      */
-    BuiltinActionRegistry.BuiltinActionDefinition buildCommandStartDefinition() {
+    private BuiltinActionRegistry.BuiltinActionDefinition buildCommandStartDefinition() {
         Set<String> tags = new HashSet<>(basicTags);
         tags.add("Command Session");
         MetaActionInfo info = new MetaActionInfo(
@@ -106,7 +118,7 @@ class BuiltinCommandActionManager {
      *
      * @return 内建 MetaAction 定义数据，参数为进程 id，返回值为摘要内容(CommandInspectData)
      */
-    BuiltinActionRegistry.BuiltinActionDefinition buildCommandInspectDefinition() {
+    private BuiltinActionRegistry.BuiltinActionDefinition buildCommandInspectDefinition() {
         Set<String> tags = new HashSet<>(basicTags);
         tags.add("Command Session");
         MetaActionInfo info = new MetaActionInfo(
@@ -143,7 +155,7 @@ class BuiltinCommandActionManager {
      *
      * @return 内建 MetaAction 定义数据，参数为进程 id 与读取流(stdout/stderr)，返回值为读取内容(CommandReadData)
      */
-    BuiltinActionRegistry.BuiltinActionDefinition buildCommandReadDefinition() {
+    private BuiltinActionRegistry.BuiltinActionDefinition buildCommandReadDefinition() {
         Set<String> tags = new HashSet<>(basicTags);
         tags.add("Command Session");
         tags.add("Command Read");
@@ -206,7 +218,7 @@ class BuiltinCommandActionManager {
      *
      * @return 内建 MetaAction 定义数据，参数为进程 id，返回值为是否成功取消
      */
-    BuiltinActionRegistry.BuiltinActionDefinition buildCommandCancelDefinition() {
+    private BuiltinActionRegistry.BuiltinActionDefinition buildCommandCancelDefinition() {
         Set<String> tags = new HashSet<>(basicTags);
         tags.add("Command Session");
         tags.add("Command Cancel");
@@ -253,7 +265,7 @@ class BuiltinCommandActionManager {
      *
      * @return 内建 MetaAction 定义数据，无参数，返回值为后台进程集合(CommandOverviewItem)
      */
-    BuiltinActionRegistry.BuiltinActionDefinition buildCommandOverviewDefinition() {
+    private BuiltinActionRegistry.BuiltinActionDefinition buildCommandOverviewDefinition() {
         Set<String> tags = new HashSet<>(basicTags);
         tags.add("Command Session");
         tags.add("Command Overview");

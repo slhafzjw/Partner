@@ -5,15 +5,21 @@ import com.alibaba.fastjson2.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
-class BuiltinCommandActionManagerTest {
+class BuiltinCommandActionProviderTest {
 
     @Test
     void testStartInspectReadAndOverview() throws Exception {
-        BuiltinCommandActionManager manager = new BuiltinCommandActionManager();
+        BuiltinCommandActionProvider provider = new BuiltinCommandActionProvider();
+        List<BuiltinActionRegistry.BuiltinActionDefinition> definitions = provider.provideBuiltinActions();
+        BuiltinActionRegistry.BuiltinActionDefinition start = requireDefinition(definitions, "builtin::command::start");
+        BuiltinActionRegistry.BuiltinActionDefinition inspectDefinition = requireDefinition(definitions, "builtin::command::inspect");
+        BuiltinActionRegistry.BuiltinActionDefinition readDefinition = requireDefinition(definitions, "builtin::command::read");
+        BuiltinActionRegistry.BuiltinActionDefinition overviewDefinition = requireDefinition(definitions, "builtin::command::overview");
 
-        String startResult = manager.buildCommandStartDefinition().invoker().apply(Map.of(
+        String startResult = start.invoker().apply(Map.of(
                 "desc", "demo-session",
                 "arg", "sh",
                 "arg1", "-lc",
@@ -22,7 +28,7 @@ class BuiltinCommandActionManagerTest {
         String executionId = JSONObject.parseObject(startResult).getString("executionId");
         Assertions.assertNotNull(executionId);
 
-        JSONObject inspect = waitForInspectExit(manager, executionId);
+        JSONObject inspect = waitForInspectExit(inspectDefinition, executionId);
         Assertions.assertEquals("demo-session", inspect.getString("desc"));
         Assertions.assertEquals(0, inspect.getInteger("exitCode"));
         Assertions.assertTrue(inspect.getInteger("stdoutSize") > 0);
@@ -30,7 +36,7 @@ class BuiltinCommandActionManagerTest {
         Assertions.assertTrue(inspect.getString("stdoutSummary").contains("hello"));
         Assertions.assertTrue(inspect.getString("stderrSummary").contains("oops"));
 
-        JSONObject read = JSONObject.parseObject(manager.buildCommandReadDefinition().invoker().apply(Map.of(
+        JSONObject read = JSONObject.parseObject(readDefinition.invoker().apply(Map.of(
                 "id", executionId,
                 "limit", 5
         )));
@@ -40,7 +46,7 @@ class BuiltinCommandActionManagerTest {
         Assertions.assertTrue(read.getBooleanValue("contentTruncated"));
         Assertions.assertEquals("hello", read.getString("content"));
 
-        JSONObject overview = JSONObject.parseObject(manager.buildCommandOverviewDefinition().invoker().apply(Map.of()));
+        JSONObject overview = JSONObject.parseObject(overviewDefinition.invoker().apply(Map.of()));
         JSONArray result = overview.getJSONArray("result");
         Assertions.assertTrue(result.stream().map(item -> (JSONObject) item)
                 .anyMatch(item -> executionId.equals(item.getString("executionId"))));
@@ -48,9 +54,13 @@ class BuiltinCommandActionManagerTest {
 
     @Test
     void testCancelStopsBackgroundCommand() throws Exception {
-        BuiltinCommandActionManager manager = new BuiltinCommandActionManager();
+        BuiltinCommandActionProvider provider = new BuiltinCommandActionProvider();
+        List<BuiltinActionRegistry.BuiltinActionDefinition> definitions = provider.provideBuiltinActions();
+        BuiltinActionRegistry.BuiltinActionDefinition start = requireDefinition(definitions, "builtin::command::start");
+        BuiltinActionRegistry.BuiltinActionDefinition cancelDefinition = requireDefinition(definitions, "builtin::command::cancel");
+        BuiltinActionRegistry.BuiltinActionDefinition inspectDefinition = requireDefinition(definitions, "builtin::command::inspect");
 
-        String startResult = manager.buildCommandStartDefinition().invoker().apply(Map.of(
+        String startResult = start.invoker().apply(Map.of(
                 "desc", "sleep-session",
                 "arg", "sh",
                 "arg1", "-lc",
@@ -58,20 +68,30 @@ class BuiltinCommandActionManagerTest {
         ));
         String executionId = JSONObject.parseObject(startResult).getString("executionId");
 
-        JSONObject cancel = JSONObject.parseObject(manager.buildCommandCancelDefinition().invoker().apply(Map.of(
+        JSONObject cancel = JSONObject.parseObject(cancelDefinition.invoker().apply(Map.of(
                 "id", executionId
         )));
         Assertions.assertEquals(executionId, cancel.getString("executionId"));
         Assertions.assertTrue(cancel.getBooleanValue("ok"));
 
-        JSONObject inspect = waitForInspectExit(manager, executionId);
+        JSONObject inspect = waitForInspectExit(inspectDefinition, executionId);
         Assertions.assertNotNull(inspect.get("endAt"));
     }
 
-    private JSONObject waitForInspectExit(BuiltinCommandActionManager manager, String executionId) throws Exception {
+    private BuiltinActionRegistry.BuiltinActionDefinition requireDefinition(
+            List<BuiltinActionRegistry.BuiltinActionDefinition> definitions,
+            String actionKey
+    ) {
+        return definitions.stream()
+                .filter(definition -> actionKey.equals(definition.actionKey()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("definition not found: " + actionKey));
+    }
+
+    private JSONObject waitForInspectExit(BuiltinActionRegistry.BuiltinActionDefinition inspectDefinition, String executionId) throws Exception {
         long deadline = System.currentTimeMillis() + 3000;
         while (System.currentTimeMillis() < deadline) {
-            JSONObject inspect = JSONObject.parseObject(manager.buildCommandInspectDefinition().invoker().apply(Map.of(
+            JSONObject inspect = JSONObject.parseObject(inspectDefinition.invoker().apply(Map.of(
                     "id", executionId
             )));
             if (inspect.get("exitCode") != null) {
