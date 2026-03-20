@@ -84,8 +84,6 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
         })
     }
 
-    // TODO any implementations of Action should be record into ActionCore
-    // TODO the method in ActionCapability should be compatible with different Action types
     fun <T> schedule(schedulableAction: T) where T : Action, T : Schedulable = schedulerScope.launch {
         if (!schedulableAction.enabled) {
             return@launch
