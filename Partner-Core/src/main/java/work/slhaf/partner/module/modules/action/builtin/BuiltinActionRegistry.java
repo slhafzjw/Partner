@@ -38,8 +38,12 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
         List<BuiltinActionDefinition> builtinActionDefinitions = new ArrayList<>();
         BuiltinActionProvider commandActionProvider = new BuiltinCommandActionProvider();
         BuiltinActionProvider capabilityActionProvider = new BuiltinCapabilityActionProvider();
+        BuiltinInterventionActionProvider interventionActionProvider = new BuiltinInterventionActionProvider();
+
         builtinActionDefinitions.addAll(commandActionProvider.provideBuiltinActions());
         builtinActionDefinitions.addAll(capabilityActionProvider.provideBuiltinActions());
+        builtinActionDefinitions.addAll(interventionActionProvider.provideBuiltinActions());
+
         return builtinActionDefinitions;
     }
 
@@ -92,6 +96,17 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
                 throw new IllegalArgumentException("参数 " + key + " 必须为字符串");
             }
             return s;
+        }
+
+        static Integer requireInt(Map<String, Object> params, String key) {
+            Object value = params.get(key);
+            if (value == null) {
+                throw new IllegalArgumentException("缺少参数: " + key);
+            }
+            if (value instanceof Number number) {
+                return number.intValue();
+            }
+            throw new IllegalArgumentException("参数 " + key + " 必须为整数");
         }
 
         static Integer optionalInt(Map<String, Object> params, String key, Integer defaultValue) {
