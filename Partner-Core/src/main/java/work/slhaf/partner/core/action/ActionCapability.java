@@ -5,8 +5,8 @@ import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
+import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 import work.slhaf.partner.core.action.runner.RunnerClient;
-import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
 
 import java.util.List;
 import java.util.Map;

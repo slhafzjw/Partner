@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.modules.action.interventor.entity;
+package work.slhaf.partner.core.action.entity.intervention;
 
 import lombok.Data;
 

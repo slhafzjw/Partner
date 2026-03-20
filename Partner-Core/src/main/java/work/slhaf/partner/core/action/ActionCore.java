@@ -12,12 +12,12 @@ import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.cache.ActionCacheData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
+import work.slhaf.partner.core.action.entity.intervention.InterventionType;
+import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 import work.slhaf.partner.core.action.exception.ActionDataNotFoundException;
 import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
-import work.slhaf.partner.module.modules.action.interventor.entity.InterventionType;
-import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
 
 import java.io.IOException;
 import java.util.*;

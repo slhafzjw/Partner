@@ -1,7 +1,7 @@
 package work.slhaf.partner.module.modules.action.executor.entity;
 
 import lombok.Data;
-import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
+import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 
 import java.util.List;
 

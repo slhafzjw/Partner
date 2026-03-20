@@ -7,8 +7,8 @@ import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.module.modules.action.interventor.entity.InterventionType;
-import work.slhaf.partner.module.modules.action.interventor.entity.MetaIntervention;
+import work.slhaf.partner.core.action.entity.intervention.InterventionType;
+import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 
 import java.util.*;
 import java.util.function.Function;
