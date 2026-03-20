@@ -328,7 +328,8 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         return new BuiltinActionRegistry.BuiltinActionDefinition(createActionKey("overview"), info, invoker);
     }
 
-    private String createActionKey(String actionName) {
+    @Override
+    public String createActionKey(String actionName) {
         return COMMAND_LOCATION + "::" + actionName;
     }
 

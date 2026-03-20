@@ -157,7 +157,8 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
         );
     }
 
-    private String createActionKey(String actionName) {
+    @Override
+    public String createActionKey(String actionName) {
         return CAPABILITY_LOCATION + "::" + actionName;
     }
 }
