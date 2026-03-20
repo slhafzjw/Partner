@@ -37,7 +37,7 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
         return List.of(
                 buildShowActivatedSlicesDefinition(),
                 buildInteractionStatusDefinition(),
-                buildInteractionStatusDefinition()
+                buildInitiateTurnDefinition()
         );
     }
 
