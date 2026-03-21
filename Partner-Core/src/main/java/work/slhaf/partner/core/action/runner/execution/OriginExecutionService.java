@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static work.slhaf.partner.core.action.ActionCore.ORIGIN_LOCATION;
+
 public class OriginExecutionService {
 
     public OriginExecutionService() {
@@ -17,7 +19,7 @@ public class OriginExecutionService {
 
     public RunnerClient.RunnerResponse run(MetaAction metaAction) {
         RunnerClient.RunnerResponse response = new RunnerClient.RunnerResponse();
-        File file = new File(metaAction.getLocation());
+        File file = new File(resolveOriginPath(metaAction));
         String[] commands = CommandExecutionService.INSTANCE.buildFileExecutionCommands(metaAction.getLauncher(), metaAction.getParams(), file.getAbsolutePath());
         WrappedLaunchSpec wrapped = ExecutionPolicyRegistry.INSTANCE.prepare(Arrays.stream(commands).toList());
         List<String> wrappedCommands = new ArrayList<>();
@@ -27,5 +29,12 @@ public class OriginExecutionService {
         response.setOk(execResult.isOk());
         response.setData(execResult.getTotal());
         return response;
+    }
+
+    private String resolveOriginPath(MetaAction metaAction) {
+        if (ORIGIN_LOCATION.equals(metaAction.getLocation())) {
+            return metaAction.getName();
+        }
+        return metaAction.getLocation();
     }
 }

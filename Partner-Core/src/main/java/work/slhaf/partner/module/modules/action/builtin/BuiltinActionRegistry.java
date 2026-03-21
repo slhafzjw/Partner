@@ -38,11 +38,13 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
         List<BuiltinActionDefinition> builtinActionDefinitions = new ArrayList<>();
         BuiltinActionProvider commandActionProvider = new BuiltinCommandActionProvider();
         BuiltinActionProvider capabilityActionProvider = new BuiltinCapabilityActionProvider();
-        BuiltinInterventionActionProvider interventionActionProvider = new BuiltinInterventionActionProvider();
+        BuiltinActionProvider interventionActionProvider = new BuiltinInterventionActionProvider();
+        BuiltinActionProvider dynamicActionProvider = new BuiltinDynamicActionProvider();
 
         builtinActionDefinitions.addAll(commandActionProvider.provideBuiltinActions());
         builtinActionDefinitions.addAll(capabilityActionProvider.provideBuiltinActions());
         builtinActionDefinitions.addAll(interventionActionProvider.provideBuiltinActions());
+        builtinActionDefinitions.addAll(dynamicActionProvider.provideBuiltinActions());
 
         return builtinActionDefinitions;
     }

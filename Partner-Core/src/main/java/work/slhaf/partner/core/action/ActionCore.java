@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ActionCore extends PartnerCore<ActionCore> {
     public static final String BUILTIN_LOCATION = "builtin";
+    public static final String ORIGIN_LOCATION = "origin";
 
     private final Lock cacheLock = new ReentrantLock();
     // 由于当前的执行器逻辑实现，平台线程池大小不得小于 2，这里规定为最小为 4
@@ -322,11 +323,15 @@ public class ActionCore extends PartnerCore<ActionCore> {
             throw new MetaActionNotFoundException("未找到对应的行动程序信息" + actionKey);
         }
 
-        String[] split = actionKey.split("::");
+        String[] split = actionKey.split("::", 2);
         if (split.length < 2) {
             throw new MetaActionNotFoundException("未找到对应的行动程序，原因: 传入的 actionKey(" + actionKey + ") 存在异常");
         }
-        MetaAction.Type type = BUILTIN_LOCATION.equals(split[0]) ? MetaAction.Type.BUILTIN : MetaAction.Type.MCP;
+        MetaAction.Type type = switch (split[0]) {
+            case BUILTIN_LOCATION -> MetaAction.Type.BUILTIN;
+            case ORIGIN_LOCATION -> MetaAction.Type.ORIGIN;
+            default -> MetaAction.Type.MCP;
+        };
         return new MetaAction(
                 split[1],
                 metaActionInfo.getIo(),
