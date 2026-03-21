@@ -116,7 +116,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
     /**
      * 用于返回指定后台 Builtin MetaAction 的摘要内容
      *
-     * @return 内建 MetaAction 定义数据，参数为进程 id，返回值为摘要内容(CommandInspectData)
+     * @return 内建 MetaAction 定义数据，参数为进程 id，返回值为摘要内容 JSON
      */
     private BuiltinActionRegistry.BuiltinActionDefinition buildCommandInspectDefinition() {
         Set<String> tags = new HashSet<>(basicTags);
@@ -144,18 +144,17 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         );
         Function<Map<String, Object>, String> invoker = params -> {
             CommandHandle handle = requireHandle(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "id"));
-            CommandInspectData data = new CommandInspectData(
-                    handle.executionId,
-                    handle.desc,
-                    handle.exitCode,
-                    bufferLength(handle.stdoutBuffer),
-                    bufferLength(handle.stderrBuffer),
-                    summarizeBuffer(handle.stdoutBuffer),
-                    summarizeBuffer(handle.stderrBuffer),
-                    handle.startAt,
-                    handle.exitAt
-            );
-            return toJson(data);
+            return JSONObject.of(
+                    "executionId", handle.executionId,
+                    "desc", handle.desc,
+                    "exitCode", handle.exitCode,
+                    "stdoutSize", bufferLength(handle.stdoutBuffer),
+                    "stderrSize", bufferLength(handle.stderrBuffer),
+                    "stdoutSummary", summarizeBuffer(handle.stdoutBuffer),
+                    "stderrSummary", summarizeBuffer(handle.stderrBuffer),
+                    "startAt", handle.startAt,
+                    "endAt", handle.exitAt
+            ).toJSONString();
         };
         return new BuiltinActionRegistry.BuiltinActionDefinition(createActionKey("inspect"), info, invoker);
     }
@@ -163,7 +162,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
     /**
      * 用于读取指定后台 Builtin MetaAction 的输出内容
      *
-     * @return 内建 MetaAction 定义数据，参数为进程 id 与读取流(stdout/stderr)，返回值为读取内容(CommandReadData)
+     * @return 内建 MetaAction 定义数据，参数为进程 id 与读取流(stdout/stderr)，返回值为读取内容 JSON
      */
     private BuiltinActionRegistry.BuiltinActionDefinition buildCommandReadDefinition() {
         Set<String> tags = new HashSet<>(basicTags);
@@ -217,17 +216,16 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
             boolean truncated = nextOffset < snapshot.length();
             boolean eof = !handle.isRunning() && nextOffset >= snapshot.length();
 
-            CommandReadData data = new CommandReadData(
-                    handle.executionId,
-                    handle.desc,
-                    stream,
-                    content,
-                    truncated,
-                    safeOffset,
-                    nextOffset,
-                    eof
-            );
-            return toJson(data);
+            return JSONObject.of(
+                    "executionId", handle.executionId,
+                    "desc", handle.desc,
+                    "stream", stream,
+                    "content", content,
+                    "contentTruncated", truncated,
+                    "offset", safeOffset,
+                    "nextOffset", nextOffset,
+                    "eof", eof
+            ).toJSONString();
         };
         return new BuiltinActionRegistry.BuiltinActionDefinition(createActionKey("read"), info, invoker);
     }
@@ -285,7 +283,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
     /**
      * 用于列出全量后台进程的 Builtin MetaAction
      *
-     * @return 内建 MetaAction 定义数据，无参数，返回值为后台进程集合(CommandOverviewItem)
+     * @return 内建 MetaAction 定义数据，无参数，返回值为后台进程集合 JSON
      */
     private BuiltinActionRegistry.BuiltinActionDefinition buildCommandOverviewDefinition() {
         Set<String> tags = new HashSet<>(basicTags);
@@ -301,27 +299,20 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 Set.of(createActionKey("inspect"), createActionKey("read"), createActionKey("cancel")),
                 false,
                 JSONObject.of(
-                        "result", "Array of command session overview items.",
-                        "result.executionId", "Command execution session id for each overview item.",
-                        "result.desc", "Command session description for each overview item.",
-                        "result.exitCode", "Process exit code for each overview item. Null when still running."
+                        "commands", "Array of command session overview items.",
+                        "command.executionId", "Command execution session id for each overview item.",
+                        "command.desc", "Command session description for each overview item.",
+                        "command.exitCode", "Process exit code for each overview item. Null when still running."
                 )
         );
         Function<Map<String, Object>, String> invoker = params -> {
             List<JSONObject> items = commandHandles.values().stream()
                     .sorted(Comparator.comparing(handle -> handle.startAt))
-                    .map(handle -> {
-                        CommandOverviewItem item = new CommandOverviewItem(
-                                handle.executionId,
-                                handle.desc,
-                                handle.exitCode
-                        );
-                        JSONObject json = new JSONObject();
-                        json.put("executionId", item.executionId);
-                        json.put("desc", item.desc);
-                        json.put("exitCode", item.exitCode);
-                        return json;
-                    })
+                    .map(handle -> JSONObject.of(
+                            "executionId", handle.executionId,
+                            "desc", handle.desc,
+                            "exitCode", handle.exitCode
+                    ))
                     .toList();
             return JSONObject.of("result", items).toJSONString();
         };
@@ -425,33 +416,6 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         }
     }
 
-    private String toJson(CommandInspectData data) {
-        JSONObject result = new JSONObject();
-        result.put("executionId", data.executionId);
-        result.put("desc", data.desc);
-        result.put("exitCode", data.exitCode);
-        result.put("stdoutSize", data.stdoutSize);
-        result.put("stderrSize", data.stderrSize);
-        result.put("stdoutSummary", data.stdoutSummary);
-        result.put("stderrSummary", data.stderrSummary);
-        result.put("startAt", data.startAt);
-        result.put("endAt", data.endAt);
-        return result.toJSONString();
-    }
-
-    private String toJson(CommandReadData data) {
-        JSONObject result = new JSONObject();
-        result.put("executionId", data.executionId);
-        result.put("desc", data.desc);
-        result.put("stream", data.stream);
-        result.put("content", data.content);
-        result.put("contentTruncated", data.contentTruncated);
-        result.put("offset", data.offset);
-        result.put("nextOffset", data.nextOffset);
-        result.put("eof", data.eof);
-        return result.toJSONString();
-    }
-
     @AllArgsConstructor
     private static class CommandHandle {
         private String executionId;
@@ -479,61 +443,5 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         boolean isRunning() {
             return exitCode == null && process.isAlive();
         }
-    }
-
-    @AllArgsConstructor
-    private static class CommandInspectData {
-        private String executionId;
-        private String desc;
-
-        private Integer exitCode;
-
-        private int stdoutSize;
-        private int stderrSize;
-
-        /**
-         * stdout 摘要，v1 暂取头五行与最后五行，中间省略，最多 2k 字符; 如果内容过短则全取
-         */
-        private String stdoutSummary;
-        /**
-         * stderr 摘要，v1 暂取头五行与最后五行，中间省略，最多 2k 字符; 如果内容过短则全取
-         */
-        private String stderrSummary;
-
-        private Instant startAt;
-        private Instant endAt;
-    }
-
-    @AllArgsConstructor
-    private static class CommandReadData {
-        private String executionId;
-        private String desc;
-
-        private String stream;
-        /**
-         * 本次从指定 stream 中读取到的内容
-         */
-        private String content;
-        private boolean contentTruncated;
-
-        /**
-         * 本次读取起点
-         */
-        private int offset;
-        /**
-         * 下次读取起点
-         */
-        private int nextOffset;
-        /**
-         * 读取是否已达末尾（进程退出、stream 及缓冲区均读取完毕)
-         */
-        private boolean eof;
-    }
-
-    @AllArgsConstructor
-    private static class CommandOverviewItem {
-        private String executionId;
-        private String desc;
-        private Integer exitCode;
     }
 }
