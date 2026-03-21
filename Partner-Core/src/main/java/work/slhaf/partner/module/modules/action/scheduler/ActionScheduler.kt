@@ -30,11 +30,13 @@ import kotlin.jvm.optionals.getOrNull
 import kotlin.time.Duration.Companion.milliseconds
 
 class ActionScheduler : AbstractAgentModule.Standalone() {
+
     @InjectCapability
     private lateinit var actionCapability: ActionCapability
 
     @InjectModule
     private lateinit var actionExecutor: ActionExecutor
+
     private lateinit var timeWheel: TimeWheel
     private val runtimeSchedulables: MutableSet<Schedulable> =
         Collections.synchronizedSet(mutableSetOf())
@@ -96,6 +98,29 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
         }
     }
 
+    fun cancel(actionId: String): Boolean {
+        val runtimeMatches = synchronized(runtimeSchedulables) {
+            runtimeSchedulables.filter { it.uuid == actionId }.toSet()
+        }
+        val persistedMatches = actionCapability.listActions(null, null)
+            .asSequence()
+            .filterIsInstance<SchedulableExecutableAction>()
+            .filter { it.uuid == actionId }
+            .toSet()
+
+        val matches = LinkedHashSet<Schedulable>()
+        matches.addAll(runtimeMatches)
+        matches.addAll(persistedMatches)
+        matches.forEach { it.enabled = false }
+
+        val removedFromWheel = if (::timeWheel.isInitialized) {
+            runBlocking { timeWheel.cancel(actionId) }
+        } else {
+            false
+        }
+        return matches.isNotEmpty() || removedFromWheel
+    }
+
     private class TimeWheel(
         val listSource: () -> Set<Schedulable>,
         val onTrigger: (toTrigger: Set<Schedulable>) -> Unit,
@@ -137,6 +162,37 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                     log.debug("Action scheduled at wheel offset {}", wheelOffset)
                 }
             }
+        }
+
+        suspend fun cancel(actionId: String): Boolean = wheelActionsLock.withLock {
+            var found = false
+            for (bucket in schedulableGroupByHour) {
+                var bucketFound = false
+                bucket.removeIf {
+                    if (it.uuid == actionId) {
+                        it.enabled = false
+                        bucketFound = true
+                        true
+                    } else {
+                        false
+                    }
+                }
+                found = found || bucketFound
+            }
+            for (bucket in wheel) {
+                var bucketFound = false
+                bucket.removeIf {
+                    if (it.uuid == actionId) {
+                        it.enabled = false
+                        bucketFound = true
+                        true
+                    } else {
+                        false
+                    }
+                }
+                found = found || bucketFound
+            }
+            found
         }
 
         private fun wheel() {
