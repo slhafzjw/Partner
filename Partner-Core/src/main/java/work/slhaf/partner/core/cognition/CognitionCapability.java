@@ -11,6 +11,8 @@ public interface CognitionCapability {
 
     String initiateTurn(String input, String target);
 
+    ContextWorkspace contextWorkspace();
+
     List<Message> getChatMessages();
 
     List<Message> snapshotChatMessages();

@@ -35,7 +35,14 @@ public class CognitionCore extends PartnerCore<CognitionCore> {
      */
     private List<Message> chatMessages = new ArrayList<>();
 
+    private final ContextWorkspace contextWorkspace = new ContextWorkspace();
+
     public CognitionCore() throws IOException, ClassNotFoundException {
+    }
+
+    @CapabilityMethod
+    public ContextWorkspace contextWorkspace() {
+        return contextWorkspace;
     }
 
     @CapabilityMethod
