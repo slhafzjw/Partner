@@ -10,9 +10,11 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.agent.runtime.interaction.flow.ContextBlock;
 import work.slhaf.partner.api.chat.pojo.Message;
+import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.core.cognition.CommunicationBlockContent;
+import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -22,7 +24,10 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
@@ -100,14 +105,16 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private List<Message> buildChatMessages(PartnerRunningFlowContext runningFlowContext) {
+        List<BlockContent> communicationBlocks = cognitionCapability.contextWorkspace()
+                .resolve(List.of(ContextBlock.VisibleDomain.COMMUNICATION));
         List<Message> historyMessages = snapshotConversationMessages();
         List<Message> temp = new ArrayList<>(historyMessages.size() + 2);
-        Message contextMessage = buildContextMessage(runningFlowContext);
+        Message contextMessage = buildContextMessage(communicationBlocks);
         if (contextMessage != null) {
             temp.add(contextMessage);
         }
         temp.addAll(historyMessages);
-        temp.add(buildInputMessage(runningFlowContext));
+        temp.add(buildInputMessage(runningFlowContext, communicationBlocks));
         return temp;
     }
 
@@ -134,30 +141,28 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         return snapshot;
     }
 
-    private Message buildContextMessage(PartnerRunningFlowContext runningFlowContext) {
-        List<ContextBlock> contextBlocks = filterContextBlocks(
-                runningFlowContext.getContextBlocks(),
-                ContextBlock.Type.CONTEXT
-        );
+    private Message buildContextMessage(List<BlockContent> communicationBlocks) {
+        List<BlockContent> contextBlocks = communicationBlocks.stream()
+                .filter(this::belongsToContextSection)
+                .toList();
         if (contextBlocks.isEmpty()) {
             return null;
         }
         return new Message(Message.Character.USER, buildContextXml(contextBlocks));
     }
 
-    private Message buildInputMessage(PartnerRunningFlowContext runningFlowContext) {
-        return new Message(Message.Character.USER, buildInputXml(runningFlowContext));
+    private Message buildInputMessage(PartnerRunningFlowContext runningFlowContext, List<BlockContent> communicationBlocks) {
+        return new Message(Message.Character.USER, buildInputXml(runningFlowContext, communicationBlocks));
     }
 
-    private String buildContextXml(List<ContextBlock> contextBlocks) {
+    private String buildContextXml(List<BlockContent> contextBlocks) {
         try {
             Document document = newDocument();
             Element root = document.createElement("context");
             document.appendChild(root);
 
             contextBlocks.stream()
-                    .sorted(Comparator.comparingInt(ContextBlock::getPriority))
-                    .map(ContextBlock::encodeToXml)
+                    .map(BlockContent::encodeToXml)
                     .forEach(blockElement -> {
                         root.appendChild(document.importNode(blockElement, true));
                     });
@@ -168,7 +173,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         }
     }
 
-    private String buildInputXml(PartnerRunningFlowContext runningFlowContext) {
+    private String buildInputXml(PartnerRunningFlowContext runningFlowContext, List<BlockContent> communicationBlocks) {
         try {
             Document document = newDocument();
             Element root = document.createElement("input");
@@ -179,7 +184,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             for (Map.Entry<String, String> entry : runningFlowContext.getAdditionalUserInfo().entrySet()) {
                 appendTextElement(document, root, sanitizeTagName(entry.getKey()), entry.getValue());
             }
-            appendSupplyBlocks(document, root, runningFlowContext.getContextBlocks());
+            appendSupplyBlocks(document, root, communicationBlocks);
 
             return toXmlString(document);
         } catch (Exception e) {
@@ -204,11 +209,11 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         }
     }
 
-    private List<ContextBlock> filterContextBlocks(List<ContextBlock> contextBlocks, ContextBlock.Type type) {
-        return contextBlocks.stream()
-                .filter(block -> block.getType() == type)
-                .sorted(Comparator.comparingInt(ContextBlock::getPriority))
-                .toList();
+    private boolean belongsToContextSection(BlockContent blockContent) {
+        if (!(blockContent instanceof CommunicationBlockContent communicationBlockContent)) {
+            return true;
+        }
+        return communicationBlockContent.getType() == CommunicationBlockContent.Projection.CONTEXT;
     }
 
     private String formatConversationUserMessage(PartnerRunningFlowContext runningFlowContext) {
@@ -227,18 +232,21 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         parent.appendChild(element);
     }
 
-    private void appendSupplyBlocks(Document document, Element inputRoot, List<ContextBlock> contextBlocks) {
-        Map<String, List<ContextBlock>> groupedBlocks = filterContextBlocks(contextBlocks, ContextBlock.Type.SUPPLY).stream()
+    private void appendSupplyBlocks(Document document, Element inputRoot, List<BlockContent> contextBlocks) {
+        Map<String, List<CommunicationBlockContent>> groupedBlocks = contextBlocks.stream()
+                .filter(CommunicationBlockContent.class::isInstance)
+                .map(CommunicationBlockContent.class::cast)
+                .filter(block -> block.getType() == CommunicationBlockContent.Projection.SUPPLY)
                 .collect(Collectors.groupingBy(
                         block -> sanitizeTagName(block.getBlockName()),
                         LinkedHashMap::new,
                         Collectors.toList()
                 ));
 
-        for (Map.Entry<String, List<ContextBlock>> entry : groupedBlocks.entrySet()) {
+        for (Map.Entry<String, List<CommunicationBlockContent>> entry : groupedBlocks.entrySet()) {
             Element groupElement = document.createElement(entry.getKey());
             inputRoot.appendChild(groupElement);
-            for (ContextBlock block : entry.getValue()) {
+            for (CommunicationBlockContent block : entry.getValue()) {
                 Element blockElement = block.encodeToXml();
                 groupElement.appendChild(document.importNode(blockElement, true));
             }

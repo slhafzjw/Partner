@@ -297,6 +297,7 @@ abstract class BlockContent protected constructor(
 abstract class CommunicationBlockContent(
     blockName: String,
     source: String,
+    val type: Projection,
 ) : BlockContent(
     blockName,
     source,
