@@ -13,7 +13,7 @@ import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
@@ -50,7 +50,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
     @InjectCapability
-    private CognationCapability cognationCapability;
+    private CognitionCapability cognitionCapability;
     @InjectCapability
     private ActionCapability actionCapability;
     @InjectCapability
@@ -228,7 +228,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         }
         try {
             // TODO target 指定行为待补充; 主动回复链路待补充
-            cognationCapability.initiateTurn("系统提醒：存在待确认行动即将过期，请确认是否继续执行。pendingId=" + pendingId, userId);
+            cognitionCapability.initiateTurn("系统提醒：存在待确认行动即将过期，请确认是否继续执行。pendingId=" + pendingId, userId);
         } catch (Exception e) {
             log.warn("触发待确认行动提醒失败, pendingId: {}", pendingId, e);
         }
@@ -294,7 +294,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 result == null ? "" : result //将会在 ActionExecutor
         );
         try {
-            cognationCapability.initiateTurn(structuredSignal, action.getSource());
+            cognitionCapability.initiateTurn(structuredSignal, action.getSource());
         } catch (Exception e) {
             log.warn("触发 immediate 行动完成自对话失败, actionUuid: {}", action.getUuid(), e);
         }
@@ -312,7 +312,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         private ExtractorInput buildExtractorInput(PartnerRunningFlowContext context) {
             ExtractorInput input = new ExtractorInput();
             input.setInput(context.getInput());
-            List<Message> chatMessages = cognationCapability.snapshotChatMessages();
+            List<Message> chatMessages = cognitionCapability.snapshotChatMessages();
             List<Message> recentMessages = new ArrayList<>();
             if (chatMessages.size() > 5) {
                 recentMessages.addAll(chatMessages.subList(chatMessages.size() - 5, chatMessages.size() - 1));
@@ -326,7 +326,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         private EvaluatorInput buildEvaluatorInput(ExtractorResult extractorResult, String userId) {
             EvaluatorInput input = new EvaluatorInput();
             input.setTendencies(extractorResult.getTendencies());
-            input.setRecentMessages(cognationCapability.snapshotChatMessages());
+            input.setRecentMessages(cognitionCapability.snapshotChatMessages());
             input.setActivatedSlices(memoryCapability.getActivatedSlices());
             return input;
         }
@@ -432,7 +432,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             ConfirmerInput confirmerInput = new ConfirmerInput();
             confirmerInput.setInput(context.getInput());
             List<PendingActionRecord> pendingActions = actionCapability.listActivePendingActions(context.getSource());
-            confirmerInput.setRecentMessages(cognationCapability.snapshotChatMessages());
+            confirmerInput.setRecentMessages(cognitionCapability.snapshotChatMessages());
             confirmerInput.setPendingActions(pendingActions);
             return confirmerInput;
         }

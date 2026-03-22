@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
@@ -31,7 +31,7 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
-    private CognationCapability cognationCapability;
+    private CognitionCapability cognitionCapability;
     @InjectModule
     private MemoryRuntime memoryRuntime;
     @InjectModule
@@ -58,7 +58,7 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
         EvaluatorInput evaluatorInput = EvaluatorInput.builder()
                 .input(runningFlowContext.getInput())
                 .memorySlices(new ArrayList<>(candidates.values()))
-                .messages(cognationCapability.getChatMessages())
+                .messages(cognitionCapability.getChatMessages())
                 .build();
         log.debug("[MemorySelector] 切片评估输入: {}", JSONObject.toJSONString(evaluatorInput));
         List<ActivatedMemorySlice> memorySlices = sliceSelectEvaluator.execute(evaluatorInput);

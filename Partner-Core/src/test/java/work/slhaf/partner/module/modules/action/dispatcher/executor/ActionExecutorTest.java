@@ -12,7 +12,7 @@ import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.runner.RunnerClient;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.modules.action.executor.ActionCorrector;
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
@@ -59,7 +59,7 @@ class ActionExecutorTest {
     @Mock
     MemoryCapability memoryCapability;
     @Mock
-    CognationCapability cognationCapability;
+    CognitionCapability cognitionCapability;
     @Mock
     ParamsExtractor paramsExtractor;
     @Mock
@@ -74,7 +74,7 @@ class ActionExecutorTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(cognationCapability.getChatMessages()).thenReturn(Collections.emptyList());
+        lenient().when(cognitionCapability.getChatMessages()).thenReturn(Collections.emptyList());
         lenient().when(memoryCapability.getActivatedSlices()).thenReturn(Collections.emptyList());
         lenient().when(actionCapability.putPhaserRecord(any(Phaser.class), any(ExecutableAction.class)))
                 .thenAnswer(inv -> new PhaserRecord(inv.getArgument(0), inv.getArgument(1)));

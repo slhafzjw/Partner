@@ -9,7 +9,7 @@ import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
@@ -41,7 +41,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
-    private CognationCapability cognationCapability;
+    private CognitionCapability cognitionCapability;
 
     private final ReentrantLock runtimeLock = new ReentrantLock();
     private Map<String, CopyOnWriteArrayList<SliceRef>> topicSlices = new HashMap<>();
@@ -57,7 +57,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
 
     private void checkAndSetMemoryId() {
         String currentMemoryId = memoryCapability.getMemorySessionId();
-        if (currentMemoryId == null || cognationCapability.getChatMessages().isEmpty()) {
+        if (currentMemoryId == null || cognitionCapability.getChatMessages().isEmpty()) {
             memoryCapability.refreshMemorySession();
         }
     }

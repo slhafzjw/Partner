@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.cognation.exception;
+package work.slhaf.partner.core.cognition.exception;
 
 public class UserNotExistsException extends RuntimeException {
     public UserNotExistsException(String message) {

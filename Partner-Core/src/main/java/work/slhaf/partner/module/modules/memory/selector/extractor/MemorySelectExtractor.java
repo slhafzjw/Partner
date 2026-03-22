@@ -8,7 +8,7 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 import work.slhaf.partner.module.modules.memory.runtime.MemoryRuntime;
@@ -28,14 +28,14 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<PartnerRunnin
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
-    private CognationCapability cognationCapability;
+    private CognitionCapability cognitionCapability;
     @InjectModule
     private MemoryRuntime memoryRuntime;
 
     @Override
     public ExtractorResult execute(PartnerRunningFlowContext context) {
         log.debug("[MemorySelectExtractor] 主题提取模块开始...");
-        List<Message> chatMessages = cognationCapability.snapshotChatMessages();
+        List<Message> chatMessages = cognitionCapability.snapshotChatMessages();
         ExtractorResult extractorResult;
         try {
             List<ActivatedMemorySlice> activatedMemorySlices = memoryCapability.getActivatedSlices();

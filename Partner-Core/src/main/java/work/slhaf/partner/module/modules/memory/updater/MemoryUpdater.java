@@ -12,7 +12,7 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.action.entity.Schedulable;
 import work.slhaf.partner.core.action.entity.StateAction;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
@@ -40,7 +40,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     private static final int MEMORY_UPDATE_TRIGGER_ROLL_LIMIT = 36;
 
     @InjectCapability
-    private CognationCapability cognationCapability;
+    private CognitionCapability cognitionCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
@@ -82,7 +82,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
 
     @Override
     public void execute(PartnerRunningFlowContext context) {
-        boolean trigger = cognationCapability.getChatMessages().size() >= MEMORY_UPDATE_TRIGGER_ROLL_LIMIT;
+        boolean trigger = cognitionCapability.getChatMessages().size() >= MEMORY_UPDATE_TRIGGER_ROLL_LIMIT;
         if (!trigger) {
             return;
         }
@@ -94,7 +94,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
 
     private void tryAutoUpdate() {
         long currentTime = System.currentTimeMillis();
-        int chatCount = cognationCapability.snapshotChatMessages().size();
+        int chatCount = cognitionCapability.snapshotChatMessages().size();
         if (currentTime - perceiveCapability.showLastInteract().toEpochMilli() > UPDATE_TRIGGER_INTERVAL && chatCount > 1) {
             triggerMemoryUpdate(true);
             log.info("[MemoryUpdater] 记忆更新: 自动触发");
@@ -107,12 +107,12 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
             return;
         }
         try {
-            List<Message> chatSnapshot = cognationCapability.snapshotChatMessages();
+            List<Message> chatSnapshot = cognitionCapability.snapshotChatMessages();
             if (chatSnapshot.size() <= 1) {
                 return;
             }
             updateMemory(chatSnapshot);
-            cognationCapability.rollChatMessagesWithSnapshot(chatSnapshot.size(), CONTEXT_RETAIN_DIVISOR);
+            cognitionCapability.rollChatMessagesWithSnapshot(chatSnapshot.size(), CONTEXT_RETAIN_DIVISOR);
             if (refreshMemoryId) {
                 memoryCapability.refreshMemorySession();
             }

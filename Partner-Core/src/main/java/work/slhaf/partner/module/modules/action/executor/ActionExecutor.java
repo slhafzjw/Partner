@@ -9,7 +9,7 @@ import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.runner.RunnerClient;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.modules.action.executor.entity.*;
 
@@ -26,7 +26,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
-    private CognationCapability cognationCapability;
+    private CognitionCapability cognitionCapability;
     @InjectModule
     private ParamsExtractor paramsExtractor;
     @InjectModule
@@ -356,7 +356,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             MetaActionInfo metaActionInfo = actionCapability.loadMetaActionInfo(action.getKey());
             input.setHistoryActionResults(historyActionsResults);
             input.setParams(metaActionInfo.getParams());
-            input.setRecentMessages(cognationCapability.getChatMessages());
+            input.setRecentMessages(cognitionCapability.getChatMessages());
             input.setActionDescription(metaActionInfo.getDescription());
             input.setUserId(userId);
             return input;
@@ -366,7 +366,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                                                    List<String> additionalContext) {
             ExtractorInput input = new ExtractorInput();
             input.setActivatedMemorySlices(memoryCapability.getActivatedSlices());
-            input.setRecentMessages(cognationCapability.getChatMessages());
+            input.setRecentMessages(cognitionCapability.getChatMessages());
             input.setMetaActionInfo(actionCapability.loadMetaActionInfo(action.getKey()));
             input.setHistoryActionResults(historyActionResults);
             input.setAdditionalContext(additionalContext);
@@ -381,7 +381,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                     .description(executableAction.getDescription())
                     .history(executableAction.getHistory().get(executableAction.getExecutingStage()))
                     .status(executableAction.getStatus())
-                    .recentMessages(cognationCapability.getChatMessages())
+                    .recentMessages(cognitionCapability.getChatMessages())
                     .activatedSlices(memoryCapability.getActivatedSlices())
                     .build();
         }

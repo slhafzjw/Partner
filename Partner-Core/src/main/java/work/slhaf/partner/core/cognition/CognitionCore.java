@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.cognation;
+package work.slhaf.partner.core.cognition;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -20,10 +20,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-@CapabilityCore(value = "cognation")
+@CapabilityCore(value = "cognition")
 @Getter
 @Setter
-public class CognationCore extends PartnerCore<CognationCore> {
+public class CognitionCore extends PartnerCore<CognitionCore> {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -34,7 +34,8 @@ public class CognationCore extends PartnerCore<CognationCore> {
      * 主模型的聊天记录
      */
     private List<Message> chatMessages = new ArrayList<>();
-    public CognationCore() throws IOException, ClassNotFoundException {
+
+    public CognitionCore() throws IOException, ClassNotFoundException {
     }
 
     @CapabilityMethod
@@ -89,6 +90,6 @@ public class CognationCore extends PartnerCore<CognationCore> {
 
     @Override
     protected String getCoreKey() {
-        return "cognation-core";
+        return "cognition-core";
     }
 }

@@ -4,7 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 
@@ -28,7 +28,7 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
-    private CognationCapability cognationCapability;
+    private CognitionCapability cognitionCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
 
@@ -115,7 +115,7 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
         Function<Map<String, Object>, String> invoker = params -> {
             String input = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "input");
             String target = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "target");
-            return cognationCapability.initiateTurn(input, target);
+            return cognitionCapability.initiateTurn(input, target);
         };
 
         return new BuiltinActionRegistry.BuiltinActionDefinition(

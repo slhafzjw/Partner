@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.cognation;
+package work.slhaf.partner.core.cognition;
 
 import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.api.chat.pojo.Message;
@@ -6,8 +6,8 @@ import work.slhaf.partner.api.chat.pojo.Message;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 
-@Capability("cognation")
-public interface CognationCapability {
+@Capability("cognition")
+public interface CognitionCapability {
 
     String initiateTurn(String input, String target);
 

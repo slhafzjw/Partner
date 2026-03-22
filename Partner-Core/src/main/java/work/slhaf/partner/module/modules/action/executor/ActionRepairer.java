@@ -15,7 +15,7 @@ import work.slhaf.partner.core.action.ActionCore.ExecutorType;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
 import work.slhaf.partner.core.action.runner.RunnerClient;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.module.modules.action.executor.entity.GeneratorInput;
 import work.slhaf.partner.module.modules.action.executor.entity.GeneratorResult;
 import work.slhaf.partner.module.modules.action.executor.entity.RepairerInput;
@@ -46,7 +46,7 @@ public class ActionRepairer extends AbstractAgentModule.Sub<RepairerInput, Repai
     @InjectCapability
     private ActionCapability actionCapability;
     @InjectCapability
-    private CognationCapability cognationCapability;
+    private CognitionCapability cognitionCapability;
     @InjectModule
     private DynamicActionGenerator dynamicActionGenerator;
     private RunnerClient runnerClient;

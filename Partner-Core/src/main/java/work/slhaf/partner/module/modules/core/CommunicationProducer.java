@@ -12,7 +12,7 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.interaction.flow.ContextBlock;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.cognation.CognationCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -42,7 +42,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             """;
 
     @InjectCapability
-    private CognationCapability cognationCapability;
+    private CognitionCapability cognitionCapability;
 
     @Init
     public void init() {
@@ -112,9 +112,9 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private void updateModuleContextAndChatMessages(PartnerRunningFlowContext runningFlowContext, String response) {
-        cognationCapability.getMessageLock().lock();
+        cognitionCapability.getMessageLock().lock();
         try {
-            List<Message> chatMessages = cognationCapability.getChatMessages();
+            List<Message> chatMessages = cognitionCapability.getChatMessages();
             chatMessages.removeIf(this::isStructuredUserMessage);
             Message primaryUserMessage = new Message(
                     Message.Character.USER,
@@ -124,12 +124,12 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             Message assistantMessage = new Message(Message.Character.ASSISTANT, response);
             chatMessages.add(assistantMessage);
         } finally {
-            cognationCapability.getMessageLock().unlock();
+            cognitionCapability.getMessageLock().unlock();
         }
     }
 
     private List<Message> snapshotConversationMessages() {
-        List<Message> snapshot = new ArrayList<>(cognationCapability.snapshotChatMessages());
+        List<Message> snapshot = new ArrayList<>(cognitionCapability.snapshotChatMessages());
         snapshot.removeIf(this::isStructuredUserMessage);
         return snapshot;
     }
