@@ -116,7 +116,6 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         }
         // 注册执行中行动
         val phaser = new Phaser();
-        val phaserRecord = actionCapability.putPhaserRecord(phaser, executableAction);
         executableAction.setStatus(Action.Status.EXECUTING);
         // 开始执行
         val stageCursor = new Object() {
@@ -157,8 +156,8 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         stageCursor.init();
         do {
             val metaActions = actionChain.get(executableAction.getExecutingStage());
-            val recognizerRecord = startRecognizerIfNeeded(executableAction, phaserRecord);
-            val listeningRecord = executeAndListening(metaActions, phaserRecord, source);
+            val recognizerRecord = startRecognizerIfNeeded(executableAction, phaser);
+            val listeningRecord = executeAndListening(metaActions, phaser, executableAction, source);
             phaser.awaitAdvance(listeningRecord.phase());
             // synchronized 同步防止 accepting 循环间、phase guard 判定后发生 stage 推进
             // 导致新行动的 phaser 投放阶段错乱无法阻塞的场景
@@ -185,19 +184,16 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             // 如果第一次已经推进完毕，本次将会跳过
             stageCursor.requestAdvance();
         } while (stageCursor.next());
-        // 结束
-        actionCapability.removePhaserRecord(phaser);
         // 如果是 ScheduledActionData, 则重置 ActionData 内容,记录执行历史与最终结果
         if (executableAction instanceof SchedulableExecutableAction scheduledActionData) {
             scheduledActionData.recordAndReset();
         }
     }
 
-    private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, PhaserRecord phaserRecord, String source) {
+    private MetaActionsListeningRecord executeAndListening(List<MetaAction> metaActions, Phaser phaser, ExecutableAction executableAction, String source) {
         AtomicBoolean accepting = new AtomicBoolean(true);
         AtomicInteger cursor = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(1);
-        val phaser = phaserRecord.phaser();
         val phase = phaser.register();
         platformExecutor.execute(() -> {
             boolean first = true;
@@ -219,7 +215,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                         continue;
                     }
                     ExecutorService executor = next.getIo() ? virtualExecutor : platformExecutor;
-                    executor.execute(buildMataActionTask(next, phaserRecord, source));
+                    executor.execute(buildMataActionTask(next, phaser, executableAction, source));
                     if (first) {
                         phaser.arriveAndDeregister();
                         latch.countDown();
@@ -236,13 +232,12 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         return new MetaActionsListeningRecord(accepting, phase);
     }
 
-    private Runnable buildMataActionTask(MetaAction metaAction, PhaserRecord phaserRecord, String source) {
-        val phaser = phaserRecord.phaser();
+    private Runnable buildMataActionTask(MetaAction metaAction, Phaser phaser, ExecutableAction executableAction, String source) {
         phaser.register();
         return () -> {
             val actionKey = metaAction.getKey();
             try {
-                executeMetaActionWithRetry(metaAction, phaserRecord, source);
+                executeMetaActionWithRetry(metaAction, executableAction, source);
             } catch (Exception e) {
                 log.error("Action executing failed: {}", actionKey, e);
             } finally {
@@ -251,9 +246,8 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         };
     }
 
-    private void executeMetaActionWithRetry(MetaAction metaAction, PhaserRecord phaserRecord, String source) {
+    private void executeMetaActionWithRetry(MetaAction metaAction, ExecutableAction actionData, String source) {
         String failureReason = "参数提取失败";
-        val actionData = phaserRecord.executableAction();
         val actionKey = metaAction.getKey();
         for (int attempt = 1; attempt <= MAX_EXTRACTOR_ATTEMPTS; attempt++) {
             val result = metaAction.getResult();
@@ -302,12 +296,12 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         metaAction.getResult().setData(failureReason);
     }
 
-    private RecognizerTaskRecord startRecognizerIfNeeded(ExecutableAction executableAction, PhaserRecord phaserRecord) {
+    private RecognizerTaskRecord startRecognizerIfNeeded(ExecutableAction executableAction, Phaser phaser) {
         if (!shouldRunCorrectionRecognizer(executableAction)) {
             return RecognizerTaskRecord.disabled();
         }
         val recognizerInput = assemblyHelper.buildRecognizerInput(executableAction);
-        val task = buildRecognizerTask(recognizerInput, phaserRecord.phaser());
+        val task = buildRecognizerTask(recognizerInput, phaser);
         Future<CorrectionRecognizerResult> future = virtualExecutor.submit(task);
         return new RecognizerTaskRecord(true, future);
     }

@@ -14,14 +14,16 @@ import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.action.entity.intervention.InterventionType;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
-import work.slhaf.partner.core.action.exception.ActionDataNotFoundException;
 import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -42,7 +44,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
      * 已存在的行动程序，键格式为‘<MCP-ServerName>::<Tool-Name>’，值为 MCP Server 通过 Resources 相关渠道传递的行动程序元信息
      */
     private final ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
-    private final List<PhaserRecord> phaserRecords = new ArrayList<>();
     /**
      * 持久行动池
      */
@@ -285,38 +286,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @CapabilityMethod
-    public synchronized PhaserRecord putPhaserRecord(Phaser phaser, ExecutableAction executableAction) {
-        PhaserRecord record = new PhaserRecord(phaser, executableAction);
-        phaserRecords.add(record);
-        return record;
-    }
-
-    @CapabilityMethod
-    public synchronized void removePhaserRecord(Phaser phaser) {
-        PhaserRecord remove = null;
-        for (PhaserRecord record : phaserRecords) {
-            if (record.phaser().equals(phaser)) {
-                remove = record;
-            }
-        }
-
-        if (remove != null) {
-            phaserRecords.remove(remove);
-        }
-    }
-
-    @CapabilityMethod
-    public PhaserRecord getPhaserRecord(String tendency, String source) {
-        for (PhaserRecord record : phaserRecords) {
-            ExecutableAction data = record.executableAction();
-            if (data.getTendency().equals(tendency) && data.getSource().equals(source)) {
-                return record;
-            }
-        }
-        throw new ActionDataNotFoundException("未找到对应的 Phaser 记录: tendency=" + tendency + ", source=" + source);
-    }
-
-    @CapabilityMethod
     public MetaAction loadMetaAction(@NonNull String actionKey) {
         MetaActionInfo metaActionInfo = existedMetaActions.get(actionKey);
         if (metaActionInfo == null) {
@@ -339,11 +308,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
                 type,
                 split[0]
         );
-    }
-
-    @CapabilityMethod
-    public List<PhaserRecord> listPhaserRecords() {
-        return phaserRecords;
     }
 
     @CapabilityMethod

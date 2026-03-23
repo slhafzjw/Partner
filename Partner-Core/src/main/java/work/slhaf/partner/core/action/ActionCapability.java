@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Phaser;
 
 @Capability(value = "action")
 public interface ActionCapability {
@@ -40,14 +39,6 @@ public interface ActionCapability {
     void updateTendencyCache(CacheAdjustData data);
 
     ExecutorService getExecutor(ActionCore.ExecutorType type);
-
-    PhaserRecord putPhaserRecord(Phaser phaser, ExecutableAction executableAction);
-
-    void removePhaserRecord(Phaser phaser);
-
-    List<PhaserRecord> listPhaserRecords();
-
-    PhaserRecord getPhaserRecord(String tendency, String source);
 
     MetaAction loadMetaAction(@NonNull String actionKey);
 
