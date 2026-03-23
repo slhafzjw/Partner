@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ActionExecutor extends AbstractAgentModule.Standalone {
+    private static final int MAX_EXTRACTOR_ATTEMPTS = 3;
     private final AssemblyHelper assemblyHelper = new AssemblyHelper();
     @InjectCapability
     private ActionCapability actionCapability;
@@ -30,9 +31,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     @InjectModule
     private ParamsExtractor paramsExtractor;
     @InjectModule
-    private ActionRepairer actionRepairer;
-    @InjectModule
     private ActionCorrector actionCorrector;
+    @InjectModule
+    private ActionCorrectionRecognizer actionCorrectionRecognizer;
 
     private ExecutorService virtualExecutor;
     private ExecutorService platformExecutor;
@@ -156,6 +157,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         stageCursor.init();
         do {
             val metaActions = actionChain.get(executableAction.getExecutingStage());
+            val recognizerRecord = startRecognizerIfNeeded(executableAction, phaserRecord);
             val listeningRecord = executeAndListening(metaActions, phaserRecord, source);
             phaser.awaitAdvance(listeningRecord.phase());
             // synchronized 同步防止 accepting 循环间、phase guard 判定后发生 stage 推进
@@ -166,12 +168,17 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 // 立即尝试推进，本次推进中，如果前方仍有未执行 stage，将执行一次阶段推进
                 stageCursor.requestAdvance();
             }
+            boolean shouldRunCorrector = hasFailedMetaAction(metaActions);
             try {
-                // 针对行动链进行修正，修正需要传入执行历史、行动目标等内容
-                // 如果后续运行 corrector 触发频率较高，可考虑增加重试机制
-                val correctorInput = assemblyHelper.buildCorrectorInput(executableAction, source);
-                val correctorResult = actionCorrector.execute(correctorInput);
-                actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), executableAction);
+                if (!shouldRunCorrector) {
+                    val recognizerResult = resolveRecognizerResult(recognizerRecord);
+                    shouldRunCorrector = recognizerResult != null && recognizerResult.isNeedCorrection();
+                }
+                if (shouldRunCorrector) {
+                    val correctorInput = assemblyHelper.buildCorrectorInput(executableAction);
+                    val correctorResult = actionCorrector.execute(correctorInput);
+                    actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), executableAction);
+                }
             } catch (Exception ignored) {
             }
             // 第二次尝试进行阶段推进，本次负责补充上一次在不存在 stage时，但 corrector 执行期间发生了 actionChain 的插入事件
@@ -235,49 +242,127 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         return () -> {
             val actionKey = metaAction.getKey();
             try {
-                val result = metaAction.getResult();
-                do {
-                    val actionData = phaserRecord.executableAction();
-                    val executingStage = actionData.getExecutingStage();
-                    val historyActionResults = actionData.getHistory().get(executingStage);
-                    val additionalContext = actionData.getAdditionalContext().get(executingStage);
-                    val extractorInput = assemblyHelper.buildExtractorInput(metaAction, source, historyActionResults, additionalContext);
-                    val extractorResult = paramsExtractor.execute(extractorInput);
-                    if (extractorResult.isOk()) {
-                        metaAction.getParams().putAll(extractorResult.getParams());
-                        runnerClient.submit(metaAction);
-                        val historyAction = new HistoryAction(actionKey, actionCapability.loadMetaActionInfo(actionKey).getDescription(), metaAction.getResult().getData());
-                        actionData.getHistory()
-                                .computeIfAbsent(executingStage, integer -> new ArrayList<>())
-                                .add(historyAction);
-                    } else {
-                        val repairerInput = assemblyHelper.buildRepairerInput(historyActionResults, metaAction, source);
-                        val repairerResult = actionRepairer.execute(repairerInput);
-                        switch (repairerResult.getStatus()) {
-                            // 如果本次修复被认为成功，则将补充的信息添加至 additionalContext
-                            case RepairerResult.RepairerStatus.OK -> {
-                                additionalContext.addAll(repairerResult.getFixedData());
-                                result.setStatus(MetaAction.Result.Status.WAITING);
-                            }
-                            // 此处的修复失败来自系统内部的执行失败：其余方式均不可行时将回退至当前分支
-                            case RepairerResult.RepairerStatus.FAILED -> {
-                                result.setStatus(MetaAction.Result.Status.FAILED);
-                                result.setData("行动执行失败");
-                            }
-                            // 此处对应已在 repairer 内发起外部请求，故在此处进行阻塞
-                            case RepairerResult.RepairerStatus.ACQUIRE -> {
-                                phaserRecord.interrupt();
-                                result.setStatus(MetaAction.Result.Status.WAITING);
-                            }
-                        }
-                    }
-                } while (result.getStatus().equals(MetaAction.Result.Status.WAITING));
+                executeMetaActionWithRetry(metaAction, phaserRecord, source);
             } catch (Exception e) {
                 log.error("Action executing failed: {}", actionKey, e);
             } finally {
                 phaser.arriveAndDeregister();
             }
         };
+    }
+
+    private void executeMetaActionWithRetry(MetaAction metaAction, PhaserRecord phaserRecord, String source) {
+        String failureReason = "参数提取失败";
+        val actionData = phaserRecord.executableAction();
+        val actionKey = metaAction.getKey();
+        for (int attempt = 1; attempt <= MAX_EXTRACTOR_ATTEMPTS; attempt++) {
+            val result = metaAction.getResult();
+            result.reset();
+            metaAction.getParams().clear();
+
+            val executingStage = actionData.getExecutingStage();
+            val historyActionResults = actionData.getHistory().get(executingStage);
+            val additionalContext = actionData.getAdditionalContext().get(executingStage);
+            val extractorInput = assemblyHelper.buildExtractorInput(metaAction, source, historyActionResults, additionalContext);
+            ExtractorResult extractorResult;
+            try {
+                extractorResult = paramsExtractor.execute(extractorInput);
+            } catch (Exception e) {
+                failureReason = buildAttemptFailureReason("参数提取异常", e.getLocalizedMessage());
+                continue;
+            }
+
+            if (extractorResult == null || !extractorResult.isOk()) {
+                failureReason = buildAttemptFailureReason("参数提取失败", null);
+                continue;
+            }
+
+            if (extractorResult.getParams() != null) {
+                metaAction.getParams().putAll(extractorResult.getParams());
+            }
+
+            try {
+                runnerClient.submit(metaAction);
+            } catch (Exception e) {
+                failureReason = buildAttemptFailureReason("行动执行异常", e.getLocalizedMessage());
+                continue;
+            }
+
+            if (result.getStatus() == MetaAction.Result.Status.SUCCESS) {
+                val historyAction = new HistoryAction(actionKey, actionCapability.loadMetaActionInfo(actionKey).getDescription(), result.getData());
+                actionData.getHistory()
+                        .computeIfAbsent(executingStage, integer -> new ArrayList<>())
+                        .add(historyAction);
+                return;
+            }
+
+            failureReason = buildAttemptFailureReason("行动执行失败", result.getData());
+        }
+        metaAction.getResult().setStatus(MetaAction.Result.Status.FAILED);
+        metaAction.getResult().setData(failureReason);
+    }
+
+    private RecognizerTaskRecord startRecognizerIfNeeded(ExecutableAction executableAction, PhaserRecord phaserRecord) {
+        if (!shouldRunCorrectionRecognizer(executableAction)) {
+            return RecognizerTaskRecord.disabled();
+        }
+        val recognizerInput = assemblyHelper.buildRecognizerInput(executableAction);
+        val task = buildRecognizerTask(recognizerInput, phaserRecord.phaser());
+        Future<CorrectionRecognizerResult> future = virtualExecutor.submit(task);
+        return new RecognizerTaskRecord(true, future);
+    }
+
+    private Callable<CorrectionRecognizerResult> buildRecognizerTask(CorrectionRecognizerInput input, Phaser phaser) {
+        phaser.register();
+        return () -> {
+            try {
+                return actionCorrectionRecognizer.execute(input);
+            } finally {
+                phaser.arriveAndDeregister();
+            }
+        };
+    }
+
+    private CorrectionRecognizerResult resolveRecognizerResult(RecognizerTaskRecord record) {
+        if (record == null || !record.enabled() || record.future() == null) {
+            return null;
+        }
+        try {
+            if (!record.future().isDone()) {
+                return null;
+            }
+            return record.future().get();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private String buildAttemptFailureReason(String prefix, String detail) {
+        if (detail == null || detail.isBlank()) {
+            return prefix;
+        }
+        return prefix + ": " + detail;
+    }
+
+    private boolean hasFailedMetaAction(List<MetaAction> metaActions) {
+        return metaActions.stream().anyMatch(metaAction -> metaAction.getResult().getStatus() == MetaAction.Result.Status.FAILED);
+    }
+
+    private boolean shouldRunCorrectionRecognizer(ExecutableAction executableAction) {
+        val orderedStages = new ArrayList<>(executableAction.getActionChain().keySet());
+        orderedStages.sort(Integer::compareTo);
+        int totalStages = orderedStages.size();
+        if (totalStages < 3) {
+            return false;
+        }
+        int stageIndex = orderedStages.indexOf(executableAction.getExecutingStage());
+        if (stageIndex < 0) {
+            return false;
+        }
+        if (stageIndex == totalStages - 1) {
+            return true;
+        }
+        return stageIndex >= 2 && (stageIndex - 2) % 2 == 0;
     }
 
     private void ensureExecutableResult(ExecutableAction executableAction, boolean failed, String failureReason) {
@@ -346,20 +431,15 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     private record MetaActionsListeningRecord(AtomicBoolean accepting, int phase) {
     }
 
+    private record RecognizerTaskRecord(boolean enabled, Future<CorrectionRecognizerResult> future) {
+        private static RecognizerTaskRecord disabled() {
+            return new RecognizerTaskRecord(false, null);
+        }
+    }
+
     @SuppressWarnings("InnerClassMayBeStatic")
     private class AssemblyHelper {
         private AssemblyHelper() {
-        }
-
-        private RepairerInput buildRepairerInput(List<HistoryAction> historyActionsResults, MetaAction action, String userId) {
-            RepairerInput input = new RepairerInput();
-            MetaActionInfo metaActionInfo = actionCapability.loadMetaActionInfo(action.getKey());
-            input.setHistoryActionResults(historyActionsResults);
-            input.setParams(metaActionInfo.getParams());
-            input.setRecentMessages(cognitionCapability.getChatMessages());
-            input.setActionDescription(metaActionInfo.getDescription());
-            input.setUserId(userId);
-            return input;
         }
 
         private ExtractorInput buildExtractorInput(MetaAction action, String source, List<HistoryAction> historyActionResults,
@@ -373,7 +453,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             return input;
         }
 
-        private CorrectorInput buildCorrectorInput(ExecutableAction executableAction, String source) {
+        private CorrectorInput buildCorrectorInput(ExecutableAction executableAction) {
             return CorrectorInput.builder()
                     .tendency(executableAction.getTendency())
                     .source(executableAction.getSource())
@@ -381,6 +461,37 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                     .description(executableAction.getDescription())
                     .history(executableAction.getHistory().get(executableAction.getExecutingStage()))
                     .status(executableAction.getStatus())
+                    .recentMessages(cognitionCapability.getChatMessages())
+                    .activatedSlices(memoryCapability.getActivatedSlices())
+                    .build();
+        }
+
+        private CorrectionRecognizerInput buildRecognizerInput(ExecutableAction executableAction) {
+            val orderedStages = new ArrayList<>(executableAction.getActionChain().keySet());
+            orderedStages.sort(Integer::compareTo);
+            int currentStageIndex = orderedStages.indexOf(executableAction.getExecutingStage());
+            List<CorrectionRecognizerMetaActionSnapshot> currentStageMetaActions = executableAction.getActionChain()
+                    .getOrDefault(executableAction.getExecutingStage(), List.of())
+                    .stream()
+                    .map(metaAction -> CorrectionRecognizerMetaActionSnapshot.builder()
+                            .key(metaAction.getKey())
+                            .name(metaAction.getName())
+                            .io(metaAction.getIo())
+                            .resultStatus(metaAction.getResult().getStatus().name())
+                            .resultData(metaAction.getResult().getData())
+                            .build())
+                    .toList();
+            return CorrectionRecognizerInput.builder()
+                    .tendency(executableAction.getTendency())
+                    .source(executableAction.getSource())
+                    .reason(executableAction.getReason())
+                    .description(executableAction.getDescription())
+                    .history(executableAction.getHistory().get(executableAction.getExecutingStage()))
+                    .currentStageMetaActions(currentStageMetaActions)
+                    .orderedStages(orderedStages)
+                    .currentStage(executableAction.getExecutingStage())
+                    .currentStageIndex(currentStageIndex)
+                    .lastStage(currentStageIndex == orderedStages.size() - 1)
                     .recentMessages(cognitionCapability.getChatMessages())
                     .activatedSlices(memoryCapability.getActivatedSlices())
                     .build();
