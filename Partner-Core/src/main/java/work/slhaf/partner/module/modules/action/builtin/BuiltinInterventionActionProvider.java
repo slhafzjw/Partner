@@ -2,13 +2,21 @@ package work.slhaf.partner.module.modules.action.builtin;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import org.jetbrains.annotations.NotNull;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent;
 import work.slhaf.partner.core.action.ActionCapability;
+import work.slhaf.partner.core.action.entity.Action;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.intervention.InterventionType;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
+import work.slhaf.partner.core.cognition.BlockContent;
+import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.core.cognition.ContextBlock;
+import work.slhaf.partner.core.cognition.ContextWorkspace;
 
 import java.util.*;
 import java.util.function.Function;
@@ -24,14 +32,143 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
 
     @InjectCapability
     private ActionCapability actionCapability;
+    @InjectCapability
+    private CognitionCapability cognitionCapability;
 
     @Override
     public List<BuiltinActionRegistry.BuiltinActionDefinition> provideBuiltinActions() {
         return List.of(
                 buildCreateInterventionDefinition(),
                 buildShowAvailableMetaActionsDefinition(),
-                buildShowIntervenableActionsDefinition()
+                buildShowIntervenableActionsDefinition(),
+                buildAcquireInterventionDefinition(),
+                buildResumeInterruptedActionDefinition()
         );
+    }
+
+    private BuiltinActionRegistry.BuiltinActionDefinition buildResumeInterruptedActionDefinition() {
+        Set<String> tags = new HashSet<>(basicTags);
+        tags.add("Agent Turn");
+        tags.add("Action Management");
+
+        MetaActionInfo info = new MetaActionInfo(
+                false,
+                null,
+                Map.of(
+                        "actionId", "Uuid of the interrupted executable action to resume."
+                ),
+                "Resume action that is interrupted.",
+                tags,
+                Set.of(),
+                Set.of(),
+                false,
+                JSONObject.of(
+                        "result", "Plain text resume result, describes whether it is succeed or fail reason."
+                )
+        );
+
+        Function<Map<String, Object>, String> invoker = params -> {
+            String actionId = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "actionId");
+            try {
+                ExecutableAction executableAction = getExecutableAction(actionId);
+                executableAction.resume();
+                return "Resume succeed";
+            } catch (Exception e) {
+                return "Failed to resume action[" + actionId + "], reason: " + e.getLocalizedMessage();
+            }
+        };
+
+        return new BuiltinActionRegistry.BuiltinActionDefinition(
+                createActionKey("resume_interrupted_action"),
+                info,
+                invoker
+        );
+    }
+
+
+    /**
+     * 尝试向指定用户请求干预，通过自对话通道
+     *
+     * @return 内建 MetaAction 定义数据
+     */
+    private BuiltinActionRegistry.BuiltinActionDefinition buildAcquireInterventionDefinition() {
+        Set<String> tags = new HashSet<>(basicTags);
+        tags.add("Agent Turn");
+        tags.add("Action Management");
+
+        MetaActionInfo info = new MetaActionInfo(
+                true,
+                null,
+                Map.of(
+                        "actionId", "Uuid of the executing action that should enter intervention flow.",
+                        "actionInfo", "Readable summary of the current action, used to explain the intervention context to the target.",
+                        "demand", "What feedback, decision or operation is required from the target user.",
+                        "target", "Target user or channel identifier that should receive the intervention request.",
+                        "input", "Prompt content used to initiate the intervention turn toward the target.",
+                        "timeout", "Maximum wait time for the interruption result, in the unit expected by ExecutableAction.interrupt(timeout)."
+                ),
+                "Try to acquire the target user to intervene this Action.",
+                tags,
+                Set.of(),
+                Set.of(),
+                false,
+                JSONObject.of(
+                        "result", "Plain text intervention status. It describes whether the target answered before timeout, or returns an error reason when the turn/interruption flow fails."
+                )
+        );
+
+        Function<Map<String, Object>, String> invoker = params -> {
+            String actionId = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "actionId").trim();
+            String actionInfo = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "actionInfo").trim();
+            String demand = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "demand").trim();
+            String target = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "target").trim();
+            String input = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "input").trim();
+            int timeout = BuiltinActionRegistry.BuiltinActionDefinition.requireInt(params, "timeout");
+
+            ContextWorkspace contextWorkspace = cognitionCapability.contextWorkspace();
+            String blockName = "acquire_intervention-" + actionId;
+            String source = "action_executor";
+            contextWorkspace.register(new ContextBlock(
+                    new BlockContent(blockName, source) {
+                        @Override
+                        protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                            appendTextElement(document, root, "action_id", actionId);
+                            appendTextElement(document, root, "action_info", actionInfo);
+                            appendTextElement(document, root, "demand", demand);
+                        }
+                    },
+                    Set.of(ContextBlock.VisibleDomain.ACTION, ContextBlock.VisibleDomain.COMMUNICATION),
+                    10,
+                    10,
+                    20
+            ));
+
+
+            try {
+                ExecutableAction executableAction = getExecutableAction(actionId);
+                cognitionCapability.initiateTurn(input, target);
+                boolean normal = executableAction.interrupt(timeout);
+                return normal ? target + "not answered" : target + "answered";
+            } catch (Exception e) {
+                return "Error happened while calling turn: " + e.getLocalizedMessage();
+            } finally {
+                contextWorkspace.expire(blockName, source);
+            }
+        };
+
+        return new BuiltinActionRegistry.BuiltinActionDefinition(
+                createActionKey("acquire_intervention"),
+                info,
+                invoker
+        );
+    }
+
+    private ExecutableAction getExecutableAction(String actionId) {
+        return actionCapability.listActions(Action.Status.EXECUTING, null)
+                .stream()
+                .filter(action -> action.getUuid().equals(actionId))
+                .findFirst()
+                .orElseThrow();
     }
 
     /**
@@ -175,6 +312,10 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
             intervention.setActions(actions);
 
             actionCapability.handleInterventions(List.of(intervention), target);
+
+            ExecutableAction executableAction = getExecutableAction(targetId);
+            executableAction.resume();
+
             return JSONObject.of("ok", true).toJSONString();
         };
 

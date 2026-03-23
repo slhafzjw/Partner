@@ -1,6 +1,7 @@
 package work.slhaf.partner.core.action.entity
 
 import work.slhaf.partner.module.modules.action.executor.entity.HistoryAction
+import java.time.Instant
 import java.time.ZonedDateTime
 import java.util.*
 import kotlin.time.Duration
@@ -112,6 +113,27 @@ sealed class ExecutableAction : Action() {
     val additionalContext: MutableMap<Int, MutableList<String>> = mutableMapOf()
 
     override val timeout: Duration = 10.minutes
+
+    /**
+     * @param timeout 最长打断时间
+     * @return 是否超时结束
+     */
+    fun interrupt(timeout: Int): Boolean {
+        status = Status.INTERRUPTED
+        val interruptAt = Instant.now().epochSecond
+
+        while (status == Status.INTERRUPTED) {
+            Thread.sleep(500);
+            if (Instant.now().epochSecond - interruptAt > timeout) {
+                return false
+            }
+        }
+        return true;
+    }
+
+    fun resume() {
+        status = Status.EXECUTING
+    }
 }
 
 /**
