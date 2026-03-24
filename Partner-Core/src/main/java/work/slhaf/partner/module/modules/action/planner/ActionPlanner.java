@@ -37,8 +37,8 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
 
     private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";
     private static final String PENDING_BLOCK_SOURCE = "action_planner_pending";
-    private static final double PENDING_REPLACE_FADE_FACTOR = 100.0;
-    private static final double PENDING_TIME_FADE_FACTOR = 40.0;
+    private static final double PENDING_REPLACE_FADE_FACTOR = 10.0;
+    private static final double PENDING_TIME_FADE_FACTOR = 10.0;
     private static final double PENDING_ACTIVATE_FACTOR = 0.0;
 
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
