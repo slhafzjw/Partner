@@ -21,10 +21,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
@@ -82,7 +79,8 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
                 // TODO 为各模块提供 emit msg 能力后, 在这里统一接收并分发结构化输出.
                 responseText = this.chat(buildChatMessages(runningFlowContext));
                 log.debug("CommunicationProducer responses: {}", responseText);
-                updateModuleContextAndChatMessages(runningFlowContext, responseText);
+                updateChatMessages(runningFlowContext, responseText);
+                updateContext();
                 break;
             } catch (Exception e) {
                 count++;
@@ -95,6 +93,23 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
                 updateCoreResponse(runningFlowContext, responseText);
             }
         }
+    }
+
+    private void updateContext() {
+        ContextBlock block = new ContextBlock(
+                new BlockContent("recent_chat_messages", "communication_producer") {
+                    @Override
+                    protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                        List<Message> chatMessages = cognitionCapability.getChatMessages();
+                        appendRepeatedElements(document, root, "chat_message", List.of(chatMessages.subList(chatMessages.size() - 5, chatMessages.size() - 1)));
+                    }
+                },
+                Set.of(ContextBlock.VisibleDomain.COGNITION),
+                100,
+                5,
+                4
+        );
+        cognitionCapability.contextWorkspace().register(block);
     }
 
     private void updateCoreResponse(PartnerRunningFlowContext runningFlowContext, String responseText) {
@@ -113,7 +128,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         return temp;
     }
 
-    private void updateModuleContextAndChatMessages(PartnerRunningFlowContext runningFlowContext, String response) {
+    private void updateChatMessages(PartnerRunningFlowContext runningFlowContext, String response) {
         cognitionCapability.getMessageLock().lock();
         try {
             List<Message> chatMessages = cognitionCapability.getChatMessages();

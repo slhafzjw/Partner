@@ -265,6 +265,7 @@ abstract class BlockContent protected constructor(
         return element
     }
 
+    @JvmOverloads
     protected fun <T> appendListElement(
         document: Document,
         parent: Element,
@@ -287,6 +288,7 @@ abstract class BlockContent protected constructor(
         return wrapper
     }
 
+    @JvmOverloads
     protected fun <T> appendRepeatedElements(
         document: Document,
         parent: Element,
