@@ -5,6 +5,7 @@ import org.w3c.dom.Element
 import java.io.StringWriter
 import java.time.Duration
 import java.time.Instant
+import java.util.*
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.OutputKeys
@@ -195,10 +196,18 @@ data class ContextBlock @JvmOverloads constructor(
     )
 }
 
-abstract class BlockContent protected constructor(
+abstract class BlockContent @JvmOverloads protected constructor(
     val blockName: String,
     val source: String,
+    val urgency: Urgency = Urgency.NORMAL
 ) {
+
+    enum class Urgency {
+        LOW,
+        NORMAL,
+        HIGH,
+        CRITICAL
+    }
 
     fun encodeToXml(): Element {
         val document = DocumentBuilderFactory.newInstance()
@@ -207,6 +216,7 @@ abstract class BlockContent protected constructor(
 
         val root = document.createElement(blockName)
         root.setAttribute("source", source)
+        root.setAttribute("urgency", urgency.name.lowercase(Locale.ROOT))
         document.appendChild(root)
 
         fillXml(document, root)

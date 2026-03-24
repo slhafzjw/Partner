@@ -150,7 +150,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private BlockContent buildPendingBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
-        return new BlockContent(blockName, PENDING_BLOCK_SOURCE) {
+        return new BlockContent(blockName, PENDING_BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "state", "waiting_confirm");
@@ -190,7 +190,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private BlockContent buildPendingCompactBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
-        return new BlockContent(blockName, PENDING_BLOCK_SOURCE) {
+        return new BlockContent(blockName, PENDING_BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "state", "waiting_confirm");
@@ -202,7 +202,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private BlockContent buildPendingAbstractBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
-        return new BlockContent(blockName, PENDING_BLOCK_SOURCE) {
+        return new BlockContent(blockName, PENDING_BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "pending_tendency", executableAction.getTendency());
