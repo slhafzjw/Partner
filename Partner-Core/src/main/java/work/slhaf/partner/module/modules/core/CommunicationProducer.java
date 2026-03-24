@@ -118,7 +118,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     private List<Message> buildChatMessages(PartnerRunningFlowContext runningFlowContext) {
         ResolvedContext resolvedContext = cognitionCapability.contextWorkspace()
-                .resolve(List.of(ContextBlock.VisibleDomain.COMMUNICATION));
+                .resolve(List.of(ContextBlock.VisibleDomain.COMMUNICATION, ContextBlock.VisibleDomain.MEMORY, ContextBlock.VisibleDomain.PERCEIVE, ContextBlock.VisibleDomain.ACTION));
         List<BlockContent> communicationBlocks = resolvedContext.getBlocks();
         List<Message> historyMessages = snapshotConversationMessages();
         List<Message> temp = new ArrayList<>(historyMessages.size() + 2);
