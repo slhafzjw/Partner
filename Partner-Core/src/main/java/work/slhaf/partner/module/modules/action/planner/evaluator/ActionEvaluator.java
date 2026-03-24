@@ -1,8 +1,9 @@
 package work.slhaf.partner.module.modules.action.planner.evaluator;
 
-import cn.hutool.core.bean.BeanUtil;
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
+import kotlin.Unit;
+import org.jetbrains.annotations.NotNull;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
@@ -10,17 +11,15 @@ import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.action.ActionCapability;
+import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextBlock;
-import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
-import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorBatchInput;
+import work.slhaf.partner.core.cognition.ResolvedContext;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorResult;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<EvaluatorResult>> implements ActivateModel {
@@ -45,58 +44,52 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
      */
     @Override
     public List<EvaluatorResult> execute(EvaluatorInput data) {
-        List<EvaluatorBatchInput> batchInputs = buildEvaluatorBatchInput(data);
-        List<Callable<EvaluatorResult>> tasks = buildEvaluateTasks(batchInputs);
+        List<Callable<EvaluatorResult>> tasks = buildEvaluateTasks(data.getTendencies());
         return executor.invokeAllAndReturn(tasks);
     }
 
-    private List<Callable<EvaluatorResult>> buildEvaluateTasks(List<EvaluatorBatchInput> batchInputs) {
+    private List<Callable<EvaluatorResult>> buildEvaluateTasks(List<String> tendencies) {
         List<Callable<EvaluatorResult>> list = new ArrayList<>();
-        for (EvaluatorBatchInput batchInput : batchInputs) {
+        for (String tendency : tendencies) {
             list.add(() -> {
                 List<Message> messages = List.of(
                         cognitionCapability.contextWorkspace().resolve(List.of(ContextBlock.VisibleDomain.ACTION, ContextBlock.VisibleDomain.COGNITION, ContextBlock.VisibleDomain.MEMORY)).encodeToContextMessage(),
-                        new Message(Message.Character.USER, buildPrompt(batchInput))
+                        availableMetaActionContext(),
+                        new Message(Message.Character.USER, tendency)
                 );
                 EvaluatorResult evaluatorResult = formattedChat(
                         messages,
                         EvaluatorResult.class
                 );
-                evaluatorResult.setTendency(batchInput.getTendency());
+                evaluatorResult.setTendency(tendency);
                 return evaluatorResult;
             });
         }
         return list;
     }
 
-    private List<EvaluatorBatchInput> buildEvaluatorBatchInput(EvaluatorInput data) {
-        List<EvaluatorBatchInput> list = new ArrayList<>();
-        for (String tendency : data.getTendencies()) {
-            EvaluatorBatchInput temp = new EvaluatorBatchInput();
-            BeanUtil.copyProperties(data, temp);
-            temp.setTendency(tendency);
-            Map<String, String> availableActions = new HashMap<>();
-            actionCapability.listAvailableMetaActions().forEach((key, info) -> availableActions.put(key, info.getDescription()));
-            temp.setAvailableActions(availableActions);
-            list.add(temp);
-        }
-        return list;
+    private Message availableMetaActionContext() {
+        // TODO select and filter available MetaActions by tags and embedding
+        BlockContent content = new BlockContent("available_meta_actions", "action_planner") {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendRepeatedElements(
+                        document,
+                        root,
+                        "available_meta_action",
+                        actionCapability.listAvailableMetaActions().entrySet(),
+                        (block, value) -> {
+                            appendTextElement(document, root, "action_key", value.getKey());
+                            appendTextElement(document, root, "action_value", value.getValue().getDescription());
+                            return Unit.INSTANCE;
+                        }
+                );
+            }
+        };
+        return new ResolvedContext(List.of(content)).encodeToContextMessage();
     }
 
-    private String buildPrompt(EvaluatorBatchInput batchInput) {
-        JSONObject prompt = new JSONObject();
-        prompt.put("[行动倾向]", batchInput.getTendency());
-        JSONArray memoryData = prompt.putArray("[相关记忆切片]");
-        for (ActivatedMemorySlice evaluatedSlice : batchInput.getActivatedSlices()) {
-            JSONObject memory = memoryData.addObject();
-            memory.put("[日期]", evaluatedSlice.getDate());
-            memory.put("[摘要]", evaluatedSlice.getSummary());
-        }
-        JSONObject availableActionData = prompt.putObject("[可用行动单元]");
-        availableActionData.putAll(batchInput.getAvailableActions());
-        return prompt.toString();
-    }
-
+    @NotNull
     @Override
     public String modelKey() {
         return "action_evaluator";
