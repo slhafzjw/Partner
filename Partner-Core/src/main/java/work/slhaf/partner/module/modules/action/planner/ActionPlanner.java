@@ -2,6 +2,8 @@ package work.slhaf.partner.module.modules.action.planner;
 
 import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
@@ -12,12 +14,10 @@ import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
+import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
-import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
-import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
-import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerResult;
-import work.slhaf.partner.module.modules.action.planner.confirmer.entity.PendingDecisionItem;
 import work.slhaf.partner.module.modules.action.planner.evaluator.ActionEvaluator;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorResult;
@@ -26,11 +26,7 @@ import work.slhaf.partner.module.modules.action.planner.extractor.entity.Extract
 import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -39,9 +35,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
-    private static final long PENDING_TTL_MILLIS = 30 * 60 * 1000L;
-    private static final long PENDING_REMINDER_ADVANCE_MILLIS = 5 * 60 * 1000L;
     private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";
+    private static final String PENDING_BLOCK_SOURCE = "action_planner_pending";
+    private static final double PENDING_REPLACE_FADE_FACTOR = 100.0;
+    private static final double PENDING_TIME_FADE_FACTOR = 40.0;
+    private static final double PENDING_ACTIVATE_FACTOR = 0.0;
 
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
@@ -54,8 +52,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     private ActionEvaluator actionEvaluator;
     @InjectModule
     private ActionExtractor actionExtractor;
-    @InjectModule
-    private ActionConfirmer actionConfirmer;
     @InjectModule
     private ActionScheduler actionScheduler;
     @InjectModule
@@ -71,33 +67,17 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     @Override
     public void execute(@NotNull PartnerRunningFlowContext context) {
         try {
-            List<Callable<Void>> tasks = new ArrayList<>();
-            addConfirmTask(tasks, context);
-            addNewActionTask(tasks, context);
-            executor.invokeAll(tasks);
-        } catch (Exception e) {
-            log.error("执行异常", e);
-        }
-    }
-
-    /**
-     * 新的提取与评估任务
-     *
-     * @param tasks   并发任务列表
-     * @param context 流程上下文
-     */
-    private void addNewActionTask(List<Callable<Void>> tasks, PartnerRunningFlowContext context) {
-        tasks.add(() -> {
             ExtractorResult extractorResult = actionExtractor.execute(context.getInput());
             if (extractorResult.getTendencies().isEmpty()) {
-                return null;
+                return;
             }
             EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult);
             List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); // 并发操作均为访问
             putActionData(evaluatorResults, context);
             updateTendencyCache(evaluatorResults, context.getInput(), extractorResult);
-            return null;
-        });
+        } catch (Exception e) {
+            log.error("执行异常", e);
+        }
     }
 
     private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input,
@@ -122,117 +102,114 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         });
     }
 
-    /**
-     * 待确认行动的判断任务
-     *
-     * @param tasks   并发任务列表
-     * @param context 流程上下文
-     */
-    private void addConfirmTask(List<Callable<Void>> tasks, PartnerRunningFlowContext context) {
-        tasks.add(() -> {
-            ConfirmerInput confirmerInput = assemblyHelper.buildConfirmerInput(context);
-            ConfirmerResult result = actionConfirmer.execute(confirmerInput);
-            setupConfirmedActionInfo(context, result);
-            return null;
-        });
-    }
-
-    private void setupConfirmedActionInfo(PartnerRunningFlowContext context, ConfirmerResult result) {
-        List<PendingDecisionItem> decisions = result.getDecisions();
-        if (decisions == null || decisions.isEmpty()) {
-            return;
-        }
-        for (PendingDecisionItem decisionItem : decisions) {
-            PendingActionRecord pendingAction = actionCapability.resolvePendingDecision(
-                    context.getSource(),
-                    decisionItem.getPendingId(),
-                    decisionItem.getDecision(),
-                    decisionItem.getReason()
-            );
-            if (pendingAction == null) {
-                continue;
-            }
-            if (decisionItem.getDecision() == PendingActionRecord.Decision.CONFIRM
-                    && pendingAction.getStatus() == PendingActionRecord.Status.CONFIRMED) {
-                executeOrSchedule(pendingAction.getExecutableAction());
-            }
-        }
-    }
-
     private void putActionData(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
+            expireResolvedPending(evaluatorResult);
+            if (!evaluatorResult.isOk()) {
+                continue;
+            }
             ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, context.getSource());
             if (evaluatorResult.isNeedConfirm()) {
-                PendingActionRecord pendingAction = actionCapability.createPendingAction(
-                        context.getSource(),
-                        executableAction,
-                        PENDING_TTL_MILLIS,
-                        PENDING_REMINDER_ADVANCE_MILLIS
-                );
-                schedulePendingLifecycleActions(pendingAction);
-            } else {
-                executeOrSchedule(executableAction);
+                registerPendingContextBlock(executableAction, evaluatorResult);
+                continue;
             }
+            executeOrSchedule(executableAction);
         }
     }
 
-    private void schedulePendingLifecycleActions(PendingActionRecord pendingAction) {
-        StateAction reminderAction = buildPendingReminderAction(pendingAction);
-        StateAction expireAction = buildPendingExpireAction(pendingAction);
-        actionCapability.bindPendingLifecycleActions(pendingAction.getPendingId(), reminderAction, expireAction);
-        actionScheduler.schedule(reminderAction);
-        actionScheduler.schedule(expireAction);
-    }
-
-    private StateAction buildPendingReminderAction(PendingActionRecord pendingAction) {
-        return new StateAction(
-                pendingAction.getUserId(),
-                "pending-action-reminder:" + pendingAction.getPendingId(),
-                "待确认行动提醒",
-                Schedulable.ScheduleType.ONCE,
-                asScheduleContent(pendingAction.getRemindAt()),
-                new StateAction.Trigger.Call(() -> {
-                    handlePendingReminder(pendingAction.getPendingId(), pendingAction.getUserId());
-                    return Unit.INSTANCE;
-                })
-        );
-    }
-
-    private StateAction buildPendingExpireAction(PendingActionRecord pendingAction) {
-        return new StateAction(
-                pendingAction.getUserId(),
-                "pending-action-expire:" + pendingAction.getPendingId(),
-                "待确认行动失效",
-                Schedulable.ScheduleType.ONCE,
-                asScheduleContent(pendingAction.getExpireAt()),
-                new StateAction.Trigger.Call(() -> {
-                    handlePendingExpire(pendingAction.getPendingId());
-                    return Unit.INSTANCE;
-                })
-        );
-    }
-
-    private void handlePendingReminder(String pendingId, String userId) {
-        boolean marked = actionCapability.markPendingReminded(pendingId);
-        if (!marked) {
+    private void expireResolvedPending(EvaluatorResult evaluatorResult) {
+        EvaluatorResult.ResolvedPending resolvedPending = evaluatorResult.getResolvedPending();
+        if (resolvedPending == null) {
             return;
         }
-        try {
-            // TODO target 指定行为待补充; 主动回复链路待补充
-            cognitionCapability.initiateTurn("系统提醒：存在待确认行动即将过期，请确认是否继续执行。pendingId=" + pendingId, userId);
-        } catch (Exception e) {
-            log.warn("触发待确认行动提醒失败, pendingId: {}", pendingId, e);
+        if (resolvedPending.getBlockName() == null || resolvedPending.getSource() == null) {
+            return;
         }
+        cognitionCapability.contextWorkspace().expire(
+                resolvedPending.getBlockName(),
+                resolvedPending.getSource()
+        );
     }
 
-    private void handlePendingExpire(String pendingId) {
-        actionCapability.expirePendingIfWaiting(pendingId);
+    private void registerPendingContextBlock(ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
+        String blockName = buildPendingBlockName(executableAction);
+        ContextBlock block = new ContextBlock(
+                buildPendingBlock(blockName, executableAction, evaluatorResult),
+                buildPendingCompactBlock(blockName, executableAction, evaluatorResult),
+                buildPendingAbstractBlock(blockName, executableAction, evaluatorResult),
+                Set.of(ContextBlock.VisibleDomain.ACTION),
+                PENDING_REPLACE_FADE_FACTOR,
+                PENDING_TIME_FADE_FACTOR,
+                PENDING_ACTIVATE_FACTOR
+        );
+        cognitionCapability.contextWorkspace().register(block);
     }
 
-    private String asScheduleContent(long targetTimeMillis) {
-        long now = System.currentTimeMillis();
-        long safeTarget = Math.max(targetTimeMillis, now + 1000L);
-        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(safeTarget), ZoneId.systemDefault()).toString();
+    private String buildPendingBlockName(ExecutableAction executableAction) {
+        return "pending_action-" + executableAction.getUuid();
+    }
+
+    private BlockContent buildPendingBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
+        return new BlockContent(blockName, PENDING_BLOCK_SOURCE) {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendTextElement(document, root, "state", "waiting_confirm");
+                appendTextElement(document, root, "action_uuid", executableAction.getUuid());
+                appendTextElement(document, root, "action_type", evaluatorResult.getType());
+                appendTextElement(document, root, "tendency", executableAction.getTendency());
+                appendTextElement(document, root, "reason", executableAction.getReason());
+                appendTextElement(document, root, "description", executableAction.getDescription());
+                appendTextElement(document, root, "source_user", executableAction.getSource());
+                if (evaluatorResult.getScheduleType() != null) {
+                    appendTextElement(document, root, "schedule_type", evaluatorResult.getScheduleType());
+                }
+                if (evaluatorResult.getScheduleContent() != null) {
+                    appendTextElement(document, root, "schedule_content", evaluatorResult.getScheduleContent());
+                }
+                Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChain();
+                if (primaryActionChain == null || primaryActionChain.isEmpty()) {
+                    return;
+                }
+                Element chainRoot = document.createElement("primary_action_chain");
+                root.appendChild(chainRoot);
+                List<Integer> orders = new ArrayList<>(primaryActionChain.keySet());
+                orders.sort(Integer::compareTo);
+                for (Integer order : orders) {
+                    Element orderElement = document.createElement("step");
+                    orderElement.setAttribute("order", String.valueOf(order));
+                    chainRoot.appendChild(orderElement);
+                    appendRepeatedElements(
+                            document,
+                            orderElement,
+                            "action_key",
+                            primaryActionChain.getOrDefault(order, List.of())
+                    );
+                }
+            }
+        };
+    }
+
+    private BlockContent buildPendingCompactBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
+        return new BlockContent(blockName, PENDING_BLOCK_SOURCE) {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendTextElement(document, root, "state", "waiting_confirm");
+                appendTextElement(document, root, "tendency", executableAction.getTendency());
+                appendTextElement(document, root, "description", executableAction.getDescription());
+                appendTextElement(document, root, "action_type", evaluatorResult.getType());
+            }
+        };
+    }
+
+    private BlockContent buildPendingAbstractBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
+        return new BlockContent(blockName, PENDING_BLOCK_SOURCE) {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendTextElement(document, root, "pending_tendency", executableAction.getTendency());
+                appendTextElement(document, root, "summary", "exists pending action waiting for confirmation");
+                appendTextElement(document, root, "action_type", evaluatorResult.getType());
+            }
+        };
     }
 
     private void executeOrSchedule(ExecutableAction executableAction) {
@@ -403,13 +380,5 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             return existActions.containsAll(preActions);
         }
 
-        private ConfirmerInput buildConfirmerInput(PartnerRunningFlowContext context) {
-            ConfirmerInput confirmerInput = new ConfirmerInput();
-            confirmerInput.setInput(context.getInput());
-            List<PendingActionRecord> pendingActions = actionCapability.listActivePendingActions(context.getSource());
-            confirmerInput.setRecentMessages(cognitionCapability.snapshotChatMessages());
-            confirmerInput.setPendingActions(pendingActions);
-            return confirmerInput;
-        }
     }
 }

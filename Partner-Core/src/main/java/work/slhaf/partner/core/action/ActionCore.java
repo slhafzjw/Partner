@@ -8,7 +8,9 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.PartnerCore;
-import work.slhaf.partner.core.action.entity.*;
+import work.slhaf.partner.core.action.entity.ExecutableAction;
+import work.slhaf.partner.core.action.entity.MetaAction;
+import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.cache.ActionCacheData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
@@ -49,11 +51,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
      */
     private CopyOnWriteArraySet<ExecutableAction> actionPool = new CopyOnWriteArraySet<>();
     /**
-     * 待确认任务，以userId区分不同用户，因为需要跨请求确认
-     */
-    private final HashMap<String, List<PendingActionRecord>> pendingActions = new HashMap<>();
-    private final HashMap<String, PendingLifecycleActions> pendingLifecycleActions = new HashMap<>();
-    /**
      * 语义缓存与行为倾向映射
      */
     private List<ActionCacheData> actionCache = new ArrayList<>();
@@ -86,132 +83,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
                 .filter(actionData -> status == null || actionData.getStatus().equals(status))
                 .filter(actionData -> source == null || actionData.getSource().equals(source))
                 .collect(Collectors.toSet());
-    }
-
-    @CapabilityMethod
-    public synchronized PendingActionRecord createPendingAction(String userId, ExecutableAction executableAction,
-                                                                long ttlMillis, long reminderBeforeMillis) {
-        long now = System.currentTimeMillis();
-        long safeTtl = Math.max(ttlMillis, 1000L);
-        long safeReminderBefore = Math.max(0L, Math.min(reminderBeforeMillis, safeTtl - 1000L));
-
-        PendingActionRecord record = new PendingActionRecord();
-        record.setUserId(userId);
-        record.setExecutableAction(executableAction);
-        record.setCreatedAt(now);
-        record.setExpireAt(now + safeTtl);
-        record.setRemindAt(record.getExpireAt() - safeReminderBefore);
-        record.setStatus(PendingActionRecord.Status.WAITING_CONFIRM);
-
-        pendingActions.computeIfAbsent(userId, k -> new ArrayList<>()).add(record);
-        return record;
-    }
-
-    @CapabilityMethod
-    public synchronized List<PendingActionRecord> listActivePendingActions(String userId) {
-        List<PendingActionRecord> records = pendingActions.get(userId);
-        if (records == null || records.isEmpty()) {
-            return List.of();
-        }
-        return records.stream()
-                .filter(record -> record.getStatus() == PendingActionRecord.Status.WAITING_CONFIRM
-                        || record.getStatus() == PendingActionRecord.Status.REMINDER_SENT)
-                .toList();
-    }
-
-    @CapabilityMethod
-    public synchronized PendingActionRecord resolvePendingDecision(String userId, String pendingId,
-                                                                   PendingActionRecord.Decision decision, String reason) {
-        PendingActionRecord record = findPendingByUserAndId(userId, pendingId);
-        if (record == null) {
-            return null;
-        }
-        PendingActionRecord.Status status = record.getStatus();
-        boolean active = status == PendingActionRecord.Status.WAITING_CONFIRM
-                || status == PendingActionRecord.Status.REMINDER_SENT;
-        if (!active) {
-            return record;
-        }
-
-        if (decision == PendingActionRecord.Decision.CONFIRM) {
-            record.setStatus(PendingActionRecord.Status.CONFIRMED);
-            record.setDecisionAt(System.currentTimeMillis());
-            record.setDecisionReason(reason);
-            cancelPendingLifecycleActions(pendingId);
-            return record;
-        }
-
-        if (decision == PendingActionRecord.Decision.REJECT) {
-            record.setStatus(PendingActionRecord.Status.REJECTED);
-            record.setDecisionAt(System.currentTimeMillis());
-            record.setDecisionReason(reason);
-            ExecutableAction executableAction = record.getExecutableAction();
-            executableAction.setStatus(ExecutableAction.Status.FAILED);
-            executableAction.setResult("行动被拒绝");
-            cancelPendingLifecycleActions(pendingId);
-            return record;
-        }
-
-        record.setDecisionReason(reason);
-        return record;
-    }
-
-    @CapabilityMethod
-    public synchronized boolean markPendingReminded(String pendingId) {
-        PendingActionRecord record = findPendingById(pendingId);
-        if (record == null) {
-            return false;
-        }
-        if (record.getStatus() != PendingActionRecord.Status.WAITING_CONFIRM) {
-            return false;
-        }
-        record.setStatus(PendingActionRecord.Status.REMINDER_SENT);
-        record.setReminded(true);
-        return true;
-    }
-
-    @CapabilityMethod
-    public synchronized PendingActionRecord expirePendingIfWaiting(String pendingId) {
-        PendingActionRecord record = findPendingById(pendingId);
-        if (record == null) {
-            return null;
-        }
-        PendingActionRecord.Status status = record.getStatus();
-        if (status != PendingActionRecord.Status.WAITING_CONFIRM
-                && status != PendingActionRecord.Status.REMINDER_SENT) {
-            return null;
-        }
-        record.setStatus(PendingActionRecord.Status.EXPIRED);
-        record.setDecisionAt(System.currentTimeMillis());
-        record.setDecisionReason("等待确认超时");
-        cancelPendingLifecycleActions(pendingId);
-        return record;
-    }
-
-    @CapabilityMethod
-    public synchronized void bindPendingLifecycleActions(String pendingId, StateAction reminderAction, StateAction expireAction) {
-        PendingLifecycleActions old = pendingLifecycleActions.put(
-                pendingId, new PendingLifecycleActions(reminderAction, expireAction)
-        );
-        if (old != null) {
-            old.reminderAction.setEnabled(false);
-            old.expireAction.setEnabled(false);
-        }
-        PendingActionRecord record = findPendingById(pendingId);
-        if (record != null) {
-            record.setReminderActionId(reminderAction.getUuid());
-            record.setExpireActionId(expireAction.getUuid());
-        }
-    }
-
-    @CapabilityMethod
-    public synchronized void cancelPendingLifecycleActions(String pendingId) {
-        PendingLifecycleActions actions = pendingLifecycleActions.remove(pendingId);
-        if (actions == null) {
-            return;
-        }
-        actions.reminderAction.setEnabled(false);
-        actions.expireAction.setEnabled(false);
     }
 
     /**
@@ -512,33 +383,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
     @Override
     protected String getCoreKey() {
         return "action-core";
-    }
-
-    private PendingActionRecord findPendingByUserAndId(String userId, String pendingId) {
-        List<PendingActionRecord> records = pendingActions.get(userId);
-        if (records == null) {
-            return null;
-        }
-        for (PendingActionRecord record : records) {
-            if (record.getPendingId().equals(pendingId)) {
-                return record;
-            }
-        }
-        return null;
-    }
-
-    private PendingActionRecord findPendingById(String pendingId) {
-        for (List<PendingActionRecord> records : pendingActions.values()) {
-            for (PendingActionRecord record : records) {
-                if (record.getPendingId().equals(pendingId)) {
-                    return record;
-                }
-            }
-        }
-        return null;
-    }
-
-    private record PendingLifecycleActions(StateAction reminderAction, StateAction expireAction) {
     }
 
     public enum ExecutorType {

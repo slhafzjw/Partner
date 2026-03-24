@@ -29,7 +29,10 @@ public class ActionExtractor extends AbstractAgentModule.Sub<String, ExtractorRe
         for (int i = 0; i < 3; i++) {
             try {
                 List<Message> messages = List.of(
-                        cognitionCapability.contextWorkspace().resolve(List.of(ContextBlock.VisibleDomain.COGNITION)).encodeToContextMessage(),
+                        cognitionCapability.contextWorkspace().resolve(List.of(
+                                ContextBlock.VisibleDomain.ACTION,
+                                ContextBlock.VisibleDomain.COGNITION
+                        )).encodeToContextMessage(),
                         new Message(Message.Character.USER, input)
                 );
                 return formattedChat(
@@ -37,7 +40,7 @@ public class ActionExtractor extends AbstractAgentModule.Sub<String, ExtractorRe
                         ExtractorResult.class
                 );
             } catch (Exception e) {
-                log.error("[ActionExtractor] 提取信息出错", e);
+                log.error("提取信息出错", e);
             }
         }
         return new ExtractorResult();

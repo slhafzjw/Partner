@@ -10,6 +10,7 @@ import java.util.Map;
 public class EvaluatorResult {
     private boolean ok;
     private boolean needConfirm;
+    private ResolvedPending resolvedPending;
     private ActionType type;
     private String scheduleContent;
     private SchedulableExecutableAction.ScheduleType scheduleType;
@@ -20,5 +21,11 @@ public class EvaluatorResult {
 
     public enum ActionType {
         IMMEDIATE, PLANNING
+    }
+
+    @Data
+    public static class ResolvedPending {
+        private String blockName;
+        private String source;
     }
 }
