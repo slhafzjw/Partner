@@ -28,6 +28,7 @@ class ContextWorkspace {
         if (domains.isEmpty()) {
             return@write emptyList()
         }
+        val primaryDomain = domains.first()
 
         val domainWeights = domains
             .distinct()
@@ -52,7 +53,8 @@ class ContextWorkspace {
             activeBlocks += ResolvedContextBlock(
                 block = block,
                 domainWeight = matchedDomains.sumOf { domainWeights.getValue(it) },
-                activationScore = activationScore
+                activationScore = activationScore,
+                forceFullRender = primaryDomain in matchedDomains
             )
         }
 
@@ -64,7 +66,13 @@ class ContextWorkspace {
                     .thenBy { it.activationScore }
                     .thenBy { it.block.blockContent.encodeToXmlString() }
             )
-            .map { it.block.render() }
+            .map { resolved ->
+                if (resolved.forceFullRender) {
+                    resolved.block.blockContent
+                } else {
+                    resolved.block.render()
+                }
+            }
     }
 
 
@@ -101,7 +109,8 @@ class ContextWorkspace {
 private data class ResolvedContextBlock(
     val block: ContextBlock,
     val domainWeight: Int,
-    val activationScore: Double
+    val activationScore: Double,
+    val forceFullRender: Boolean
 )
 
 data class ContextBlock @JvmOverloads constructor(
