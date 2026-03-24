@@ -11,10 +11,7 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.cognition.BlockContent;
-import work.slhaf.partner.core.cognition.CognitionCapability;
-import work.slhaf.partner.core.cognition.CommunicationBlockContent;
-import work.slhaf.partner.core.cognition.ContextBlock;
+import work.slhaf.partner.core.cognition.*;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -105,14 +102,12 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private List<Message> buildChatMessages(PartnerRunningFlowContext runningFlowContext) {
-        List<BlockContent> communicationBlocks = cognitionCapability.contextWorkspace()
+        ResolvedContext resolvedContext = cognitionCapability.contextWorkspace()
                 .resolve(List.of(ContextBlock.VisibleDomain.COMMUNICATION));
+        List<BlockContent> communicationBlocks = resolvedContext.getBlocks();
         List<Message> historyMessages = snapshotConversationMessages();
         List<Message> temp = new ArrayList<>(historyMessages.size() + 2);
-        Message contextMessage = buildContextMessage(communicationBlocks);
-        if (contextMessage != null) {
-            temp.add(contextMessage);
-        }
+        temp.add(buildContextMessage(communicationBlocks));
         temp.addAll(historyMessages);
         temp.add(buildInputMessage(runningFlowContext, communicationBlocks));
         return temp;
@@ -145,32 +140,11 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         List<BlockContent> contextBlocks = communicationBlocks.stream()
                 .filter(this::belongsToContextSection)
                 .toList();
-        if (contextBlocks.isEmpty()) {
-            return null;
-        }
-        return new Message(Message.Character.USER, buildContextXml(contextBlocks));
+        return new ResolvedContext(contextBlocks).encodeToContextMessage();
     }
 
     private Message buildInputMessage(PartnerRunningFlowContext runningFlowContext, List<BlockContent> communicationBlocks) {
         return new Message(Message.Character.USER, buildInputXml(runningFlowContext, communicationBlocks));
-    }
-
-    private String buildContextXml(List<BlockContent> contextBlocks) {
-        try {
-            Document document = newDocument();
-            Element root = document.createElement("context");
-            document.appendChild(root);
-
-            contextBlocks.stream()
-                    .map(BlockContent::encodeToXml)
-                    .forEach(blockElement -> {
-                        root.appendChild(document.importNode(blockElement, true));
-                    });
-
-            return toXmlString(document);
-        } catch (Exception e) {
-            throw new IllegalStateException("构建 context 区段失败", e);
-        }
     }
 
     private String buildInputXml(PartnerRunningFlowContext runningFlowContext, List<BlockContent> communicationBlocks) {

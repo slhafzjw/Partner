@@ -24,9 +24,9 @@ class ContextWorkspace {
      * 根据传入的 [ContextBlock.VisibleDomain] 列表，获取上下文块
      * @param domains 需要获取上下文的域列表，顺序将决定权重优先级，按照列表排序将具备线性权重分层，最终反映到 blockContent 列表的排序上
      */
-    fun resolve(domains: List<ContextBlock.VisibleDomain>): List<BlockContent> = lock.write {
+    fun resolve(domains: List<ContextBlock.VisibleDomain>): ResolvedContext = lock.write {
         if (domains.isEmpty()) {
-            return@write emptyList()
+            return@write ResolvedContext(emptyList())
         }
         val primaryDomain = domains.first()
 
@@ -58,7 +58,7 @@ class ContextWorkspace {
             )
         }
 
-        activeBlocks
+        val blocks = activeBlocks
             .sortedWith(
                 compareBy<ResolvedContextBlock> { it.domainWeight }
                     .thenBy { it.block.sourceKey.blockName }
@@ -73,6 +73,7 @@ class ContextWorkspace {
                     resolved.block.render()
                 }
             }
+        ResolvedContext(blocks)
     }
 
 

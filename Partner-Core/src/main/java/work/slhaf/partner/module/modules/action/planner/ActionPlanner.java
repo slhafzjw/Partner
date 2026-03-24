@@ -15,7 +15,6 @@ import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
 import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
@@ -53,8 +52,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     private CognitionCapability cognitionCapability;
     @InjectCapability
     private ActionCapability actionCapability;
-    @InjectCapability
-    private PerceiveCapability perceiveCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
 
