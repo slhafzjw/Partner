@@ -6,7 +6,6 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
-import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
@@ -14,7 +13,6 @@ import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.cognition.CognitionCapability;
-import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.modules.action.executor.ActionExecutor;
 import work.slhaf.partner.module.modules.action.planner.confirmer.ActionConfirmer;
 import work.slhaf.partner.module.modules.action.planner.confirmer.entity.ConfirmerInput;
@@ -24,7 +22,6 @@ import work.slhaf.partner.module.modules.action.planner.evaluator.ActionEvaluato
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorResult;
 import work.slhaf.partner.module.modules.action.planner.extractor.ActionExtractor;
-import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorInput;
 import work.slhaf.partner.module.modules.action.planner.extractor.entity.ExtractorResult;
 import work.slhaf.partner.module.modules.action.scheduler.ActionScheduler;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
@@ -52,8 +49,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     private CognitionCapability cognitionCapability;
     @InjectCapability
     private ActionCapability actionCapability;
-    @InjectCapability
-    private MemoryCapability memoryCapability;
 
     @InjectModule
     private ActionEvaluator actionEvaluator;
@@ -74,7 +69,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     @Override
-    public void execute(PartnerRunningFlowContext context) {
+    public void execute(@NotNull PartnerRunningFlowContext context) {
         try {
             List<Callable<Void>> tasks = new ArrayList<>();
             addConfirmTask(tasks, context);
@@ -93,12 +88,11 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
      */
     private void addNewActionTask(List<Callable<Void>> tasks, PartnerRunningFlowContext context) {
         tasks.add(() -> {
-            ExtractorInput extractorInput = assemblyHelper.buildExtractorInput(context);
-            ExtractorResult extractorResult = actionExtractor.execute(extractorInput);
+            ExtractorResult extractorResult = actionExtractor.execute(context.getInput());
             if (extractorResult.getTendencies().isEmpty()) {
                 return null;
             }
-            EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult, context.getSource());
+            EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult);
             List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); // 并发操作均为访问
             putActionData(evaluatorResults, context);
             updateTendencyCache(evaluatorResults, context.getInput(), extractorResult);
@@ -306,25 +300,9 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         private ActionAssemblyHelper() {
         }
 
-        private ExtractorInput buildExtractorInput(PartnerRunningFlowContext context) {
-            ExtractorInput input = new ExtractorInput();
-            input.setInput(context.getInput());
-            List<Message> chatMessages = cognitionCapability.snapshotChatMessages();
-            List<Message> recentMessages = new ArrayList<>();
-            if (chatMessages.size() > 5) {
-                recentMessages.addAll(chatMessages.subList(chatMessages.size() - 5, chatMessages.size() - 1));
-            } else if (chatMessages.size() > 1) {
-                recentMessages.addAll(chatMessages.subList(0, chatMessages.size() - 1));
-            }
-            input.setRecentMessages(recentMessages);
-            return input;
-        }
-
-        private EvaluatorInput buildEvaluatorInput(ExtractorResult extractorResult, String userId) {
+        private EvaluatorInput buildEvaluatorInput(ExtractorResult extractorResult) {
             EvaluatorInput input = new EvaluatorInput();
             input.setTendencies(extractorResult.getTendencies());
-            input.setRecentMessages(cognitionCapability.snapshotChatMessages());
-            input.setActivatedSlices(memoryCapability.getActivatedSlices());
             return input;
         }
 

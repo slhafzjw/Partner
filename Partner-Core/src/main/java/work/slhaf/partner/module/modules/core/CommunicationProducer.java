@@ -101,7 +101,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
                     @Override
                     protected void fillXml(@NotNull Document document, @NotNull Element root) {
                         List<Message> chatMessages = cognitionCapability.getChatMessages();
-                        appendRepeatedElements(document, root, "chat_message", List.of(chatMessages.subList(chatMessages.size() - 5, chatMessages.size() - 1)));
+                        appendRepeatedElements(document, root, "chat_message", List.of(chatMessages.subList(chatMessages.size() - 7, chatMessages.size() - 1)));
                     }
                 },
                 Set.of(ContextBlock.VisibleDomain.COGNITION),

@@ -10,6 +10,8 @@ import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.action.ActionCapability;
+import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorBatchInput;
 import work.slhaf.partner.module.modules.action.planner.evaluator.entity.EvaluatorInput;
@@ -22,8 +24,12 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<EvaluatorResult>> implements ActivateModel {
+
     @InjectCapability
     private ActionCapability actionCapability;
+    @InjectCapability
+    private CognitionCapability cognitionCapability;
+
     private InteractionThreadPoolExecutor executor;
 
     @Init
@@ -40,16 +46,20 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
     @Override
     public List<EvaluatorResult> execute(EvaluatorInput data) {
         List<EvaluatorBatchInput> batchInputs = buildEvaluatorBatchInput(data);
-        List<Callable<EvaluatorResult>> tasks = getTasks(batchInputs);
+        List<Callable<EvaluatorResult>> tasks = buildEvaluateTasks(batchInputs);
         return executor.invokeAllAndReturn(tasks);
     }
 
-    private List<Callable<EvaluatorResult>> getTasks(List<EvaluatorBatchInput> batchInputs) {
+    private List<Callable<EvaluatorResult>> buildEvaluateTasks(List<EvaluatorBatchInput> batchInputs) {
         List<Callable<EvaluatorResult>> list = new ArrayList<>();
         for (EvaluatorBatchInput batchInput : batchInputs) {
             list.add(() -> {
+                List<Message> messages = List.of(
+                        cognitionCapability.contextWorkspace().resolve(List.of(ContextBlock.VisibleDomain.ACTION, ContextBlock.VisibleDomain.COGNITION, ContextBlock.VisibleDomain.MEMORY)).encodeToContextMessage(),
+                        new Message(Message.Character.USER, buildPrompt(batchInput))
+                );
                 EvaluatorResult evaluatorResult = formattedChat(
-                        List.of(new Message(Message.Character.USER, buildPrompt(batchInput))),
+                        messages,
                         EvaluatorResult.class
                 );
                 evaluatorResult.setTendency(batchInput.getTendency());
