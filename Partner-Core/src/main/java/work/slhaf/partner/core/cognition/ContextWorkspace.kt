@@ -40,14 +40,20 @@ class ContextWorkspace {
         val iterator = stateSet.iterator()
         while (iterator.hasNext()) {
             val block = iterator.next()
-            val activationScore = block.applyTimeFade()
-            if (activationScore <= 0.0) {
+            val fadedScore = block.applyTimeFade()
+            if (fadedScore <= 0.0) {
                 iterator.remove()
                 continue
             }
 
             val matchedDomains = block.visibleTo.intersect(domainWeights.keys)
             if (matchedDomains.isEmpty()) {
+                continue
+            }
+
+            val activationScore = block.activate()
+            if (activationScore <= 0.0) {
+                iterator.remove()
                 continue
             }
 
@@ -67,14 +73,24 @@ class ContextWorkspace {
                     .thenBy { it.activationScore }
                     .thenBy { it.block.blockContent.encodeToXmlString() }
             )
-            .map { resolved ->
-                if (resolved.forceFullRender) {
-                    resolved.block.blockContent
+            .groupBy { it.block.sourceKey }
+            .values
+            .map { groupedBlocks ->
+                if (groupedBlocks.size == 1) {
+                    renderResolvedBlock(groupedBlocks.first())
                 } else {
-                    resolved.block.render()
+                    AggregatedBlockContent(groupedBlocks)
                 }
             }
         ResolvedContext(blocks)
+    }
+
+    private fun renderResolvedBlock(resolved: ResolvedContextBlock): BlockContent {
+        return if (resolved.forceFullRender) {
+            resolved.block.blockContent
+        } else {
+            resolved.block.render()
+        }
     }
 
 
@@ -159,23 +175,27 @@ data class ContextBlock @JvmOverloads constructor(
         get() = SourceKey(blockContent.blockName, blockContent.source)
 
     fun applyTimeFade(): Double {
-        val now = Instant.now()
-        val elapsedSeconds = Duration.between(lastTouchedAt, now).toMillis() / 1000.0
-        activationScore = max(0.0, activationScore - elapsedSeconds * (timeFadeFactor / 60.0))
-        lastTouchedAt = now
+        refreshByElapsedTime()
         return activationScore
     }
 
     fun applyReplaceFade(): Double {
-        applyTimeFade()
+        refreshByElapsedTime()
         activationScore = max(0.0, activationScore - replaceFadeFactor)
         return activationScore
     }
 
     fun activate(): Double {
-        applyTimeFade()
+        refreshByElapsedTime()
         activationScore = min(100.0, activationScore + activateFactor)
         return activationScore
+    }
+
+    private fun refreshByElapsedTime() {
+        val now = Instant.now()
+        val elapsedSeconds = Duration.between(lastTouchedAt, now).toMillis() / 1000.0
+        activationScore = max(0.0, activationScore - elapsedSeconds * (timeFadeFactor / 60.0))
+        lastTouchedAt = now
     }
 
     fun sameWith(contextBlock: ContextBlock): Boolean {
@@ -194,6 +214,46 @@ data class ContextBlock @JvmOverloads constructor(
         val blockName: String,
         val source: String
     )
+}
+
+private class AggregatedBlockContent(
+    private val groupedBlocks: List<ResolvedContextBlock>
+) : BlockContent(
+    groupedBlocks.first().block.sourceKey.blockName,
+    groupedBlocks.first().block.sourceKey.source,
+    groupedBlocks.maxByOrNull {
+        if (it.forceFullRender) it.block.blockContent.urgency.ordinal else it.block.render().urgency.ordinal
+    }?.let {
+        if (it.forceFullRender) it.block.blockContent.urgency else it.block.render().urgency
+    } ?: Urgency.NORMAL
+) {
+
+    override fun fillXml(document: Document, root: Element) {
+        val snapshotIndex = groupedBlocks.withIndex()
+            .maxWithOrNull(
+                compareBy<IndexedValue<ResolvedContextBlock>> { it.value.activationScore }
+                    .thenBy { it.index }
+            )?.index ?: 0
+
+        groupedBlocks.forEachIndexed { index, groupedBlock ->
+            val tagName = if (index == snapshotIndex) "snapshot" else "history_snapshot"
+            val wrapper = document.createElement(tagName)
+            val renderedBlock = if (groupedBlock.forceFullRender) {
+                groupedBlock.block.blockContent
+            } else {
+                groupedBlock.block.render()
+            }
+            wrapper.setAttribute("source", renderedBlock.source)
+            wrapper.setAttribute("urgency", renderedBlock.urgency.name.lowercase(Locale.ROOT))
+            root.appendChild(wrapper)
+
+            val encoded = renderedBlock.encodeToXml()
+            val childNodes = encoded.childNodes
+            for (childIndex in 0 until childNodes.length) {
+                wrapper.appendChild(document.importNode(childNodes.item(childIndex), true))
+            }
+        }
+    }
 }
 
 abstract class BlockContent @JvmOverloads protected constructor(
