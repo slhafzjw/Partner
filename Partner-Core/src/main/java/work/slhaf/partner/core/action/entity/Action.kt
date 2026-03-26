@@ -107,11 +107,6 @@ sealed class ExecutableAction : Action() {
 
     val history: MutableMap<Int, MutableList<HistoryAction>> = mutableMapOf()
 
-    /**
-     * 修复上下文
-     */
-    val additionalContext: MutableMap<Int, MutableList<String>> = mutableMapOf()
-
     override val timeout: Duration = 10.minutes
 
     /**
@@ -123,12 +118,12 @@ sealed class ExecutableAction : Action() {
         val interruptAt = Instant.now().epochSecond
 
         while (status == Status.INTERRUPTED) {
-            Thread.sleep(500);
+            Thread.sleep(500)
             if (Instant.now().epochSecond - interruptAt > timeout) {
                 return false
             }
         }
-        return true;
+        return true
     }
 
     fun resume() {
@@ -150,7 +145,6 @@ sealed class ExecutableAction : Action() {
             executingStage = executingStage,
             result = if (::result.isInitialized) result else null,
             history = history.mapValues { (_, value) -> value.toList() },
-            additionalContext = additionalContext.mapValues { (_, value) -> value.toList() },
             scheduleType = schedulable?.scheduleType,
             scheduleContent = schedulable?.scheduleContent,
             enabled = schedulable?.enabled
@@ -178,7 +172,6 @@ data class SchedulableExecutableAction(
         val newHistory = ScheduleHistory(ZonedDateTime.now(), result, history.toMap())
         scheduleHistories.add(newHistory)
 
-        additionalContext.clear()
         executingStage = 0
         for (entry in actionChain) {
             for (action in entry.value) {
@@ -275,7 +268,6 @@ data class ExecutableActionSnapshot(
     val executingStage: Int,
     val result: String?,
     val history: Map<Int, List<HistoryAction>>,
-    val additionalContext: Map<Int, List<String>>,
 
     val scheduleType: Schedulable.ScheduleType? = null,
     val scheduleContent: String? = null,
