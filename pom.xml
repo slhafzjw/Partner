@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -8,6 +7,7 @@
     <artifactId>Partner</artifactId>
     <version>0.5.0</version>
     <packaging>pom</packaging>
+
     <modules>
         <module>Partner-Core</module>
         <module>Partner-Framework</module>
@@ -19,7 +19,12 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <kotlin.version>2.2.0</kotlin.version>
+        <surefire.version>3.5.5</surefire.version>
+
+        <!-- 推荐仓库默认不跳测试；本地需要时再 -DskipTests=true -->
+        <skipTests>false</skipTests>
     </properties>
 
     <dependencies>
@@ -41,6 +46,15 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${surefire.version}</version>
+                    <configuration>
+                        <skipTests>${skipTests}</skipTests>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-shade-plugin</artifactId>
                     <version>3.4.1</version>
                     <executions>
@@ -60,16 +74,16 @@
                         </execution>
                     </executions>
                 </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <skipTests>true</skipTests>
-                    </configuration>
-                </plugin>
             </plugins>
         </pluginManagement>
+
         <plugins>
+            <!-- 如果这些子模块都要跑单测，就在父 POM 启用它 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
@@ -96,5 +110,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
