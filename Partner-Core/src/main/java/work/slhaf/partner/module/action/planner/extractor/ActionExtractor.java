@@ -32,7 +32,7 @@ public class ActionExtractor extends AbstractAgentModule.Sub<String, ExtractorRe
                         cognitionCapability.contextWorkspace().resolve(List.of(
                                 ContextBlock.VisibleDomain.ACTION,
                                 ContextBlock.VisibleDomain.COGNITION
-                        )).encodeToContextMessage(),
+                        )).encodeToMessage(),
                         new Message(Message.Character.USER, input)
                 );
                 return formattedChat(

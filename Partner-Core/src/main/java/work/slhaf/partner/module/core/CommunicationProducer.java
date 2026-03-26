@@ -155,7 +155,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         List<BlockContent> contextBlocks = communicationBlocks.stream()
                 .filter(this::belongsToContextSection)
                 .toList();
-        return new ResolvedContext(contextBlocks).encodeToContextMessage();
+        return new ResolvedContext(contextBlocks).encodeToMessage();
     }
 
     private Message buildInputMessage(PartnerRunningFlowContext runningFlowContext, List<BlockContent> communicationBlocks) {

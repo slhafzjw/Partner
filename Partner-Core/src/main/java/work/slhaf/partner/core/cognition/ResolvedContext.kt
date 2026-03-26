@@ -13,7 +13,7 @@ data class ResolvedContext(
     val blocks: List<BlockContent>
 ) {
 
-    fun encodeToContextMessage(): Message {
+    fun encodeToMessage(): Message {
         val content = if (blocks.isEmpty()) {
             "<no_context></no_context>"
         } else {

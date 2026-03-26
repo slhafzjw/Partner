@@ -57,7 +57,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
                                 ContextBlock.VisibleDomain.ACTION,
                                 ContextBlock.VisibleDomain.COGNITION,
                                 ContextBlock.VisibleDomain.MEMORY
-                        )).encodeToContextMessage(),
+                        )).encodeToMessage(),
                         availableMetaActionContext(),
                         new Message(Message.Character.USER, tendency)
                 );
@@ -90,7 +90,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
                 );
             }
         };
-        return new ResolvedContext(List.of(content)).encodeToContextMessage();
+        return new ResolvedContext(List.of(content)).encodeToMessage();
     }
 
     @NotNull
