@@ -1,0 +1,16 @@
+package work.slhaf.partner.module.memory.selector.evaluator.entity;
+
+import lombok.Builder;
+import lombok.Data;
+import work.slhaf.partner.api.chat.pojo.Message;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
+
+import java.util.List;
+
+@Data
+@Builder
+public class EvaluatorInput {
+    private String input;
+    private List<Message> messages;
+    private List<ActivatedMemorySlice> memorySlices;
+}

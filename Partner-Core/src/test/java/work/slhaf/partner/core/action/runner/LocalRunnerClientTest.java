@@ -11,7 +11,7 @@ import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.runner.policy.ExecutionPolicy;
 import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
 import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
-import work.slhaf.partner.module.modules.action.builtin.BuiltinActionRegistry;
+import work.slhaf.partner.module.action.builtin.BuiltinActionRegistry;
 
 import java.io.IOException;
 import java.nio.file.Files;

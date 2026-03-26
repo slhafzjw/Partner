@@ -10,7 +10,7 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
-import work.slhaf.partner.module.modules.action.builtin.BuiltinActionRegistry;
+import work.slhaf.partner.module.action.builtin.BuiltinActionRegistry;
 
 import java.io.IOException;
 import java.nio.file.Files;
