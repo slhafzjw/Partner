@@ -1,14 +1,19 @@
 package work.slhaf.partner.module.action.executor;
 
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
+import kotlin.Unit;
+import org.jetbrains.annotations.NotNull;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.core.cognition.ContextBlock;
+import work.slhaf.partner.module.TaskBlock;
 import work.slhaf.partner.module.action.executor.entity.ExtractorInput;
 import work.slhaf.partner.module.action.executor.entity.ExtractorResult;
-import work.slhaf.partner.module.action.executor.entity.HistoryAction;
 
 import java.util.HashMap;
 import java.util.List;
@@ -17,12 +22,19 @@ import java.util.List;
  * 负责依据输入内容进行行动单元的参数信息提取
  */
 public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, ExtractorResult> implements ActivateModel {
+
+    @InjectCapability
+    private CognitionCapability cognitionCapability;
+
     @Override
     public ExtractorResult execute(ExtractorInput input) {
-        String prompt = buildPrompt(input);
         ExtractorResult result;
         try {
-            result = formattedChat(List.of(new Message(Message.Character.USER, prompt)), ExtractorResult.class);
+            List<Message> messages = List.of(
+                    resolveContextMessage(),
+                    resolveTaskMessage(input)
+            );
+            result = formattedChat(messages, ExtractorResult.class);
         } catch (Exception e) {
             log.error("ParamsExtractor解析结果失败", e);
             result = new ExtractorResult();
@@ -32,26 +44,41 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
         return result;
     }
 
-    private String buildPrompt(ExtractorInput input) {
-        JSONObject prompt = new JSONObject();
-        JSONObject actionData = prompt.putObject("[本次行动信息]");
-        MetaActionInfo actionInfo = input.getMetaActionInfo();
-        actionData.put("[行动描述]", actionInfo.getDescription());
-        actionData.put("[行动参数说明]", actionInfo.getParams());
-        JSONArray historyData = prompt.putArray("[历史行动执行结果]");
-        List<HistoryAction> historyActions = input.getHistoryActionResults();
-        for (HistoryAction historyAction : historyActions) {
-            JSONObject historyItem = new JSONObject();
-            historyItem.put("[行动Key]", historyAction.actionKey());
-            historyItem.put("[行动描述]", historyAction.description());
-            historyItem.put("[行动结果]", historyAction.result());
-            historyData.add(historyItem);
-        }
-        JSONArray messageData = prompt.putArray("[最近消息列表]");
-        messageData.addAll(input.getRecentMessages());
-        return prompt.toString();
+    private Message resolveTaskMessage(ExtractorInput input) {
+        return new TaskBlock() {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendChildElement(document, root, "target_action", blok -> {
+                    appendTextElement(document, blok, "uuid", input.getTargetActionId());
+                    appendTextElement(document, blok, "description", input.getTargetActionDesc());
+                    return Unit.INSTANCE;
+                });
+                appendChildElement(document, root, "meta_action_info", element -> {
+                    MetaActionInfo info = input.getMetaActionInfo();
+                    appendTextElement(document, element, "description", info.getDescription());
+                    appendListElement(document, element, "params", "param", info.getParams().entrySet(), (item, param) -> {
+                        item.setAttribute("name", param.getKey());
+                        item.setTextContent(param.getValue());
+                        return Unit.INSTANCE;
+                    });
+                    return Unit.INSTANCE;
+                });
+            }
+
+        }.encodeToMessage();
     }
 
+    private Message resolveContextMessage() {
+        return cognitionCapability.contextWorkspace()
+                .resolve(List.of(
+                        ContextBlock.VisibleDomain.ACTION,
+                        ContextBlock.VisibleDomain.COGNITION,
+                        ContextBlock.VisibleDomain.MEMORY
+                ))
+                .encodeToMessage();
+    }
+
+    @NotNull
     @Override
     public String modelKey() {
         return "params_extractor";

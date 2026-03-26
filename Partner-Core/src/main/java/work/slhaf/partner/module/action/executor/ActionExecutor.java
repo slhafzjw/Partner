@@ -1,6 +1,7 @@
 package work.slhaf.partner.module.action.executor;
 
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
@@ -242,7 +243,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                         continue;
                     }
                     ExecutorService executor = next.getIo() ? virtualExecutor : platformExecutor;
-                    executor.execute(buildMataActionTask(next, phaser, executableAction, source));
+                    executor.execute(buildMataActionTask(next, phaser, executableAction));
                     if (first) {
                         phaser.arriveAndDeregister();
                         latch.countDown();
@@ -259,12 +260,12 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         return new MetaActionsListeningRecord(accepting, phase);
     }
 
-    private Runnable buildMataActionTask(MetaAction metaAction, Phaser phaser, ExecutableAction executableAction, String source) {
+    private Runnable buildMataActionTask(MetaAction metaAction, Phaser phaser, ExecutableAction executableAction) {
         phaser.register();
         return () -> {
             val actionKey = metaAction.getKey();
             try {
-                executeMetaActionWithRetry(metaAction, executableAction, source);
+                executeMetaActionWithRetry(metaAction, executableAction);
             } catch (Exception e) {
                 log.error("Action executing failed: {}", actionKey, e);
             } finally {
@@ -273,7 +274,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         };
     }
 
-    private void executeMetaActionWithRetry(MetaAction metaAction, ExecutableAction actionData, String source) {
+    private void executeMetaActionWithRetry(MetaAction metaAction, ExecutableAction actionData) {
         String failureReason = "参数提取失败";
         val actionKey = metaAction.getKey();
         for (int attempt = 1; attempt <= MAX_EXTRACTOR_ATTEMPTS; attempt++) {
@@ -282,16 +283,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             metaAction.getParams().clear();
 
             val executingStage = actionData.getExecutingStage();
-            val historyActionResults = actionData.getHistory().get(executingStage);
-            val additionalContext = actionData.getAdditionalContext().get(executingStage);
-            val extractorInput = assemblyHelper.buildExtractorInput(metaAction, source, historyActionResults, additionalContext);
-            ExtractorResult extractorResult;
-            try {
-                extractorResult = paramsExtractor.execute(extractorInput);
-            } catch (Exception e) {
-                failureReason = buildAttemptFailureReason("参数提取异常", e.getLocalizedMessage());
-                continue;
-            }
+
+            val extractorInput = assemblyHelper.buildExtractorInput(metaAction.getKey(), actionData.getUuid(), actionData.getDescription());
+            ExtractorResult extractorResult = paramsExtractor.execute(extractorInput);
 
             if (extractorResult == null || !extractorResult.isOk()) {
                 failureReason = buildAttemptFailureReason("参数提取失败", null);
@@ -463,14 +457,11 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         private AssemblyHelper() {
         }
 
-        private ExtractorInput buildExtractorInput(MetaAction action, String source, List<HistoryAction> historyActionResults,
-                                                   List<String> additionalContext) {
+        private ExtractorInput buildExtractorInput(String actionKey, @NotNull String uuid, @NotNull String description) {
             ExtractorInput input = new ExtractorInput();
-            input.setActivatedMemorySlices(memoryCapability.getActivatedSlices());
-            input.setRecentMessages(cognitionCapability.getChatMessages());
-            input.setMetaActionInfo(actionCapability.loadMetaActionInfo(action.getKey()));
-            input.setHistoryActionResults(historyActionResults);
-            input.setAdditionalContext(additionalContext);
+            input.setMetaActionInfo(actionCapability.loadMetaActionInfo(actionKey));
+            input.setTargetActionId(uuid);
+            input.setTargetActionDesc(description);
             return input;
         }
 
