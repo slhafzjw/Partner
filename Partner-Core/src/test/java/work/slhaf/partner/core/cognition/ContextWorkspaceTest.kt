@@ -64,13 +64,13 @@ class ContextWorkspaceTest {
         )
 
         assertEquals(
-            listOf("low", "mid", "high"),
-            resolved.map { (it as TestBlockContent).content }
+            listOf("low-compact", "mid-compact", "high"),
+            resolved.blocks.map { (it as TestBlockContent).content }
         )
     }
 
     @Test
-    fun `resolve uses activation score only within same source`() {
+    fun `resolve aggregates same source blocks while preserving activation ordering within the group`() {
         val manager = ContextWorkspace()
         val older = contextBlock(
             blockName = "memory",
@@ -99,10 +99,14 @@ class ContextWorkspaceTest {
 
         val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
 
-        assertEquals(
-            listOf("older", "newer", "other-source"),
-            resolved.map { (it as TestBlockContent).content }
-        )
+        assertEquals(2, resolved.blocks.size)
+        assertEquals("other-source", (resolved.blocks[1] as TestBlockContent).content)
+
+        val aggregatedXml = resolved.blocks[0].encodeToXmlString()
+        assertTrue(aggregatedXml.contains("<snapshot"))
+        assertTrue(aggregatedXml.contains("<content>newer</content>"))
+        assertTrue(aggregatedXml.contains("<history_snapshot"))
+        assertTrue(aggregatedXml.contains("<content>older</content>"))
     }
 
     @Test
@@ -128,7 +132,7 @@ class ContextWorkspaceTest {
 
         val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
 
-        assertEquals(listOf("replacement"), resolved.map { (it as TestBlockContent).content })
+        assertEquals(listOf("replacement"), resolved.blocks.map { (it as TestBlockContent).content })
     }
 
     @Test
@@ -158,7 +162,7 @@ class ContextWorkspaceTest {
 
         val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
 
-        assertEquals(listOf("survivor"), resolved.map { (it as TestBlockContent).content })
+        assertEquals(listOf("survivor"), resolved.blocks.map { (it as TestBlockContent).content })
     }
 
     @Test
@@ -181,7 +185,7 @@ class ContextWorkspaceTest {
 
         val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
 
-        assertEquals(listOf("restored"), resolved.map { (it as TestBlockContent).content })
+        assertEquals(listOf("restored"), resolved.blocks.map { (it as TestBlockContent).content })
     }
 
     @Test
@@ -215,6 +219,185 @@ class ContextWorkspaceTest {
         assertSame(summary, summaryBlock.render())
     }
 
+    @Test
+    fun `primary exposure renders at least compact and can render full`() {
+        val lowActivationBlock = contextBlock(
+            blockName = "memory",
+            source = "main",
+            content = "full",
+            compactContent = "compact",
+            abstractContent = "abstract",
+            replaceFadeFactor = 80.0
+        )
+        lowActivationBlock.applyReplaceFade()
+
+        val highActivationBlock = contextBlock(
+            blockName = "memory",
+            source = "main",
+            content = "full",
+            compactContent = "compact",
+            abstractContent = "abstract"
+        )
+
+        assertContent("compact", lowActivationBlock.render(ContextBlock.Exposure.PRIMARY))
+        assertContent("full", highActivationBlock.render(ContextBlock.Exposure.PRIMARY))
+    }
+
+    @Test
+    fun `secondary exposure never renders full`() {
+        val block = contextBlock(
+            blockName = "memory",
+            source = "main",
+            content = "full",
+            compactContent = "compact",
+            abstractContent = "abstract"
+        )
+
+        assertContent("compact", block.render(ContextBlock.Exposure.SECONDARY))
+    }
+
+    @Test
+    fun `primary exposure promotes abstract only to compact in one activation`() {
+        val block = contextBlock(
+            blockName = "memory",
+            source = "main",
+            content = "full",
+            compactContent = "compact",
+            abstractContent = "abstract",
+            replaceFadeFactor = 80.0,
+            activateFactor = 50.0
+        )
+        block.applyReplaceFade()
+
+        block.activate(ContextBlock.Exposure.PRIMARY)
+
+        assertContent("compact", block.render())
+        assertContent("compact", block.render(ContextBlock.Exposure.PRIMARY))
+    }
+
+    @Test
+    fun `primary exposure promotes compact to full`() {
+        val block = contextBlock(
+            blockName = "memory",
+            source = "main",
+            content = "full",
+            compactContent = "compact",
+            abstractContent = "abstract",
+            replaceFadeFactor = 40.0,
+            activateFactor = 20.0
+        )
+        block.applyReplaceFade()
+
+        block.activate(ContextBlock.Exposure.PRIMARY)
+
+        assertContent("full", block.render())
+    }
+
+    @Test
+    fun `secondary exposure keeps abstract within abstract tier`() {
+        val block = contextBlock(
+            blockName = "memory",
+            source = "main",
+            content = "full",
+            compactContent = "compact",
+            abstractContent = "abstract",
+            replaceFadeFactor = 80.0,
+            activateFactor = 200.0
+        )
+        block.applyReplaceFade()
+
+        block.activate(ContextBlock.Exposure.SECONDARY)
+
+        assertContent("abstract", block.render())
+        assertContent("abstract", block.render(ContextBlock.Exposure.SECONDARY))
+    }
+
+    @Test
+    fun `secondary exposure keeps compact within compact tier`() {
+        val block = contextBlock(
+            blockName = "memory",
+            source = "main",
+            content = "full",
+            compactContent = "compact",
+            abstractContent = "abstract",
+            replaceFadeFactor = 40.0,
+            activateFactor = 200.0
+        )
+        block.applyReplaceFade()
+
+        block.activate(ContextBlock.Exposure.SECONDARY)
+
+        assertContent("compact", block.render())
+        assertContent("compact", block.render(ContextBlock.Exposure.SECONDARY))
+    }
+
+    @Test
+    fun `resolve uses exposure-specific rendering for primary and secondary domains`() {
+        val manager = ContextWorkspace()
+        val block = contextBlock(
+            blockName = "memory",
+            source = "main",
+            content = "full",
+            compactContent = "compact",
+            abstractContent = "abstract",
+            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY, ContextBlock.VisibleDomain.ACTION),
+            replaceFadeFactor = 80.0
+        )
+        block.applyReplaceFade()
+        manager.register(block)
+
+        val primaryResolved = manager.resolve(
+            listOf(ContextBlock.VisibleDomain.MEMORY, ContextBlock.VisibleDomain.ACTION)
+        )
+        val secondaryResolved = manager.resolve(
+            listOf(ContextBlock.VisibleDomain.PERCEIVE, ContextBlock.VisibleDomain.ACTION)
+        )
+
+        assertEquals(listOf("compact"), primaryResolved.blocks.map { (it as TestBlockContent).content })
+        assertEquals(listOf("abstract"), secondaryResolved.blocks.map { (it as TestBlockContent).content })
+    }
+
+    @Test
+    fun `aggregated blocks use rendered projection for urgency and snapshot`() {
+        val manager = ContextWorkspace()
+        manager.register(
+            ContextBlock(
+                blockContent = TestBlockContent("memory", "main", "full-critical", BlockContent.Urgency.CRITICAL),
+                compactBlock = TestBlockContent("memory", "main", "compact-low", BlockContent.Urgency.LOW),
+                abstractBlock = TestBlockContent("memory", "main", "abstract-low", BlockContent.Urgency.LOW),
+                visibleTo = setOf(ContextBlock.VisibleDomain.ACTION),
+                replaceFadeFactor = 20.0,
+                timeFadeFactor = 0.0,
+                activateFactor = 0.0
+            )
+        )
+        manager.register(
+            ContextBlock(
+                blockContent = TestBlockContent("memory", "main", "full-normal", BlockContent.Urgency.NORMAL),
+                compactBlock = TestBlockContent("memory", "main", "compact-normal", BlockContent.Urgency.NORMAL),
+                abstractBlock = TestBlockContent("memory", "main", "abstract-normal", BlockContent.Urgency.NORMAL),
+                visibleTo = setOf(ContextBlock.VisibleDomain.ACTION),
+                replaceFadeFactor = 80.0,
+                timeFadeFactor = 0.0,
+                activateFactor = 0.0
+            )
+        )
+
+        val resolved = manager.resolve(
+            listOf(ContextBlock.VisibleDomain.PERCEIVE, ContextBlock.VisibleDomain.ACTION)
+        )
+
+        val aggregated = resolved.blocks.single()
+        val xml = aggregated.encodeToXmlString()
+        assertEquals(BlockContent.Urgency.NORMAL, aggregated.urgency)
+        assertTrue(xml.contains("<content>compact-low</content>"))
+        assertFalse(xml.contains("<content>full-critical</content>"))
+    }
+
+    private fun assertContent(expected: String, rendered: BlockContent) {
+        assertEquals(expected, (rendered as TestBlockContent).content)
+    }
+
     private fun contextBlock(
         blockName: String,
         source: String,
@@ -240,8 +423,9 @@ class ContextWorkspaceTest {
     private class TestBlockContent(
         blockName: String,
         source: String,
-        val content: String
-    ) : BlockContent(blockName, source) {
+        val content: String,
+        urgency: Urgency = Urgency.NORMAL
+    ) : BlockContent(blockName, source, urgency) {
         override fun fillXml(document: org.w3c.dom.Document, root: org.w3c.dom.Element) {
             appendTextElement(document, root, "content", content)
         }

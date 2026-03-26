@@ -51,7 +51,12 @@ class ContextWorkspace {
                 continue
             }
 
-            val activationScore = block.activate()
+            val exposure = if (primaryDomain in matchedDomains) {
+                ContextBlock.Exposure.PRIMARY
+            } else {
+                ContextBlock.Exposure.SECONDARY
+            }
+            val activationScore = block.activate(exposure)
             if (activationScore <= 0.0) {
                 iterator.remove()
                 continue
@@ -61,7 +66,7 @@ class ContextWorkspace {
                 block = block,
                 domainWeight = matchedDomains.sumOf { domainWeights.getValue(it) },
                 activationScore = activationScore,
-                forceFullRender = primaryDomain in matchedDomains
+                renderedBlock = block.render(exposure)
             )
         }
 
@@ -86,11 +91,7 @@ class ContextWorkspace {
     }
 
     private fun renderResolvedBlock(resolved: ResolvedContextBlock): BlockContent {
-        return if (resolved.forceFullRender) {
-            resolved.block.blockContent
-        } else {
-            resolved.block.render()
-        }
+        return resolved.renderedBlock
     }
 
 
@@ -128,7 +129,7 @@ private data class ResolvedContextBlock(
     val block: ContextBlock,
     val domainWeight: Int,
     val activationScore: Double,
-    val forceFullRender: Boolean
+    val renderedBlock: BlockContent
 )
 
 data class ContextBlock @JvmOverloads constructor(
@@ -155,6 +156,16 @@ data class ContextBlock @JvmOverloads constructor(
      */
     private val activateFactor: Double
 ) {
+    internal enum class Exposure {
+        PRIMARY,
+        SECONDARY
+    }
+
+    private enum class ProjectionLevel {
+        ABSTRACT,
+        COMPACT,
+        FULL
+    }
 
     /**
      * 默认活跃分数，降低至0时将在 [ContextWorkspace] 中移除该 block
@@ -185,9 +196,23 @@ data class ContextBlock @JvmOverloads constructor(
         return activationScore
     }
 
-    fun activate(): Double {
+    internal fun activate(exposure: Exposure): Double {
         refreshByElapsedTime()
-        activationScore = min(100.0, activationScore + activateFactor)
+        val currentLevel = currentProjectionLevel()
+        val increasedScore = when (exposure) {
+            Exposure.PRIMARY -> activationScore + when (currentLevel) {
+                ProjectionLevel.FULL -> activateFactor
+                ProjectionLevel.COMPACT -> activateFactor * 0.6
+                ProjectionLevel.ABSTRACT -> activateFactor * 0.6
+            }
+
+            Exposure.SECONDARY -> activationScore + when (currentLevel) {
+                ProjectionLevel.COMPACT -> activateFactor * 0.2
+                ProjectionLevel.ABSTRACT -> activateFactor * 0.1
+                ProjectionLevel.FULL -> 0.0
+            }
+        }
+        activationScore = min(activationCeiling(exposure, currentLevel), increasedScore)
         return activationScore
     }
 
@@ -202,11 +227,48 @@ data class ContextBlock @JvmOverloads constructor(
         return this.sourceKey == contextBlock.sourceKey
     }
 
+    internal fun render(exposure: Exposure): BlockContent {
+        return when (exposure) {
+            Exposure.PRIMARY -> when (currentProjectionLevel()) {
+                ProjectionLevel.FULL -> blockContent
+                ProjectionLevel.COMPACT, ProjectionLevel.ABSTRACT -> compactBlock
+            }
+
+            Exposure.SECONDARY -> when (currentProjectionLevel()) {
+                ProjectionLevel.ABSTRACT -> abstractBlock
+                ProjectionLevel.COMPACT, ProjectionLevel.FULL -> compactBlock
+            }
+        }
+    }
+
     fun render(): BlockContent {
+        return when (currentProjectionLevel()) {
+            ProjectionLevel.ABSTRACT -> abstractBlock
+            ProjectionLevel.COMPACT -> compactBlock
+            ProjectionLevel.FULL -> blockContent
+        }
+    }
+
+    private fun currentProjectionLevel(): ProjectionLevel {
         return when {
-            activationScore < 30 -> abstractBlock
-            activationScore < 70 -> compactBlock
-            else -> blockContent
+            activationScore < ABSTRACT_TO_COMPACT_THRESHOLD -> ProjectionLevel.ABSTRACT
+            activationScore < COMPACT_TO_FULL_THRESHOLD -> ProjectionLevel.COMPACT
+            else -> ProjectionLevel.FULL
+        }
+    }
+
+    private fun activationCeiling(exposure: Exposure, currentLevel: ProjectionLevel): Double {
+        return when (exposure) {
+            Exposure.PRIMARY -> when (currentLevel) {
+                ProjectionLevel.ABSTRACT -> COMPACT_TO_FULL_THRESHOLD - PROJECTION_EPSILON
+                ProjectionLevel.COMPACT, ProjectionLevel.FULL -> MAX_ACTIVATION_SCORE
+            }
+
+            Exposure.SECONDARY -> when (currentLevel) {
+                ProjectionLevel.ABSTRACT -> ABSTRACT_TO_COMPACT_THRESHOLD - PROJECTION_EPSILON
+                ProjectionLevel.COMPACT -> COMPACT_TO_FULL_THRESHOLD - PROJECTION_EPSILON
+                ProjectionLevel.FULL -> MAX_ACTIVATION_SCORE
+            }
         }
     }
 
@@ -214,6 +276,13 @@ data class ContextBlock @JvmOverloads constructor(
         val blockName: String,
         val source: String
     )
+
+    companion object {
+        private const val MAX_ACTIVATION_SCORE = 100.0
+        private const val ABSTRACT_TO_COMPACT_THRESHOLD = 30.0
+        private const val COMPACT_TO_FULL_THRESHOLD = 70.0
+        private const val PROJECTION_EPSILON = 0.000001
+    }
 }
 
 private class AggregatedBlockContent(
@@ -221,11 +290,7 @@ private class AggregatedBlockContent(
 ) : BlockContent(
     groupedBlocks.first().block.sourceKey.blockName,
     groupedBlocks.first().block.sourceKey.source,
-    groupedBlocks.maxByOrNull {
-        if (it.forceFullRender) it.block.blockContent.urgency.ordinal else it.block.render().urgency.ordinal
-    }?.let {
-        if (it.forceFullRender) it.block.blockContent.urgency else it.block.render().urgency
-    } ?: Urgency.NORMAL
+    groupedBlocks.maxByOrNull { it.renderedBlock.urgency.ordinal }?.renderedBlock?.urgency ?: Urgency.NORMAL
 ) {
 
     override fun fillXml(document: Document, root: Element) {
@@ -238,11 +303,7 @@ private class AggregatedBlockContent(
         groupedBlocks.forEachIndexed { index, groupedBlock ->
             val tagName = if (index == snapshotIndex) "snapshot" else "history_snapshot"
             val wrapper = document.createElement(tagName)
-            val renderedBlock = if (groupedBlock.forceFullRender) {
-                groupedBlock.block.blockContent
-            } else {
-                groupedBlock.block.render()
-            }
+            val renderedBlock = groupedBlock.renderedBlock
             wrapper.setAttribute("source", renderedBlock.source)
             wrapper.setAttribute("urgency", renderedBlock.urgency.name.lowercase(Locale.ROOT))
             root.appendChild(wrapper)
