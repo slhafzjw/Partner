@@ -2,16 +2,11 @@ package work.slhaf.partner.core.cognition
 
 import org.w3c.dom.Document
 import org.w3c.dom.Element
-import java.io.StringWriter
+import work.slhaf.partner.common.base.Block
 import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import javax.xml.parsers.DocumentBuilderFactory
-import javax.xml.transform.OutputKeys
-import javax.xml.transform.TransformerFactory
-import javax.xml.transform.dom.DOMSource
-import javax.xml.transform.stream.StreamResult
 import kotlin.concurrent.write
 import kotlin.math.max
 import kotlin.math.min
@@ -318,10 +313,10 @@ private class AggregatedBlockContent(
 }
 
 abstract class BlockContent @JvmOverloads protected constructor(
-    val blockName: String,
+    blockName: String,
     val source: String,
     val urgency: Urgency = Urgency.NORMAL
-) {
+) : Block(blockName) {
 
     enum class Urgency {
         LOW,
@@ -330,111 +325,13 @@ abstract class BlockContent @JvmOverloads protected constructor(
         CRITICAL
     }
 
-    fun encodeToXml(): Element {
-        val document = DocumentBuilderFactory.newInstance()
-            .newDocumentBuilder()
-            .newDocument()
-
-        val root = document.createElement(blockName)
-        root.setAttribute("source", source)
-        root.setAttribute("urgency", urgency.name.lowercase(Locale.ROOT))
-        document.appendChild(root)
-
-        fillXml(document, root)
-
-        return root
+    override fun appendRootAttributes(): Map<String, String> {
+        return mapOf(
+            "source" to source,
+            "urgency" to urgency.name.lowercase(Locale.ROOT)
+        )
     }
 
-    fun encodeToXmlString(): String {
-        val transformer = TransformerFactory.newInstance().newTransformer().apply {
-            setOutputProperty(OutputKeys.INDENT, "yes")
-            setOutputProperty(OutputKeys.ENCODING, "UTF-8")
-            setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2")
-        }
-
-        return StringWriter().use { writer ->
-            transformer.transform(DOMSource(encodeToXml()), StreamResult(writer))
-            writer.toString()
-        }
-    }
-
-    protected abstract fun fillXml(document: Document, root: Element)
-
-    protected fun appendTextElement(
-        document: Document,
-        parent: Element,
-        tagName: String,
-        value: Any?
-    ): Element {
-        val element = document.createElement(tagName)
-        element.textContent = value?.toString() ?: ""
-        parent.appendChild(element)
-        return element
-    }
-
-    protected fun appendChildElement(
-        document: Document,
-        parent: Element,
-        tagName: String,
-        block: Element.() -> Unit = {}
-    ): Element {
-        val element = document.createElement(tagName)
-        parent.appendChild(element)
-        element.block()
-        return element
-    }
-
-    protected fun appendCDataElement(
-        document: Document,
-        parent: Element,
-        tagName: String,
-        value: String?
-    ): Element {
-        val element = document.createElement(tagName)
-        element.appendChild(document.createCDATASection(value ?: ""))
-        parent.appendChild(element)
-        return element
-    }
-
-    @JvmOverloads
-    protected fun <T> appendListElement(
-        document: Document,
-        parent: Element,
-        wrapperTagName: String,
-        itemTagName: String,
-        values: Iterable<T>,
-        block: Element.(T) -> Unit = { value ->
-            textContent = value?.toString() ?: ""
-        }
-    ): Element {
-        val wrapper = document.createElement(wrapperTagName)
-        parent.appendChild(wrapper)
-
-        for (value in values) {
-            val item = document.createElement(itemTagName)
-            wrapper.appendChild(item)
-            item.block(value)
-        }
-
-        return wrapper
-    }
-
-    @JvmOverloads
-    protected fun <T> appendRepeatedElements(
-        document: Document,
-        parent: Element,
-        itemTagName: String,
-        values: Iterable<T>,
-        block: Element.(T) -> Unit = { value ->
-            textContent = value?.toString() ?: ""
-        }
-    ) {
-        for (value in values) {
-            val item = document.createElement(itemTagName)
-            parent.appendChild(item)
-            item.block(value)
-        }
-    }
 }
 
 abstract class CommunicationBlockContent(
