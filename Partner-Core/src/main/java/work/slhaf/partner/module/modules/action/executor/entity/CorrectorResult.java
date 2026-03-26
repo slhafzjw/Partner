@@ -8,4 +8,5 @@ import java.util.List;
 @Data
 public class CorrectorResult {
     private List<MetaIntervention> metaInterventionList;
+    private String correctionReason;
 }

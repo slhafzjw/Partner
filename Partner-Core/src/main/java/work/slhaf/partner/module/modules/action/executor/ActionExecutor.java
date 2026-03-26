@@ -20,20 +20,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ActionExecutor extends AbstractAgentModule.Standalone {
+
     private static final int MAX_EXTRACTOR_ATTEMPTS = 3;
+
     private final AssemblyHelper assemblyHelper = new AssemblyHelper();
+
     @InjectCapability
     private ActionCapability actionCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
     @InjectCapability
     private CognitionCapability cognitionCapability;
+
     @InjectModule
     private ParamsExtractor paramsExtractor;
     @InjectModule
     private ActionCorrector actionCorrector;
     @InjectModule
     private ActionCorrectionRecognizer actionCorrectionRecognizer;
+
+    private ExecutingActionBlockManager blockManager;
 
     private ExecutorService virtualExecutor;
     private ExecutorService platformExecutor;
@@ -44,6 +50,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         virtualExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
         platformExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM);
         runnerClient = actionCapability.runnerClient();
+        blockManager = new ExecutingActionBlockManager(cognitionCapability.contextWorkspace());
     }
 
     public void execute(Action action) {
@@ -76,9 +83,13 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 if (action instanceof ExecutableAction executableAction) {
                     if (action.getStatus() == Action.Status.FAILED) {
                         ensureExecutableResult(executableAction, true, null);
+                        blockManager.emitActionFinishedBlock(executableAction);
                         return;
                     }
+                    action.setStatus(Action.Status.SUCCESS);
                     ensureExecutableResult(executableAction, false, null);
+                    blockManager.emitActionFinishedBlock(executableAction);
+                    return;
                 }
                 if (action.getStatus() == Action.Status.FAILED) {
                     return;
@@ -89,6 +100,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 action.setStatus(Action.Status.FAILED);
                 if (action instanceof ExecutableAction executableAction) {
                     ensureExecutableResult(executableAction, true, e.getLocalizedMessage());
+                    blockManager.emitActionFinishedBlock(executableAction);
                 }
             }
         };
@@ -100,6 +112,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     }
 
     private void handleStateAction(StateAction stateAction) {
+        blockManager.emitStateActionTriggeredBlock(stateAction);
         stateAction.getTrigger().onTrigger();
     }
 
@@ -117,6 +130,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         // 注册执行中行动
         val phaser = new Phaser();
         executableAction.setStatus(Action.Status.EXECUTING);
+
+        blockManager.emitActionLaunchedBlock(executableAction);
+
         // 开始执行
         val stageCursor = new Object() {
             int stageCount;
@@ -167,7 +183,11 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 // 立即尝试推进，本次推进中，如果前方仍有未执行 stage，将执行一次阶段推进
                 stageCursor.requestAdvance();
             }
-            boolean shouldRunCorrector = hasFailedMetaAction(metaActions);
+
+            blockManager.emitActionStageSettledBlock(executableAction);
+
+            boolean hasFailedMetaAction = hasFailedMetaAction(metaActions);
+            boolean shouldRunCorrector = hasFailedMetaAction;
             try {
                 if (!shouldRunCorrector) {
                     val recognizerResult = resolveRecognizerResult(recognizerRecord);
@@ -177,6 +197,13 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                     val correctorInput = assemblyHelper.buildCorrectorInput(executableAction);
                     val correctorResult = actionCorrector.execute(correctorInput);
                     actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), executableAction);
+
+                    blockManager.emitActionCorrectionBlock(
+                            executableAction,
+                            hasFailedMetaAction ? "has_failed_meta_action" : correctorResult.getCorrectionReason(),
+                            correctorResult.getMetaInterventionList()
+                    );
+
                 }
             } catch (Exception ignored) {
             }
