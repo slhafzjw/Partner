@@ -134,6 +134,28 @@ sealed class ExecutableAction : Action() {
     fun resume() {
         status = Status.EXECUTING
     }
+
+    fun snapshot(): ExecutableActionSnapshot {
+        val schedulable = this as? Schedulable
+
+        return ExecutableActionSnapshot(
+            uuid = uuid,
+            source = source,
+            reason = reason,
+            description = description,
+            timeoutMills = timeoutMills,
+            status = status,
+            tendency = tendency,
+            actionChainSize = actionChain.size,
+            executingStage = executingStage,
+            result = if (::result.isInitialized) result else null,
+            history = history.mapValues { (_, value) -> value.toList() },
+            additionalContext = additionalContext.mapValues { (_, value) -> value.toList() },
+            scheduleType = schedulable?.scheduleType,
+            scheduleContent = schedulable?.scheduleContent,
+            enabled = schedulable?.enabled
+        )
+    }
 }
 
 /**
@@ -201,6 +223,20 @@ data class StateAction @JvmOverloads constructor(
     override val timeout: Duration = 5.minutes,
 ) : Action(), Schedulable {
 
+    fun snapshot(): StateActionSnapshot {
+        return StateActionSnapshot(
+            uuid = uuid,
+            source = source,
+            reason = reason,
+            description = description,
+            timeoutMills = timeoutMills,
+            status = status,
+            scheduleType = scheduleType,
+            scheduleContent = scheduleContent,
+            enabled = enabled,
+        )
+    }
+
     sealed interface Trigger {
 
         fun onTrigger()
@@ -225,3 +261,35 @@ data class StateAction @JvmOverloads constructor(
 
     }
 }
+
+data class ExecutableActionSnapshot(
+    val uuid: String,
+    val source: String,
+    val reason: String,
+    val description: String,
+    val timeoutMills: Long,
+    val status: Action.Status,
+
+    val tendency: String,
+    val actionChainSize: Int,
+    val executingStage: Int,
+    val result: String?,
+    val history: Map<Int, List<HistoryAction>>,
+    val additionalContext: Map<Int, List<String>>,
+
+    val scheduleType: Schedulable.ScheduleType? = null,
+    val scheduleContent: String? = null,
+    val enabled: Boolean? = null
+)
+
+data class StateActionSnapshot(
+    val uuid: String,
+    val source: String,
+    val reason: String,
+    val description: String,
+    val timeoutMills: Long,
+    val status: Action.Status,
+    val scheduleType: Schedulable.ScheduleType,
+    val scheduleContent: String,
+    val enabled: Boolean
+)
