@@ -487,33 +487,12 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         }
 
         private CorrectionRecognizerInput buildRecognizerInput(ExecutableAction executableAction) {
-            val orderedStages = new ArrayList<>(executableAction.getActionChain().keySet());
-            orderedStages.sort(Integer::compareTo);
-            int currentStageIndex = orderedStages.indexOf(executableAction.getExecutingStage());
-            List<CorrectionRecognizerMetaActionSnapshot> currentStageMetaActions = executableAction.getActionChain()
-                    .getOrDefault(executableAction.getExecutingStage(), List.of())
-                    .stream()
-                    .map(metaAction -> CorrectionRecognizerMetaActionSnapshot.builder()
-                            .key(metaAction.getKey())
-                            .name(metaAction.getName())
-                            .io(metaAction.getIo())
-                            .resultStatus(metaAction.getResult().getStatus().name())
-                            .resultData(metaAction.getResult().getData())
-                            .build())
-                    .toList();
             return CorrectionRecognizerInput.builder()
                     .tendency(executableAction.getTendency())
                     .source(executableAction.getSource())
                     .reason(executableAction.getReason())
                     .description(executableAction.getDescription())
-                    .history(executableAction.getHistory().get(executableAction.getExecutingStage()))
-                    .currentStageMetaActions(currentStageMetaActions)
-                    .orderedStages(orderedStages)
-                    .currentStage(executableAction.getExecutingStage())
-                    .currentStageIndex(currentStageIndex)
-                    .lastStage(currentStageIndex == orderedStages.size() - 1)
-                    .recentMessages(cognitionCapability.getChatMessages())
-                    .activatedSlices(memoryCapability.getActivatedSlices())
+                    .actionId(executableAction.getUuid())
                     .build();
         }
     }
