@@ -14,8 +14,7 @@ import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.action.executor.entity.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -466,15 +465,24 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         }
 
         private CorrectorInput buildCorrectorInput(ExecutableAction executableAction) {
+            Map<Integer, List<CorrectorInput.ActionChainItem>> overview = new LinkedHashMap<>();
+            executableAction.getActionChain().forEach((stage, list) -> {
+                List<CorrectorInput.ActionChainItem> overviewItems = list.stream()
+                        .map(metaAction -> new CorrectorInput.ActionChainItem(
+                                metaAction.getKey(),
+                                actionCapability.loadMetaActionInfo(metaAction.getKey()).getDescription(),
+                                metaAction.getResult().getStatus().name().toLowerCase(Locale.ROOT)
+                        ))
+                        .toList();
+                overview.put(stage, overviewItems);
+            });
             return CorrectorInput.builder()
                     .tendency(executableAction.getTendency())
                     .source(executableAction.getSource())
                     .reason(executableAction.getReason())
                     .description(executableAction.getDescription())
-                    .history(executableAction.getHistory().get(executableAction.getExecutingStage()))
-                    .status(executableAction.getStatus())
-                    .recentMessages(cognitionCapability.getChatMessages())
-                    .activatedSlices(memoryCapability.getActivatedSlices())
+                    .actionId(executableAction.getUuid())
+                    .actionChainOverview(overview)
                     .build();
         }
 

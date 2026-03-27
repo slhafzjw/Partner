@@ -1,12 +1,11 @@
 package work.slhaf.partner.module.action.executor.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.action.entity.ExecutableAction;
-import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -15,10 +14,15 @@ public class CorrectorInput {
     private String source;
     private String reason;
     private String description;
+    private String actionId;
 
-    private List<HistoryAction> history;
-    private ExecutableAction.Status status;
+    private Map<Integer, List<ActionChainItem>> actionChainOverview;
 
-    private List<Message> recentMessages;
-    private List<ActivatedMemorySlice> activatedSlices;
+    @Data
+    @AllArgsConstructor
+    public static class ActionChainItem {
+        private String actionKey;
+        private String description;
+        private String status;
+    }
 }
