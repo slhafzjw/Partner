@@ -1,4 +1,4 @@
-package work.slhaf.partner.module.core;
+package work.slhaf.partner.module.communication;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
