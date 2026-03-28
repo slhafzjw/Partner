@@ -11,7 +11,6 @@ import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognition.CognitionCapability;
-import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.module.action.executor.entity.*;
 
 import java.util.*;
@@ -27,8 +26,6 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
 
     @InjectCapability
     private ActionCapability actionCapability;
-    @InjectCapability
-    private MemoryCapability memoryCapability;
     @InjectCapability
     private CognitionCapability cognitionCapability;
 
