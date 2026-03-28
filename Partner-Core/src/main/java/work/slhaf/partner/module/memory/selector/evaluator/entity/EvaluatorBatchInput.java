@@ -1,15 +1,15 @@
 package work.slhaf.partner.module.memory.selector.evaluator.entity;
 
-import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import work.slhaf.partner.api.chat.pojo.Message;
+import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
-@Builder
+@AllArgsConstructor
 public class EvaluatorBatchInput {
-    private String text;
-    private List<Message> history;
-    private List<SliceSummary> memory_slices;
+    private Map<LocalDateTime, String> inputs;
+    private ActivatedMemorySlice activatedMemorySlice;
 }
