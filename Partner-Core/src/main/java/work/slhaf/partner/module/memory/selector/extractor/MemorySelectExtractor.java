@@ -1,5 +1,6 @@
 package work.slhaf.partner.module.memory.selector.extractor;
 
+import kotlin.Unit;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
@@ -58,7 +59,11 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInpu
         return new TaskBlock() {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendTextElement(document, root, "latest_input", input.getInput());
+                appendListElement(document, root, "new_inputs", "input", input.getInputs().entrySet(), (inputElement, input) -> {
+                    inputElement.setAttribute("datetime", input.getKey().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                    inputElement.setTextContent(input.getValue());
+                    return Unit.INSTANCE;
+                });
                 appendTextElement(document, root, "current_date", input.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                 appendTextElement(document, root, "memory_topic_tree", input.getTopic_tree());
             }
