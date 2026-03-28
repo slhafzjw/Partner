@@ -1,14 +1,20 @@
 package work.slhaf.partner.module.memory.selector;
 
+import kotlin.Unit;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
+import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
 import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
 import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
@@ -32,6 +38,9 @@ import java.util.concurrent.locks.ReentrantLock;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
+
+    private static final String BLOCK_NAME = "activated_memory_slices";
+    private static final String SOURCE = "memory_selector";
 
     @InjectCapability
     private CognitionCapability cognitionCapability;
@@ -114,7 +123,88 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
     }
 
     private void updateMemoryContext(List<ActivatedMemorySlice> activatedSlices) {
-        // TODO
+        cognitionCapability.contextWorkspace().register(new ContextBlock(
+                buildMemoryFullBlock(activatedSlices),
+                buildMemoryCompactBlock(activatedSlices),
+                buildMemoryAbstractBlock(activatedSlices),
+                Set.of(ContextBlock.VisibleDomain.MEMORY),
+                18,
+                8,
+                16
+        ));
+    }
+
+    private @NotNull BlockContent buildMemoryAbstractBlock(List<ActivatedMemorySlice> activatedSlices) {
+        return new MemoryBlock(activatedSlices) {
+            @Override
+            protected void fillSliceElement(Document document, @NotNull Element sliceElement, ActivatedMemorySlice slice) {
+                appendTextElement(document, sliceElement, "summary", slice.getSummary());
+            }
+        };
+    }
+
+    private @NotNull BlockContent buildMemoryCompactBlock(List<ActivatedMemorySlice> activatedSlices) {
+        return new MemoryBlock(activatedSlices) {
+            @Override
+            protected void fillSliceElement(Document document, @NotNull Element sliceElement, ActivatedMemorySlice slice) {
+                appendTextElement(document, sliceElement, "slice_summary", slice.getSummary());
+                appendChildElement(document, sliceElement, "source_messages", (messagesElement) -> {
+                    List<Message> messages = slice.getMessages();
+                    int size = messages.size();
+                    if (size > 10) {
+                        int middleStart = Math.max(2, (size - 4) / 2);
+                        int middleEnd = Math.min(size - 2, middleStart + 4);
+                        int omittedBeforeMiddle = middleStart - 2;
+                        appendTextElement(document, messagesElement, "omitted_messages", "省略了 " + omittedBeforeMiddle + " 条消息");
+
+                        appendMessageElement(document, messagesElement, messages.subList(middleStart, middleEnd));
+
+                        int omittedAfterMiddle = (size - 2) - middleEnd;
+                        if (omittedAfterMiddle > 0) {
+                            appendTextElement(document, messagesElement, "omitted_messages", "省略了 " + omittedAfterMiddle + " 条消息");
+                        }
+
+                        appendMessageElement(document, messagesElement, messages.subList(size - 2, size));
+                    } else {
+                        appendMessageElement(document, messagesElement, messages);
+                    }
+                    return Unit.INSTANCE;
+                });
+            }
+        };
+    }
+
+    private @NotNull BlockContent buildMemoryFullBlock(List<ActivatedMemorySlice> activatedSlices) {
+        return new MemoryBlock(activatedSlices) {
+            @Override
+            protected void fillSliceElement(Document document, @NotNull Element sliceElement, ActivatedMemorySlice slice) {
+                appendTextElement(document, sliceElement, "slice_summary", slice.getSummary());
+                appendChildElement(document, sliceElement, "source_messages", (messagesElement) -> {
+                    List<Message> messages = slice.getMessages();
+                    int size = messages.size();
+                    if (size > 10) {
+                        appendMessageElement(document, messagesElement, messages.subList(0, 2));
+
+                        int middleStart = Math.max(2, (size - 4) / 2);
+                        int middleEnd = Math.min(size - 2, middleStart + 4);
+                        int omittedBeforeMiddle = middleStart - 2;
+                        appendTextElement(document, messagesElement, "omitted_messages", "省略了 " + omittedBeforeMiddle + " 条消息");
+
+                        appendMessageElement(document, messagesElement, messages.subList(middleStart, middleEnd));
+
+                        int omittedAfterMiddle = (size - 2) - middleEnd;
+                        if (omittedAfterMiddle > 0) {
+                            appendTextElement(document, messagesElement, "omitted_messages", "省略了 " + omittedAfterMiddle + " 条消息");
+                        }
+
+                        appendMessageElement(document, messagesElement, messages.subList(size - 2, size));
+                    } else {
+                        appendMessageElement(document, messagesElement, messages);
+                    }
+                    return Unit.INSTANCE;
+                });
+            }
+        };
     }
 
     private List<ActivatedMemorySlice> selectAndEvaluateMemory(Map<LocalDateTime, String> snapshotInputs, ExtractorResult extractorResult) {
@@ -157,5 +247,35 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
     @Override
     public int order() {
         return 2;
+    }
+
+    abstract static class MemoryBlock extends BlockContent {
+
+        private final List<ActivatedMemorySlice> activatedSlices;
+
+        protected MemoryBlock(List<ActivatedMemorySlice> activatedSlices) {
+            super(BLOCK_NAME, SOURCE);
+            this.activatedSlices = activatedSlices;
+        }
+
+        @Override
+        protected void fillXml(@NotNull Document document, @NotNull Element root) {
+            appendRepeatedElements(document, root, "memory_slice", activatedSlices, (sliceElement, slice) -> {
+                sliceElement.setAttribute("unit_id", slice.getUnitId());
+                sliceElement.setAttribute("slice_id", slice.getSliceId());
+                fillSliceElement(document, sliceElement, slice);
+                return Unit.INSTANCE;
+            });
+        }
+
+        protected void appendMessageElement(Document document, Element parent, List<Message> messages) {
+            appendRepeatedElements(document, parent, "message", messages, (messageElement, message) -> {
+                messageElement.setAttribute("role", message.getRole().name().toLowerCase(Locale.ROOT));
+                messageElement.setTextContent(message.getContent());
+                return Unit.INSTANCE;
+            });
+        }
+
+        protected abstract void fillSliceElement(Document document, @NotNull Element sliceElement, ActivatedMemorySlice slice);
     }
 }
