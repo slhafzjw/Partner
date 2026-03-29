@@ -337,13 +337,15 @@ abstract class BlockContent @JvmOverloads protected constructor(
 
 }
 
-abstract class CommunicationBlockContent(
+abstract class CommunicationBlockContent @JvmOverloads constructor(
     blockName: String,
     source: String,
-    val type: Projection,
+    urgency: Urgency = Urgency.NORMAL,
+    val type: Projection = Projection.CONTEXT,
 ) : BlockContent(
     blockName,
     source,
+    urgency
 ) {
 
     enum class Projection {

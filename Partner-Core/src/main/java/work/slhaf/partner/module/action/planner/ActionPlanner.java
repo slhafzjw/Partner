@@ -16,6 +16,7 @@ import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.core.cognition.CommunicationBlockContent;
 import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.module.action.executor.ActionExecutor;
 import work.slhaf.partner.module.action.planner.evaluator.ActionEvaluator;
@@ -26,6 +27,8 @@ import work.slhaf.partner.module.action.planner.extractor.entity.ExtractorResult
 import work.slhaf.partner.module.action.scheduler.ActionScheduler;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,7 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";
-    private static final String PENDING_BLOCK_SOURCE = "action_planner_pending";
+    private static final String BLOCK_SOURCE = "action_planner_pending";
+    private static final String TENDENCIES_EVALUATING_BLOCK_NAME = "tendencies_in_evaluating";
     private static final double PENDING_REPLACE_FADE_FACTOR = 10.0;
     private static final double PENDING_TIME_FADE_FACTOR = 10.0;
     private static final double PENDING_ACTIVATE_FACTOR = 0.0;
@@ -67,21 +71,80 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     @Override
     public void execute(@NotNull PartnerRunningFlowContext context) {
         try {
-            ExtractorResult extractorResult = actionExtractor.execute(context.getInput());
-            if (extractorResult.getTendencies().isEmpty()) {
+            String input = context.getInput();
+            ExtractorResult extractorResult = actionExtractor.execute(input);
+            List<String> tendencies = extractorResult.getTendencies();
+            if (tendencies.isEmpty()) {
                 return;
             }
-            EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult);
-            List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); // 并发操作均为访问
-            putActionData(evaluatorResults, context);
-            updateTendencyCache(evaluatorResults, context.getInput(), extractorResult);
+            appendTendencyBlock(tendencies, input);
+            evaluateTendency(context.getSource(), input, extractorResult);
         } catch (Exception e) {
             log.error("执行异常", e);
         }
     }
 
-    private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input,
-                                     ExtractorResult extractorResult) {
+    private void appendTendencyBlock(List<String> tendencies, String input) {
+        input = input.trim();
+        input = input.length() <= 100 ? input : input.substring(0, 100);
+        String datetime = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        cognitionCapability.contextWorkspace().register(new ContextBlock(
+                buildTendenciesEvaluatingFullBlock(tendencies),
+                buildTendenciesEvaluatingCompactBlock(tendencies, datetime, input),
+                buildTendenciesEvaluatingAbstractBlock(tendencies, datetime, input),
+                Set.of(ContextBlock.VisibleDomain.ACTION, ContextBlock.VisibleDomain.COMMUNICATION),
+                60,
+                18,
+                4
+        ));
+    }
+
+    private @NotNull BlockContent buildTendenciesEvaluatingAbstractBlock(List<String> tendencies, String datetime, String input) {
+        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendTextElement(document, root, "datetime", datetime);
+                appendTextElement(document, root, "related_input", input);
+                appendTextElement(document, root, "abstract", "There are " + tendencies.size() + " related tendencies in evaluating.");
+            }
+        };
+    }
+
+    private @NotNull BlockContent buildTendenciesEvaluatingCompactBlock(List<String> tendencies, String datetime, String input) {
+        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                int size = tendencies.size();
+                boolean num = size > 3;
+                appendTextElement(document, root, "datetime", datetime);
+                appendTextElement(document, root, "related_input", input);
+                appendTextElement(document, root, "tendencies_count", size);
+                appendListElement(document, root, num ? "tendencies_truncated" : "tendencies", "tendency", num ? tendencies.subList(0, 3) : tendencies);
+            }
+        };
+    }
+
+    private @NotNull BlockContent buildTendenciesEvaluatingFullBlock(List<String> tendencies) {
+        return new CommunicationBlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, BLOCK_SOURCE, BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendRepeatedElements(document, root, "tendency", tendencies);
+            }
+        };
+    }
+
+    private void evaluateTendency(String source, String input, ExtractorResult extractorResult) {
+        executor.execute(() -> {
+            EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult);
+            List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); // 并发操作均为访问
+            handleEvaluatorResults(evaluatorResults, source);
+            updateTendencyCache(evaluatorResults, input, extractorResult);
+
+            cognitionCapability.contextWorkspace().expire(TENDENCIES_EVALUATING_BLOCK_NAME, BLOCK_SOURCE);
+        });
+    }
+
+    private void updateTendencyCache(List<EvaluatorResult> evaluatorResults, String input, ExtractorResult extractorResult) {
         if (!VectorClient.status) {
             return;
         }
@@ -102,13 +165,13 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         });
     }
 
-    private void putActionData(List<EvaluatorResult> evaluatorResults, PartnerRunningFlowContext context) {
+    private void handleEvaluatorResults(List<EvaluatorResult> evaluatorResults, String source) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
             expireResolvedPending(evaluatorResult);
             if (!evaluatorResult.isOk()) {
                 continue;
             }
-            ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, context.getSource());
+            ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, source);
             if (evaluatorResult.isNeedConfirm()) {
                 registerPendingContextBlock(executableAction, evaluatorResult);
                 continue;
@@ -150,7 +213,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private BlockContent buildPendingBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
-        return new BlockContent(blockName, PENDING_BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
+        return new BlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "state", "waiting_confirm");
@@ -190,7 +253,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private BlockContent buildPendingCompactBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
-        return new BlockContent(blockName, PENDING_BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
+        return new BlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "state", "waiting_confirm");
@@ -202,7 +265,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private BlockContent buildPendingAbstractBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
-        return new BlockContent(blockName, PENDING_BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
+        return new BlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "pending_tendency", executableAction.getTendency());
