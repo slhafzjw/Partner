@@ -163,18 +163,35 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private void handleEvaluatorResults(List<EvaluatorResult> evaluatorResults, String source, String input) {
+        List<ExecutableAction> passedActions = new ArrayList<>();
+        int approvedExecutableCount = 0;
+        int pendingConfirmCount = 0;
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
             expireResolvedPending(evaluatorResult);
             if (!evaluatorResult.isOk()) {
                 continue;
             }
             ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, source);
+            passedActions.add(executableAction);
             if (evaluatorResult.isNeedConfirm()) {
                 registerPendingContextBlock(executableAction, evaluatorResult, input);
+                pendingConfirmCount++;
                 continue;
             }
             executeOrSchedule(executableAction);
+            approvedExecutableCount++;
         }
+        if (passedActions.isEmpty()) {
+            return;
+        }
+        createTurn(approvedExecutableCount, pendingConfirmCount, source, input);
+    }
+
+    private void createTurn(int approvedExecutableCount, int pendingConfirmCount, String source, String input) {
+        String turnInput = approvedExecutableCount + " actions are approved for execution, " +
+                pendingConfirmCount + " actions are waiting for confirmation, " +
+                "according to input: " + trimInput(input) + ". For more information, please refer to the context content or other tags in this input block.";
+        cognitionCapability.initiateTurn(turnInput, source, getModuleName());
     }
 
     private void expireResolvedPending(EvaluatorResult evaluatorResult) {
