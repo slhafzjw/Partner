@@ -299,11 +299,14 @@ private class AggregatedBlockContent(
             val tagName = if (index == snapshotIndex) "snapshot" else "history_snapshot"
             val wrapper = document.createElement(tagName)
             val renderedBlock = groupedBlock.renderedBlock
-            wrapper.setAttribute("source", renderedBlock.source)
-            wrapper.setAttribute("urgency", renderedBlock.urgency.name.lowercase(Locale.ROOT))
+            val encoded = renderedBlock.encodeToXml()
+            val attributes = encoded.attributes
+            for (attributeIndex in 0 until attributes.length) {
+                val attribute = attributes.item(attributeIndex)
+                wrapper.setAttribute(attribute.nodeName, attribute.nodeValue)
+            }
             root.appendChild(wrapper)
 
-            val encoded = renderedBlock.encodeToXml()
             val childNodes = encoded.childNodes
             for (childIndex in 0 until childNodes.length) {
                 wrapper.appendChild(document.importNode(childNodes.item(childIndex), true))

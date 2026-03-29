@@ -110,6 +110,41 @@ class ContextWorkspaceTest {
     }
 
     @Test
+    fun `aggregated snapshots preserve rendered block root attributes`() {
+        val manager = ContextWorkspace()
+        manager.register(
+            ContextBlock(
+                blockContent = AttributedTestBlockContent("memory", "main", "older", "historic"),
+                compactBlock = AttributedTestBlockContent("memory", "main", "older-compact", "historic"),
+                abstractBlock = AttributedTestBlockContent("memory", "main", "older-abstract", "historic"),
+                visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY),
+                replaceFadeFactor = 20.0,
+                timeFadeFactor = 0.0,
+                activateFactor = 0.0
+            )
+        )
+        manager.register(
+            ContextBlock(
+                blockContent = AttributedTestBlockContent("memory", "main", "newer", "latest"),
+                compactBlock = AttributedTestBlockContent("memory", "main", "newer-compact", "latest"),
+                abstractBlock = AttributedTestBlockContent("memory", "main", "newer-abstract", "latest"),
+                visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY),
+                replaceFadeFactor = 20.0,
+                timeFadeFactor = 0.0,
+                activateFactor = 0.0
+            )
+        )
+
+        val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
+
+        val aggregatedXml = resolved.blocks.single().encodeToXmlString()
+        assertTrue(aggregatedXml.contains("<snapshot category=\"latest\" source=\"main\" urgency=\"normal\">"))
+        assertTrue(aggregatedXml.contains("<history_snapshot category=\"historic\" source=\"main\" urgency=\"normal\">"))
+        assertTrue(aggregatedXml.contains("<content>newer</content>"))
+        assertTrue(aggregatedXml.contains("<content>older</content>"))
+    }
+
+    @Test
     fun `register fades matching source blocks and removes zero score ones`() {
         val manager = ContextWorkspace()
         val evicted = contextBlock(
@@ -420,7 +455,7 @@ class ContextWorkspaceTest {
         )
     }
 
-    private class TestBlockContent(
+    private open class TestBlockContent(
         blockName: String,
         source: String,
         val content: String,
@@ -428,6 +463,18 @@ class ContextWorkspaceTest {
     ) : BlockContent(blockName, source, urgency) {
         override fun fillXml(document: org.w3c.dom.Document, root: org.w3c.dom.Element) {
             appendTextElement(document, root, "content", content)
+        }
+    }
+
+    private class AttributedTestBlockContent(
+        blockName: String,
+        source: String,
+        content: String,
+        private val category: String,
+        urgency: Urgency = Urgency.NORMAL
+    ) : TestBlockContent(blockName, source, content, urgency) {
+        override fun appendRootAttributes(): Map<String, String> {
+            return super.appendRootAttributes() + ("category" to category)
         }
     }
 }
