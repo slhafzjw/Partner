@@ -172,8 +172,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
         memoryRuntime.recordMemory(
                 memoryUnit,
                 summarizeResult.getTopicPath(),
-                summarizeResult.getRelatedTopicPath(),
-                summarizeResult.getSummary()
+                summarizeResult.getRelatedTopicPath()
         );
         log.debug("[MemoryUpdater] 记忆更新流程结束...");
         MemorySlice newSlice = memoryUnit.getSlices().getLast();

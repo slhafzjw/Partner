@@ -210,7 +210,6 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
         log.debug("[MemorySelector] 触发记忆回溯...");
         LinkedHashMap<String, ActivatedMemorySlice> candidates = new LinkedHashMap<>();
         setMemoryCandidates(candidates, extractorResult.getMatches());
-        removeDuplicateSlice(candidates.values());
         EvaluatorInput evaluatorInput = EvaluatorInput.builder()
                 .inputs(snapshotInputs)
                 .memorySlices(new ArrayList<>(candidates.values()))
@@ -237,10 +236,6 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
                 log.error("[MemorySelector] 错误索引: {}", match.getText());
             }
         }
-    }
-
-    private void removeDuplicateSlice(Collection<ActivatedMemorySlice> candidates) {
-        candidates.removeIf(m -> memoryRuntime.containsDialogSummary(m.getSummary()));
     }
 
     @Override

@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -47,7 +46,6 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
     private final ReentrantLock runtimeLock = new ReentrantLock();
     private Map<String, CopyOnWriteArrayList<SliceRef>> topicSlices = new HashMap<>();
     private Map<LocalDate, CopyOnWriteArrayList<SliceRef>> dateIndex = new HashMap<>();
-    private HashMap<LocalDateTime, String> dialogMap = new HashMap<>();
 
     @Init
     public void init() {
@@ -79,7 +77,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
         }
     }
 
-    public void recordMemory(MemoryUnit memoryUnit, String topicPath, List<String> relatedTopicPaths, String dialogSummary) {
+    public void recordMemory(MemoryUnit memoryUnit, String topicPath, List<String> relatedTopicPaths) {
         memoryCapability.saveMemoryUnit(memoryUnit);
         MemorySlice memorySlice = memoryUnit.getSlices().getLast();
         SliceRef sliceRef = new SliceRef(memoryUnit.getId(), memorySlice.getId());
@@ -90,7 +88,6 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
                 bindTopic(relatedTopicPath, sliceRef);
             }
         }
-        updateDialogMap(LocalDateTime.now(), dialogSummary);
     }
 
     private void indexMemoryUnit(MemoryUnit memoryUnit) {
@@ -137,40 +134,6 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
 
     public List<ActivatedMemorySlice> queryActivatedMemoryByDate(LocalDate date) {
         return buildActivatedMemorySlices(findByDate(date));
-    }
-
-    private void updateDialogMap(LocalDateTime dateTime, String newDialogCache) {
-        runtimeLock.lock();
-        try {
-            List<LocalDateTime> keysToRemove = new ArrayList<>();
-            dialogMap.forEach((k, v) -> {
-                if (dateTime.minusDays(2).isAfter(k)) {
-                    keysToRemove.add(k);
-                }
-            });
-            for (LocalDateTime temp : keysToRemove) {
-                dialogMap.remove(temp);
-            }
-            dialogMap.put(dateTime, newDialogCache);
-            saveState();
-        } finally {
-            runtimeLock.unlock();
-        }
-    }
-
-    public String getDialogMapStr() {
-        StringBuilder str = new StringBuilder();
-        dialogMap.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> str.append("\n\n[")
-                        .append(entry.getKey())
-                        .append("]\n")
-                        .append(entry.getValue()));
-        return str.toString();
-    }
-
-    public boolean containsDialogSummary(String summary) {
-        return dialogMap.containsValue(summary);
     }
 
     public String getTopicTree() {
@@ -267,12 +230,10 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
             RuntimeState state = (RuntimeState) ois.readObject();
             topicSlices = state.topicSlices;
             dateIndex = state.dateIndex;
-            dialogMap = state.dialogMap;
         } catch (Exception e) {
             log.error("[MemoryRuntime] 加载运行态失败", e);
             topicSlices = new HashMap<>();
             dateIndex = new HashMap<>();
-            dialogMap = new HashMap<>();
         }
     }
 
@@ -295,7 +256,6 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
                 RuntimeState state = new RuntimeState();
                 state.topicSlices = new HashMap<>(topicSlices);
                 state.dateIndex = new HashMap<>(dateIndex);
-                state.dialogMap = new HashMap<>(dialogMap);
                 oos.writeObject(state);
             }
             Files.move(tempPath, filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
@@ -325,6 +285,5 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
 
         private Map<String, CopyOnWriteArrayList<SliceRef>> topicSlices = new HashMap<>();
         private Map<LocalDate, CopyOnWriteArrayList<SliceRef>> dateIndex = new HashMap<>();
-        private HashMap<LocalDateTime, String> dialogMap = new HashMap<>();
     }
 }

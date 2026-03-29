@@ -130,7 +130,7 @@ class MemoryRuntimeTest {
 
         unit.setSlices(new ArrayList<>(List.of(firstSlice, secondSlice)));
 
-        runtime.recordMemory(unit, "topic/main", List.of("topic/related"), "dialog-summary");
+        runtime.recordMemory(unit, "topic/main", List.of("topic/related"));
 
         Map<String, CopyOnWriteArrayList<SliceRef>> topicSlices = topicSlices(runtime);
         assertEquals(List.of("slice-2"),
