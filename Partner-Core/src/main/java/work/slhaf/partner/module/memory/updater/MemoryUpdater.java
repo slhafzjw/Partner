@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject;
 import kotlin.Unit;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
@@ -81,7 +82,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     @Override
-    public void execute(PartnerRunningFlowContext context) {
+    public void execute(@NotNull PartnerRunningFlowContext context) {
         boolean trigger = cognitionCapability.getChatMessages().size() >= MEMORY_UPDATE_TRIGGER_ROLL_LIMIT;
         if (!trigger) {
             return;
@@ -149,19 +150,33 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
 
     private MemoryUnit buildMemoryUnit(List<Message> chatMessages, SummarizeResult summarizeResult) {
         long now = System.currentTimeMillis();
+        String memoryId = memoryCapability.getMemorySessionId();
+        String resolvedMemoryId = memoryId == null || memoryId.isBlank() ? UUID.randomUUID().toString() : memoryId;
+        MemoryUnit existingUnit = memoryCapability.getMemoryUnit(resolvedMemoryId);
+        List<Message> existingMessages = existingUnit != null && existingUnit.getConversationMessages() != null
+                ? existingUnit.getConversationMessages()
+                : List.of();
+        int startIndex = existingMessages.size();
+
         MemorySlice memorySlice = new MemorySlice();
         memorySlice.setId(UUID.randomUUID().toString());
-        memorySlice.setStartIndex(0);
-        memorySlice.setEndIndex(chatMessages.size());
+        memorySlice.setStartIndex(startIndex);
+        memorySlice.setEndIndex(startIndex + chatMessages.size());
         memorySlice.setSummary(summarizeResult.getSummary());
         memorySlice.setTimestamp(now);
 
         MemoryUnit memoryUnit = new MemoryUnit();
-        String memoryId = memoryCapability.getMemorySessionId();
-        memoryUnit.setId(memoryId == null || memoryId.isBlank() ? UUID.randomUUID().toString() : memoryId);
+        memoryUnit.setId(resolvedMemoryId);
         memoryUnit.setTimestamp(now);
-        memoryUnit.setConversationMessages(new ArrayList<>(chatMessages));
-        memoryUnit.setSlices(new ArrayList<>(List.of(memorySlice)));
+        List<Message> conversationMessages = new ArrayList<>(existingMessages);
+        conversationMessages.addAll(chatMessages);
+        memoryUnit.setConversationMessages(conversationMessages);
+
+        List<MemorySlice> slices = existingUnit != null && existingUnit.getSlices() != null
+                ? new ArrayList<>(existingUnit.getSlices())
+                : new ArrayList<>();
+        slices.add(memorySlice);
+        memoryUnit.setSlices(slices);
         return memoryUnit;
     }
 

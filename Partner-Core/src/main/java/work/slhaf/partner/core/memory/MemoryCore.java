@@ -100,7 +100,7 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
         if (memoryUnit.getSlices() == null) {
             memoryUnit.setSlices(new ArrayList<>());
         }
-        int maxIndex = Math.max(memoryUnit.getConversationMessages().size() - 1, 0);
+        int maxEndExclusive = Math.max(memoryUnit.getConversationMessages().size(), 0);
         for (MemorySlice slice : memoryUnit.getSlices()) {
             if (slice.getId() == null || slice.getId().isBlank()) {
                 slice.setId(UUID.randomUUID().toString());
@@ -111,11 +111,14 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
             if (slice.getStartIndex() == null || slice.getStartIndex() < 0) {
                 slice.setStartIndex(0);
             }
-            if (slice.getEndIndex() == null || slice.getEndIndex() < slice.getStartIndex()) {
-                slice.setEndIndex(maxIndex);
+            if (slice.getStartIndex() > maxEndExclusive) {
+                slice.setStartIndex(maxEndExclusive);
             }
-            if (slice.getEndIndex() > maxIndex) {
-                slice.setEndIndex(maxIndex);
+            if (slice.getEndIndex() == null || slice.getEndIndex() < slice.getStartIndex()) {
+                slice.setEndIndex(maxEndExclusive);
+            }
+            if (slice.getEndIndex() > maxEndExclusive) {
+                slice.setEndIndex(maxEndExclusive);
             }
         }
         memoryUnit.getSlices().sort(Comparator.naturalOrder());

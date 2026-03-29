@@ -7,6 +7,7 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapabili
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
+import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
 import work.slhaf.partner.core.cognition.CognitionCapability;
@@ -80,7 +81,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
 
     public void recordMemory(MemoryUnit memoryUnit, String topicPath, List<String> relatedTopicPaths, String dialogSummary) {
         memoryCapability.saveMemoryUnit(memoryUnit);
-        MemorySlice memorySlice = memoryUnit.getSlices().getFirst();
+        MemorySlice memorySlice = memoryUnit.getSlices().getLast();
         SliceRef sliceRef = new SliceRef(memoryUnit.getId(), memorySlice.getId());
         indexMemoryUnit(memoryUnit);
         bindTopic(topicPath, sliceRef);
@@ -209,7 +210,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
         if (memoryUnit == null || memorySlice == null) {
             return null;
         }
-        List<work.slhaf.partner.api.chat.pojo.Message> messages = sliceMessages(memoryUnit, memorySlice);
+        List<Message> messages = sliceMessages(memoryUnit, memorySlice);
         LocalDate date = Instant.ofEpochMilli(memorySlice.getTimestamp())
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
@@ -223,17 +224,18 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
                 .build();
     }
 
-    private List<work.slhaf.partner.api.chat.pojo.Message> sliceMessages(MemoryUnit memoryUnit, MemorySlice memorySlice) {
-        List<work.slhaf.partner.api.chat.pojo.Message> conversationMessages = memoryUnit.getConversationMessages();
+    private List<Message> sliceMessages(MemoryUnit memoryUnit, MemorySlice memorySlice) {
+        List<Message> conversationMessages = memoryUnit.getConversationMessages();
         if (conversationMessages == null || conversationMessages.isEmpty()) {
             return List.of();
         }
-        int start = Math.max(0, memorySlice.getStartIndex());
-        int end = Math.min(conversationMessages.size() - 1, memorySlice.getEndIndex());
-        if (start > end) {
+        int size = conversationMessages.size();
+        int start = Math.max(0, Math.min(memorySlice.getStartIndex(), size));
+        int end = Math.max(start, Math.min(memorySlice.getEndIndex(), size));
+        if (start >= end) {
             return List.of();
         }
-        return new ArrayList<>(conversationMessages.subList(start, end + 1));
+        return new ArrayList<>(conversationMessages.subList(start, end));
     }
 
     private void printSubTopicsTreeFormat(TopicTreeNode node, String prefix, StringBuilder stringBuilder) {
