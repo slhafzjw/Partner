@@ -85,8 +85,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private void appendTendencyBlock(List<String> tendencies, String input) {
-        input = input.trim();
-        input = input.length() <= 100 ? input : input.substring(0, 100);
+        input = trimInput(input);
         String datetime = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         cognitionCapability.contextWorkspace().register(new ContextBlock(
                 buildTendenciesEvaluatingFullBlock(tendencies),
@@ -137,7 +136,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         executor.execute(() -> {
             EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult);
             List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); // 并发操作均为访问
-            handleEvaluatorResults(evaluatorResults, source);
+            handleEvaluatorResults(evaluatorResults, source, input);
             updateTendencyCache(evaluatorResults, input, extractorResult);
 
             cognitionCapability.contextWorkspace().expire(TENDENCIES_EVALUATING_BLOCK_NAME, BLOCK_SOURCE);
@@ -165,7 +164,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         });
     }
 
-    private void handleEvaluatorResults(List<EvaluatorResult> evaluatorResults, String source) {
+    private void handleEvaluatorResults(List<EvaluatorResult> evaluatorResults, String source, String input) {
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
             expireResolvedPending(evaluatorResult);
             if (!evaluatorResult.isOk()) {
@@ -173,7 +172,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             }
             ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, source);
             if (evaluatorResult.isNeedConfirm()) {
-                registerPendingContextBlock(executableAction, evaluatorResult);
+                registerPendingContextBlock(executableAction, evaluatorResult, input);
                 continue;
             }
             executeOrSchedule(executableAction);
@@ -194,12 +193,13 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         );
     }
 
-    private void registerPendingContextBlock(ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
+    private void registerPendingContextBlock(ExecutableAction executableAction, EvaluatorResult evaluatorResult, String input) {
         String blockName = buildPendingBlockName(executableAction);
+        input = trimInput(input);
         ContextBlock block = new ContextBlock(
                 buildPendingBlock(blockName, executableAction, evaluatorResult),
-                buildPendingCompactBlock(blockName, executableAction, evaluatorResult),
-                buildPendingAbstractBlock(blockName, executableAction, evaluatorResult),
+                buildPendingCompactBlock(blockName, executableAction, evaluatorResult, input),
+                buildPendingAbstractBlock(blockName, executableAction, evaluatorResult, input),
                 Set.of(ContextBlock.VisibleDomain.ACTION),
                 PENDING_REPLACE_FADE_FACTOR,
                 PENDING_TIME_FADE_FACTOR,
@@ -213,7 +213,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private BlockContent buildPendingBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
-        return new BlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
+        return new CommunicationBlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "state", "waiting_confirm");
@@ -252,11 +252,12 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         };
     }
 
-    private BlockContent buildPendingCompactBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
+    private BlockContent buildPendingCompactBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult, String input) {
         return new BlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "state", "waiting_confirm");
+                appendTextElement(document, root, "related_input", input);
                 appendTextElement(document, root, "tendency", executableAction.getTendency());
                 appendTextElement(document, root, "description", executableAction.getDescription());
                 appendTextElement(document, root, "action_type", evaluatorResult.getType());
@@ -264,10 +265,12 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         };
     }
 
-    private BlockContent buildPendingAbstractBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
+    private BlockContent buildPendingAbstractBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult, String input) {
         return new BlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendTextElement(document, root, "state", "waiting_confirm");
+                appendTextElement(document, root, "related_input", input);
                 appendTextElement(document, root, "pending_tendency", executableAction.getTendency());
                 appendTextElement(document, root, "summary", "exists pending action waiting for confirmation");
                 appendTextElement(document, root, "action_type", evaluatorResult.getType());
@@ -334,6 +337,12 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     @Override
     public int order() {
         return 2;
+    }
+
+    private String trimInput(@NotNull String input) {
+        input = input.trim();
+        input = input.length() <= 100 ? input : input.substring(0, 100);
+        return input;
     }
 
     private final class ActionAssemblyHelper {
