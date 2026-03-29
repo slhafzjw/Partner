@@ -111,14 +111,21 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
             return;
         }
         try {
-            List<Message> chatSnapshot = cognitionCapability.snapshotChatMessages();
-            if (chatSnapshot.size() <= 1) {
+            List<Message> fullChatSnapshot = cognitionCapability.snapshotChatMessages();
+            if (fullChatSnapshot.size() <= 1) {
+                return;
+            }
+            List<Message> chatIncrement = resolveChatIncrement(fullChatSnapshot);
+            if (chatIncrement.isEmpty()) {
+                if (refreshMemoryId) {
+                    memoryCapability.refreshMemorySession();
+                }
                 return;
             }
 
-            RollingRecord record = updateMemory(chatSnapshot);
+            RollingRecord record = updateMemory(chatIncrement);
             if (record != null) {
-                dialogRollingService.rollMessages(chatSnapshot, chatSnapshot.size(), CONTEXT_RETAIN_DIVISOR, record.unitId, record.sliceId, record.summary);
+                dialogRollingService.rollMessages(chatIncrement, fullChatSnapshot.size(), CONTEXT_RETAIN_DIVISOR, record.unitId, record.sliceId, record.summary);
             }
 
             if (refreshMemoryId) {
@@ -129,6 +136,27 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
         } finally {
             updating.set(false);
         }
+    }
+
+    private List<Message> resolveChatIncrement(List<Message> fullChatSnapshot) {
+        String memoryId = memoryCapability.getMemorySessionId();
+        if (memoryId == null || memoryId.isBlank()) {
+            return fullChatSnapshot;
+        }
+        MemoryUnit existingUnit = memoryCapability.getMemoryUnit(memoryId);
+        if (existingUnit == null || existingUnit.getConversationMessages() == null || existingUnit.getConversationMessages().isEmpty()) {
+            return fullChatSnapshot;
+        }
+        List<Message> existingMessages = existingUnit.getConversationMessages();
+        int maxOverlap = Math.min(existingMessages.size(), fullChatSnapshot.size());
+        for (int overlap = maxOverlap; overlap > 0; overlap--) {
+            List<Message> existingSuffix = existingMessages.subList(existingMessages.size() - overlap, existingMessages.size());
+            List<Message> snapshotPrefix = fullChatSnapshot.subList(0, overlap);
+            if (existingSuffix.equals(snapshotPrefix)) {
+                return fullChatSnapshot.subList(overlap, fullChatSnapshot.size());
+            }
+        }
+        return fullChatSnapshot;
     }
 
     private RollingRecord updateMemory(List<Message> chatSnapshot) {

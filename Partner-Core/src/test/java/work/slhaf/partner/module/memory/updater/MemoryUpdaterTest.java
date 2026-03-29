@@ -24,6 +24,14 @@ class MemoryUpdaterTest {
         return (MemoryUnit) method.invoke(updater, chatMessages, summarizeResult);
     }
 
+    @SuppressWarnings("unchecked")
+    private static List<Message> invokeResolveChatIncrement(MemoryUpdater updater,
+                                                            List<Message> chatMessages) throws Exception {
+        Method method = MemoryUpdater.class.getDeclaredMethod("resolveChatIncrement", List.class);
+        method.setAccessible(true);
+        return (List<Message>) method.invoke(updater, chatMessages);
+    }
+
     private static void setField(Object target, String fieldName, Object value) throws Exception {
         Field field = target.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
@@ -105,6 +113,61 @@ class MemoryUpdaterTest {
         assertEquals(0, created.getSlices().getFirst().getStartIndex());
         assertEquals(2, created.getSlices().getFirst().getEndIndex());
         assertEquals("fresh-summary", created.getSlices().getFirst().getSummary());
+    }
+
+    @Test
+    void shouldTrimPersistedOverlapFromCurrentSnapshot() throws Exception {
+        StubMemoryCapability memoryCapability = new StubMemoryCapability("session-3");
+        MemoryUpdater updater = new MemoryUpdater();
+        setField(updater, "memoryCapability", memoryCapability);
+
+        MemoryUnit existingUnit = new MemoryUnit();
+        existingUnit.setId("session-3");
+        existingUnit.setConversationMessages(new ArrayList<>(List.of(
+                message(Message.Character.USER, "m1"),
+                message(Message.Character.ASSISTANT, "m2"),
+                message(Message.Character.USER, "m3"),
+                message(Message.Character.ASSISTANT, "m4")
+        )));
+        memoryCapability.saveMemoryUnit(existingUnit);
+
+        List<Message> increment = invokeResolveChatIncrement(
+                updater,
+                List.of(
+                        message(Message.Character.USER, "m3"),
+                        message(Message.Character.ASSISTANT, "m4"),
+                        message(Message.Character.USER, "m5"),
+                        message(Message.Character.ASSISTANT, "m6")
+                )
+        );
+
+        assertEquals(List.of("m5", "m6"), increment.stream().map(Message::getContent).toList());
+    }
+
+    @Test
+    void shouldReturnEmptyIncrementWhenSnapshotIsFullyPersisted() throws Exception {
+        StubMemoryCapability memoryCapability = new StubMemoryCapability("session-4");
+        MemoryUpdater updater = new MemoryUpdater();
+        setField(updater, "memoryCapability", memoryCapability);
+
+        MemoryUnit existingUnit = new MemoryUnit();
+        existingUnit.setId("session-4");
+        existingUnit.setConversationMessages(new ArrayList<>(List.of(
+                message(Message.Character.USER, "m1"),
+                message(Message.Character.ASSISTANT, "m2"),
+                message(Message.Character.USER, "m3")
+        )));
+        memoryCapability.saveMemoryUnit(existingUnit);
+
+        List<Message> increment = invokeResolveChatIncrement(
+                updater,
+                List.of(
+                        message(Message.Character.ASSISTANT, "m2"),
+                        message(Message.Character.USER, "m3")
+                )
+        );
+
+        assertEquals(List.of(), increment);
     }
 
     private static final class StubMemoryCapability implements MemoryCapability {
