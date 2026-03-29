@@ -7,16 +7,17 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.core.PartnerCore;
-import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 
 import java.io.IOException;
 import java.io.Serial;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -32,28 +33,12 @@ public class MemoryCore extends PartnerCore<MemoryCore> {
 
     private final Lock memoryLock = new ReentrantLock();
     private ConcurrentHashMap<String, MemoryUnit> memoryUnits = new ConcurrentHashMap<>();
-    private List<ActivatedMemorySlice> activatedSlices = new CopyOnWriteArrayList<>();
 
     // 默认值一般只存在于智能体初次启动时
     private String memorySessionId = UUID.randomUUID().toString();
     private Instant memorySessionStartTime = Instant.now();
 
     public MemoryCore() throws IOException, ClassNotFoundException {
-    }
-
-    @CapabilityMethod
-    public void clearActivatedSlices() {
-        activatedSlices.clear();
-    }
-
-    @CapabilityMethod
-    public void updateActivatedSlices(List<ActivatedMemorySlice> memorySlices) {
-        activatedSlices = new CopyOnWriteArrayList<>(memorySlices);
-    }
-
-    @CapabilityMethod
-    public List<ActivatedMemorySlice> getActivatedSlices() {
-        return new ArrayList<>(activatedSlices);
     }
 
     @CapabilityMethod

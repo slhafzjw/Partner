@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.memory.pojo;
+package work.slhaf.partner.module.memory.selector;
 
 import lombok.Builder;
 import lombok.Data;

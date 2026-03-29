@@ -2,7 +2,7 @@ package work.slhaf.partner.module.action.planner.evaluator.entity;
 
 import lombok.Data;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.core.memory.pojo.ActivatedMemorySlice;
+import work.slhaf.partner.module.memory.selector.ActivatedMemorySlice;
 
 import java.util.List;
 import java.util.Map;
