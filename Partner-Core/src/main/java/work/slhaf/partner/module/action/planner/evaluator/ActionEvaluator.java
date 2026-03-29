@@ -9,8 +9,8 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.core.action.ActionCapability;
+import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextBlock;
@@ -20,7 +20,8 @@ import work.slhaf.partner.module.action.planner.evaluator.entity.EvaluatorResult
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 
 public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<EvaluatorResult>> implements ActivateModel {
 
@@ -29,11 +30,11 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
     @InjectCapability
     private CognitionCapability cognitionCapability;
 
-    private InteractionThreadPoolExecutor executor;
+    private ExecutorService executor;
 
     @Init
     public void init() {
-        executor = InteractionThreadPoolExecutor.getInstance();
+        executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
     }
 
     /**
@@ -44,32 +45,41 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
      */
     @Override
     public List<EvaluatorResult> execute(EvaluatorInput data) {
-        List<Callable<EvaluatorResult>> tasks = buildEvaluateTasks(data.getTendencies());
-        return executor.invokeAllAndReturn(tasks);
-    }
+        List<String> tendencies = data.getTendencies();
+        CountDownLatch latch = new CountDownLatch(tendencies.size());
+        List<EvaluatorResult> evaluatorResults = new ArrayList<>();
 
-    private List<Callable<EvaluatorResult>> buildEvaluateTasks(List<String> tendencies) {
-        List<Callable<EvaluatorResult>> list = new ArrayList<>();
         for (String tendency : tendencies) {
-            list.add(() -> {
-                List<Message> messages = List.of(
-                        cognitionCapability.contextWorkspace().resolve(List.of(
-                                ContextBlock.VisibleDomain.ACTION,
-                                ContextBlock.VisibleDomain.COGNITION,
-                                ContextBlock.VisibleDomain.MEMORY
-                        )).encodeToMessage(),
-                        availableMetaActionContext(),
-                        new Message(Message.Character.USER, tendency)
-                );
-                EvaluatorResult evaluatorResult = formattedChat(
-                        messages,
-                        EvaluatorResult.class
-                );
-                evaluatorResult.setTendency(tendency);
-                return evaluatorResult;
+            executor.execute(() -> {
+                try {
+                    List<Message> messages = List.of(
+                            cognitionCapability.contextWorkspace().resolve(List.of(
+                                    ContextBlock.VisibleDomain.ACTION,
+                                    ContextBlock.VisibleDomain.COGNITION,
+                                    ContextBlock.VisibleDomain.MEMORY
+                            )).encodeToMessage(),
+                            availableMetaActionContext(),
+                            new Message(Message.Character.USER, tendency)
+                    );
+                    EvaluatorResult evaluatorResult = formattedChat(
+                            messages,
+                            EvaluatorResult.class
+                    );
+                    evaluatorResult.setTendency(tendency);
+                    synchronized (evaluatorResults) {
+                        evaluatorResults.add(evaluatorResult);
+                    }
+                } finally {
+                    latch.countDown();
+                }
             });
         }
-        return list;
+
+        try {
+            latch.await();
+        } catch (InterruptedException ignored) {
+        }
+        return evaluatorResults;
     }
 
     private Message availableMetaActionContext() {

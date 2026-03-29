@@ -10,7 +10,8 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
+import work.slhaf.partner.core.action.ActionCapability;
+import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.Schedulable;
 import work.slhaf.partner.core.action.entity.StateAction;
 import work.slhaf.partner.core.cognition.CognitionCapability;
@@ -30,6 +31,7 @@ import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowCon
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = true)
@@ -47,6 +49,8 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     private MemoryCapability memoryCapability;
     @InjectCapability
     private PerceiveCapability perceiveCapability;
+    @InjectCapability
+    private ActionCapability actionCapability;
 
     @InjectModule
     private MemoryRuntime memoryRuntime;
@@ -60,11 +64,11 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     private DialogRollingService dialogRollingService;
 
     private final AtomicBoolean updating = new AtomicBoolean(false);
-    private InteractionThreadPoolExecutor executor;
+    private ExecutorService executor;
 
     @Init
     public void init() {
-        executor = InteractionThreadPoolExecutor.getInstance();
+        executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
         registerScheduledUpdater();
     }
 

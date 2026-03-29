@@ -3,51 +3,57 @@ package work.slhaf.partner.module.memory.updater.summarizer;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
+import work.slhaf.partner.core.action.ActionCapability;
+import work.slhaf.partner.core.action.ActionCore;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Void> implements ActivateModel {
-    private InteractionThreadPoolExecutor executor;
+
+    @InjectCapability
+    private ActionCapability actionCapability;
+
+    private ExecutorService executor;
 
     @Init
     public void init() {
-        this.executor = InteractionThreadPoolExecutor.getInstance();
+        executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
     }
 
     @Override
     public Void execute(List<Message> chatMessages) {
         log.debug("[MemorySummarizer] 长文本摘要开始...");
-        List<Callable<Void>> tasks = new ArrayList<>();
-        AtomicInteger counter = new AtomicInteger();
+        CountDownLatch latch = new CountDownLatch(chatMessages.size());
         for (int i = 0; i < chatMessages.size(); i++) {
             Message chatMessage = chatMessages.get(i);
             if (chatMessage.getRole() == Message.Character.ASSISTANT) {
                 String content = chatMessage.getContent();
                 if (chatMessage.getContent().length() > 500) {
                     int index = i;
-                    tasks.add(() -> {
-                        int thisCount = counter.incrementAndGet();
-                        log.debug("[MemorySummarizer] 长文本摘要[{}]启动", thisCount);
-                        String summarized = singleExecute(JSONObject.of("content", content).toString());
-                        chatMessages.set(index, new Message(Message.Character.ASSISTANT, summarized));
-                        log.debug("[MemorySummarizer] 长文本摘要[{}]完成", thisCount);
-                        return null;
+                    executor.execute(() -> {
+                        try {
+                            String summarized = singleExecute(JSONObject.of("content", content).toString());
+                            chatMessages.set(index, new Message(Message.Character.ASSISTANT, summarized));
+                        } finally {
+                            latch.countDown();
+                        }
                     });
                 }
             }
         }
-        executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
+        try {
+            latch.await();
+        } catch (InterruptedException ignored) {
+        }
         log.debug("[MemorySummarizer] 长文本摘要结束");
         return null;
     }

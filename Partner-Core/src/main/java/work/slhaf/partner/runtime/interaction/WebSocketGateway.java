@@ -12,13 +12,14 @@ import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.agent.runtime.interaction.AgentGateway;
 import work.slhaf.partner.api.agent.runtime.interaction.AgentInteractionAdapter;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
-import work.slhaf.partner.common.thread.InteractionThreadPoolExecutor;
 import work.slhaf.partner.runtime.interaction.data.PartnerInputData;
 import work.slhaf.partner.runtime.interaction.data.PartnerOutputData;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Slf4j
 public class WebSocketGateway extends WebSocketServer implements AgentGateway<PartnerInputData, PartnerOutputData, PartnerRunningFlowContext> {
@@ -27,7 +28,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<Pa
 
     @ToString.Exclude
     private final ConcurrentHashMap<String, WebSocket> userSessions = new ConcurrentHashMap<>();
-    private final InteractionThreadPoolExecutor executor;
+    private final ExecutorService executor;
 
     // 记录最后一次收到Pong的时间
     private final ConcurrentHashMap<WebSocket, Long> lastPongTimes = new ConcurrentHashMap<>();
@@ -39,7 +40,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<Pa
     private WebSocketGateway(int port) {
         super(new InetSocketAddress(port));
         this.setReuseAddr(true);
-        this.executor = InteractionThreadPoolExecutor.getInstance();
+        this.executor = Executors.newSingleThreadExecutor();
     }
 
     public void launch() {
