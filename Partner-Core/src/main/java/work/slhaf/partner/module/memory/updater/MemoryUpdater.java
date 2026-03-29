@@ -152,7 +152,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
         MemorySlice memorySlice = new MemorySlice();
         memorySlice.setId(UUID.randomUUID().toString());
         memorySlice.setStartIndex(0);
-        memorySlice.setEndIndex(Math.max(chatMessages.size() - 1, 0));
+        memorySlice.setEndIndex(chatMessages.size());
         memorySlice.setSummary(summarizeResult.getSummary());
         memorySlice.setTimestamp(now);
 
