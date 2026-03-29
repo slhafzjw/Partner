@@ -9,13 +9,14 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.api.agent.factory.component.exception.ModuleFactoryInitFailedException
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig
+import work.slhaf.partner.api.agent.factory.context.AgentContext
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.api.agent.factory.context.ModuleContextData
 import java.lang.reflect.Modifier
 import java.time.ZonedDateTime
 
 /**
- * 扫描并实例化 `@AgentComponent` 具体类，写入 [work.slhaf.partner.api.agent.factory.context.AgentContext]。
+ * 扫描并实例化 `@AgentComponent` 具体类，写入 [AgentContext]。
  *
  * 行为:
  * - 若实例是 [AbstractAgentModule]，按 Running/Sub/Standalone 构造 `ModuleContextData` 并注册到 modules。
@@ -63,7 +64,7 @@ class ComponentRegisterFactory : AgentBaseFactory() {
 
     @Suppress("UNCHECKED_CAST")
     private fun registerModule(
-        agentContext: work.slhaf.partner.api.agent.factory.context.AgentContext,
+        agentContext: AgentContext,
         componentClass: Class<*>,
         module: AbstractAgentModule,
         modelConfigMap: Map<String, ModelConfig>,
@@ -124,7 +125,7 @@ class ComponentRegisterFactory : AgentBaseFactory() {
     }
 
     private fun addAdditionalComponent(
-        agentContext: work.slhaf.partner.api.agent.factory.context.AgentContext,
+        agentContext: AgentContext,
         componentClass: Class<*>,
         componentInstance: Any
     ) {

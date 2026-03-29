@@ -46,9 +46,14 @@ public class CognitionCore extends PartnerCore<CognitionCore> {
     }
 
     @CapabilityMethod
-    public String initiateTurn(String input, String target) {
+    public String initiateTurn(String input, String target, String... skippedModules) {
         PartnerRunningFlowContext primaryContext = PartnerRunningFlowContext.Companion.fromSelf(input);
         primaryContext.setTarget(target);
+        if (skippedModules != null) {
+            for (String skippedModule : skippedModules) {
+                primaryContext.addSkippedModule(skippedModule);
+            }
+        }
         PartnerRunningFlowContext executedContext = AgentRuntime.INSTANCE.submit(primaryContext);
         return executedContext.getCoreResponse().getString("text");
     }

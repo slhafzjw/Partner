@@ -65,6 +65,9 @@ object AgentRuntime {
         coroutineScope {
             val jobs = modules.map { module ->
                 async {
+                    if (runningFlowContext.skippedModules.contains(module.instance.moduleName)) {
+                        return@async
+                    }
                     module.instance.execute(runningFlowContext)
                 }
             }

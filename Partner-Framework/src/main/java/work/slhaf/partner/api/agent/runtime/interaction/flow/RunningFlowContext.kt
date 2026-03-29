@@ -28,8 +28,16 @@ abstract class RunningFlowContext {
     val additionalUserInfo: Map<String, String>
         get() = _additionalUserInfo
 
+    private val _skippedModules = mutableSetOf<String>()
+    val skippedModules: Set<String>
+        get() = _skippedModules
+
     val status = Status()
     val info = Info()
+
+    fun addSkippedModule(moduleName: String) {
+        _skippedModules.add(moduleName)
+    }
 
     fun putUserInfo(key: String, value: String) {
         _additionalUserInfo[key] = value

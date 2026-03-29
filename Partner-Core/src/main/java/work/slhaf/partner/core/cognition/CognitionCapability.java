@@ -9,7 +9,7 @@ import java.util.concurrent.locks.Lock;
 @Capability("cognition")
 public interface CognitionCapability {
 
-    String initiateTurn(String input, String target);
+    String initiateTurn(String input, String target, String... skippedModules);
 
     ContextWorkspace contextWorkspace();
 

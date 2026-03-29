@@ -41,9 +41,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";
     private static final String BLOCK_SOURCE = "action_planner_pending";
     private static final String TENDENCIES_EVALUATING_BLOCK_NAME = "tendencies_in_evaluating";
-    private static final double PENDING_REPLACE_FADE_FACTOR = 10.0;
-    private static final double PENDING_TIME_FADE_FACTOR = 10.0;
-    private static final double PENDING_ACTIVATE_FACTOR = 0.0;
 
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
@@ -65,6 +62,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
 
     @Init
     public void init() {
+        this.setModuleName("action_planner");
         executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
     }
 
@@ -99,7 +97,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private @NotNull BlockContent buildTendenciesEvaluatingAbstractBlock(List<String> tendencies, String datetime, String input) {
-        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
+        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "datetime", datetime);
@@ -110,7 +108,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private @NotNull BlockContent buildTendenciesEvaluatingCompactBlock(List<String> tendencies, String datetime, String input) {
-        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
+        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 int size = tendencies.size();
@@ -124,7 +122,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private @NotNull BlockContent buildTendenciesEvaluatingFullBlock(List<String> tendencies) {
-        return new CommunicationBlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, BLOCK_SOURCE, BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
+        return new CommunicationBlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendRepeatedElements(document, root, "tendency", tendencies);
@@ -139,7 +137,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             handleEvaluatorResults(evaluatorResults, source, input);
             updateTendencyCache(evaluatorResults, input, extractorResult);
 
-            cognitionCapability.contextWorkspace().expire(TENDENCIES_EVALUATING_BLOCK_NAME, BLOCK_SOURCE);
+            cognitionCapability.contextWorkspace().expire(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName());
         });
     }
 
@@ -201,9 +199,9 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 buildPendingCompactBlock(blockName, executableAction, evaluatorResult, input),
                 buildPendingAbstractBlock(blockName, executableAction, evaluatorResult, input),
                 Set.of(ContextBlock.VisibleDomain.ACTION),
-                PENDING_REPLACE_FADE_FACTOR,
-                PENDING_TIME_FADE_FACTOR,
-                PENDING_ACTIVATE_FACTOR
+                30,
+                10,
+                5
         );
         cognitionCapability.contextWorkspace().register(block);
     }
