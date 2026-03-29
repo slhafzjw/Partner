@@ -19,6 +19,7 @@ import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.module.action.scheduler.ActionScheduler;
+import work.slhaf.partner.module.communication.DialogRollingService;
 import work.slhaf.partner.module.memory.runtime.MemoryRuntime;
 import work.slhaf.partner.module.memory.updater.summarizer.MultiSummarizer;
 import work.slhaf.partner.module.memory.updater.summarizer.SingleSummarizer;
@@ -55,6 +56,8 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     private SingleSummarizer singleSummarizer;
     @InjectModule
     private ActionScheduler actionScheduler;
+    @InjectModule
+    private DialogRollingService dialogRollingService;
 
     private final AtomicBoolean updating = new AtomicBoolean(false);
     private InteractionThreadPoolExecutor executor;
@@ -112,8 +115,12 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
             if (chatSnapshot.size() <= 1) {
                 return;
             }
-            updateMemory(chatSnapshot);
-            cognitionCapability.rollChatMessagesWithSnapshot(chatSnapshot.size(), CONTEXT_RETAIN_DIVISOR);
+
+            RollingRecord record = updateMemory(chatSnapshot);
+            if (record != null) {
+                dialogRollingService.rollMessages(chatSnapshot, chatSnapshot.size(), CONTEXT_RETAIN_DIVISOR, record.unitId, record.sliceId, record.summary);
+            }
+
             if (refreshMemoryId) {
                 memoryCapability.refreshMemorySession();
             }
@@ -124,10 +131,10 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
         }
     }
 
-    private void updateMemory(List<Message> chatSnapshot) {
+    private RollingRecord updateMemory(List<Message> chatSnapshot) {
         log.debug("[MemoryUpdater] 记忆更新流程开始...");
         if (chatSnapshot.isEmpty()) {
-            return;
+            return null;
         }
         SummarizeInput summarizeInput = new SummarizeInput(chatSnapshot, memoryRuntime.getTopicTree());
         log.debug("[MemoryUpdater] 记忆更新-总结流程-输入: {}", JSONObject.toJSONString(summarizeInput));
@@ -141,6 +148,8 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
                 summarizeResult.getSummary()
         );
         log.debug("[MemoryUpdater] 记忆更新流程结束...");
+        MemorySlice newSlice = memoryUnit.getSlices().getLast();
+        return new RollingRecord(memoryUnit.getId(), newSlice.getId(), newSlice.getSummary());
     }
 
     private SummarizeResult summarize(SummarizeInput summarizeInput) {
@@ -183,5 +192,8 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     @Override
     public int order() {
         return 7;
+    }
+
+    private record RollingRecord(String unitId, String sliceId, String summary) {
     }
 }
