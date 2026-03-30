@@ -5,89 +5,86 @@ import kotlinx.coroutines.channels.Channel
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.api.agent.factory.context.AgentContext
 import work.slhaf.partner.api.agent.factory.context.ModuleContextData
+import work.slhaf.partner.api.agent.runtime.interaction.data.InteractionEvent
 import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
 
 object AgentRuntime {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private val channel =
-        Channel<TurnRequest<RunningFlowContext>>(Channel.UNLIMITED)
+    private val channel = Channel<RunningFlowContext>(Channel.UNLIMITED)
+    private val responseChannels = mutableMapOf<String, ResponseChannel>(
+        LogChannel.channelName to LogChannel
+    )
+
+    // TODO 暂时取 log_channel 为默认回复通道，若为空则只打印信息。后续将配合配置中心替换通过配置文件进行指定
+    private val defaultChannel: String = "log_channel"
 
     @Volatile
-    private var runningModules:
-            Map<Int, List<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>> =
-        emptyMap()
+    private var runningModules: Map<Int, List<AbstractAgentModule.Running<RunningFlowContext>>> = emptyMap()
 
     init {
         scope.launch {
-            for (req in channel) {
-                val result = executeTurn(req.context)
-                req.deferred.complete(result)
+            for (ctx in channel) {
+                executeTurn(ctx)
             }
         }
     }
 
-    fun refreshRunningModules() {
-        runningModules = buildRunningModules()
+    fun registerResponseChannel(channelName: String, responseChannel: ResponseChannel) {
+        responseChannels[channelName] = responseChannel
     }
 
-    fun <C : RunningFlowContext> submit(context: C): C = runBlocking {
-        val deferred = CompletableDeferred<RunningFlowContext>()
-        channel.send(TurnRequest(context, deferred))
-        @Suppress("UNCHECKED_CAST")
-        (return@runBlocking deferred.await() as C)
+    @JvmOverloads
+    fun response(event: InteractionEvent, channelName: String = defaultChannel) {
+        val channel = responseChannels[channelName]
+        if (channel == null) {
+            responseChannels[defaultChannel]!!.response(event)
+        } else {
+            channel.response(event)
+        }
     }
 
-    private suspend fun executeTurn(
-        runningFlowContext: RunningFlowContext
-    ): RunningFlowContext {
+    fun <C : RunningFlowContext> submit(context: C) = runBlocking {
+        channel.send(context)
+    }
+
+    private suspend fun executeTurn(runningFlowContext: RunningFlowContext) {
 
         if (runningModules.isEmpty()) {
             refreshRunningModules()
         }
 
-        try {
-            for (modules in runningModules.values) {
-                executeOrder(modules, runningFlowContext)
-            }
-        } catch (e: Exception) {
-            runningFlowContext.status.errors.add(e.localizedMessage)
+        for (modules in runningModules.values) {
+            executeOrder(modules, runningFlowContext)
         }
 
-        return runningFlowContext
+    }
+
+    private fun refreshRunningModules() {
+        runningModules = AgentContext.modules.values
+            .filterIsInstance<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>()
+            .filter { it.enabled }
+            .groupBy { it.order }
+            .mapValues { it.value.map { contextData -> contextData.instance } }
+            .toSortedMap()
     }
 
     private suspend fun executeOrder(
-        modules: List<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>,
+        modules: List<AbstractAgentModule.Running<RunningFlowContext>>,
         runningFlowContext: RunningFlowContext
     ) {
         coroutineScope {
             val jobs = modules.map { module ->
                 async {
-                    if (runningFlowContext.skippedModules.contains(module.instance.moduleName)) {
+                    if (runningFlowContext.skippedModules.contains(module.moduleName)) {
                         return@async
                     }
-                    module.instance.execute(runningFlowContext)
+                    module.execute(runningFlowContext)
                 }
             }
             jobs.awaitAll()
         }
     }
 
-    private fun buildRunningModules():
-            Map<Int, List<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>> {
-
-        return AgentContext.modules
-            .values
-            .filterIsInstance<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>()
-            .filter { it.enabled }
-            .groupBy { it.order }
-            .toSortedMap()
-    }
-
-    private data class TurnRequest<C : RunningFlowContext>(
-        val context: C,
-        val deferred: CompletableDeferred<RunningFlowContext>
-    )
 }

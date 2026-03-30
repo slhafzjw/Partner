@@ -133,14 +133,15 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
                 Set.of(),
                 false,
                 JSONObject.of(
-                        "answer", "The answer of the Agent Turn."
+                        "result", "turn initiate result"
                 )
         );
 
         Function<Map<String, Object>, String> invoker = params -> {
             String input = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "input");
             String target = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "target");
-            return cognitionCapability.initiateTurn(input, target);
+            cognitionCapability.initiateTurn(input, target);
+            return "agent turn initiated";
         };
 
         return new BuiltinActionRegistry.BuiltinActionDefinition(

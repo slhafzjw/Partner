@@ -33,7 +33,6 @@ abstract class RunningFlowContext {
         get() = _skippedModules
 
     val status = Status()
-    val info = Info()
 
     fun addSkippedModule(moduleName: String) {
         _skippedModules.add(moduleName)

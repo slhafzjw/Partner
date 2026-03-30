@@ -1,6 +1,5 @@
 package work.slhaf.partner.runtime.interaction;
 
-import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -8,12 +7,12 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.agent.runtime.interaction.AgentGateway;
-import work.slhaf.partner.api.agent.runtime.interaction.AgentInteractionAdapter;
+import work.slhaf.partner.api.agent.runtime.interaction.data.InputData;
+import work.slhaf.partner.api.agent.runtime.interaction.data.InteractionEvent;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
-import work.slhaf.partner.runtime.interaction.data.PartnerInputData;
-import work.slhaf.partner.runtime.interaction.data.PartnerOutputData;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.net.InetSocketAddress;
@@ -22,7 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Slf4j
-public class WebSocketGateway extends WebSocketServer implements AgentGateway<PartnerInputData, PartnerOutputData, PartnerRunningFlowContext> {
+public class WebSocketGateway extends WebSocketServer implements AgentGateway<InputData, PartnerRunningFlowContext> {
 
     private static final long HEARTBEAT_INTERVAL = 10_000;
 
@@ -50,19 +49,21 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<Pa
     }
 
     @Override
-    public void send(PartnerOutputData outputData) {
+    public PartnerRunningFlowContext parseRunningFlowContext(InputData inputData) {
+        PartnerRunningFlowContext context = PartnerRunningFlowContext.fromUser(inputData.getSource(), inputData.getContent());
+        inputData.getMeta().forEach(context::putUserInfo);
+        return context;
+    }
+
+    @Override
+    public void response(@NotNull InteractionEvent event) {
         userSessions.forEach((userInfo, webSocket) -> {
             if (webSocket.isOpen()) {
-                webSocket.send(JSONUtil.toJsonStr(outputData));
+                webSocket.send(JSONObject.toJSONString(event));
             } else {
                 log.warn("用户不在线: {}", userInfo);
             }
         });
-    }
-
-    @Override
-    public AgentInteractionAdapter<PartnerInputData, PartnerOutputData, PartnerRunningFlowContext> adapter() {
-        return new PartnerInteractionAdapter();
     }
 
     private void startHeartbeatThread() {
@@ -142,8 +143,8 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<Pa
 
     @Override
     public void onMessage(WebSocket webSocket, String s) {
-        PartnerInputData inputData = JSONObject.parseObject(s, PartnerInputData.class);
-        userSessions.put(inputData.getUserInfo(), webSocket); // 注册连接
+        InputData inputData = JSONObject.parseObject(s, InputData.class);
+        userSessions.put(inputData.getSource(), webSocket); // 注册连接
         receive(inputData);
     }
 
@@ -157,4 +158,9 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<Pa
         log.info("WebSocketServer 已启动...");
     }
 
+    @Override
+    @NotNull
+    public String getChannelName() {
+        return "websocket_channel";
+    }
 }

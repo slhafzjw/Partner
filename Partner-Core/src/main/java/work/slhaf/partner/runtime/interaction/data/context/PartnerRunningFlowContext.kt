@@ -27,21 +27,17 @@ class PartnerRunningFlowContext private constructor(
             fun buildAgentSource(): String = "$AGENT: $SOURCE_SELF"
         }
 
-        fun fromUser(
-            userId: String,
-            input: String,
-            platform: String,
-            nickName: String
-        ) = PartnerRunningFlowContext(SourceTag.buildUserSource(userId), input).apply {
-            putUserInfo(InfoKeys.PLATFORM, platform)
-            putUserInfo(InfoKeys.NICKNAME, nickName)
-        }
+        @JvmStatic
+        fun fromUser(userId: String, input: String) = PartnerRunningFlowContext(
+            SourceTag.buildUserSource(userId),
+            input
+        )
 
-        fun fromSelf(input: String) =
-            PartnerRunningFlowContext(SourceTag.buildAgentSource(), input).apply {
-                putUserInfo(InfoKeys.PLATFORM, SOURCE_SELF_PLATFORM)
-                putUserInfo(InfoKeys.NICKNAME, SOURCE_SELF_NICKNAME)
-            }
+        @JvmStatic
+        fun fromSelf(input: String) = PartnerRunningFlowContext(SourceTag.buildAgentSource(), input).apply {
+            putUserInfo(InfoKeys.PLATFORM, SOURCE_SELF_PLATFORM)
+            putUserInfo(InfoKeys.NICKNAME, SOURCE_SELF_NICKNAME)
+        }
     }
 
     val coreResponse = JSONObject()
