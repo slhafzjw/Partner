@@ -46,6 +46,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
         this.start();
         setShutDownHook();
         startHeartbeatThread();
+        register();
     }
 
     @Override
