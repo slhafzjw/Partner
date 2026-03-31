@@ -37,7 +37,6 @@ sealed class InteractionEvent {
     }
 
     enum class EventStatus {
-        START,
         RUNNING,
         ERROR,
         DONE
@@ -45,12 +44,20 @@ sealed class InteractionEvent {
 
 }
 
-data class Reply(
+data class Reply @JvmOverloads constructor(
     override val status: EventStatus,
     override val target: String,
     val content: String,
+    val mode: ContentMode = ContentMode.REPLACE,
+    val seq: Long? = null,
+    val done: Boolean = false
 ) : InteractionEvent() {
     override val event = Event.REPLY
+
+    enum class ContentMode {
+        APPEND,
+        REPLACE
+    }
 }
 
 data class Module(
