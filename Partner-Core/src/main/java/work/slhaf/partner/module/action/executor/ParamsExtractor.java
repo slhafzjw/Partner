@@ -6,7 +6,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
+import work.slhaf.partner.api.chat.ActivateModel;
 import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.cognition.CognitionCapability;

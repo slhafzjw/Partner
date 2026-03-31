@@ -2,7 +2,7 @@ package work.slhaf.partner.api.chat.pojo;
 
 import com.alibaba.fastjson2.JSON;
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.api.chat.runtime.OpenAiMessageAdapter;
+import work.slhaf.partner.api.chat.provider.openai.OpenAiMessageAdapter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

@@ -5,7 +5,7 @@ import kotlinx.coroutines.channels.Channel
 import work.slhaf.partner.api.agent.runtime.interaction.AgentRuntime
 import work.slhaf.partner.api.agent.runtime.interaction.data.InteractionEvent.EventStatus
 import work.slhaf.partner.api.agent.runtime.interaction.data.Reply
-import work.slhaf.partner.api.chat.runtime.StreamChatMessageConsumer
+import work.slhaf.partner.api.chat.StreamChatMessageConsumer
 import kotlin.time.Duration.Companion.milliseconds
 
 object ReplyDispatcher {

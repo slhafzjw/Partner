@@ -5,13 +5,13 @@ import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.api.agent.factory.AgentBaseFactory
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule
-import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel
 import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.api.agent.factory.component.exception.ModuleFactoryInitFailedException
 import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig
 import work.slhaf.partner.api.agent.factory.context.AgentContext
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.api.agent.factory.context.ModuleContextData
+import work.slhaf.partner.api.chat.ActivateModel
 import java.lang.reflect.Modifier
 import java.time.ZonedDateTime
 

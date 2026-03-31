@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.chat.runtime;
+package work.slhaf.partner.api.chat;
 
 public abstract class StreamChatMessageConsumer {
     private final StringBuilder responseText = new StringBuilder();

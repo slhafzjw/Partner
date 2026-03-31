@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.chat.runtime;
+package work.slhaf.partner.api.chat.provider.openai;
 
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;

@@ -4,7 +4,7 @@ import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
+import work.slhaf.partner.api.chat.ActivateModel;
 import work.slhaf.partner.api.chat.pojo.Message;
 
 import java.util.HashMap;
