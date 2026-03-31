@@ -1,11 +1,11 @@
 package work.slhaf.partner.module.perceive;
 
-import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.CommunicationBlockContent;
 import work.slhaf.partner.core.cognition.ContextBlock;
@@ -16,7 +16,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
-@Setter
 public class PerceiveMonitor extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
     @InjectCapability
     private PerceiveCapability perceiveCapability;
@@ -24,12 +23,13 @@ public class PerceiveMonitor extends AbstractAgentModule.Running<PartnerRunningF
     private CognitionCapability cognitionCapability;
 
     @Override
-    public void execute(PartnerRunningFlowContext context) {
+    public void execute(@NotNull PartnerRunningFlowContext context) {
         String lastInteractTime = perceiveCapability.refreshInteract();
         ContextBlock block = new ContextBlock(
                 new CommunicationBlockContent(
                         "environment_perceive_info",
                         "perceive_monitor",
+                        BlockContent.Urgency.NORMAL,
                         CommunicationBlockContent.Projection.SUPPLY
                 ) {
                     @Override
