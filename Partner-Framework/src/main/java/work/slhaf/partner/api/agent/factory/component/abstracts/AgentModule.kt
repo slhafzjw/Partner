@@ -7,6 +7,7 @@ import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader
 import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
 import work.slhaf.partner.api.chat.pojo.Message
 import work.slhaf.partner.api.chat.runtime.OpenAiChatRuntime
+import work.slhaf.partner.api.chat.runtime.StreamChatMessageConsumer
 
 /**
  * 模块基类
@@ -52,11 +53,15 @@ interface ActivateModel {
     }
 
     fun chat(messages: List<Message>): String {
-        return runtime.chat(mergeMessages(messages), useStreaming())
+        return runtime.chat(mergeMessages(messages))
+    }
+
+    fun streamChat(messages: List<Message>, handler: StreamChatMessageConsumer) {
+        return runtime.streamChat(mergeMessages(messages), handler)
     }
 
     fun <T : Any> formattedChat(messages: List<Message>, responseType: Class<T>): T {
-        return runtime.formattedChat(mergeMessages(messages), useStreaming(), responseType)
+        return runtime.formattedChat(mergeMessages(messages), responseType)
     }
 
     fun mergeMessages(messages: List<Message>): List<Message> {
@@ -81,6 +86,4 @@ interface ActivateModel {
     }
 
     fun modulePrompt(): List<Message> = emptyList()
-
-    fun useStreaming(): Boolean = false
 }

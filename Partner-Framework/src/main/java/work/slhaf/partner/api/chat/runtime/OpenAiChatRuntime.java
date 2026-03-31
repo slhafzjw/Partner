@@ -3,7 +3,6 @@ package work.slhaf.partner.api.chat.runtime;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.core.http.StreamResponse;
-import com.openai.helpers.ChatCompletionAccumulator;
 import com.openai.models.chat.completions.*;
 import work.slhaf.partner.api.chat.pojo.Message;
 
@@ -24,32 +23,27 @@ public class OpenAiChatRuntime {
         this.model = model;
     }
 
-    public String chat(List<Message> messages, boolean streaming) {
+    public String chat(List<Message> messages) {
         ChatCompletionCreateParams params = buildParams(messages);
-        if (!streaming) {
-            return extractText(client.chat().completions().create(params));
-        }
-
-        ChatCompletionAccumulator accumulator = ChatCompletionAccumulator.create();
-        try (StreamResponse<ChatCompletionChunk> response = client.chat().completions().createStreaming(params)) {
-            response.stream().forEach(accumulator::accumulate);
-        }
-        return extractText(accumulator.chatCompletion());
+        return extractText(client.chat().completions().create(params));
     }
 
-    public <T> T formattedChat(List<Message> messages, boolean streaming, Class<T> responseType) {
+    public void streamChat(List<Message> messages, StreamChatMessageConsumer handler) {
+        ChatCompletionCreateParams params = buildParams(messages);
+        try (StreamResponse<ChatCompletionChunk> streamResponse = client.chat().completions().createStreaming(params)) {
+            streamResponse.stream()
+                    .flatMap(completion -> completion.choices().stream())
+                    .flatMap(choice -> choice.delta().content().stream())
+                    .filter(delta -> !delta.isEmpty())
+                    .forEach(handler::onDelta);
+        }
+    }
+
+    public <T> T formattedChat(List<Message> messages, Class<T> responseType) {
         StructuredChatCompletionCreateParams<T> params = buildParams(messages).toBuilder()
                 .responseFormat(responseType)
                 .build();
-        if (!streaming) {
-            return extractStructured(client.chat().completions().create(params));
-        }
-
-        ChatCompletionAccumulator accumulator = ChatCompletionAccumulator.create();
-        try (StreamResponse<ChatCompletionChunk> response = client.chat().completions().createStreaming(params.rawParams())) {
-            response.stream().forEach(accumulator::accumulate);
-        }
-        return extractStructured(accumulator.chatCompletion(responseType));
+        return extractStructured(client.chat().completions().create(params));
     }
 
     private ChatCompletionCreateParams buildParams(List<Message> messages) {

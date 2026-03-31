@@ -11,6 +11,7 @@ import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentMod
 import work.slhaf.partner.api.agent.factory.component.abstracts.ActivateModel;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.api.chat.pojo.Message;
+import work.slhaf.partner.api.chat.runtime.StreamChatMessageConsumer;
 import work.slhaf.partner.core.cognition.*;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
@@ -54,11 +55,6 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     @Override
-    public boolean useStreaming() {
-        return true;
-    }
-
-    @Override
     public @NotNull List<Message> modulePrompt() {
         return List.of(new Message(Message.Character.SYSTEM, MODULE_PROMPT));
     }
@@ -70,29 +66,10 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private void executeChat(PartnerRunningFlowContext runningFlowContext) {
-        String responseText = null;
-
-        // TODO considering removing retries in module
-        int count = 0;
-        while (true) {
-            try {
-                // TODO 为各模块提供 emit msg 能力后, 在这里统一接收并分发结构化输出.
-                responseText = this.chat(buildChatMessages(runningFlowContext));
-                log.debug("CommunicationProducer responses: {}", responseText);
-                updateChatMessages(runningFlowContext, responseText);
-                updateContext();
-                break;
-            } catch (Exception e) {
-                count++;
-                log.error("Communicating exception occurred: {}", e.getLocalizedMessage());
-                if (count > 3) {
-                    responseText = "CommunicationProducer Failed: " + e.getLocalizedMessage();
-                    break;
-                }
-            } finally {
-                updateCoreResponse(runningFlowContext, responseText);
-            }
-        }
+        StreamChatMessageConsumer consumer = ReplyDispatcher.INSTANCE.createConsumer(runningFlowContext.getTarget());
+        this.streamChat(buildChatMessages(runningFlowContext), consumer);
+        updateChatMessages(runningFlowContext, consumer.collectResponse());
+        updateContext();
     }
 
     private void updateContext() {
