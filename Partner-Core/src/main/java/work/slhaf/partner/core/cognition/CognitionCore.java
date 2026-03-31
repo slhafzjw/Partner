@@ -6,8 +6,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.api.agent.model.pojo.Message;
 import work.slhaf.partner.api.agent.runtime.interaction.AgentRuntime;
-import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 

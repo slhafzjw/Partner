@@ -9,9 +9,9 @@ import org.w3c.dom.Element;
 import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.chat.ActivateModel;
-import work.slhaf.partner.api.chat.StreamChatMessageConsumer;
-import work.slhaf.partner.api.chat.pojo.Message;
+import work.slhaf.partner.api.agent.model.ActivateModel;
+import work.slhaf.partner.api.agent.model.StreamChatMessageConsumer;
+import work.slhaf.partner.api.agent.model.pojo.Message;
 import work.slhaf.partner.core.cognition.*;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 

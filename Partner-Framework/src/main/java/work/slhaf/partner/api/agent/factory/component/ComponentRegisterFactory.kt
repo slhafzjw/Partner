@@ -11,7 +11,7 @@ import work.slhaf.partner.api.agent.factory.config.pojo.ModelConfig
 import work.slhaf.partner.api.agent.factory.context.AgentContext
 import work.slhaf.partner.api.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.api.agent.factory.context.ModuleContextData
-import work.slhaf.partner.api.chat.ActivateModel
+import work.slhaf.partner.api.agent.model.ActivateModel
 import java.lang.reflect.Modifier
 import java.time.ZonedDateTime
 

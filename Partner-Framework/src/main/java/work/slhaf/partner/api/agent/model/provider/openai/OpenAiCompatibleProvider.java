@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.chat.provider.openai;
+package work.slhaf.partner.api.agent.model.provider.openai;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.openai.client.OpenAIClient;
@@ -7,10 +7,10 @@ import com.openai.core.JsonValue;
 import com.openai.core.http.StreamResponse;
 import com.openai.models.chat.completions.*;
 import org.jetbrains.annotations.NotNull;
-import work.slhaf.partner.api.chat.StreamChatMessageConsumer;
-import work.slhaf.partner.api.chat.pojo.Message;
-import work.slhaf.partner.api.chat.provider.ModelProvider;
-import work.slhaf.partner.api.chat.provider.ProviderOverride;
+import work.slhaf.partner.api.agent.model.StreamChatMessageConsumer;
+import work.slhaf.partner.api.agent.model.pojo.Message;
+import work.slhaf.partner.api.agent.model.provider.ModelProvider;
+import work.slhaf.partner.api.agent.model.provider.ProviderOverride;
 
 import java.time.Duration;
 import java.util.List;

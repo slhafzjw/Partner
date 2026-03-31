@@ -1,7 +1,7 @@
 package work.slhaf.partner.module.memory.updater;
 
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.api.chat.pojo.Message;
+import work.slhaf.partner.api.agent.model.pojo.Message;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;

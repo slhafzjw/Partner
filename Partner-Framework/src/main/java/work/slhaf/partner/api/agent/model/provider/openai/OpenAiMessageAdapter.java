@@ -1,10 +1,10 @@
-package work.slhaf.partner.api.chat.provider.openai;
+package work.slhaf.partner.api.agent.model.provider.openai;
 
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;
 import com.openai.models.chat.completions.ChatCompletionSystemMessageParam;
 import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
-import work.slhaf.partner.api.chat.pojo.Message;
+import work.slhaf.partner.api.agent.model.pojo.Message;
 
 import java.util.ArrayList;
 import java.util.List;

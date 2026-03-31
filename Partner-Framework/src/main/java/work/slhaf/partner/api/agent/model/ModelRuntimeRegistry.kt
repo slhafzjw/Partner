@@ -1,8 +1,8 @@
-package work.slhaf.partner.api.chat
+package work.slhaf.partner.api.agent.model
 
-import work.slhaf.partner.api.chat.provider.ModelProvider
-import work.slhaf.partner.api.chat.provider.ProviderOverride
-import work.slhaf.partner.api.chat.provider.openai.OpenAiCompatibleProvider
+import work.slhaf.partner.api.agent.model.provider.ModelProvider
+import work.slhaf.partner.api.agent.model.provider.ProviderOverride
+import work.slhaf.partner.api.agent.model.provider.openai.OpenAiCompatibleProvider
 
 object ModelRuntimeRegistry {
 

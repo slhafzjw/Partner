@@ -2,8 +2,8 @@ package work.slhaf.partner.core.memory;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import work.slhaf.partner.api.agent.model.pojo.Message;
 import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
-import work.slhaf.partner.api.chat.pojo.Message;
 import work.slhaf.partner.common.config.Config;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;

@@ -1,7 +1,7 @@
-package work.slhaf.partner.api.chat
+package work.slhaf.partner.api.agent.model
 
 import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule
-import work.slhaf.partner.api.chat.pojo.Message
+import work.slhaf.partner.api.agent.model.pojo.Message
 
 interface ActivateModel {
 

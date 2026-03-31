@@ -1,4 +1,4 @@
-package work.slhaf.partner.api.chat.pojo
+package work.slhaf.partner.api.agent.model.pojo
 
 import com.alibaba.fastjson2.annotation.JSONCreator
 import com.alibaba.fastjson2.annotation.JSONField

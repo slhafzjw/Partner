@@ -1,8 +1,9 @@
-package work.slhaf.partner.api.chat.pojo;
+package work.slhaf.partner.api.model.pojo;
 
 import com.alibaba.fastjson2.JSON;
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.api.chat.provider.openai.OpenAiMessageAdapter;
+import work.slhaf.partner.api.agent.model.pojo.Message;
+import work.slhaf.partner.api.agent.model.provider.openai.OpenAiMessageAdapter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

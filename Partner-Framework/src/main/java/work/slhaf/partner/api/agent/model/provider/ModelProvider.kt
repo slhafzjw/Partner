@@ -1,8 +1,8 @@
-package work.slhaf.partner.api.chat.provider
+package work.slhaf.partner.api.agent.model.provider
 
 import com.alibaba.fastjson2.JSONObject
-import work.slhaf.partner.api.chat.StreamChatMessageConsumer
-import work.slhaf.partner.api.chat.pojo.Message
+import work.slhaf.partner.api.agent.model.StreamChatMessageConsumer
+import work.slhaf.partner.api.agent.model.pojo.Message
 
 abstract class ModelProvider @JvmOverloads constructor(
     val override: ProviderOverride? = null
