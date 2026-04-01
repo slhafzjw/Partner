@@ -1,6 +1,6 @@
 package work.slhaf.partner.core.action.runner.mcp;
 
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
@@ -241,7 +241,7 @@ public class DynamicActionMcpManager implements AutoCloseable {
         }
         MetaActionInfo info;
         try {
-            info = JSONUtil.readJSONObject(dir.resolve("desc.json").toFile(), StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
+            info = JSON.parseObject(Files.readString(dir.resolve("desc.json"), StandardCharsets.UTF_8), MetaActionInfo.class);
         } catch (Exception e) {
             log.error("desc.json 加载失败: {}", dir);
             return false;

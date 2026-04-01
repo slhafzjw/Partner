@@ -183,11 +183,34 @@ public class LocalRunnerClientTest {
                     + "  }";
         }
 
+        static String buildStdioServerEntry(String id, String packageName, Path npmCacheDir) {
+            String cachePath = npmCacheDir.toAbsolutePath().toString().replace("\\", "\\\\");
+            return "  \"" + id + "\": {\n"
+                    + "    \"command\": \"npx\",\n"
+                    + "    \"args\": [\n"
+                    + "      \"-y\",\n"
+                    + "      \"" + packageName + "\"\n"
+                    + "    ],\n"
+                    + "    \"env\": {\n"
+                    + "      \"NPM_CONFIG_CACHE\": \"" + cachePath + "\",\n"
+                    + "      \"npm_config_cache\": \"" + cachePath + "\"\n"
+                    + "    }\n"
+                    + "  }";
+        }
+
         static MetaAction buildMetaAction(MetaAction.Type type, String location, String name, Map<String, Object> params) {
+            return buildMetaAction(type, location, name, null, params);
+        }
+
+        static MetaAction buildMetaAction(MetaAction.Type type,
+                                          String location,
+                                          String name,
+                                          String launcher,
+                                          Map<String, Object> params) {
             MetaAction metaAction = new MetaAction(
                     name,
                     false,
-                    null,
+                    launcher,
                     type,
                     location
             );
@@ -698,12 +721,13 @@ public class LocalRunnerClientTest {
         void testCommonMcpInitialLoad(@TempDir Path tempDir) throws IOException, InterruptedException {
             ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            Path npmCacheDir = tempDir.resolve("npm-cache");
 
             Path mcpDir = tempDir.resolve("action").resolve("mcp");
             Files.createDirectories(mcpDir);
             Path configFile = mcpDir.resolve("servers.json");
             String config = buildCommonMcpConfig(
-                    buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest")
+                    buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest", npmCacheDir)
             );
             writeCommonMcpConfig(configFile, config);
 
@@ -722,6 +746,7 @@ public class LocalRunnerClientTest {
             ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
             new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+            Path npmCacheDir = tempDir.resolve("npm-cache");
 
             try {
                 Path mcpDir = tempDir.resolve("action").resolve("mcp");
@@ -729,15 +754,15 @@ public class LocalRunnerClientTest {
                 Path configFile = mcpDir.resolve("servers.json");
 
                 String config = buildCommonMcpConfig(
-                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest")
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest", npmCacheDir)
                 );
                 writeCommonMcpConfig(configFile, config);
                 waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 20000);
                 Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
 
                 String updatedConfig = buildCommonMcpConfig(
-                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest"),
-                        buildStdioServerEntry("playwright", "@playwright/mcp@latest")
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest", npmCacheDir),
+                        buildStdioServerEntry("playwright", "@playwright/mcp@latest", npmCacheDir)
                 );
                 writeCommonMcpConfig(configFile, updatedConfig);
                 waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")), 20000);
@@ -757,6 +782,7 @@ public class LocalRunnerClientTest {
             ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
             new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+            Path npmCacheDir = tempDir.resolve("npm-cache");
 
             try {
                 Path mcpDir = tempDir.resolve("action").resolve("mcp");
@@ -764,8 +790,8 @@ public class LocalRunnerClientTest {
                 Path configFile = mcpDir.resolve("servers.json");
 
                 String config = buildCommonMcpConfig(
-                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest"),
-                        buildStdioServerEntry("playwright", "@playwright/mcp@latest")
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest", npmCacheDir),
+                        buildStdioServerEntry("playwright", "@playwright/mcp@latest", npmCacheDir)
                 );
                 writeCommonMcpConfig(configFile, config);
                 waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 20000);
@@ -774,7 +800,7 @@ public class LocalRunnerClientTest {
                 Assertions.assertTrue(hasActionKey(existedMetaActions, key -> key.startsWith("playwright::")));
 
                 String updatedConfig = buildCommonMcpConfig(
-                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest")
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest", npmCacheDir)
                 );
                 writeCommonMcpConfig(configFile, updatedConfig);
 
@@ -791,6 +817,7 @@ public class LocalRunnerClientTest {
             ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
             new LocalRunnerClient(existedMetaActions, executor, tempDir.toString());
+            Path npmCacheDir = tempDir.resolve("npm-cache");
 
             try {
                 Path mcpDir = tempDir.resolve("action").resolve("mcp");
@@ -802,7 +829,7 @@ public class LocalRunnerClientTest {
                 Assertions.assertFalse(hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")));
 
                 String config = buildCommonMcpConfig(
-                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest")
+                        buildStdioServerEntry("mcp-deepwiki", "mcp-deepwiki@latest", npmCacheDir)
                 );
                 writeCommonMcpConfig(configFile, config);
                 waitForCondition(() -> hasActionKey(existedMetaActions, key -> key.startsWith("mcp-deepwiki::")), 20000);
@@ -830,7 +857,7 @@ public class LocalRunnerClientTest {
                 RunnerClient.RunnerResponse response = client.doRun(metaAction);
                 Assertions.assertNotNull(response);
                 Assertions.assertFalse(response.isOk());
-                Assertions.assertEquals("未知文件类型", response.getData());
+                Assertions.assertTrue(response.getData().contains("parameter command"));
             } finally {
                 executor.shutdownNow();
             }
@@ -845,7 +872,7 @@ public class LocalRunnerClientTest {
             try {
                 Path script = tempDir.resolve("run.sh");
                 Files.writeString(script, "echo ok\n");
-                MetaAction metaAction = buildMetaAction(MetaAction.Type.ORIGIN, script.toString(), "run", Map.of());
+                MetaAction metaAction = buildMetaAction(MetaAction.Type.ORIGIN, script.toString(), "run", "sh", Map.of());
                 RunnerClient.RunnerResponse response = client.doRun(metaAction);
                 Assertions.assertNotNull(response);
                 Assertions.assertTrue(response.isOk());
@@ -927,12 +954,13 @@ public class LocalRunnerClientTest {
         void testDoRunWithMcpLoadedFromCommonConfig(@TempDir Path tempDir) throws IOException, InterruptedException {
             ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
             ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            Path npmCacheDir = tempDir.resolve("npm-cache");
 
             Path mcpDir = tempDir.resolve("action").resolve("mcp");
             Files.createDirectories(mcpDir);
             Path configFile = mcpDir.resolve("servers.json");
             String config = buildCommonMcpConfig(
-                    buildStdioServerEntry("playwright", "@playwright/mcp@latest")
+                    buildStdioServerEntry("playwright", "@playwright/mcp@latest", npmCacheDir)
             );
             writeCommonMcpConfig(configFile, config);
 

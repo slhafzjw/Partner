@@ -1,6 +1,6 @@
 package work.slhaf.partner.core.action.runner.mcp;
 
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
@@ -70,7 +70,7 @@ public class McpMetaRegistry implements AutoCloseable {
             return false;
         }
         try {
-            MetaActionInfo info = JSONUtil.readJSONObject(file, StandardCharsets.UTF_8).toBean(MetaActionInfo.class);
+            MetaActionInfo info = JSON.parseObject(Files.readString(file.toPath(), StandardCharsets.UTF_8), MetaActionInfo.class);
             String uri = file.toPath().toUri().toString();
             descCache.put(uri, JSONObject.toJSONString(info));
             String actionKey = name.replace(".desc.json", "");
