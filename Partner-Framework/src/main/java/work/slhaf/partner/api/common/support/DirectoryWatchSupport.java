@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.action.runner.support;
+package work.slhaf.partner.api.common.support;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,13 +17,16 @@ public class DirectoryWatchSupport implements Closeable {
     private final Context ctx;
     private final Map<WatchEvent.Kind<?>, EventHandler> handlers = new HashMap<>();
     private final ExecutorService executor;
-    private final boolean watchAll;
+    private final int watchDepth;
     private final InitLoader initLoader;
 
-    public DirectoryWatchSupport(Context ctx, ExecutorService executor, boolean watchAll, InitLoader initLoader) {
+    public DirectoryWatchSupport(Context ctx, ExecutorService executor, int watchDepth, InitLoader initLoader) {
+        if (watchDepth < -1) {
+            throw new IllegalArgumentException("watchDepth must be -1 or greater: " + watchDepth);
+        }
         this.ctx = ctx;
         this.executor = executor;
-        this.watchAll = watchAll;
+        this.watchDepth = watchDepth;
         this.initLoader = initLoader;
     }
 
@@ -68,6 +71,10 @@ public class DirectoryWatchSupport implements Closeable {
     }
 
     public void registerDirectory(Path dir) throws IOException {
+        registerDirectoryTree(dir);
+    }
+
+    private void registerDirectoryInternal(Path dir) throws IOException {
         if (!java.nio.file.Files.isDirectory(dir) || isWatching(dir)) {
             return;
         }
@@ -78,18 +85,50 @@ public class DirectoryWatchSupport implements Closeable {
 
     private void registerPath() {
         try {
-            registerDirectory(ctx.root());
-            if (!watchAll) {
-                return;
-            }
-            try (Stream<Path> walk = Files.list(ctx.root()).filter(Files::isDirectory)) {
-                for (Path dir : walk.toList()) {
-                    registerDirectory(dir);
-                }
-            }
+            registerDirectoryTree(ctx.root());
         } catch (IOException e) {
             log.error("监听目录注册失败: ", e);
         }
+    }
+
+    private void registerDirectoryTree(Path dir) throws IOException {
+        if (!Files.isDirectory(dir) || !isWithinDepth(dir)) {
+            return;
+        }
+
+        registerDirectoryInternal(dir);
+        if (!shouldTraverseChildren(dir)) {
+            return;
+        }
+
+        try (Stream<Path> walk = Files.list(dir).filter(Files::isDirectory)) {
+            for (Path child : walk.toList()) {
+                registerDirectoryTree(child);
+            }
+        }
+    }
+
+    private boolean isWithinDepth(Path dir) {
+        if (watchDepth == -1) {
+            return true;
+        }
+        return depthOf(dir) <= watchDepth;
+    }
+
+    private boolean shouldTraverseChildren(Path dir) {
+        return watchDepth == -1 || depthOf(dir) < watchDepth;
+    }
+
+    private int depthOf(Path dir) {
+        Path normalizedRoot = ctx.root().toAbsolutePath().normalize();
+        Path normalizedDir = dir.toAbsolutePath().normalize();
+        if (normalizedDir.equals(normalizedRoot)) {
+            return 0;
+        }
+        if (!normalizedDir.startsWith(normalizedRoot)) {
+            throw new IllegalArgumentException("Directory is outside watched root: " + dir);
+        }
+        return normalizedRoot.relativize(normalizedDir).getNameCount();
     }
 
     private Runnable buildWatchTask() {
@@ -106,11 +145,19 @@ public class DirectoryWatchSupport implements Closeable {
                         Object context = event.context();
                         log.debug("文件目录监听事件: {} - {} - {}", rootStr, kind.name(), context);
                         Path thisDir = (Path) key.watchable();
+                        Path resolvedContext = context instanceof Path path ? thisDir.resolve(path) : null;
+                        if (kind == ENTRY_CREATE && resolvedContext != null && Files.isDirectory(resolvedContext)) {
+                            try {
+                                registerDirectoryTree(resolvedContext);
+                            } catch (IOException e) {
+                                log.error("监听目录注册失败: {}", resolvedContext, e);
+                            }
+                        }
                         EventHandler handler = handlers.get(kind);
                         if (handler == null) {
                             continue;
                         }
-                        handler.handle(thisDir, context instanceof Path path ? thisDir.resolve(path) : null);
+                        handler.handle(thisDir, resolvedContext);
                     }
                 } catch (InterruptedException e) {
                     log.info("监听线程被中断，准备退出...");

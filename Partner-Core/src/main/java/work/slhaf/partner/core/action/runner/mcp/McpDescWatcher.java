@@ -1,7 +1,7 @@
 package work.slhaf.partner.core.action.runner.mcp;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.core.action.runner.support.DirectoryWatchSupport;
+import work.slhaf.partner.api.common.support.DirectoryWatchSupport;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,7 +18,7 @@ public class McpDescWatcher implements AutoCloseable {
     public McpDescWatcher(Path root, McpMetaRegistry mcpMetaRegistry, ExecutorService executor) throws IOException {
         this.root = root;
         this.mcpMetaRegistry = mcpMetaRegistry;
-        this.watchSupport = new DirectoryWatchSupport(new DirectoryWatchSupport.Context(root), executor, true, () -> mcpMetaRegistry.loadDirectory(root))
+        this.watchSupport = new DirectoryWatchSupport(new DirectoryWatchSupport.Context(root), executor, 0, () -> mcpMetaRegistry.loadDirectory(root))
                 .onCreate(this::handleUpsert)
                 .onModify(this::handleUpsert)
                 .onDelete(this::handleDelete)

@@ -6,11 +6,11 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import work.slhaf.partner.api.common.support.DirectoryWatchSupport;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.runner.LocalRunnerClient;
 import work.slhaf.partner.core.action.runner.policy.ExecutionPolicy;
 import work.slhaf.partner.core.action.runner.policy.RunnerExecutionPolicyListener;
-import work.slhaf.partner.core.action.runner.support.DirectoryWatchSupport;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +46,7 @@ public class McpConfigWatcher implements AutoCloseable, RunnerExecutionPolicyLis
         this.mcpClientRegistry = mcpClientRegistry;
         this.mcpTransportFactory = mcpTransportFactory;
         this.mcpMetaRegistry = mcpMetaRegistry;
-        this.watchSupport = new DirectoryWatchSupport(new DirectoryWatchSupport.Context(root), executor, false, this::loadInitial)
+        this.watchSupport = new DirectoryWatchSupport(new DirectoryWatchSupport.Context(root), executor, 0, this::loadInitial)
                 .onCreate(this::handleCreate)
                 .onModify((thisDir, context) -> checkAndReload(true))
                 .onDelete(this::handleDelete)
