@@ -61,7 +61,7 @@ class ConfigCenterTest {
             declared.put(IDEMPOTENT_PATH, idempotentRegistration);
             return declared;
         });
-        ConfigCenter.INSTANCE.startWatching();
+        ConfigCenter.INSTANCE.start();
     }
 
     @AfterAll
@@ -203,12 +203,12 @@ class ConfigCenterTest {
 
     @Test
     @Order(7)
-    void testStartWatchingIsIdempotent() throws Exception {
+    void testStartIsIdempotent() throws Exception {
         Path file = configDir.resolve(IDEMPOTENT_PATH);
         writeJson(file, "before-idempotent", 1);
         waitForCount(idempotentRegistration, 1, 3000);
 
-        ConfigCenter.INSTANCE.startWatching();
+        ConfigCenter.INSTANCE.start();
 
         int baseline = idempotentRegistration.reloadCount();
         writeJson(file, "after-idempotent", 2);

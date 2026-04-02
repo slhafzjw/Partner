@@ -14,14 +14,14 @@ object ConfigCenter : AutoCloseable {
 
     private val log = LoggerFactory.getLogger(ConfigCenter::class.java)
     val paths = resolvePaths()
-    private val registrations = mutableMapOf<Path, ConfigRegistration<out Config>>()
+    private val registrations = mutableMapOf<Path, ConfigRegistration<Config>>()
     private var watchExecutor: ExecutorService? = null
     private var watchSupport: DirectoryWatchSupport? = null
 
     @Synchronized
     fun register(configurable: Configurable) {
         val declared = configurable.declare()
-        val normalized = mutableMapOf<Path, ConfigRegistration<out Config>>()
+        val normalized = mutableMapOf<Path, ConfigRegistration<Config>>()
 
         declared.forEach { (path, registration) ->
             val normalizedPath = normalizeRelativePath(path)
@@ -41,7 +41,7 @@ object ConfigCenter : AutoCloseable {
     }
 
     @Synchronized
-    fun startWatching() {
+    fun start() {
         if (watchSupport != null) {
             return
         }
@@ -109,9 +109,8 @@ object ConfigCenter : AutoCloseable {
         return JSON.parseObject(Files.readString(file, StandardCharsets.UTF_8), registration.type()) as Config
     }
 
-    @Suppress("UNCHECKED_CAST")
-    private fun notifyReload(registration: ConfigRegistration<out Config>, config: Config) {
-        (registration as ConfigRegistration<Config>).onReload(config)
+    private fun notifyReload(registration: ConfigRegistration<Config>, config: Config) {
+        registration.onReload(config)
     }
 
     private fun toRelativeConfigPath(file: Path): Path? {
@@ -151,7 +150,7 @@ object ConfigCenter : AutoCloseable {
 abstract class Config
 
 interface Configurable {
-    fun declare(): Map<Path, ConfigRegistration<out Config>>
+    fun declare(): Map<Path, ConfigRegistration<Config>>
     fun register() {
         ConfigCenter.register(this)
     }
