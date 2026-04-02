@@ -2,6 +2,7 @@ package work.slhaf.partner.api.agent.runtime.config
 
 import com.alibaba.fastjson2.JSON
 import org.slf4j.LoggerFactory
+import work.slhaf.partner.api.agent.runtime.exception.AgentLaunchFailedException
 import work.slhaf.partner.api.common.support.DirectoryWatchSupport
 import java.io.IOException
 import java.nio.charset.StandardCharsets
@@ -52,7 +53,7 @@ object ConfigCenter : AutoCloseable {
             executor,
             -1
         ) {
-            reconcileAll()
+            initAll()
         }.onCreate(this::handleUpsert)
             .onModify(this::handleUpsert)
             .onDelete(this::handleDelete)
@@ -62,6 +63,18 @@ object ConfigCenter : AutoCloseable {
         watchSupport = support
         support.start()
         log.info("ConfigCenter 文件监听注册完毕: {}", paths.configDir)
+    }
+
+    fun initAll() {
+        registrations.forEach { (path, registration) ->
+            try {
+                val config = loadConfig(path, registration)
+                registration.init(config)
+            } catch (e: Exception) {
+                throw AgentLaunchFailedException("Failed to init config", e)
+            }
+        }
+
     }
 
     private fun handleUpsert(thisDir: Path, context: Path?) {
