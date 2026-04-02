@@ -8,6 +8,7 @@ import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -15,30 +16,38 @@ object ConfigCenter : AutoCloseable {
 
     private val log = LoggerFactory.getLogger(ConfigCenter::class.java)
     val paths = resolvePaths()
-    private val registrations = mutableMapOf<Path, ConfigRegistration<Config>>()
+    private val registrations = ConcurrentHashMap<Path, ConfigRegistration<out Config>>()
     private var watchExecutor: ExecutorService? = null
     private var watchSupport: DirectoryWatchSupport? = null
 
+    @Volatile
+    private var started = false
+
     @Synchronized
     fun register(configurable: Configurable) {
+
+        check(!started) {
+            "ConfigCenter does not allow registration after watching started"
+        }
+
         val declared = configurable.declare()
-        val normalized = mutableMapOf<Path, ConfigRegistration<Config>>()
+        val normalized = mutableMapOf<Path, ConfigRegistration<out Config>>()
 
         declared.forEach { (path, registration) ->
             val normalizedPath = normalizeRelativePath(path)
 
-            check(!normalized.containsKey(normalizedPath)) {
+            check(normalized.putIfAbsent(normalizedPath, registration) != null) {
                 "Duplicated config path declared in the same configurable: $normalizedPath"
             }
 
-            check(!registrations.containsKey(normalizedPath)) {
-                "Config path already registered: $normalizedPath"
-            }
-
-            normalized[normalizedPath] = registration
         }
 
-        registrations.putAll(normalized)
+        normalized.forEach { (path, registration) ->
+            check(registrations.putIfAbsent(path, registration) != null) {
+                "Config path already registered: $path"
+            }
+        }
+
     }
 
     @Synchronized
@@ -71,7 +80,9 @@ object ConfigCenter : AutoCloseable {
                 val config = loadConfig(path, registration)
                 registration.init(config)
             } catch (e: Exception) {
-                throw AgentLaunchFailedException("Failed to init config", e)
+                if (registration.configRequired()) {
+                    throw AgentLaunchFailedException("Failed to init config", e)
+                }
             }
         }
 
@@ -173,4 +184,5 @@ interface ConfigRegistration<T : Config> {
     fun type(): Class<T>
     fun init(config: T)
     fun onReload(config: T) {}
+    fun configRequired(): Boolean
 }
