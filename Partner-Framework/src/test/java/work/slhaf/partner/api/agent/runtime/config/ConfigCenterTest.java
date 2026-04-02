@@ -251,5 +251,10 @@ class ConfigCenterTest {
         TestConfig lastConfig() {
             return lastConfig.get();
         }
+
+        @Override
+        public boolean configRequired() {
+            return true;
+        }
     }
 }

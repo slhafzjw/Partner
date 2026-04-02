@@ -74,11 +74,12 @@ object ConfigCenter : AutoCloseable {
         log.info("ConfigCenter 文件监听注册完毕: {}", paths.configDir)
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun initAll() {
         registrations.forEach { (path, registration) ->
             try {
                 val config = loadConfig(path, registration)
-                registration.init(config)
+                (registration as ConfigRegistration<Config>).init(config)
             } catch (e: Exception) {
                 if (registration.configRequired()) {
                     throw AgentLaunchFailedException("Failed to init config", e)
@@ -118,12 +119,13 @@ object ConfigCenter : AutoCloseable {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun reloadIfRegistered(file: Path) {
         val relativePath = toRelativeConfigPath(file) ?: return
         val registration = registrations[relativePath] ?: return
         try {
             val config = loadConfig(file, registration)
-            notifyReload(registration, config)
+            (registration as ConfigRegistration<Config>).init(config)
         } catch (e: Exception) {
             log.error("Config reload failed: {}", relativePath, e)
         }
@@ -174,7 +176,7 @@ object ConfigCenter : AutoCloseable {
 abstract class Config
 
 interface Configurable {
-    fun declare(): Map<Path, ConfigRegistration<Config>>
+    fun declare(): Map<Path, ConfigRegistration<out Config>>
     fun register() {
         ConfigCenter.register(this)
     }
