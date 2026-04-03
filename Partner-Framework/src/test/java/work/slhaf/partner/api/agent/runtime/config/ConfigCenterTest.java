@@ -1,5 +1,6 @@
 package work.slhaf.partner.api.agent.runtime.config;
 
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -16,14 +17,16 @@ import java.util.function.BooleanSupplier;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ConfigCenterTest {
 
-    private static final Path INITIAL_PATH = Path.of("root-initial.json");
-    private static final Path NESTED_PATH = Path.of("nested", "child.json");
-    private static final Path DELETE_PATH = Path.of("delete", "target.json");
-    private static final Path INVALID_PATH = Path.of("invalid", "target.json");
-    private static final Path IDEMPOTENT_PATH = Path.of("idempotent", "target.json");
+    private static final Path TEST_ROOT = Path.of("target", "config-center-test");
+    private static final Path INITIAL_PATH = TEST_ROOT.resolve("root-initial.json");
+    private static final Path NESTED_PATH = TEST_ROOT.resolve(Path.of("nested", "child.json"));
+    private static final Path DELETE_PATH = TEST_ROOT.resolve(Path.of("delete", "target.json"));
+    private static final Path INVALID_PATH = TEST_ROOT.resolve(Path.of("invalid", "target.json"));
+    private static final Path IDEMPOTENT_PATH = TEST_ROOT.resolve(Path.of("idempotent", "target.json"));
 
     private static String originalUserHome;
     private static Path configDir;
+    private static Path workingDir;
     private static TrackingRegistration initialRegistration;
     private static TrackingRegistration nestedRegistration;
     private static TrackingRegistration deleteRegistration;
@@ -44,13 +47,19 @@ class ConfigCenterTest {
         invalidRegistration = new TrackingRegistration();
         idempotentRegistration = new TrackingRegistration();
 
+        workingDir = Path.of("").toAbsolutePath().normalize();
         configDir = ConfigCenter.INSTANCE.getPaths().getConfigDir();
         Files.createDirectories(configDir);
         Files.createDirectories(configDir.resolve(NESTED_PATH).getParent());
         Files.createDirectories(configDir.resolve(DELETE_PATH).getParent());
         Files.createDirectories(configDir.resolve(INVALID_PATH).getParent());
         Files.createDirectories(configDir.resolve(IDEMPOTENT_PATH).getParent());
-        writeJson(configDir.resolve(INITIAL_PATH), "initial", 1);
+        writeJson(workingDir.resolve(INITIAL_PATH), "initial-init", 1);
+        writeJson(workingDir.resolve(NESTED_PATH), "nested-init", 1);
+        writeJson(workingDir.resolve(DELETE_PATH), "delete-init", 1);
+        writeJson(workingDir.resolve(INVALID_PATH), "invalid-init", 1);
+        writeJson(workingDir.resolve(IDEMPOTENT_PATH), "idempotent-init", 1);
+        writeJson(configDir.resolve(INITIAL_PATH), "initial-config-dir", 1);
 
         ConfigCenter.INSTANCE.register(() -> {
             Map<Path, ConfigRegistration<? extends Config>> declared = new LinkedHashMap<>();
@@ -67,11 +76,20 @@ class ConfigCenterTest {
     @AfterAll
     static void afterAll() {
         ConfigCenter.INSTANCE.close();
+        deleteRecursivelyIfExists(workingDir.resolve(TEST_ROOT));
         if (originalUserHome == null) {
             System.clearProperty("user.home");
         } else {
             System.setProperty("user.home", originalUserHome);
         }
+    }
+
+    private static int totalInitCount() {
+        return initialRegistration.initCount()
+                + nestedRegistration.initCount()
+                + deleteRegistration.initCount()
+                + invalidRegistration.initCount()
+                + idempotentRegistration.initCount();
     }
 
     private static int totalReloadCount() {
@@ -80,6 +98,22 @@ class ConfigCenterTest {
                 + deleteRegistration.reloadCount()
                 + invalidRegistration.reloadCount()
                 + idempotentRegistration.reloadCount();
+    }
+
+    private static void deleteRecursivelyIfExists(Path root) {
+        if (!Files.exists(root)) {
+            return;
+        }
+        try (var stream = Files.walk(root)) {
+            stream.sorted((left, right) -> right.getNameCount() - left.getNameCount())
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException ignored) {
+                        }
+                    });
+        } catch (IOException ignored) {
+        }
     }
 
     private static void writeJson(Path file, String name, int version) throws IOException {
@@ -119,12 +153,9 @@ class ConfigCenterTest {
 
     @Test
     @Order(1)
-    void testInitialReconcileReloadsRegisteredJson() throws Exception {
-        waitForCount(initialRegistration, 1, 3000);
-
-        Assertions.assertEquals(1, initialRegistration.reloadCount());
-        Assertions.assertEquals("initial", initialRegistration.lastConfig().name);
-        Assertions.assertEquals(1, initialRegistration.lastConfig().version);
+    void testStartOnlyInitializesOneRegisteredConfigAndDoesNotTriggerReload() {
+        Assertions.assertEquals(1, totalInitCount());
+        Assertions.assertEquals(0, totalReloadCount());
     }
 
     @Test
@@ -226,6 +257,7 @@ class ConfigCenterTest {
     }
 
     private static class TrackingRegistration implements ConfigRegistration<TestConfig> {
+        private final AtomicInteger initCount = new AtomicInteger();
         private final AtomicInteger reloadCount = new AtomicInteger();
         private final AtomicReference<TestConfig> lastConfig = new AtomicReference<>();
 
@@ -236,12 +268,17 @@ class ConfigCenterTest {
 
         @Override
         public void init(TestConfig config) {
+            initCount.incrementAndGet();
         }
 
         @Override
         public void onReload(TestConfig config) {
             lastConfig.set(config);
             reloadCount.incrementAndGet();
+        }
+
+        int initCount() {
+            return initCount.get();
         }
 
         int reloadCount() {
@@ -253,8 +290,8 @@ class ConfigCenterTest {
         }
 
         @Override
-        public boolean configRequired() {
-            return true;
+        public @Nullable TestConfig defaultConfig() {
+            return null;
         }
     }
 }

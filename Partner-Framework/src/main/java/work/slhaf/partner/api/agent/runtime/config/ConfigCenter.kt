@@ -36,14 +36,14 @@ object ConfigCenter : AutoCloseable {
         declared.forEach { (path, registration) ->
             val normalizedPath = normalizeRelativePath(path)
 
-            check(normalized.putIfAbsent(normalizedPath, registration) != null) {
+            check(normalized.putIfAbsent(normalizedPath, registration) == null) {
                 "Duplicated config path declared in the same configurable: $normalizedPath"
             }
 
         }
 
         normalized.forEach { (path, registration) ->
-            check(registrations.putIfAbsent(path, registration) != null) {
+            check(registrations.putIfAbsent(path, registration) == null) {
                 "Config path already registered: $path"
             }
         }
@@ -77,14 +77,16 @@ object ConfigCenter : AutoCloseable {
     @Suppress("UNCHECKED_CAST")
     fun initAll() {
         registrations.forEach { (path, registration) ->
-            try {
-                val config = loadConfig(path, registration)
+            val config = loadConfig(path, registration)
+            if (config != null) {
                 (registration as ConfigRegistration<Config>).init(config)
-            } catch (e: Exception) {
-                if (registration.configRequired()) {
-                    throw AgentLaunchFailedException("Failed to init config", e)
-                }
+                return
             }
+            val defaultConfig = registration.defaultConfig()
+            if (defaultConfig != null) {
+                (registration as ConfigRegistration<Config>).init(defaultConfig)
+            }
+            throw AgentLaunchFailedException("Failed to init config, related path: $path")
         }
 
     }
@@ -125,18 +127,21 @@ object ConfigCenter : AutoCloseable {
         val registration = registrations[relativePath] ?: return
         try {
             val config = loadConfig(file, registration)
-            (registration as ConfigRegistration<Config>).init(config)
+            if (config != null) {
+                (registration as ConfigRegistration<Config>).onReload(config)
+            }
         } catch (e: Exception) {
             log.error("Config reload failed: {}", relativePath, e)
         }
     }
 
-    private fun loadConfig(file: Path, registration: ConfigRegistration<out Config>): Config {
-        return JSON.parseObject(Files.readString(file, StandardCharsets.UTF_8), registration.type()) as Config
-    }
-
-    private fun notifyReload(registration: ConfigRegistration<Config>, config: Config) {
-        registration.onReload(config)
+    private fun loadConfig(file: Path, registration: ConfigRegistration<out Config>): Config? {
+        return try {
+            JSON.parseObject(Files.readString(file, StandardCharsets.UTF_8), registration.type()) as Config
+        } catch (e: Exception) {
+            log.error("Config reload failed: {}", file, e)
+            null
+        }
     }
 
     private fun toRelativeConfigPath(file: Path): Path? {
@@ -186,5 +191,5 @@ interface ConfigRegistration<T : Config> {
     fun type(): Class<T>
     fun init(config: T)
     fun onReload(config: T) {}
-    fun configRequired(): Boolean
+    fun defaultConfig(): T?
 }
