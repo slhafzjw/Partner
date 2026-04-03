@@ -5,12 +5,17 @@ import org.slf4j.LoggerFactory
 import work.slhaf.partner.api.agent.runtime.exception.AgentLaunchFailedException
 import work.slhaf.partner.api.common.support.DirectoryWatchSupport
 import java.io.IOException
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.reflect.KProperty1
+import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.javaField
 
 object ConfigCenter : AutoCloseable {
 
@@ -86,9 +91,62 @@ object ConfigCenter : AutoCloseable {
             if (defaultConfig != null) {
                 (registration as ConfigRegistration<Config>).init(defaultConfig)
             }
-            throw AgentLaunchFailedException("Failed to init config, related path: $path")
+            val configDoc = resolveConfigDoc(registration.type())
+            throw AgentLaunchFailedException("Failed to init config, related path: $path, config definition: $configDoc")
         }
 
+    }
+
+    private fun resolveConfigDoc(type: Class<out Config>): String {
+        val kotlinProperties = if (type.isKotlinClass()) {
+            type.kotlin.memberProperties.associateBy { property ->
+                property.javaField?.name ?: property.name
+            }
+        } else {
+            emptyMap()
+        }
+        val fieldDocs = type.declaredFields.asSequence()
+            .filterNot(::shouldSkipField)
+            .map { field -> resolveFieldDoc(type, field, kotlinProperties[field.name]) }
+            .toList()
+        return buildString {
+            append("Expected fields:")
+            if (fieldDocs.isNotEmpty()) {
+                append('\n')
+                append(fieldDocs.joinToString("\n\n"))
+            }
+        }
+    }
+
+    private fun resolveFieldDoc(
+        ownerType: Class<out Config>,
+        field: Field,
+        kotlinProperty: KProperty1<out Any, *>?
+    ): String {
+        val configDoc = field.getAnnotation(ConfigDoc::class.java)
+            ?: kotlinProperty?.annotations?.filterIsInstance<ConfigDoc>()?.firstOrNull()
+        val nullableInfo = resolveNullableInfo(ownerType, field, kotlinProperty)
+        val lines = mutableListOf(
+            "- ${field.name}: ${resolveDisplayType(field.type)}",
+            "  Description: ${configDoc?.description ?: "No description provided"}"
+        )
+        configDoc?.unit?.takeIf { it.isNotBlank() }?.let { lines += "  Unit: $it" }
+        configDoc?.constraint?.takeIf { it.isNotBlank() }?.let { lines += "  Constraint: $it" }
+        configDoc?.example?.takeIf { it.isNotBlank() }?.let { lines += "  Example: $it" }
+        lines += buildString {
+            append("  Nullable: ")
+            append(nullableInfo.nullable)
+            nullableInfo.note?.let {
+                append(" (")
+                append(it)
+                append(')')
+            }
+        }
+        return lines.joinToString("\n")
+    }
+
+    private fun shouldSkipField(field: Field): Boolean {
+        return field.isSynthetic || Modifier.isStatic(field.modifiers)
     }
 
     private fun handleUpsert(thisDir: Path, context: Path?) {
@@ -193,3 +251,15 @@ interface ConfigRegistration<T : Config> {
     fun onReload(config: T) {}
     fun defaultConfig(): T?
 }
+
+@Target(
+    AnnotationTarget.FIELD,
+    AnnotationTarget.VALUE_PARAMETER,
+    AnnotationTarget.PROPERTY
+)
+annotation class ConfigDoc(
+    val description: String,
+    val unit: String = "",
+    val constraint: String = "",
+    val example: String = "",
+)

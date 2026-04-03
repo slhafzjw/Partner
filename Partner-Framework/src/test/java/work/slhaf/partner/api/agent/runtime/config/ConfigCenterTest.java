@@ -251,9 +251,81 @@ class ConfigCenterTest {
         Assertions.assertEquals(2, idempotentRegistration.lastConfig().version);
     }
 
+    private static String resolveConfigDoc(Class<? extends Config> type) throws Exception {
+        var method = java.util.Arrays.stream(ConfigCenter.class.getDeclaredMethods())
+                .filter(candidate -> candidate.getName().startsWith("resolveConfigDoc"))
+                .filter(candidate -> candidate.getParameterCount() == 1)
+                .findFirst()
+                .orElseThrow();
+        method.setAccessible(true);
+        return (String) method.invoke(ConfigCenter.INSTANCE, type);
+    }
+
+    @Test
+    @Order(8)
+    void testResolveConfigDocForJavaConfig() throws Exception {
+        String doc = resolveConfigDoc(JavaDocConfig.class);
+
+        Assertions.assertEquals("""
+                Expected fields:
+                - port: Int
+                  Description: WebSocket 监听端口
+                  Example: 29600
+                  Nullable: false (inferred from missing nullability annotation, may be unreliable)
+                
+                - heartbeatInterval: Int
+                  Description: 心跳间隔
+                  Unit: ms
+                  Constraint: > 0
+                  Example: 10000
+                  Nullable: false (inferred from missing nullability annotation, may be unreliable)
+                
+                - tag: String
+                  Description: 标签
+                  Nullable: true
+                """.stripTrailing(), doc);
+    }
+
+    @Test
+    @Order(9)
+    void testResolveConfigDocForKotlinConfig() throws Exception {
+        String doc = resolveConfigDoc(KotlinDocConfig.class);
+
+        Assertions.assertEquals("""
+                Expected fields:
+                - port: Int
+                  Description: WebSocket 监听端口
+                  Example: 29600
+                  Nullable: false
+                
+                - heartbeatInterval: Int
+                  Description: 心跳间隔
+                  Unit: ms
+                  Constraint: > 0
+                  Example: 10000
+                  Nullable: true
+                
+                - tag: String
+                  Description: 标签
+                  Nullable: true
+                """.stripTrailing(), doc);
+    }
+
     public static class TestConfig extends Config {
         public String name;
         public int version;
+    }
+
+    public static class JavaDocConfig extends Config {
+        @ConfigDoc(description = "WebSocket 监听端口", example = "29600")
+        public int port;
+
+        @ConfigDoc(description = "心跳间隔", unit = "ms", constraint = "> 0", example = "10000")
+        public int heartbeatInterval;
+
+        @Nullable
+        @ConfigDoc(description = "标签")
+        public String tag;
     }
 
     private static class TrackingRegistration implements ConfigRegistration<TestConfig> {
