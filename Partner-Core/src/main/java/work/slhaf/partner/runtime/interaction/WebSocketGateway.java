@@ -8,11 +8,9 @@ import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.api.agent.runtime.interaction.AgentGateway;
 import work.slhaf.partner.api.agent.runtime.interaction.data.InputData;
 import work.slhaf.partner.api.agent.runtime.interaction.data.InteractionEvent;
-import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.net.InetSocketAddress;
@@ -23,7 +21,7 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class WebSocketGateway extends WebSocketServer implements AgentGateway<InputData, PartnerRunningFlowContext> {
 
-    private static final long HEARTBEAT_INTERVAL = 10_000;
+    private final long heartbeatInterval;
 
     @ToString.Exclude
     private final ConcurrentHashMap<String, WebSocket> userSessions = new ConcurrentHashMap<>();
@@ -32,12 +30,9 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
     // 记录最后一次收到Pong的时间
     private final ConcurrentHashMap<WebSocket, Long> lastPongTimes = new ConcurrentHashMap<>();
 
-    public WebSocketGateway() {
-        this(((PartnerAgentConfigLoader) AgentConfigLoader.INSTANCE).getConfig().getWebSocketConfig().getPort());
-    }
-
-    private WebSocketGateway(int port) {
+    public WebSocketGateway(int port, long heartbeatInterval) {
         super(new InetSocketAddress(port));
+        this.heartbeatInterval = heartbeatInterval;
         this.setReuseAddr(true);
         this.executor = Executors.newSingleThreadExecutor();
     }
@@ -71,7 +66,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
         executor.execute(() -> {
             while (!Thread.interrupted()) {
                 try {
-                    Thread.sleep(HEARTBEAT_INTERVAL);
+                    Thread.sleep(heartbeatInterval);
                     checkConnections();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -90,7 +85,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
 
                 // 检查上次Pong响应是否超时（2倍心跳间隔）
                 Long lastPong = lastPongTimes.get(conn);
-                if (lastPong != null && now - lastPong > HEARTBEAT_INTERVAL * 2) {
+                if (lastPong != null && now - lastPong > heartbeatInterval * 2) {
                     log.warn("Connection {} timed out, closing...", conn.getRemoteSocketAddress());
                     conn.close(1001, "No Pong response");
                 }
