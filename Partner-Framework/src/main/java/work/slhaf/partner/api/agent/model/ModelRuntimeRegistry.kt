@@ -1,6 +1,8 @@
 package work.slhaf.partner.api.agent.model
 
+import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
+import work.slhaf.partner.api.agent.model.ProviderConfig.ProviderType.OPENAI_COMPATIBLE
 import work.slhaf.partner.api.agent.model.provider.ModelProvider
 import work.slhaf.partner.api.agent.model.provider.ProviderOverride
 import work.slhaf.partner.api.agent.model.provider.openai.OpenAiCompatibleProvider
@@ -9,6 +11,7 @@ import work.slhaf.partner.api.agent.runtime.config.ConfigDoc
 import work.slhaf.partner.api.agent.runtime.config.ConfigRegistration
 import work.slhaf.partner.api.agent.runtime.config.Configurable
 import java.nio.file.Path
+import java.util.Locale.getDefault
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -62,17 +65,30 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
 
     override fun type(): Class<ModelRuntimeRegistryConfig> = ModelRuntimeRegistryConfig::class.java
 
-    override fun init(config: ModelRuntimeRegistryConfig) = providerLock.withLock {
+    override fun init(config: ModelRuntimeRegistryConfig, json: JSONObject?) = providerLock.withLock {
         config.providerConfigSet.forEach { registerProvider(it) }
         config.runtimeConfigSet.forEach { forkProvider(it) }
     }
 
-    override fun onReload(config: ModelRuntimeRegistryConfig) = providerLock.withLock {
+    override fun onReload(config: ModelRuntimeRegistryConfig, json: JSONObject?) = providerLock.withLock {
+        val root = json ?: return@withLock
         val baseProviderSnapshot = baseProvider.toMap()
         val runtimeProviderSnapshot = runtimeProvider.toMap()
         try {
+            val providerSetJson = root.getJSONArray("providerConfigSet")
+                ?: throw IllegalStateException("providerConfigSet is missing or not an array")
             baseProvider.clear()
-            config.providerConfigSet.forEach { registerProvider(it) }
+            for (i in providerSetJson.indices) {
+                val providerJson = providerSetJson.getJSONObject(i)
+                    ?: throw IllegalStateException("providerConfigSet[$i] is not an object")
+                val typeText = providerJson.getString("type")
+                    ?: throw IllegalStateException("providerConfigSet[$i].type is missing")
+                val providerType = ProviderConfig.ProviderType.valueOf(typeText.uppercase(getDefault()))
+                val concreteProviderConfig = when (providerType) {
+                    OPENAI_COMPATIBLE -> providerJson.toJavaObject(OpenAiCompatibleProviderConfig::class.java)
+                }
+                registerProvider(concreteProviderConfig)
+            }
             runtimeProvider.clear()
             config.runtimeConfigSet.forEach { forkProvider(it) }
         } catch (e: Exception) {
@@ -92,7 +108,7 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
             setOf(
                 OpenAiCompatibleProviderConfig(
                     "default",
-                    ProviderConfig.ProviderType.OPENAI_COMPATIBLE,
+                    OPENAI_COMPATIBLE,
                     defaultModel, defaultBaseUrl, defaultApiKey
                 )
             ), setOf()
@@ -119,7 +135,7 @@ data class ModelRuntimeRegistryConfig(
             [
                 {
                     "modelKey": "example_model_key", // 模块通过该 key 定位到对应的提供商配置
-                    "providerName: "example_provider_name", // 该配置对应的提供商名称
+                    "providerName": "example_provider_name", // 该配置对应的提供商名称
                     "override": { // 该配置需要重写的内容, 如果无需重写，可忽略该字段，该字段的各个子字段均为可选覆写
                         "model": "example_override_model",
                         "temperature": "example_override_temperature",
@@ -156,7 +172,7 @@ sealed class ProviderConfig {
 
 data class OpenAiCompatibleProviderConfig(
     override val name: String,
-    override val type: ProviderType = ProviderType.OPENAI_COMPATIBLE,
+    override val type: ProviderType = OPENAI_COMPATIBLE,
     override val defaultModel: String,
 
     val baseUrl: String,

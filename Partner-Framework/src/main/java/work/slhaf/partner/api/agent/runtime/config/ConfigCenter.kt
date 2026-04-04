@@ -1,6 +1,7 @@
 package work.slhaf.partner.api.agent.runtime.config
 
 import com.alibaba.fastjson2.JSON
+import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.api.agent.runtime.exception.AgentLaunchFailedException
 import work.slhaf.partner.api.common.support.DirectoryWatchSupport
@@ -82,14 +83,14 @@ object ConfigCenter : AutoCloseable {
     @Suppress("UNCHECKED_CAST")
     fun initAll() {
         registrations.forEach { (path, registration) ->
-            val config = loadConfig(path, registration)
-            if (config != null) {
-                (registration as ConfigRegistration<Config>).init(config)
+            val pair = loadConfig(path, registration)
+            if (pair != null) {
+                (registration as ConfigRegistration<Config>).init(pair.first, pair.second)
                 return
             }
             val defaultConfig = registration.defaultConfig()
             if (defaultConfig != null) {
-                (registration as ConfigRegistration<Config>).init(defaultConfig)
+                (registration as ConfigRegistration<Config>).init(defaultConfig, null)
             }
             val configDoc = resolveConfigDoc(registration.type())
             throw AgentLaunchFailedException("Failed to init config, related path: $path, config definition: $configDoc")
@@ -184,18 +185,20 @@ object ConfigCenter : AutoCloseable {
         val relativePath = toRelativeConfigPath(file) ?: return
         val registration = registrations[relativePath] ?: return
         try {
-            val config = loadConfig(file, registration)
-            if (config != null) {
-                (registration as ConfigRegistration<Config>).onReload(config)
+            val pair = loadConfig(file, registration)
+            if (pair != null) {
+                (registration as ConfigRegistration<Config>).onReload(pair.first, pair.second)
             }
         } catch (e: Exception) {
             log.error("Config reload failed: {}", relativePath, e)
         }
     }
 
-    private fun loadConfig(file: Path, registration: ConfigRegistration<out Config>): Config? {
+    private fun loadConfig(file: Path, registration: ConfigRegistration<out Config>): Pair<Config, JSONObject>? {
         return try {
-            JSON.parseObject(Files.readString(file, StandardCharsets.UTF_8), registration.type()) as Config
+            val json = JSON.parseObject(Files.readString(file, StandardCharsets.UTF_8))
+            val config = json.toJavaObject(registration.type())
+            config to json
         } catch (e: Exception) {
             log.error("Config reload failed: {}", file, e)
             null
@@ -247,8 +250,8 @@ interface Configurable {
 
 interface ConfigRegistration<T : Config> {
     fun type(): Class<T>
-    fun init(config: T)
-    fun onReload(config: T) {}
+    fun init(config: T, json: JSONObject?)
+    fun onReload(config: T, json: JSONObject?) {}
     fun defaultConfig(): T?
 }
 

@@ -1,5 +1,6 @@
 package work.slhaf.partner.runtime.interaction;
 
+import com.alibaba.fastjson2.JSONObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.runtime.config.Config;
@@ -26,7 +27,7 @@ public class WebSocketGatewayRegistry implements Configurable {
         }
 
         @Override
-        public void init(@NotNull WebSocketConfig config) {
+        public void init(@NotNull WebSocketConfig config, JSONObject json) {
             new WebSocketGateway(config.port, config.heartbeatInterval);
         }
 
