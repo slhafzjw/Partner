@@ -3,6 +3,7 @@ package work.slhaf.partner.runtime.interaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.runtime.config.Config;
+import work.slhaf.partner.api.agent.runtime.config.ConfigDoc;
 import work.slhaf.partner.api.agent.runtime.config.ConfigRegistration;
 import work.slhaf.partner.api.agent.runtime.config.Configurable;
 
@@ -37,7 +38,9 @@ public class WebSocketGatewayRegistry implements Configurable {
     }
 
     static class WebSocketConfig extends Config {
+        @ConfigDoc(description = "WebSocket 监听端口")
         final int port;
+        @ConfigDoc(description = "WebSocket 心跳间隔", unit = "ms", constraint = "> 0", example = "10000")
         final int heartbeatInterval;
 
         WebSocketConfig(int port, int heartbeatInterval) {
