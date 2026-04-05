@@ -6,14 +6,10 @@ import lombok.val;
 import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
-import work.slhaf.partner.common.vector.VectorClient;
 import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.entity.cache.ActionCacheData;
-import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
-import work.slhaf.partner.core.action.entity.cache.CacheAdjustMetaData;
 import work.slhaf.partner.core.action.entity.intervention.InterventionType;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
@@ -26,8 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("FieldMayBeFinal")
@@ -37,11 +31,10 @@ public class ActionCore extends PartnerCore<ActionCore> {
     public static final String BUILTIN_LOCATION = "builtin";
     public static final String ORIGIN_LOCATION = "origin";
 
-    private final Lock cacheLock = new ReentrantLock();
     // 由于当前的执行器逻辑实现，平台线程池大小不得小于 2，这里规定为最小为 4
-    private final ExecutorService platformExecutor = Executors
-            .newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors(), 4));
+    private final ExecutorService platformExecutor = Executors.newFixedThreadPool(Math.max(Runtime.getRuntime().availableProcessors(), 4));
     private final ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor();
+
     /**
      * 已存在的行动程序，键格式为‘<MCP-ServerName>::<Tool-Name>’，值为 MCP Server 通过 Resources 相关渠道传递的行动程序元信息
      */
@@ -50,10 +43,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
      * 持久行动池
      */
     private CopyOnWriteArraySet<ExecutableAction> actionPool = new CopyOnWriteArraySet<>();
-    /**
-     * 语义缓存与行为倾向映射
-     */
-    private List<ActionCacheData> actionCache = new ArrayList<>();
+
     private RunnerClient runnerClient;
 
     public ActionCore() throws IOException, ClassNotFoundException {
@@ -83,59 +73,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
                 .filter(actionData -> status == null || actionData.getStatus().equals(status))
                 .filter(actionData -> source == null || actionData.getSource().equals(source))
                 .collect(Collectors.toSet());
-    }
-
-    /**
-     * 计算输入内容的语义向量，根据与{@link ActionCacheData#getInputVector()}的相似度挑取缓存，后续将根据评估结果来更新计数
-     *
-     * @param input 本次输入内容
-     * @return 命中的行为倾向集合
-     */
-    @CapabilityMethod
-    public List<String> selectTendencyCache(String input) {
-        if (!VectorClient.status) {
-            return null;
-        }
-        VectorClient vectorClient = VectorClient.INSTANCE;
-        // 计算本次输入的向量
-        float[] vector = vectorClient.compute(input);
-        if (vector == null)
-            return null;
-        // 与现有缓存比对，将匹配到的收集并返回
-        return actionCache.parallelStream()
-                .filter(ActionCacheData::isActivated)
-                .filter(data -> {
-                    double compared = vectorClient.compare(vector, data.getInputVector());
-                    return compared > data.getThreshold();
-                })
-                .map(ActionCacheData::getTendency)
-                .collect(Collectors.toList());
-    }
-
-    @CapabilityMethod
-    public void updateTendencyCache(CacheAdjustData data) {
-        VectorClient vectorClient = VectorClient.INSTANCE;
-        List<CacheAdjustMetaData> list = data.getMetaDataList();
-        String input = data.getInput();
-        float[] inputVector = vectorClient.compute(input);
-
-        List<CacheAdjustMetaData> matchAndPassed = new ArrayList<>();
-        List<CacheAdjustMetaData> matchNotPassed = new ArrayList<>();
-        List<CacheAdjustMetaData> notMatchPassed = new ArrayList<>();
-
-        for (CacheAdjustMetaData metaData : list) {
-            if (metaData.isHit() && metaData.isPassed()) {
-                matchAndPassed.add(metaData);
-            } else if (metaData.isHit()) {
-                matchNotPassed.add(metaData);
-            } else if (!metaData.isPassed()) {
-                notMatchPassed.add(metaData);
-            }
-        }
-
-        platformExecutor.execute(() -> adjustMatchAndPassed(matchAndPassed, inputVector, input, vectorClient));
-        platformExecutor.execute(() -> adjustMatchNotPassed(matchNotPassed, vectorClient));
-        platformExecutor.execute(() -> adjustNotMatchPassed(notMatchPassed, inputVector, input, vectorClient));
     }
 
     @CapabilityMethod
@@ -289,95 +226,6 @@ public class ActionCore extends PartnerCore<ActionCore> {
         executableAction.setExecutingStage(0);
         executableAction.setStatus(ExecutableAction.Status.PREPARE);
         executableAction.getHistory().clear();
-    }
-
-    /**
-     * 命中缓存且评估通过时
-     *
-     * @param matchAndPassed 该类型的带调整缓存信息列表
-     * @param inputVector    本次输入内容的语义向量
-     * @param vectorClient   向量客户端
-     */
-    private void adjustMatchAndPassed(List<CacheAdjustMetaData> matchAndPassed, float[] inputVector, String input,
-                                      VectorClient vectorClient) {
-        matchAndPassed.forEach(adjustData -> {
-            // 获取原始缓存条目
-            String tendency = adjustData.getTendency();
-            ActionCacheData primaryCacheData = selectCacheData(tendency);
-            if (primaryCacheData == null) {
-                return;
-            }
-            primaryCacheData.updateAfterMatchAndPassed(inputVector, vectorClient, input);
-        });
-    }
-
-    /**
-     * 针对命中缓存、但评估未通过的条目与输入进行处理
-     *
-     * @param matchNotPassed 该类型的带调整缓存信息列表
-     * @param vectorClient   向量客户端
-     */
-    private void adjustMatchNotPassed(List<CacheAdjustMetaData> matchNotPassed, VectorClient vectorClient) {
-        List<ActionCacheData> toRemove = new ArrayList<>();
-        matchNotPassed.forEach(adjustData -> {
-            // 获取原始缓存条目
-            String tendency = adjustData.getTendency();
-            ActionCacheData primaryCacheData = selectCacheData(tendency);
-            if (primaryCacheData == null) {
-                return;
-            }
-            boolean remove = primaryCacheData.updateAfterMatchNotPassed(vectorClient);
-            if (remove) {
-                toRemove.add(primaryCacheData);
-            }
-
-        });
-        cacheLock.lock();
-        actionCache.removeAll(toRemove);
-        cacheLock.unlock();
-    }
-
-    /**
-     * 针对未命中但评估通过的缓存做出调整:
-     * <ol>
-     * <h3>如果存在缓存条目</h3>
-     * <li>
-     * 若已生效，但此时未匹配到则说明尚未生效或者阈值、向量{@link ActionCacheData#getInputVector()}存在问题，调低阈值，同时带权移动平均
-     * </li>
-     * <li>
-     * 若未生效，则只增加计数并带权移动平均
-     * </li>
-     * </ol>
-     * 如果不存在缓存条目，则新增并填充字段
-     *
-     * @param notMatchPassed 该类型的带调整缓存信息列表
-     * @param inputVector    本次输入内容的语义向量
-     * @param input          本次输入内容
-     * @param vectorClient   向量客户端
-     */
-    private void adjustNotMatchPassed(List<CacheAdjustMetaData> notMatchPassed, float[] inputVector, String input,
-                                      VectorClient vectorClient) {
-        notMatchPassed.forEach(adjustData -> {
-            // 获取原始缓存条目
-            String tendency = adjustData.getTendency();
-            ActionCacheData primaryCacheData = selectCacheData(tendency);
-            float[] tendencyVector = vectorClient.compute(tendency);
-            if (primaryCacheData == null) {
-                actionCache.add(new ActionCacheData(tendency, tendencyVector, inputVector, input));
-                return;
-            }
-            primaryCacheData.updateAfterNotMatchPassed(input, inputVector, tendencyVector, vectorClient);
-        });
-    }
-
-    private ActionCacheData selectCacheData(String tendency) {
-        for (ActionCacheData actionCacheData : actionCache) {
-            if (actionCacheData.getTendency().equals(tendency)) {
-                return actionCacheData;
-            }
-        }
-        log.warn("[{}] 未找到行为倾向[{}]对应的缓存条目，可能是代码逻辑存在错误", getCoreKey(), tendency);
-        return null;
     }
 
     @Override

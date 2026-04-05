@@ -6,7 +6,6 @@ import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.entity.cache.CacheAdjustData;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 
@@ -21,10 +20,6 @@ public interface ActionCapability {
     void putAction(@NonNull ExecutableAction executableAction);
 
     Set<ExecutableAction> listActions(@Nullable ExecutableAction.Status status, @Nullable String source);
-
-    List<String> selectTendencyCache(String input);
-
-    void updateTendencyCache(CacheAdjustData data);
 
     ExecutorService getExecutor(ActionCore.ExecutorType type);
 
