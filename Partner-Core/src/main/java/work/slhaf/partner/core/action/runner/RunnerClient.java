@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
@@ -17,9 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-
-import static work.slhaf.partner.common.Constant.Path.DATA;
-import static work.slhaf.partner.common.util.PathUtil.buildPathStr;
 
 /**
  * 执行客户端抽象类
@@ -51,11 +48,10 @@ public abstract class RunnerClient {
     /**
      * ActionCore 将注入虚拟线程池
      */
-    public RunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @Nullable String baseActionPath) {
+    public RunnerClient(ConcurrentHashMap<String, MetaActionInfo> existedMetaActions, ExecutorService executor, @NotNull String baseActionPath) {
         this.existedMetaActions = existedMetaActions;
         this.executor = executor;
-        baseActionPath = baseActionPath == null ? DATA : baseActionPath;
-        this.ACTION_PATH = buildPathStr(baseActionPath, "action");
+        this.ACTION_PATH = baseActionPath;
 
         createPath(ACTION_PATH);
     }

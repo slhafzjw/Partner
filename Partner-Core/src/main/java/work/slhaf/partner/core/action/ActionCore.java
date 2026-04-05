@@ -6,6 +6,7 @@ import lombok.val;
 import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.api.agent.runtime.config.ConfigCenter;
 import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.MetaAction;
@@ -13,8 +14,8 @@ import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.intervention.InterventionType;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
+import work.slhaf.partner.core.action.runner.LocalRunnerClient;
 import work.slhaf.partner.core.action.runner.RunnerClient;
-import work.slhaf.partner.core.action.runner.SandboxRunnerClient;
 
 import java.io.IOException;
 import java.util.*;
@@ -47,8 +48,9 @@ public class ActionCore extends PartnerCore<ActionCore> {
     private RunnerClient runnerClient;
 
     public ActionCore() throws IOException, ClassNotFoundException {
-        // TODO 通过 AgentConfigManager指定采用何种 runnerClient 
-        runnerClient = new SandboxRunnerClient(existedMetaActions, virtualExecutor);
+        String baseActionPath = ConfigCenter.INSTANCE.getPaths().getResourcesDir().resolve("action").normalize().toAbsolutePath().toString();
+        // TODO 通过 Config 指定采用何种 runnerClient，当前只提供 LocalRunnerClient
+        runnerClient = new LocalRunnerClient(existedMetaActions, virtualExecutor, baseActionPath);
         setupShutdownHook();
     }
 
