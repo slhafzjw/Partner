@@ -1,5 +1,6 @@
 package work.slhaf.partner.api.agent.runtime.config;
 
+import com.alibaba.fastjson2.JSONObject;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
@@ -339,12 +340,12 @@ class ConfigCenterTest {
         }
 
         @Override
-        public void init(TestConfig config) {
+        public void init(TestConfig config, JSONObject json) {
             initCount.incrementAndGet();
         }
 
         @Override
-        public void onReload(TestConfig config) {
+        public void onReload(TestConfig config, JSONObject json) {
             lastConfig.set(config);
             reloadCount.incrementAndGet();
         }
