@@ -1,8 +1,8 @@
 package work.slhaf.partner.core.memory;
 
-import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability;
 
 import java.util.Collection;
 

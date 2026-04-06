@@ -1,7 +1,7 @@
 package work.slhaf.partner.runtime.interaction.data.context
 
 import com.alibaba.fastjson2.JSONObject
-import work.slhaf.partner.api.agent.runtime.interaction.flow.RunningFlowContext
+import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
 
 class PartnerRunningFlowContext private constructor(
     override val source: String,

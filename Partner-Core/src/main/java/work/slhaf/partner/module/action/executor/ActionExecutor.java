@@ -2,15 +2,15 @@ package work.slhaf.partner.module.action.executor;
 
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
-import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
+import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.module.action.executor.entity.*;
 
 import java.util.*;

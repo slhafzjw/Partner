@@ -3,9 +3,9 @@ package work.slhaf.partner.core.memory.pojo.node;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.core.memory.exception.NullSliceListException;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
+import work.slhaf.partner.framework.agent.common.entity.PersistableObject;
 
 import java.io.*;
 import java.nio.file.Files;

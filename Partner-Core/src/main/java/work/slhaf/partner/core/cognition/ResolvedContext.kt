@@ -1,7 +1,7 @@
 package work.slhaf.partner.core.cognition
 
 import org.w3c.dom.Document
-import work.slhaf.partner.api.agent.model.pojo.Message
+import work.slhaf.partner.framework.agent.model.pojo.Message
 import java.io.StringWriter
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.OutputKeys

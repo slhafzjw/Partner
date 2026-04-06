@@ -3,11 +3,11 @@ package work.slhaf.partner.module.action.builtin;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import kotlin.Unit;
-import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.component.annotation.AgentComponent;
-import work.slhaf.partner.api.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.*;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent;
+import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.module.action.scheduler.ActionScheduler;
 
 import java.nio.file.Files;

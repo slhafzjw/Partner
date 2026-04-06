@@ -1,9 +1,9 @@
 package work.slhaf.partner.runtime.exception;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.runtime.exception.AgentExceptionCallback;
-import work.slhaf.partner.api.agent.runtime.exception.AgentLaunchFailedException;
-import work.slhaf.partner.api.agent.runtime.exception.AgentRuntimeException;
+import work.slhaf.partner.framework.agent.exception.AgentExceptionCallback;
+import work.slhaf.partner.framework.agent.exception.AgentLaunchFailedException;
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.runtime.exception.pojo.GlobalExceptionData;
 
 import java.io.*;

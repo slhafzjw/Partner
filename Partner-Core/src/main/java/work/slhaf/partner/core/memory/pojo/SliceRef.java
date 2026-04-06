@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import work.slhaf.partner.api.common.entity.PersistableObject;
+import work.slhaf.partner.framework.agent.common.entity.PersistableObject;
 
 import java.io.Serial;
 

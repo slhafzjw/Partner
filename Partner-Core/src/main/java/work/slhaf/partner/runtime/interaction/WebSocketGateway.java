@@ -8,9 +8,9 @@ import org.java_websocket.framing.Framedata;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
-import work.slhaf.partner.api.agent.runtime.interaction.AgentGateway;
-import work.slhaf.partner.api.agent.runtime.interaction.data.InputData;
-import work.slhaf.partner.api.agent.runtime.interaction.data.InteractionEvent;
+import work.slhaf.partner.framework.agent.interaction.AgentGateway;
+import work.slhaf.partner.framework.agent.interaction.data.InputData;
+import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.net.InetSocketAddress;

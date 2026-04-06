@@ -4,11 +4,11 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
-import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
 
 import java.io.IOException;
 import java.io.Serial;

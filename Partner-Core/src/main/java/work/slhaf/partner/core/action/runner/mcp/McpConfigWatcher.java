@@ -6,11 +6,11 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import work.slhaf.partner.api.common.support.DirectoryWatchSupport;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.runner.LocalRunnerClient;
 import work.slhaf.partner.core.action.runner.policy.ExecutionPolicy;
 import work.slhaf.partner.core.action.runner.policy.RunnerExecutionPolicyListener;
+import work.slhaf.partner.framework.agent.common.support.DirectoryWatchSupport;
 
 import java.io.File;
 import java.io.IOException;

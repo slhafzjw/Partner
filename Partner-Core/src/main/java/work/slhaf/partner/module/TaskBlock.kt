@@ -1,7 +1,7 @@
 package work.slhaf.partner.module
 
-import work.slhaf.partner.api.agent.model.pojo.Message
 import work.slhaf.partner.common.base.Block
+import work.slhaf.partner.framework.agent.model.pojo.Message
 
 abstract class TaskBlock @JvmOverloads constructor(
     blockName: String = "task_input"

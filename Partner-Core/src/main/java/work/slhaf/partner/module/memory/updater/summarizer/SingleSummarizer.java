@@ -3,13 +3,13 @@ package work.slhaf.partner.module.memory.updater.summarizer;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.factory.component.annotation.Init;
-import work.slhaf.partner.api.agent.model.ActivateModel;
-import work.slhaf.partner.api.agent.model.pojo.Message;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
+import work.slhaf.partner.framework.agent.model.ActivateModel;
+import work.slhaf.partner.framework.agent.model.pojo.Message;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;

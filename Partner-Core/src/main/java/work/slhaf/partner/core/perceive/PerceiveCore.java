@@ -3,9 +3,9 @@ package work.slhaf.partner.core.perceive;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore;
-import work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.core.PartnerCore;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
 
 import java.io.IOException;
 import java.io.Serial;

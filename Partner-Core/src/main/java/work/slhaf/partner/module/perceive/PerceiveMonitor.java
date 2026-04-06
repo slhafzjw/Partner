@@ -3,13 +3,13 @@ package work.slhaf.partner.module.perceive;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.CommunicationBlockContent;
 import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.time.ZonedDateTime;

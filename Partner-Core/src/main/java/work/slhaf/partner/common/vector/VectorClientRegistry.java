@@ -3,9 +3,9 @@ package work.slhaf.partner.common.vector;
 import com.alibaba.fastjson2.JSONObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import work.slhaf.partner.api.agent.runtime.config.Config;
-import work.slhaf.partner.api.agent.runtime.config.ConfigRegistration;
-import work.slhaf.partner.api.agent.runtime.config.Configurable;
+import work.slhaf.partner.framework.agent.config.Config;
+import work.slhaf.partner.framework.agent.config.ConfigRegistration;
+import work.slhaf.partner.framework.agent.config.Configurable;
 
 import java.nio.file.Path;
 import java.util.Map;

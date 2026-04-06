@@ -3,9 +3,9 @@ package work.slhaf.partner.common.config;
 import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.agent.factory.config.exception.ConfigNotExistException;
-import work.slhaf.partner.api.agent.runtime.config.FileAgentConfigLoader;
 import work.slhaf.partner.common.exception.ConfigLoadFailedException;
+import work.slhaf.partner.framework.agent.config.FileAgentConfigLoader;
+import work.slhaf.partner.framework.agent.factory.config.exception.ConfigNotExistException;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;

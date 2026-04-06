@@ -3,9 +3,9 @@ package work.slhaf.partner.core;
 import cn.hutool.core.bean.BeanUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
-import work.slhaf.partner.api.common.entity.PersistableObject;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
+import work.slhaf.partner.framework.agent.common.entity.PersistableObject;
+import work.slhaf.partner.framework.agent.config.AgentConfigLoader;
 
 import java.io.*;
 import java.nio.file.Files;

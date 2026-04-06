@@ -3,9 +3,9 @@ package work.slhaf.partner.module.memory.updater.summarizer;
 import cn.hutool.json.JSONUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.model.ActivateModel;
-import work.slhaf.partner.api.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.framework.agent.model.ActivateModel;
+import work.slhaf.partner.framework.agent.model.pojo.Message;
 
 import java.util.HashMap;
 import java.util.List;

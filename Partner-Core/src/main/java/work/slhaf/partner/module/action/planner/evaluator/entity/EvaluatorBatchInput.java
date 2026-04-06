@@ -1,7 +1,7 @@
 package work.slhaf.partner.module.action.planner.evaluator.entity;
 
 import lombok.Data;
-import work.slhaf.partner.api.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.module.memory.selector.ActivatedMemorySlice;
 
 import java.util.List;

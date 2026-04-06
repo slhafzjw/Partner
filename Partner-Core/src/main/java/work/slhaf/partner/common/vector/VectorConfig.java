@@ -1,6 +1,6 @@
 package work.slhaf.partner.common.vector;
 
-import work.slhaf.partner.api.agent.runtime.config.Config;
+import work.slhaf.partner.framework.agent.config.Config;
 
 public sealed class VectorConfig extends Config permits VectorConfig.Ollama, VectorConfig.Onnx {
     final boolean enabled;

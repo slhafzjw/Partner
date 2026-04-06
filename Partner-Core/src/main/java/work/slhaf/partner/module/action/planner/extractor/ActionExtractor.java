@@ -1,12 +1,12 @@
 package work.slhaf.partner.module.action.planner.extractor;
 
 import org.jetbrains.annotations.NotNull;
-import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.model.ActivateModel;
-import work.slhaf.partner.api.agent.model.pojo.Message;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextBlock;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.framework.agent.model.ActivateModel;
+import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.module.action.planner.extractor.entity.ExtractorResult;
 
 import java.util.List;

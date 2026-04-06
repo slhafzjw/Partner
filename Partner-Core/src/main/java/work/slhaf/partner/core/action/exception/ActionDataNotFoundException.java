@@ -1,6 +1,6 @@
 package work.slhaf.partner.core.action.exception;
 
-import work.slhaf.partner.api.agent.runtime.exception.AgentRuntimeException;
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 
 public class ActionDataNotFoundException extends AgentRuntimeException {
     public ActionDataNotFoundException(String message) {

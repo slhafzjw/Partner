@@ -2,12 +2,12 @@ package work.slhaf.partner.module.action.builtin;
 
 import lombok.Getter;
 import lombok.NonNull;
-import work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability;
-import work.slhaf.partner.api.agent.factory.component.abstracts.AbstractAgentModule;
-import work.slhaf.partner.api.agent.factory.component.annotation.Init;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
+import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

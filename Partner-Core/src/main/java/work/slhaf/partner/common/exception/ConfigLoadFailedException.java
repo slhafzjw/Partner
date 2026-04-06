@@ -1,6 +1,6 @@
 package work.slhaf.partner.common.exception;
 
-import work.slhaf.partner.api.agent.factory.config.exception.ConfigFactoryInitFailedException;
+import work.slhaf.partner.framework.agent.factory.config.exception.ConfigFactoryInitFailedException;
 
 public class ConfigLoadFailedException extends ConfigFactoryInitFailedException {
     public ConfigLoadFailedException(String message, Throwable cause) {

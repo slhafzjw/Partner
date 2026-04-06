@@ -1,6 +1,6 @@
 package work.slhaf.partner.common.exception;
 
-import work.slhaf.partner.api.agent.runtime.exception.AgentLaunchFailedException;
+import work.slhaf.partner.framework.agent.exception.AgentLaunchFailedException;
 
 public class ServiceLoadFailedException extends AgentLaunchFailedException {
     public ServiceLoadFailedException(String message, Throwable cause) {

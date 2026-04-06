@@ -2,7 +2,7 @@ package work.slhaf.partner.runtime.exception.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.common.entity.PersistableObject;
+import work.slhaf.partner.framework.agent.common.entity.PersistableObject;
 
 import java.io.Serial;
 

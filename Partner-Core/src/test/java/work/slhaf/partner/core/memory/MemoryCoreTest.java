@@ -2,12 +2,12 @@ package work.slhaf.partner.core.memory;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.api.agent.model.pojo.Message;
-import work.slhaf.partner.api.agent.runtime.config.AgentConfigLoader;
 import work.slhaf.partner.common.config.Config;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.framework.agent.config.AgentConfigLoader;
+import work.slhaf.partner.framework.agent.model.pojo.Message;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

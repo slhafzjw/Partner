@@ -1,6 +1,6 @@
 package work.slhaf.partner.core.perceive;
 
-import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability;
 
 import java.time.Instant;
 

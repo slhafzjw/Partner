@@ -2,8 +2,8 @@ package work.slhaf.partner.core.memory.pojo;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import work.slhaf.partner.api.agent.model.pojo.Message;
-import work.slhaf.partner.api.common.entity.PersistableObject;
+import work.slhaf.partner.framework.agent.common.entity.PersistableObject;
+import work.slhaf.partner.framework.agent.model.pojo.Message;
 
 import java.io.Serial;
 import java.util.ArrayList;

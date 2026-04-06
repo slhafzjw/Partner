@@ -2,12 +2,12 @@ package work.slhaf.partner.core.action;
 
 import lombok.NonNull;
 import org.jetbrains.annotations.Nullable;
-import work.slhaf.partner.api.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 import work.slhaf.partner.core.action.runner.RunnerClient;
+import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability;
 
 import java.util.List;
 import java.util.Map;

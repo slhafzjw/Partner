@@ -1,7 +1,7 @@
 package work.slhaf.partner;
 
-import work.slhaf.partner.api.agent.Agent;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
+import work.slhaf.partner.framework.agent.Agent;
 import work.slhaf.partner.runtime.exception.PartnerExceptionCallback;
 import work.slhaf.partner.runtime.interaction.WebSocketGateway;
 
