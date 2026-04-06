@@ -28,6 +28,7 @@ public class OnnxVectorClient extends VectorClient {
 
         loadTokenizer();
         loadModel();
+
         compute("test");
     }
 
