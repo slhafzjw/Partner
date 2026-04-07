@@ -1,7 +1,9 @@
 package work.slhaf.partner.module.memory.runtime;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import work.slhaf.partner.common.config.Config;
 import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
 import work.slhaf.partner.core.memory.MemoryCapability;
@@ -25,6 +27,11 @@ class MemoryRuntimeTest {
 
     private AgentConfigLoader previousLoader;
     private String runtimeAgentId;
+
+    @BeforeAll
+    public static void beforeAll(@TempDir Path tempDir) {
+        System.setProperty("user.home", tempDir.toAbsolutePath().toString());
+    }
 
     @SuppressWarnings("unchecked")
     private static Map<String, CopyOnWriteArrayList<SliceRef>> topicSlices(MemoryRuntime runtime) throws Exception {
@@ -82,16 +89,13 @@ class MemoryRuntimeTest {
                 message("m3")
         ));
 
-        MemorySlice slice = new MemorySlice();
-        slice.setStartIndex(1);
-        slice.setEndIndex(3);
+        MemorySlice slice = MemorySlice.restore("slice-1", 1, 3, null, 1L);
 
         List<Message> messages = invokeSliceMessages(runtime, unit, slice);
         assertEquals(List.of("m1", "m2"), messages.stream().map(Message::getContent).toList());
 
-        slice.setStartIndex(2);
-        slice.setEndIndex(2);
-        assertTrue(invokeSliceMessages(runtime, unit, slice).isEmpty());
+        MemorySlice emptySlice = MemorySlice.restore("slice-2", 2, 2, null, 2L);
+        assertTrue(invokeSliceMessages(runtime, unit, emptySlice).isEmpty());
     }
 
     @Test
@@ -105,7 +109,7 @@ class MemoryRuntimeTest {
         MemoryRuntime runtime = new MemoryRuntime();
         setField(runtime, "memoryCapability", memoryCapability);
 
-        MemoryUnit unit = new MemoryUnit("unit-1");
+        MemoryUnit unit = new MemoryUnit("unit-99");
         unit.getConversationMessages().addAll(List.of(
                 message("m0"),
                 message("m1"),
@@ -113,19 +117,9 @@ class MemoryRuntimeTest {
                 message("m3")
         ));
 
-        MemorySlice firstSlice = new MemorySlice();
-        firstSlice.setId("slice-1");
-        firstSlice.setStartIndex(0);
-        firstSlice.setEndIndex(2);
-        firstSlice.setSummary("first");
-        firstSlice.setTimestamp(1L);
+        MemorySlice firstSlice = MemorySlice.restore("slice-1", 0, 2, "first", 1L);
 
-        MemorySlice secondSlice = new MemorySlice();
-        secondSlice.setId("slice-2");
-        secondSlice.setStartIndex(2);
-        secondSlice.setEndIndex(4);
-        secondSlice.setSummary("second");
-        secondSlice.setTimestamp(2L);
+        MemorySlice secondSlice = MemorySlice.restore("slice-2", 2, 4, "second", 2L);
 
         unit.getSlices().addAll(List.of(firstSlice, secondSlice));
 
@@ -147,11 +141,6 @@ class MemoryRuntimeTest {
         }
 
         @Override
-        public void saveMemoryUnit(MemoryUnit memoryUnit) {
-            units.put(memoryUnit.getId(), memoryUnit);
-        }
-
-        @Override
         public MemoryUnit getMemoryUnit(String unitId) {
             return units.get(unitId);
         }
@@ -166,6 +155,11 @@ class MemoryRuntimeTest {
                     .filter(slice -> sliceId.equals(slice.getId()))
                     .findFirst()
                     .orElse(null);
+        }
+
+        @Override
+        public MemoryUnit updateMemoryUnit(List<Message> chatMessages, String summary) {
+            return null;
         }
 
         @Override

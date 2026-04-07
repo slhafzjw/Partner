@@ -29,7 +29,6 @@ import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeResul
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -171,7 +170,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
         log.debug("[MemoryUpdater] 记忆更新-总结流程-输入: {}", JSONObject.toJSONString(summarizeInput));
         SummarizeResult summarizeResult = summarize(summarizeInput);
         log.debug("[MemoryUpdater] 记忆更新-总结流程-输出: {}", JSONObject.toJSONString(summarizeResult));
-        MemoryUnit memoryUnit = buildMemoryUnit(chatSnapshot, summarizeResult);
+        MemoryUnit memoryUnit = memoryCapability.updateMemoryUnit(chatSnapshot, summarizeResult.getSummary());
         memoryRuntime.recordMemory(
                 memoryUnit,
                 summarizeResult.getTopicPath(),
@@ -185,28 +184,6 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     private SummarizeResult summarize(SummarizeInput summarizeInput) {
         singleSummarizer.execute(summarizeInput.getChatMessages());
         return multiSummarizer.execute(summarizeInput);
-    }
-
-    // TODO update memory unit via memory capability
-    private MemoryUnit buildMemoryUnit(List<Message> chatMessages, SummarizeResult summarizeResult) {
-        String memoryId = memoryCapability.getMemorySessionId();
-        String resolvedMemoryId = memoryId == null || memoryId.isBlank() ? UUID.randomUUID().toString() : memoryId;
-        MemoryUnit existingUnit = memoryCapability.getMemoryUnit(resolvedMemoryId);
-        List<Message> existingMessages = existingUnit.getConversationMessages();
-        int startIndex = existingMessages.size();
-
-        MemorySlice memorySlice = new MemorySlice(
-                startIndex,
-                startIndex + chatMessages.size(),
-                summarizeResult.getSummary()
-        );
-
-        MemoryUnit memoryUnit = new MemoryUnit(resolvedMemoryId);
-        memoryUnit.updateTimestamp();
-        memoryUnit.getConversationMessages().addAll(chatMessages);
-
-        memoryUnit.getSlices().add(memorySlice);
-        return memoryUnit;
     }
 
     @Override

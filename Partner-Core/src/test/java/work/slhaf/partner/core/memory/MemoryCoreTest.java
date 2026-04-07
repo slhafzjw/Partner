@@ -1,92 +1,86 @@
 package work.slhaf.partner.core.memory;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.common.config.Config;
-import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
+import org.junit.jupiter.api.io.TempDir;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
-import work.slhaf.partner.framework.agent.config.AgentConfigLoader;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MemoryCoreTest {
 
-    private AgentConfigLoader previousLoader;
-    private String agentId;
+    private static MemoryCore memoryCore;
 
-    private static PartnerAgentConfigLoader testLoader(String agentId) {
-        PartnerAgentConfigLoader loader = new PartnerAgentConfigLoader();
-        Config config = new Config();
-        config.setAgentId(agentId);
-        Config.WebSocketConfig webSocketConfig = new Config.WebSocketConfig();
-        webSocketConfig.setPort(18080);
-        config.setWebSocketConfig(webSocketConfig);
-        loader.setConfig(config);
-        loader.setModelConfigMap(new HashMap<>());
-        return loader;
+    @BeforeAll
+    static void beforeAll(@TempDir Path tempDir) {
+        System.setProperty("user.home", tempDir.toAbsolutePath().toString());
+        memoryCore = new MemoryCore();
     }
 
-    @AfterEach
-    void tearDown() throws Exception {
-        AgentConfigLoader.INSTANCE = previousLoader;
-        if (agentId != null) {
-            Files.deleteIfExists(Path.of("data/memory", agentId + "-memory-core.memory"));
-            Files.deleteIfExists(Path.of("data/memory", agentId + "-temp-memory-core.memory"));
-        }
+    @BeforeEach
+    void setUp() {
+        memoryCore.refreshMemorySession();
     }
 
     @Test
-    void shouldNormalizeSliceEndIndexUsingExclusiveUpperBound() throws Exception {
-        agentId = "memory-core-test-" + UUID.randomUUID();
-        previousLoader = AgentConfigLoader.INSTANCE;
-        AgentConfigLoader.INSTANCE = testLoader(agentId);
+    void shouldCreateFirstSliceFromChatMessages() {
+        String sessionId = memoryCore.getMemorySessionId();
 
-        MemoryCore memoryCore = new MemoryCore();
-
-        MemorySlice slice = MemorySlice.restore("slice-1", 1, 99, null, 1L);
-
-        MemoryUnit unit = new MemoryUnit("unit-1");
-        unit.getConversationMessages().addAll(List.of(
+        MemoryUnit updatedUnit = memoryCore.updateMemoryUnit(List.of(
                 new Message(Message.Character.USER, "m0"),
                 new Message(Message.Character.USER, "m1"),
                 new Message(Message.Character.USER, "m2")
-        ));
-        unit.getSlices().add(slice);
+        ), "first-summary");
 
-        memoryCore.saveMemoryUnit(unit);
+        assertEquals(sessionId, updatedUnit.getId());
+        assertEquals(List.of("m0", "m1", "m2"),
+                updatedUnit.getConversationMessages().stream().map(Message::getContent).toList());
+        assertEquals(1, updatedUnit.getSlices().size());
 
-        MemorySlice savedSlice = memoryCore.getMemorySlice("unit-1", "slice-1");
-        assertEquals(1, savedSlice.getStartIndex());
-        assertEquals(3, savedSlice.getEndIndex());
+        MemorySlice firstSlice = updatedUnit.getSlices().getFirst();
+        assertNotNull(firstSlice.getId());
+        assertEquals(0, firstSlice.getStartIndex());
+        assertEquals(3, firstSlice.getEndIndex());
+        assertEquals("first-summary", firstSlice.getSummary());
+        assertTrue(updatedUnit.getTimestamp() > 0);
+        assertTrue(firstSlice.getTimestamp() > 0);
     }
 
     @Test
-    void shouldFillMissingTimestampsWhenSavingMemoryUnit() throws Exception {
-        agentId = "memory-core-test-" + UUID.randomUUID();
-        previousLoader = AgentConfigLoader.INSTANCE;
-        AgentConfigLoader.INSTANCE = testLoader(agentId);
+    void shouldAppendMessagesAndCreateNextSlice() {
+        String sessionId = memoryCore.getMemorySessionId();
 
-        MemoryCore memoryCore = new MemoryCore();
+        memoryCore.updateMemoryUnit(List.of(
+                new Message(Message.Character.USER, "m0")
+        ), "first-summary");
 
-        MemorySlice slice = MemorySlice.restore("slice-1", 0, 1, "summary", 0L);
-        MemoryUnit unit = new MemoryUnit("unit-1");
-        unit.getConversationMessages().add(new Message(Message.Character.USER, "m0"));
-        unit.getSlices().add(slice);
+        MemoryUnit updatedUnit = memoryCore.updateMemoryUnit(List.of(
+                new Message(Message.Character.ASSISTANT, "m1"),
+                new Message(Message.Character.USER, "m2")
+        ), "second-summary");
 
-        memoryCore.saveMemoryUnit(unit);
+        assertEquals(sessionId, updatedUnit.getId());
+        assertEquals(List.of("m0", "m1", "m2"),
+                updatedUnit.getConversationMessages().stream().map(Message::getContent).toList());
+        assertEquals(2, updatedUnit.getSlices().size());
 
-        MemoryUnit savedUnit = memoryCore.getMemoryUnit("unit-1");
-        MemorySlice savedSlice = memoryCore.getMemorySlice("unit-1", "slice-1");
-        assertTrue(savedUnit.getTimestamp() > 0);
-        assertEquals(savedUnit.getTimestamp(), savedSlice.getTimestamp());
+        MemorySlice appendedSlice = updatedUnit.getSlices().getLast();
+        assertNotNull(appendedSlice.getId());
+        assertEquals(1, appendedSlice.getStartIndex());
+        assertEquals(3, appendedSlice.getEndIndex());
+        assertEquals("second-summary", appendedSlice.getSummary());
+        assertTrue(appendedSlice.getTimestamp() > 0);
+
+        MemorySlice loadedSlice = memoryCore.getMemorySlice(sessionId, appendedSlice.getId());
+        assertNotNull(loadedSlice);
+        assertEquals(1, loadedSlice.getStartIndex());
+        assertEquals(3, loadedSlice.getEndIndex());
+        assertEquals("second-summary", loadedSlice.getSummary());
     }
 }
