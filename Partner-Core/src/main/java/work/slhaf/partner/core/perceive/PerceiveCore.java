@@ -1,32 +1,25 @@
 package work.slhaf.partner.core.perceive;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import work.slhaf.partner.core.PartnerCore;
+import com.alibaba.fastjson2.JSONObject;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.framework.agent.state.State;
+import work.slhaf.partner.framework.agent.state.StateSerializable;
+import work.slhaf.partner.framework.agent.state.StateValue;
 
-import java.io.IOException;
-import java.io.Serial;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.locks.ReentrantLock;
 
-@EqualsAndHashCode(callSuper = true)
 @CapabilityCore(value = "perceive")
-@Getter
-@Setter
-public class PerceiveCore extends PartnerCore<PerceiveCore> {
+public class PerceiveCore implements StateSerializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
-    private static final ReentrantLock usersLock = new ReentrantLock();
+    private Instant lastInteractTime = Instant.ofEpochMilli(0);
 
-    private Instant lastInteractTime;
-
-    public PerceiveCore() throws IOException, ClassNotFoundException {
+    public PerceiveCore() {
+        register();
     }
 
     @CapabilityMethod
@@ -42,7 +35,19 @@ public class PerceiveCore extends PartnerCore<PerceiveCore> {
     }
 
     @Override
-    protected String getCoreKey() {
-        return "perceive-core";
+    public @NotNull Path statePath() {
+        return Path.of("core", "perceive.json");
+    }
+
+    @Override
+    public void load(@NotNull JSONObject state) {
+        this.lastInteractTime = Instant.ofEpochMilli(state.getLong("last_interact_time"));
+    }
+
+    @Override
+    public @NotNull State convert() {
+        State state = new State();
+        state.append("last_interact_time", StateValue.num(lastInteractTime.toEpochMilli()));
+        return state;
     }
 }
