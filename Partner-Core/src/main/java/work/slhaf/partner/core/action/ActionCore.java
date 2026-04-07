@@ -3,7 +3,6 @@ package work.slhaf.partner.core.action;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
@@ -57,16 +56,6 @@ public class ActionCore implements StateSerializable {
         // TODO 通过 Config 指定采用何种 runnerClient，当前只提供 LocalRunnerClient
         runnerClient = new LocalRunnerClient(existedMetaActions, virtualExecutor, baseActionPath);
         register();
-        setupShutdownHook();
-    }
-
-    private void setupShutdownHook() {
-        // 将执行中的行动状态置为失败
-        val executingActionSet = listActions(ExecutableAction.Status.EXECUTING, null);
-        for (ExecutableAction executableAction : executingActionSet) {
-            executableAction.setStatus(ExecutableAction.Status.FAILED);
-            executableAction.setResult("由于系统中断而失败");
-        }
     }
 
     @CapabilityMethod

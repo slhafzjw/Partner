@@ -55,7 +55,7 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                     .stream()
                     .filter { it is SchedulableExecutableAction }
                     .map { it as SchedulableExecutableAction }
-                    .collect(Collectors.toSet<SchedulableExecutableAction>())
+                    .collect(Collectors.toSet())
                 val persisted: MutableSet<Schedulable> = mutableSetOf()
                 persisted.addAll(persistedExecutable)
                 synchronized(runtimeSchedulables) {

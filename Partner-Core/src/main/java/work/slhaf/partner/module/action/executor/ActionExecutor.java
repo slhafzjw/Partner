@@ -48,6 +48,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         platformExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM);
         runnerClient = actionCapability.runnerClient();
         blockManager = new ExecutingActionBlockManager(cognitionCapability.contextWorkspace());
+
+        actionCapability.listActions(Action.Status.EXECUTING, null)
+                .forEach(this::execute);
     }
 
     public void execute(Action action) {
@@ -115,7 +118,8 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
 
     private void handleExecutableAction(ExecutableAction executableAction) {
         val source = executableAction.getSource();
-        if (executableAction.getStatus() != Action.Status.PREPARE) {
+        val status = executableAction.getStatus();
+        if (status != Action.Status.PREPARE && status != Action.Status.EXECUTING) {
             return;
         }
         val actionChain = executableAction.getActionChain();
@@ -124,6 +128,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             executableAction.setResult("行动链为空");
             return;
         }
+        normalizeExecutingStage(executableAction, actionChain);
         // 注册执行中行动
         val phaser = new Phaser();
         executableAction.setStatus(Action.Status.EXECUTING);
@@ -133,13 +138,13 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         // 开始执行
         val stageCursor = new Object() {
             int stageCount;
-            boolean executingStageUpdated;
-            boolean stageCountUpdated;
+            boolean executingStageUpdated = false;
+            boolean stageCountUpdated = false;
 
             void init() {
-                stageCount = 0;
-                executingStageUpdated = false;
-                stageCountUpdated = false;
+                val orderList = new ArrayList<>(actionChain.keySet());
+                orderList.sort(Integer::compareTo);
+                stageCount = orderList.indexOf(executableAction.getExecutingStage());
                 update();
             }
 
@@ -374,6 +379,33 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             return true;
         }
         return stageIndex >= 2 && (stageIndex - 2) % 2 == 0;
+    }
+
+    private void normalizeExecutingStage(ExecutableAction executableAction, Map<Integer, List<MetaAction>> actionChain) {
+        Integer firstStage = actionChain.keySet().stream()
+                .min(Integer::compareTo)
+                .orElse(null);
+        if (firstStage == null) {
+            return;
+        }
+        if (actionChain.containsKey(executableAction.getExecutingStage())) {
+            return;
+        }
+        if (executableAction.getStatus() == Action.Status.EXECUTING) {
+            resetExecutableActionForReplay(executableAction);
+        }
+        executableAction.setExecutingStage(firstStage);
+    }
+
+    private void resetExecutableActionForReplay(ExecutableAction executableAction) {
+        executableAction.getHistory().clear();
+        executableAction.getActionChain().values().forEach(metaActions -> metaActions.forEach(metaAction -> {
+            metaAction.getParams().clear();
+            metaAction.getResult().reset();
+        }));
+        if (hasExecutableResult(executableAction)) {
+            executableAction.setResult("");
+        }
     }
 
     private void ensureExecutableResult(ExecutableAction executableAction, boolean failed, String failureReason) {

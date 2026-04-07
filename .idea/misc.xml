@@ -25,6 +25,8 @@
       <writeAnnotation name="work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability" />
       <writeAnnotation name="work.slhaf.partner.api.agent.factory.component.annotation.InjectModule" />
       <writeAnnotation name="work.slhaf.partner.api.agent.factory.module.annotation.InjectModule" />
+      <writeAnnotation name="work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability" />
+      <writeAnnotation name="work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule" />
     </writeAnnotations>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
