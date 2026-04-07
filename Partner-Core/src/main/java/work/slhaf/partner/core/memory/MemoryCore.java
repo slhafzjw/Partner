@@ -84,6 +84,38 @@ public class MemoryCore implements StateSerializable {
     }
 
     private void normalizeMemoryUnit(MemoryUnit memoryUnit) {
+        if (memoryUnit.getTimestamp() == null || memoryUnit.getTimestamp() <= 0) {
+            memoryUnit.updateTimestamp();
+        }
+        int maxEndExclusive = memoryUnit.getConversationMessages().size();
+        List<MemorySlice> normalizedSlices = new ArrayList<>(memoryUnit.getSlices().size());
+        for (MemorySlice slice : memoryUnit.getSlices()) {
+            if (slice == null) {
+                continue;
+            }
+            String sliceId = slice.getId();
+            if (sliceId == null || sliceId.isBlank()) {
+                sliceId = UUID.randomUUID().toString();
+            }
+            long sliceTimestamp = slice.getTimestamp() == null || slice.getTimestamp() <= 0
+                    ? memoryUnit.getTimestamp()
+                    : slice.getTimestamp();
+            int startIndex = slice.getStartIndex() == null || slice.getStartIndex() < 0
+                    ? 0
+                    : Math.min(slice.getStartIndex(), maxEndExclusive);
+            int endIndex = slice.getEndIndex() == null || slice.getEndIndex() < startIndex
+                    ? maxEndExclusive
+                    : Math.min(slice.getEndIndex(), maxEndExclusive);
+            normalizedSlices.add(MemorySlice.restore(
+                    sliceId,
+                    startIndex,
+                    endIndex,
+                    slice.getSummary(),
+                    sliceTimestamp
+            ));
+        }
+        memoryUnit.getSlices().clear();
+        memoryUnit.getSlices().addAll(normalizedSlices);
         memoryUnit.getSlices().sort(Comparator.naturalOrder());
     }
 

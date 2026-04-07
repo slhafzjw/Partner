@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MemoryCoreTest {
 
@@ -51,10 +52,7 @@ class MemoryCoreTest {
 
         MemoryCore memoryCore = new MemoryCore();
 
-        MemorySlice slice = new MemorySlice();
-        slice.setId("slice-1");
-        slice.setStartIndex(1);
-        slice.setEndIndex(99);
+        MemorySlice slice = MemorySlice.restore("slice-1", 1, 99, null, 1L);
 
         MemoryUnit unit = new MemoryUnit("unit-1");
         unit.getConversationMessages().addAll(List.of(
@@ -69,5 +67,26 @@ class MemoryCoreTest {
         MemorySlice savedSlice = memoryCore.getMemorySlice("unit-1", "slice-1");
         assertEquals(1, savedSlice.getStartIndex());
         assertEquals(3, savedSlice.getEndIndex());
+    }
+
+    @Test
+    void shouldFillMissingTimestampsWhenSavingMemoryUnit() throws Exception {
+        agentId = "memory-core-test-" + UUID.randomUUID();
+        previousLoader = AgentConfigLoader.INSTANCE;
+        AgentConfigLoader.INSTANCE = testLoader(agentId);
+
+        MemoryCore memoryCore = new MemoryCore();
+
+        MemorySlice slice = MemorySlice.restore("slice-1", 0, 1, "summary", 0L);
+        MemoryUnit unit = new MemoryUnit("unit-1");
+        unit.getConversationMessages().add(new Message(Message.Character.USER, "m0"));
+        unit.getSlices().add(slice);
+
+        memoryCore.saveMemoryUnit(unit);
+
+        MemoryUnit savedUnit = memoryCore.getMemoryUnit("unit-1");
+        MemorySlice savedSlice = memoryCore.getMemorySlice("unit-1", "slice-1");
+        assertTrue(savedUnit.getTimestamp() > 0);
+        assertEquals(savedUnit.getTimestamp(), savedSlice.getTimestamp());
     }
 }
