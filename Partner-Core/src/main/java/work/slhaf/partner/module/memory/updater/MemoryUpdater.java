@@ -187,6 +187,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
         return multiSummarizer.execute(summarizeInput);
     }
 
+    // TODO update memory unit via memory capability
     private MemoryUnit buildMemoryUnit(List<Message> chatMessages, SummarizeResult summarizeResult) {
         String memoryId = memoryCapability.getMemorySessionId();
         String resolvedMemoryId = memoryId == null || memoryId.isBlank() ? UUID.randomUUID().toString() : memoryId;
