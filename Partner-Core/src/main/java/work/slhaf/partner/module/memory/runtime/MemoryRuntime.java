@@ -78,7 +78,6 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
     }
 
     public void recordMemory(MemoryUnit memoryUnit, String topicPath, List<String> relatedTopicPaths) {
-        memoryCapability.saveMemoryUnit(memoryUnit);
         MemorySlice memorySlice = memoryUnit.getSlices().getLast();
         SliceRef sliceRef = new SliceRef(memoryUnit.getId(), memorySlice.getId());
         indexMemoryUnit(memoryUnit);

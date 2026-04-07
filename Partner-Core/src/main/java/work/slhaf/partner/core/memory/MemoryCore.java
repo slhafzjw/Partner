@@ -8,6 +8,7 @@ import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.state.State;
 import work.slhaf.partner.framework.agent.state.StateSerializable;
 import work.slhaf.partner.framework.agent.state.StateValue;
@@ -33,11 +34,25 @@ public class MemoryCore implements StateSerializable {
     }
 
     @CapabilityMethod
-    public void saveMemoryUnit(MemoryUnit memoryUnit) {
+    public MemoryUnit updateMemoryUnit(List<Message> chatMessages, String summary) {
         memoryLock.lock();
         try {
-            normalizeMemoryUnit(memoryUnit);
-            memoryUnits.put(memoryUnit.getId(), memoryUnit);
+            MemoryUnit unit = getMemoryUnit(memorySessionId);
+            unit.updateTimestamp();
+
+            List<Message> conversationMessages = unit.getConversationMessages();
+            int startIndex = conversationMessages.size();
+
+            MemorySlice memorySlice = new MemorySlice(
+                    startIndex,
+                    startIndex + chatMessages.size(),
+                    summary
+            );
+
+            conversationMessages.addAll(chatMessages);
+
+            unit.getSlices().add(memorySlice);
+            return unit;
         } finally {
             memoryLock.unlock();
         }
