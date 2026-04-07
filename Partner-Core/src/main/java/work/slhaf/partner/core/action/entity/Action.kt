@@ -7,14 +7,11 @@ import java.util.*
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
-sealed class Action {
+sealed class Action(
+    open val uuid: String = UUID.randomUUID().toString()
+) {
     /**
      * 行动ID
-     */
-    val uuid: String = UUID.randomUUID().toString()
-
-    /**
-     * 行动来源
      */
     abstract val source: String
 
@@ -84,7 +81,9 @@ sealed interface Schedulable {
 /**
  * 行动模块传递的行动数据，包含行动uuid、倾向、状态、行动链、结果、发起原因、行动描述等信息。
  */
-sealed class ExecutableAction : Action() {
+sealed class ExecutableAction(
+    override val uuid: String = UUID.randomUUID().toString()
+) : Action(uuid) {
     /**
      * 行动倾向
      */
@@ -155,7 +154,7 @@ sealed class ExecutableAction : Action() {
 /**
  * 计划行动数据类，继承自[Action]，扩展了[Schedulable]相关调度属性，用于标识计划类型(单次还是周期性任务)和计划内容
  */
-data class SchedulableExecutableAction(
+data class SchedulableExecutableAction @JvmOverloads constructor(
     override val tendency: String,
     override val actionChain: MutableMap<Int, MutableList<MetaAction>>,
     override val reason: String,
@@ -163,7 +162,8 @@ data class SchedulableExecutableAction(
     override val source: String,
     override val scheduleType: Schedulable.ScheduleType,
     override val scheduleContent: String,
-) : ExecutableAction(), Schedulable {
+    override val uuid: String = UUID.randomUUID().toString(),
+) : ExecutableAction(uuid), Schedulable {
 
     override var enabled = true
     val scheduleHistories = ArrayList<ScheduleHistory>()
@@ -191,13 +191,14 @@ data class SchedulableExecutableAction(
 /**
  * 即时行动数据类
  */
-data class ImmediateExecutableAction(
+data class ImmediateExecutableAction @JvmOverloads constructor(
     override val tendency: String,
     override val actionChain: MutableMap<Int, MutableList<MetaAction>>,
     override val reason: String,
     override val description: String,
     override val source: String,
-) : ExecutableAction()
+    override val uuid: String = UUID.randomUUID().toString(),
+) : ExecutableAction(uuid)
 
 /**
  * 用于计时的一次性或周期性触发或者针对某一数据源进行内容更新的行动

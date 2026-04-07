@@ -1,10 +1,11 @@
 package work.slhaf.partner.core.action;
 
+import com.alibaba.fastjson2.JSONObject;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import work.slhaf.partner.core.PartnerCore;
 import work.slhaf.partner.core.action.entity.ExecutableAction;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
@@ -16,8 +17,12 @@ import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.framework.agent.config.ConfigCenter;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.framework.agent.state.State;
+import work.slhaf.partner.framework.agent.state.StateSerializable;
+import work.slhaf.partner.framework.agent.state.StateValue;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -28,7 +33,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("FieldMayBeFinal")
 @CapabilityCore(value = "action")
 @Slf4j
-public class ActionCore extends PartnerCore<ActionCore> {
+public class ActionCore implements StateSerializable {
     public static final String BUILTIN_LOCATION = "builtin";
     public static final String ORIGIN_LOCATION = "origin";
 
@@ -51,6 +56,7 @@ public class ActionCore extends PartnerCore<ActionCore> {
         String baseActionPath = ConfigCenter.INSTANCE.getPaths().getResourcesDir().resolve("action").normalize().toAbsolutePath().toString();
         // TODO 通过 Config 指定采用何种 runnerClient，当前只提供 LocalRunnerClient
         runnerClient = new LocalRunnerClient(existedMetaActions, virtualExecutor, baseActionPath);
+        register();
         setupShutdownHook();
     }
 
@@ -231,8 +237,21 @@ public class ActionCore extends PartnerCore<ActionCore> {
     }
 
     @Override
-    protected String getCoreKey() {
-        return "action-core";
+    public @NotNull Path statePath() {
+        return Path.of("core", "action.json");
+    }
+
+    @Override
+    public void load(@NotNull JSONObject state) {
+        actionPool = ActionPoolStateCodec.decode(state.getJSONArray("action_pool"));
+    }
+
+    @Override
+    public @NotNull State convert() {
+        State state = new State();
+        List<StateValue.Obj> actionPoolState = ActionPoolStateCodec.encode(actionPool);
+        state.append("action_pool", StateValue.arr(actionPoolState));
+        return state;
     }
 
     public enum ExecutorType {
