@@ -89,10 +89,6 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         cognitionCapability.contextWorkspace().register(block);
     }
 
-    private void updateCoreResponse(PartnerRunningFlowContext runningFlowContext, String responseText) {
-        runningFlowContext.getCoreResponse().put("text", responseText);
-    }
-
     private List<Message> buildChatMessages(PartnerRunningFlowContext runningFlowContext) {
         ResolvedContext resolvedContext = cognitionCapability.contextWorkspace()
                 .resolve(List.of(ContextBlock.VisibleDomain.COMMUNICATION, ContextBlock.VisibleDomain.MEMORY, ContextBlock.VisibleDomain.PERCEIVE, ContextBlock.VisibleDomain.ACTION));

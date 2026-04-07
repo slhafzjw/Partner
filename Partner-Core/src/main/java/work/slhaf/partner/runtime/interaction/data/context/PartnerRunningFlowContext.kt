@@ -1,6 +1,5 @@
 package work.slhaf.partner.runtime.interaction.data.context
 
-import com.alibaba.fastjson2.JSONObject
 import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
 
 class PartnerRunningFlowContext private constructor(
@@ -39,7 +38,4 @@ class PartnerRunningFlowContext private constructor(
             putUserInfo(InfoKeys.NICKNAME, SOURCE_SELF_NICKNAME)
         }
     }
-
-    val coreResponse = JSONObject()
-
 }
