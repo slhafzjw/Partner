@@ -11,7 +11,6 @@ import work.slhaf.partner.framework.agent.model.pojo.Message;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -57,14 +56,13 @@ class MemoryCoreTest {
         slice.setStartIndex(1);
         slice.setEndIndex(99);
 
-        MemoryUnit unit = new MemoryUnit();
-        unit.setId("unit-1");
-        unit.setConversationMessages(new ArrayList<>(List.of(
+        MemoryUnit unit = new MemoryUnit("unit-1");
+        unit.getConversationMessages().addAll(List.of(
                 new Message(Message.Character.USER, "m0"),
                 new Message(Message.Character.USER, "m1"),
                 new Message(Message.Character.USER, "m2")
-        )));
-        unit.setSlices(new ArrayList<>(List.of(slice)));
+        ));
+        unit.getSlices().add(slice);
 
         memoryCore.saveMemoryUnit(unit);
 

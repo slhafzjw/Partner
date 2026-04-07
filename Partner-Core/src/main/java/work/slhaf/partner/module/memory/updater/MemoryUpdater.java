@@ -28,7 +28,6 @@ import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeInput
 import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeResult;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -189,34 +188,23 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private MemoryUnit buildMemoryUnit(List<Message> chatMessages, SummarizeResult summarizeResult) {
-        long now = System.currentTimeMillis();
         String memoryId = memoryCapability.getMemorySessionId();
         String resolvedMemoryId = memoryId == null || memoryId.isBlank() ? UUID.randomUUID().toString() : memoryId;
         MemoryUnit existingUnit = memoryCapability.getMemoryUnit(resolvedMemoryId);
-        List<Message> existingMessages = existingUnit != null && existingUnit.getConversationMessages() != null
-                ? existingUnit.getConversationMessages()
-                : List.of();
+        List<Message> existingMessages = existingUnit.getConversationMessages();
         int startIndex = existingMessages.size();
 
-        MemorySlice memorySlice = new MemorySlice();
-        memorySlice.setId(UUID.randomUUID().toString());
-        memorySlice.setStartIndex(startIndex);
-        memorySlice.setEndIndex(startIndex + chatMessages.size());
-        memorySlice.setSummary(summarizeResult.getSummary());
-        memorySlice.setTimestamp(now);
+        MemorySlice memorySlice = new MemorySlice(
+                startIndex,
+                startIndex + chatMessages.size(),
+                summarizeResult.getSummary()
+        );
 
-        MemoryUnit memoryUnit = new MemoryUnit();
-        memoryUnit.setId(resolvedMemoryId);
-        memoryUnit.setTimestamp(now);
-        List<Message> conversationMessages = new ArrayList<>(existingMessages);
-        conversationMessages.addAll(chatMessages);
-        memoryUnit.setConversationMessages(conversationMessages);
+        MemoryUnit memoryUnit = new MemoryUnit(resolvedMemoryId);
+        memoryUnit.updateTimestamp();
+        memoryUnit.getConversationMessages().addAll(chatMessages);
 
-        List<MemorySlice> slices = existingUnit != null && existingUnit.getSlices() != null
-                ? new ArrayList<>(existingUnit.getSlices())
-                : new ArrayList<>();
-        slices.add(memorySlice);
-        memoryUnit.setSlices(slices);
+        memoryUnit.getSlices().add(memorySlice);
         return memoryUnit;
     }
 

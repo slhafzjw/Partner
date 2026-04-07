@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import work.slhaf.partner.framework.agent.common.entity.PersistableObject;
 
 import java.io.Serial;
+import java.util.UUID;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -13,11 +14,19 @@ public class MemorySlice extends PersistableObject implements Comparable<MemoryS
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private String id;
-    private Integer startIndex;
-    private Integer endIndex;
-    private String summary;
-    private Long timestamp;
+    private final String id;
+    private final Integer startIndex;
+    private final Integer endIndex;
+    private final String summary;
+    private final Long timestamp;
+
+    public MemorySlice(Integer startIndex, Integer endIndex, String summary) {
+        this.id = UUID.randomUUID().toString();
+        this.timestamp = System.currentTimeMillis();
+        this.startIndex = startIndex;
+        this.endIndex = endIndex;
+        this.summary = summary;
+    }
 
     @Override
     public int compareTo(MemorySlice memorySlice) {

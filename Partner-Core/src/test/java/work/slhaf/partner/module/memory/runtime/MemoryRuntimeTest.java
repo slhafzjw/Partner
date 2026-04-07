@@ -74,13 +74,13 @@ class MemoryRuntimeTest {
     @Test
     void shouldSliceMessagesUsingLeftClosedRightOpenRange() throws Exception {
         MemoryRuntime runtime = new MemoryRuntime();
-        MemoryUnit unit = new MemoryUnit();
-        unit.setConversationMessages(new ArrayList<>(List.of(
+        MemoryUnit unit = new MemoryUnit("unit-1");
+        unit.getConversationMessages().addAll(List.of(
                 message("m0"),
                 message("m1"),
                 message("m2"),
                 message("m3")
-        )));
+        ));
 
         MemorySlice slice = new MemorySlice();
         slice.setStartIndex(1);
@@ -105,14 +105,13 @@ class MemoryRuntimeTest {
         MemoryRuntime runtime = new MemoryRuntime();
         setField(runtime, "memoryCapability", memoryCapability);
 
-        MemoryUnit unit = new MemoryUnit();
-        unit.setId("unit-1");
-        unit.setConversationMessages(new ArrayList<>(List.of(
+        MemoryUnit unit = new MemoryUnit("unit-1");
+        unit.getConversationMessages().addAll(List.of(
                 message("m0"),
                 message("m1"),
                 message("m2"),
                 message("m3")
-        )));
+        ));
 
         MemorySlice firstSlice = new MemorySlice();
         firstSlice.setId("slice-1");
@@ -128,7 +127,7 @@ class MemoryRuntimeTest {
         secondSlice.setSummary("second");
         secondSlice.setTimestamp(2L);
 
-        unit.setSlices(new ArrayList<>(List.of(firstSlice, secondSlice)));
+        unit.getSlices().addAll(List.of(firstSlice, secondSlice));
 
         runtime.recordMemory(unit, "topic/main", List.of("topic/related"));
 

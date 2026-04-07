@@ -9,7 +9,10 @@ import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeResul
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -55,19 +58,18 @@ class MemoryUpdaterTest {
         setField(updater, "memoryCapability", memoryCapability);
 
         String sessionId = memoryCapability.getMemorySessionId();
-        MemoryUnit existingUnit = new MemoryUnit();
-        existingUnit.setId(sessionId);
-        existingUnit.setConversationMessages(new ArrayList<>(List.of(
+        MemoryUnit existingUnit = new MemoryUnit(sessionId);
+        existingUnit.getConversationMessages().addAll(List.of(
                 message(Message.Character.USER, "old-user"),
                 message(Message.Character.ASSISTANT, "old-assistant")
-        )));
+        ));
         MemorySlice existingSlice = new MemorySlice();
         existingSlice.setId("slice-1");
         existingSlice.setStartIndex(0);
         existingSlice.setEndIndex(2);
         existingSlice.setSummary("old-summary");
         existingSlice.setTimestamp(1L);
-        existingUnit.setSlices(new ArrayList<>(List.of(existingSlice)));
+        existingUnit.getSlices().add(existingSlice);
         memoryCapability.saveMemoryUnit(existingUnit);
 
         MemoryUnit merged = invokeBuildMemoryUnit(
@@ -121,14 +123,13 @@ class MemoryUpdaterTest {
         MemoryUpdater updater = new MemoryUpdater();
         setField(updater, "memoryCapability", memoryCapability);
 
-        MemoryUnit existingUnit = new MemoryUnit();
-        existingUnit.setId("session-3");
-        existingUnit.setConversationMessages(new ArrayList<>(List.of(
+        MemoryUnit existingUnit = new MemoryUnit("session-3");
+        existingUnit.getConversationMessages().addAll(List.of(
                 message(Message.Character.USER, "m1"),
                 message(Message.Character.ASSISTANT, "m2"),
                 message(Message.Character.USER, "m3"),
                 message(Message.Character.ASSISTANT, "m4")
-        )));
+        ));
         memoryCapability.saveMemoryUnit(existingUnit);
 
         List<Message> increment = invokeResolveChatIncrement(
@@ -150,13 +151,12 @@ class MemoryUpdaterTest {
         MemoryUpdater updater = new MemoryUpdater();
         setField(updater, "memoryCapability", memoryCapability);
 
-        MemoryUnit existingUnit = new MemoryUnit();
-        existingUnit.setId("session-4");
-        existingUnit.setConversationMessages(new ArrayList<>(List.of(
+        MemoryUnit existingUnit = new MemoryUnit("session-4");
+        existingUnit.getConversationMessages().addAll(List.of(
                 message(Message.Character.USER, "m1"),
                 message(Message.Character.ASSISTANT, "m2"),
                 message(Message.Character.USER, "m3")
-        )));
+        ));
         memoryCapability.saveMemoryUnit(existingUnit);
 
         List<Message> increment = invokeResolveChatIncrement(
