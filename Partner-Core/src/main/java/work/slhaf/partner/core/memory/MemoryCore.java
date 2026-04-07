@@ -45,7 +45,13 @@ public class MemoryCore implements StateSerializable {
 
     @CapabilityMethod
     public MemoryUnit getMemoryUnit(String unitId) {
-        return memoryUnits.computeIfAbsent(unitId, MemoryUnit::new);
+        MemoryUnit unit = memoryUnits.computeIfAbsent(unitId, id -> {
+            MemoryUnit newUnit = new MemoryUnit(id);
+            newUnit.register();
+            return newUnit;
+        });
+        unit.load();
+        return unit;
     }
 
     @CapabilityMethod

@@ -2,6 +2,7 @@ package work.slhaf.partner.framework.agent.state
 
 import com.alibaba.fastjson2.JSONArray
 import com.alibaba.fastjson2.JSONObject
+import org.slf4j.LoggerFactory
 import work.slhaf.partner.framework.agent.config.ConfigCenter
 import java.nio.file.Files
 import java.nio.file.Path
@@ -13,7 +14,9 @@ import kotlin.io.path.writeText
 
 object StateCenter {
 
-    private val stateRegistry = ConcurrentHashMap<Path, StateSerializable>()
+    private val log = LoggerFactory.getLogger(StateCenter::class.java)
+
+    private val stateRegistry = ConcurrentHashMap<Path, StateRecord>()
 
     fun register(stateSerializable: StateSerializable): JSONObject? {
         val relativePath = stateSerializable.statePath().normalize()
@@ -23,8 +26,9 @@ object StateCenter {
         val finalStatePath = stateDir.resolve(relativePath).normalize()
         check(finalStatePath.startsWith(stateDir)) { "StatePath escapes stateDir" }
 
-        val previous = stateRegistry.putIfAbsent(finalStatePath, stateSerializable)
-        check(previous == null || previous === stateSerializable) {
+        val stateRecord = StateRecord(stateSerializable)
+        val previous = stateRegistry.putIfAbsent(finalStatePath, stateRecord)
+        check(previous == null || previous.serializable === stateSerializable) {
             "StatePath already registered: $finalStatePath"
         }
 
@@ -35,15 +39,43 @@ object StateCenter {
         check(finalStatePath.isRegularFile()) { "StatePath must point to a regular file: $finalStatePath" }
         check(finalStatePath.toFile().canRead()) { "StateFile must be readable: $finalStatePath" }
 
+        if (!stateSerializable.autoLoadOnRegister()) {
+            return null
+        }
+
+        stateRecord.loaded = true
+
         return JSONObject.parseObject(finalStatePath.readText())
     }
 
-    fun save() {
-        stateRegistry.forEach { (path, state) ->
-            path.parent?.let(Files::createDirectories)
-            path.writeText(state.convert().toString())
+    fun load(path: Path) {
+        val finalStatePath = ConfigCenter.paths.stateDir.normalize().resolve(path).normalize()
+        if (!stateRegistry.containsKey(path)) {
+            return
+        }
+        val record = stateRegistry[finalStatePath] ?: return
+        record.loaded = true
+        if (!finalStatePath.exists()) {
+            return
+        }
+        try {
+            val json = JSONObject.parseObject(finalStatePath.readText())
+            record.serializable.load(json)
+        } catch (_: Exception) {
+            log.warn("StateCenter loading failed: $path")
         }
     }
+
+    fun save() {
+        stateRegistry.forEach { (path, record) ->
+            if (!record.loaded) {
+                return@forEach
+            }
+            path.parent?.let(Files::createDirectories)
+            path.writeText(record.serializable.convert().toString())
+        }
+    }
+
 }
 
 interface StateSerializable {
@@ -57,9 +89,27 @@ interface StateSerializable {
 
     fun statePath(): Path
 
+    /**
+     * 手动加载状态数据
+     */
+    fun load() {
+        StateCenter.load(statePath())
+    }
+
+    /**
+     * 状态加载逻辑
+     */
     fun load(state: JSONObject)
 
+    /**
+     * 数据转换为状态逻辑
+     */
     fun convert(): State
+
+    /**
+     * 是否在注册时即触发一次加载
+     */
+    fun autoLoadOnRegister(): Boolean = true
 }
 
 class State {
@@ -67,8 +117,6 @@ class State {
     private val json = JSONObject()
 
     fun append(key: String, value: StateValue) = json.put(key, value.toJsonValue())
-
-    fun toJson(): JSONObject = json
 
     override fun toString(): String = json.toString()
 
@@ -105,3 +153,8 @@ sealed interface StateValue {
         fun obj(value: Map<String, StateValue>) = Obj(value)
     }
 }
+
+data class StateRecord(
+    val serializable: StateSerializable,
+    var loaded: Boolean = false
+)
