@@ -1,32 +1,31 @@
 package work.slhaf.partner.core.cognition;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.core.PartnerCore;
+import org.jetbrains.annotations.NotNull;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.framework.agent.interaction.AgentRuntime;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.state.State;
+import work.slhaf.partner.framework.agent.state.StateSerializable;
+import work.slhaf.partner.framework.agent.state.StateValue;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
 
-import java.io.IOException;
-import java.io.Serial;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-@EqualsAndHashCode(callSuper = true)
 @Slf4j
 @CapabilityCore(value = "cognition")
-@Getter
-@Setter
-public class CognitionCore extends PartnerCore<CognitionCore> {
-
-    @Serial
-    private static final long serialVersionUID = 1L;
+public class CognitionCore implements StateSerializable {
 
     private final ReentrantLock messageLock = new ReentrantLock();
 
@@ -37,7 +36,8 @@ public class CognitionCore extends PartnerCore<CognitionCore> {
 
     private final ContextWorkspace contextWorkspace = new ContextWorkspace();
 
-    public CognitionCore() throws IOException, ClassNotFoundException {
+    public CognitionCore() {
+        register();
     }
 
     @CapabilityMethod
@@ -76,7 +76,7 @@ public class CognitionCore extends PartnerCore<CognitionCore> {
     public void rollChatMessagesWithSnapshot(int snapshotSize, int retainDivisor) {
         messageLock.lock();
         try {
-            int safeSnapshotSize = Math.max(0, Math.min(snapshotSize, chatMessages.size()));
+            int safeSnapshotSize = Math.clamp(snapshotSize, 0, chatMessages.size());
             if (safeSnapshotSize == 0) {
                 return;
             }
@@ -100,7 +100,62 @@ public class CognitionCore extends PartnerCore<CognitionCore> {
     }
 
     @Override
-    protected String getCoreKey() {
-        return "cognition-core";
+    public @NotNull Path statePath() {
+        return Path.of("core", "cognition.json");
+    }
+
+    @Override
+    public void load(@NotNull JSONObject state) {
+        JSONArray messageArray = state.getJSONArray("chat_messages");
+
+        if (messageArray == null) {
+            log.warn("chat_messages is missing");
+            return;
+        }
+
+        for (int i = 0; i < messageArray.size(); i++) {
+            JSONObject messageObject = messageArray.getJSONObject(i);
+            if (messageObject == null) {
+                continue;
+            }
+
+            String role = messageObject.getString("role");
+            String content = messageObject.getString("content");
+            if (role == null || content == null) {
+                continue;
+            }
+
+            this.chatMessages.add(new Message(Message.Character.fromValue(role), content));
+        }
+
+        ContextBlock block = new ContextBlock(
+                new BlockContent("recent_chat_messages", "communication_producer") {
+                    @Override
+                    protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                        appendRepeatedElements(document, root, "chat_message", List.of(chatMessages.subList(chatMessages.size() - 7, chatMessages.size() - 1)));
+                    }
+                },
+                Set.of(ContextBlock.VisibleDomain.COGNITION),
+                100,
+                10,
+                4
+        );
+        contextWorkspace.register(block);
+    }
+
+    @Override
+    public @NotNull State convert() {
+        State state = new State();
+
+        List<StateValue.Obj> convertedMessageList = chatMessages.stream().map(message -> {
+            Map<String, StateValue> convertedMap = Map.of(
+                    "role", StateValue.str(message.roleValue()),
+                    "content", StateValue.str(message.getContent())
+            );
+            return StateValue.obj(convertedMap);
+        }).toList();
+        state.append("chat_messages", StateValue.arr(convertedMessageList));
+
+        return state;
     }
 }
