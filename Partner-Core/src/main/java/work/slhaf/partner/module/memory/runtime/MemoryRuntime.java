@@ -1,9 +1,10 @@
 package work.slhaf.partner.module.memory.runtime;
 
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import work.slhaf.partner.common.config.PartnerAgentConfigLoader;
+import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
@@ -11,18 +12,16 @@ import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.core.memory.pojo.SliceRef;
-import work.slhaf.partner.framework.agent.common.entity.PersistableObject;
-import work.slhaf.partner.framework.agent.config.AgentConfigLoader;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.state.State;
+import work.slhaf.partner.framework.agent.state.StateSerializable;
+import work.slhaf.partner.framework.agent.state.StateValue;
 import work.slhaf.partner.module.memory.selector.ActivatedMemorySlice;
 
-import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -30,13 +29,9 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static work.slhaf.partner.common.Constant.Path.MEMORY_DATA;
-
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
-public class MemoryRuntime extends AbstractAgentModule.Standalone {
-
-    private static final String RUNTIME_KEY = "memory-runtime";
+public class MemoryRuntime extends AbstractAgentModule.Standalone implements StateSerializable {
 
     @InjectCapability
     private MemoryCapability memoryCapability;
@@ -49,9 +44,8 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
 
     @Init
     public void init() {
-        loadState();
+        register();
         checkAndSetMemoryId();
-        Runtime.getRuntime().addShutdownHook(new Thread(this::saveStateSafely));
     }
 
     private void checkAndSetMemoryId() {
@@ -71,7 +65,6 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
             if (!exists) {
                 refs.add(sliceRef);
             }
-            saveState();
         } finally {
             runtimeLock.unlock();
         }
@@ -104,7 +97,6 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
                             .addIfAbsent(new SliceRef(memoryUnit.getId(), slice.getId()));
                 }
             }
-            saveState();
         } finally {
             runtimeLock.unlock();
         }
@@ -192,8 +184,8 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
             return List.of();
         }
         int size = conversationMessages.size();
-        int start = Math.max(0, Math.min(memorySlice.getStartIndex(), size));
-        int end = Math.max(start, Math.min(memorySlice.getEndIndex(), size));
+        int start = Math.clamp(memorySlice.getStartIndex(), 0, size);
+        int end = Math.clamp(memorySlice.getEndIndex(), start, size);
         if (start >= end) {
             return List.of();
         }
@@ -220,69 +212,118 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone {
         return topicPath == null ? "" : topicPath.trim();
     }
 
-    private void loadState() {
-        Path filePath = getFilePath();
-        if (!Files.exists(filePath)) {
-            return;
-        }
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath.toFile()))) {
-            RuntimeState state = (RuntimeState) ois.readObject();
-            topicSlices = state.topicSlices;
-            dateIndex = state.dateIndex;
-        } catch (Exception e) {
-            log.error("[MemoryRuntime] 加载运行态失败", e);
-            topicSlices = new HashMap<>();
-            dateIndex = new HashMap<>();
-        }
+    @Override
+    @NotNull
+    public Path statePath() {
+        return Path.of("module", "memory", "topic_based_memory.json");
     }
 
-    private void saveStateSafely() {
+    @Override
+    public void load(@NotNull JSONObject state) {
         runtimeLock.lock();
         try {
-            saveState();
+            topicSlices = new HashMap<>();
+            dateIndex = new HashMap<>();
+
+            JSONArray topicSlicesArray = state.getJSONArray("topic_slices");
+            if (topicSlicesArray != null) {
+                for (int i = 0; i < topicSlicesArray.size(); i++) {
+                    JSONObject topicObject = topicSlicesArray.getJSONObject(i);
+                    if (topicObject == null) {
+                        continue;
+                    }
+                    String topicPath = topicObject.getString("topic_path");
+                    if (topicPath == null) {
+                        continue;
+                    }
+                    topicSlices.put(normalizeTopicPath(topicPath), decodeSliceRefs(topicObject.getJSONArray("refs")));
+                }
+            }
+
+            JSONArray dateIndexArray = state.getJSONArray("date_index");
+            if (dateIndexArray != null) {
+                for (int i = 0; i < dateIndexArray.size(); i++) {
+                    JSONObject dateObject = dateIndexArray.getJSONObject(i);
+                    if (dateObject == null) {
+                        continue;
+                    }
+                    String date = dateObject.getString("date");
+                    if (date == null) {
+                        continue;
+                    }
+                    try {
+                        dateIndex.put(LocalDate.parse(date), decodeSliceRefs(dateObject.getJSONArray("refs")));
+                    } catch (Exception e) {
+                        log.warn("[MemoryRuntime] 跳过非法日期索引: {}", date, e);
+                    }
+                }
+            }
         } finally {
             runtimeLock.unlock();
         }
     }
 
-    private void saveState() {
-        Path filePath = getFilePath();
-        Path tempPath = getTempFilePath();
+    @Override
+    public @NotNull State convert() {
+        runtimeLock.lock();
         try {
-            Files.createDirectories(Paths.get(MEMORY_DATA));
-            FileUtils.createParentDirectories(filePath.toFile());
-            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(tempPath.toFile()))) {
-                RuntimeState state = new RuntimeState();
-                state.topicSlices = new HashMap<>(topicSlices);
-                state.dateIndex = new HashMap<>(dateIndex);
-                oos.writeObject(state);
-            }
-            Files.move(tempPath, filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            log.error("[MemoryRuntime] 保存运行态失败", e);
+            State state = new State();
+
+            List<StateValue.Obj> topicSliceStates = topicSlices.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(entry -> StateValue.obj(Map.of(
+                            "topic_path", StateValue.str(entry.getKey()),
+                            "refs", StateValue.arr(encodeSliceRefs(entry.getValue()))
+                    )))
+                    .toList();
+            state.append("topic_slices", StateValue.arr(topicSliceStates));
+
+            List<StateValue.Obj> dateIndexStates = dateIndex.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(entry -> StateValue.obj(Map.of(
+                            "date", StateValue.str(entry.getKey().toString()),
+                            "refs", StateValue.arr(encodeSliceRefs(entry.getValue()))
+                    )))
+                    .toList();
+            state.append("date_index", StateValue.arr(dateIndexStates));
+
+            return state;
+        } finally {
+            runtimeLock.unlock();
         }
     }
 
-    private Path getFilePath() {
-        String id = ((PartnerAgentConfigLoader) AgentConfigLoader.INSTANCE).getConfig().getAgentId();
-        return Paths.get(MEMORY_DATA, id + "-" + RUNTIME_KEY + ".memory");
+    private List<StateValue> encodeSliceRefs(List<SliceRef> refs) {
+        return refs.stream()
+                .map(ref -> (StateValue) StateValue.obj(Map.of(
+                        "unit_id", StateValue.str(ref.getUnitId()),
+                        "slice_id", StateValue.str(ref.getSliceId())
+                )))
+                .toList();
     }
 
-    private Path getTempFilePath() {
-        String id = ((PartnerAgentConfigLoader) AgentConfigLoader.INSTANCE).getConfig().getAgentId();
-        return Paths.get(MEMORY_DATA, id + "-" + RUNTIME_KEY + "-temp.memory");
+    private CopyOnWriteArrayList<SliceRef> decodeSliceRefs(JSONArray refsArray) {
+        CopyOnWriteArrayList<SliceRef> refs = new CopyOnWriteArrayList<>();
+        if (refsArray == null) {
+            return refs;
+        }
+        for (int i = 0; i < refsArray.size(); i++) {
+            JSONObject refObject = refsArray.getJSONObject(i);
+            if (refObject == null) {
+                continue;
+            }
+            String unitId = refObject.getString("unit_id");
+            String sliceId = refObject.getString("slice_id");
+            if (unitId == null || sliceId == null) {
+                continue;
+            }
+            refs.addIfAbsent(new SliceRef(unitId, sliceId));
+        }
+        return refs;
     }
 
     private static final class TopicTreeNode {
         private final Map<String, TopicTreeNode> children = new LinkedHashMap<>();
         private int count;
-    }
-
-    private static final class RuntimeState extends PersistableObject {
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        private Map<String, CopyOnWriteArrayList<SliceRef>> topicSlices = new HashMap<>();
-        private Map<LocalDate, CopyOnWriteArrayList<SliceRef>> dateIndex = new HashMap<>();
     }
 }
