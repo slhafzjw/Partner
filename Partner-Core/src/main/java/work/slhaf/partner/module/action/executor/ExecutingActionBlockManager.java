@@ -28,6 +28,64 @@ class ExecutingActionBlockManager {
         this.contextWorkspace = contextWorkspace;
     }
 
+    void emitActionRecoveredBlock(Set<ExecutableAction> recoveredActions) {
+        Set<ExecutableActionSnapshot> snapshots = recoveredActions.stream().map(ExecutableAction::snapshot).collect(Collectors.toSet());
+
+        String blockName = "actions_recovered";
+        String emittedAt = emittedAt();
+        String event = "actions_recovered";
+
+        contextWorkspace.register(new ContextBlock(
+                buildExecutingActionRecoveredFullBlock(snapshots, blockName, emittedAt, event),
+                buildExecutingActionRecoveredCompactBlock(snapshots, blockName, emittedAt, event),
+                buildExecutingActionRecoveredAbstractBlock(snapshots, blockName, event),
+                Set.of(ContextBlock.VisibleDomain.ACTION),
+                100,
+                12,
+                1
+        ));
+    }
+
+    private @NotNull BlockContent buildExecutingActionRecoveredAbstractBlock(Set<ExecutableActionSnapshot> recoveredExecutingActions, String blockName, String event) {
+        return new ActionBlockContent(blockName, SOURCE) {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendEventElement(document, root, event);
+                appendTextElement(document, root, "abstract", recoveredExecutingActions.size() + " executing actions recovered.");
+            }
+        };
+    }
+
+    private @NotNull BlockContent buildExecutingActionRecoveredCompactBlock(Set<ExecutableActionSnapshot> recoveredExecutingActions, String blockName, String emittedAt, String event) {
+        return new ActionBlockContent(blockName, SOURCE) {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendEventElement(document, root, event);
+                appendTextElement(document, root, "emitted_at", emittedAt);
+                appendListElement(document, root, "recovered_actions", "action", recoveredExecutingActions, (actionElement, action) -> {
+                    appendTextElement(document, actionElement, "description", action.getDescription());
+                    return Unit.INSTANCE;
+                });
+            }
+        };
+    }
+
+    private @NotNull BlockContent buildExecutingActionRecoveredFullBlock(Set<ExecutableActionSnapshot> recoveredExecutingActions, String blockName, String emittedAt, String event) {
+        return new ActionBlockContent(blockName, SOURCE) {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendEventElement(document, root, event);
+                appendTextElement(document, root, "emitted_at", emittedAt);
+                appendListElement(document, root, "recovered_actions", "action", recoveredExecutingActions, (actionElement, action) -> {
+                    appendTextElement(document, actionElement, "description", action.getDescription());
+                    appendTextElement(document, actionElement, "source", action.getSource());
+                    appendTextElement(document, actionElement, "executing_stage", action.getExecutingStage());
+                    return Unit.INSTANCE;
+                });
+            }
+        };
+    }
+
     void emitStateActionTriggeredBlock(StateAction stateAction) {
         StateActionSnapshot snapshot = stateAction.snapshot();
 
@@ -350,7 +408,6 @@ class ExecutingActionBlockManager {
     private String buildBlockName(String actionId) {
         return "executing_action-" + actionId;
     }
-
 
     private static abstract class ActionBlockContent extends BlockContent {
 

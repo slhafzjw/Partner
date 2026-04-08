@@ -17,6 +17,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class ActionExecutor extends AbstractAgentModule.Standalone {
 
@@ -49,8 +50,14 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         runnerClient = actionCapability.runnerClient();
         blockManager = new ExecutingActionBlockManager(cognitionCapability.contextWorkspace());
 
-        actionCapability.listActions(Action.Status.EXECUTING, null)
-                .forEach(this::execute);
+        Set<ExecutableAction> recoveredActions = new HashSet<>();
+        recoveredActions.addAll(actionCapability.listActions(Action.Status.EXECUTING, null));
+        recoveredActions.addAll(actionCapability.listActions(Action.Status.INTERRUPTED, null).stream().map(executableAction -> {
+            executableAction.setStatus(Action.Status.EXECUTING);
+            return executableAction;
+        }).collect(Collectors.toSet()));
+        recoveredActions.forEach(this::execute);
+        blockManager.emitActionRecoveredBlock(recoveredActions);
     }
 
     public void execute(Action action) {
