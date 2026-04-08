@@ -22,8 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static work.slhaf.partner.common.util.PathUtil.buildPathStr;
-
 @Slf4j
 public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
 
@@ -194,5 +192,16 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
             closeable.close();
         } catch (Exception ignored) {
         }
+    }
+
+    public String buildPathStr(String... path) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < path.length; i++) {
+            str.append(path[i]);
+            if (i < path.length - 1) {
+                str.append("/");
+            }
+        }
+        return str.toString();
     }
 }

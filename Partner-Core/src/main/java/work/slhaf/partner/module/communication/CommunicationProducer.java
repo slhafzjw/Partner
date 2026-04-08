@@ -1,6 +1,5 @@
 package work.slhaf.partner.module.communication;
 
-import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
@@ -24,8 +23,6 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static work.slhaf.partner.common.util.ExtractUtil.extractJson;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -160,15 +157,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         }
         String content = message.getContent();
         String trimmed = content.trim();
-        if (trimmed.startsWith("<input>") || trimmed.startsWith("<context>") || trimmed.startsWith("<?xml")) {
-            return true;
-        }
-        try {
-            JSONObject.parseObject(extractJson(content));
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        return trimmed.startsWith("<input>") || trimmed.startsWith("<context>") || trimmed.startsWith("<?xml");
     }
 
     private boolean belongsToContextSection(BlockContent blockContent) {

@@ -5,19 +5,23 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
+import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.module.memory.runtime.MemoryRuntime;
 import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeInput;
 import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeResult;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, SummarizeResult> implements ActivateModel {
+
+    @InjectModule
+    private MemoryRuntime memoryRuntime;
+
     @Override
     public SummarizeResult execute(SummarizeInput input) {
         log.debug("[MemorySummarizer] 整体摘要开始...");
@@ -33,10 +37,10 @@ public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, Sum
         if (result == null || result.getTopicPath() == null || result.getTopicPath().isEmpty()) {
             return result;
         }
-        String topicPath = fixTopicPath(result.getTopicPath());
+        String topicPath = memoryRuntime.fixTopicPath(result.getTopicPath());
         List<String> relatedTopicPath = new ArrayList<>();
         for (String s : result.getRelatedTopicPath()) {
-            relatedTopicPath.add(fixTopicPath(s));
+            relatedTopicPath.add(memoryRuntime.fixTopicPath(s));
         }
         result.setTopicPath(topicPath);
         result.setRelatedTopicPath(relatedTopicPath);

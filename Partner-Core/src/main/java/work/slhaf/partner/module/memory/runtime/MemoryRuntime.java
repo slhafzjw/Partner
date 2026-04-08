@@ -322,6 +322,21 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
         return refs;
     }
 
+    public String fixTopicPath(String topicPath) {
+        String[] parts = topicPath.split("->");
+        List<String> cleanedParts = new ArrayList<>();
+
+        for (String part : parts) {
+            // 修正正则表达式，正确移除 [xxx] 部分
+            String cleaned = part.replaceAll("\\[[^\\]]*\\]", "").trim();
+            if (!cleaned.isEmpty()) { // 忽略空字符串
+                cleanedParts.add(cleaned);
+            }
+        }
+
+        return String.join("->", cleanedParts);
+    }
+
     private static final class TopicTreeNode {
         private final Map<String, TopicTreeNode> children = new LinkedHashMap<>();
         private int count;

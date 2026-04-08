@@ -22,8 +22,6 @@ import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorResul
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static work.slhaf.partner.common.util.ExtractUtil.fixTopicPath;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInput, ExtractorResult> implements ActivateModel {
@@ -81,7 +79,7 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInpu
             if (m.getType().equals(ExtractorMatchData.Constant.DATE)) {
                 return;
             }
-            m.setText(fixTopicPath(m.getText()));
+            m.setText(memoryRuntime.fixTopicPath(m.getText()));
         });
         if (extractorResult.getMatches().isEmpty()) {
             return extractorResult;
