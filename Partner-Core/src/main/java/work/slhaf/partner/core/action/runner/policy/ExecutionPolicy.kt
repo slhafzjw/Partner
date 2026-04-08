@@ -1,9 +1,14 @@
 package work.slhaf.partner.core.action.runner.policy
 
+import com.alibaba.fastjson2.JSONObject
+import work.slhaf.partner.framework.agent.config.Config
+import work.slhaf.partner.framework.agent.config.ConfigRegistration
+import work.slhaf.partner.framework.agent.config.Configurable
+import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
 
-object ExecutionPolicyRegistry {
+object ExecutionPolicyRegistry : Configurable, ConfigRegistration<ExecutionPolicy> {
 
     private const val DEFAULT_PROVIDER = "direct"
 
@@ -13,25 +18,12 @@ object ExecutionPolicyRegistry {
 
     private val listeners = CopyOnWriteArraySet<RunnerExecutionPolicyListener>()
 
-    @Volatile
-    private var currentPolicy = ExecutionPolicy(
-        provider = "direct",
-        mode = ExecutionPolicy.Mode.DIRECT,
-        net = ExecutionPolicy.Network.ENABLE,
-        inheritEnv = true,
-        env = emptyMap(),
-        workingDirectory = null,
-        readOnlyPaths = emptySet(),
-        writablePaths = emptySet(),
-    )
-
-    fun prepare(commands: List<String>): WrappedLaunchSpec {
-        val policy = currentPolicy
-        val provider = policyProviders[policy.provider]
-            ?: policyProviders[DEFAULT_PROVIDER]
-            ?: error("Default provider '${DEFAULT_PROVIDER}' is not registered")
-        return provider.prepare(policy, commands)
+    init {
+        register()
     }
+
+    @Volatile
+    private lateinit var currentPolicy: ExecutionPolicy
 
     fun updatePolicy(policy: ExecutionPolicy) {
         currentPolicy = policy
@@ -53,6 +45,41 @@ object ExecutionPolicyRegistry {
         }
         policyProviders[name] = policyProvider
     }
+
+    override fun declare(): Map<Path, ConfigRegistration<out Config>> {
+        return mapOf(Path.of("core", "action", "runner_policy.json") to this)
+    }
+
+    override fun type(): Class<ExecutionPolicy> {
+        return ExecutionPolicy::class.java
+    }
+
+    override fun init(
+        config: ExecutionPolicy,
+        json: JSONObject?
+    ) {
+        this.currentPolicy = config
+    }
+
+    override fun defaultConfig(): ExecutionPolicy {
+        return ExecutionPolicy(
+            provider = "direct",
+            mode = ExecutionPolicy.Mode.DIRECT,
+            net = ExecutionPolicy.Network.ENABLE,
+            inheritEnv = true,
+            env = emptyMap(),
+            workingDirectory = null,
+            readOnlyPaths = emptySet(),
+            writablePaths = emptySet(),
+        )
+    }
+
+    override fun onReload(
+        config: ExecutionPolicy,
+        json: JSONObject?
+    ) {
+        this.currentPolicy = config
+    }
 }
 
 data class ExecutionPolicy(
@@ -64,7 +91,7 @@ data class ExecutionPolicy(
     val workingDirectory: String?,
     val readOnlyPaths: Set<String>,
     val writablePaths: Set<String>,
-) {
+) : Config() {
 
     enum class Mode {
         DIRECT,
