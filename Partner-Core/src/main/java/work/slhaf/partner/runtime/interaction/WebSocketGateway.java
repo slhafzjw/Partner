@@ -9,6 +9,8 @@ import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.framework.agent.interaction.AgentGateway;
+import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration;
+import work.slhaf.partner.framework.agent.interaction.AgentRuntime;
 import work.slhaf.partner.framework.agent.interaction.data.InputData;
 import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent;
 import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
@@ -17,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class WebSocketGateway extends WebSocketServer implements AgentGateway<InputData, PartnerRunningFlowContext> {
@@ -26,6 +29,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
     @ToString.Exclude
     private final ConcurrentHashMap<String, WebSocket> userSessions = new ConcurrentHashMap<>();
     private final ExecutorService executor;
+    private final AtomicBoolean launched = new AtomicBoolean(false);
 
     // 记录最后一次收到Pong的时间
     private final ConcurrentHashMap<WebSocket, Long> lastPongTimes = new ConcurrentHashMap<>();
@@ -38,10 +42,13 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
     }
 
     public void launch() {
+        if (!launched.compareAndSet(false, true)) {
+            return;
+        }
         this.start();
         setShutDownHook();
         startHeartbeatThread();
-        register();
+        AgentRuntime.INSTANCE.registerResponseChannel(getChannelName(), this);
     }
 
     @Override
@@ -155,8 +162,34 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
     }
 
     @Override
+    public AgentGatewayRegistration registration() {
+        return WebSocketGatewayRegistration.INSTANCE;
+    }
+
+    @Override
     @NotNull
     public String getChannelName() {
         return "websocket_channel";
+    }
+
+    @Override
+    public void close() {
+        executor.shutdownNow();
+        lastPongTimes.clear();
+        userSessions.clear();
+        try {
+            for (WebSocket webSocket : getConnections()) {
+                if (webSocket != null && webSocket.isOpen()) {
+                    webSocket.close(1001, "Server shutting down");
+                }
+            }
+            if (launched.get()) {
+                super.stop(1000);
+            }
+        } catch (Exception e) {
+            log.warn("关闭 WebSocketGateway 失败", e);
+        } finally {
+            launched.set(false);
+        }
     }
 }

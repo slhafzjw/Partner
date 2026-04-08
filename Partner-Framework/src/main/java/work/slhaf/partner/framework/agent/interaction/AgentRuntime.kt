@@ -17,8 +17,8 @@ object AgentRuntime {
         LogChannel.channelName to LogChannel
     )
 
-    // TODO 暂时取 log_channel 为默认回复通道，若为空则只打印信息。后续将配合配置中心替换通过配置文件进行指定
-    private val defaultChannel: String = "log_channel"
+    @Volatile
+    private var defaultChannel: String = LogChannel.channelName
 
     @Volatile
     private var runningModules: Map<Int, List<AbstractAgentModule.Running<RunningFlowContext>>> = emptyMap()
@@ -35,11 +35,24 @@ object AgentRuntime {
         responseChannels[channelName] = responseChannel
     }
 
+    fun unregisterResponseChannel(channelName: String) {
+        if (channelName == LogChannel.channelName) {
+            return
+        }
+        responseChannels.remove(channelName)
+    }
+
+    fun setDefaultResponseChannel(channelName: String) {
+        defaultChannel = channelName
+    }
+
+    fun defaultResponseChannel(): String = defaultChannel
+
     @JvmOverloads
     fun response(event: InteractionEvent, channelName: String = defaultChannel) {
         val channel = responseChannels[channelName]
         if (channel == null) {
-            responseChannels[defaultChannel]!!.response(event)
+            responseChannels[defaultChannel]?.response(event) ?: LogChannel.response(event)
         } else {
             channel.response(event)
         }
