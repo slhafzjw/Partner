@@ -25,6 +25,13 @@ object ExecutionPolicyRegistry : Configurable, ConfigRegistration<ExecutionPolic
     @Volatile
     private lateinit var currentPolicy: ExecutionPolicy
 
+    fun prepare(commands: List<String>): WrappedLaunchSpec {
+        val policy = currentPolicy
+        val provider = policyProviders[policy.provider]
+            ?: policyProviders[DEFAULT_PROVIDER]
+            ?: error("Default provider '${DEFAULT_PROVIDER}' is not registered")
+        return provider.prepare(policy, commands)
+    }
     fun updatePolicy(policy: ExecutionPolicy) {
         currentPolicy = policy
         listeners.forEach { it.onPolicyChanged(policy) }
