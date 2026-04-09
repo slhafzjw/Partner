@@ -53,4 +53,8 @@ public class SandboxRunnerClient extends RunnerClient {
         throw new UnsupportedOperationException("Unimplemented method 'persistSerialize'");
     }
 
+    @Override
+    public void close() throws Exception {
+
+    }
 }

@@ -36,7 +36,7 @@ import java.util.concurrent.ExecutorService;
  * </ol>
  */
 @Slf4j
-public abstract class RunnerClient {
+public abstract class RunnerClient implements AutoCloseable {
 
     protected final String ACTION_PATH;
 

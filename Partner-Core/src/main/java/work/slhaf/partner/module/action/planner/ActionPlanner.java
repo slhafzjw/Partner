@@ -277,7 +277,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private void executeImmediateWithWatcher(ImmediateExecutableAction action) {
-        actionCapability.putAction(action);
         actionExecutor.execute(action);
 
         AtomicBoolean notified = new AtomicBoolean(false);

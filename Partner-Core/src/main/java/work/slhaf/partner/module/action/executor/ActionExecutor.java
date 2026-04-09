@@ -11,6 +11,7 @@ import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCa
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
+import work.slhaf.partner.framework.agent.factory.context.Shutdown;
 import work.slhaf.partner.module.action.executor.entity.*;
 
 import java.util.*;
@@ -43,6 +44,8 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     private ExecutorService platformExecutor;
     private RunnerClient runnerClient;
 
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+
     @Init
     public void init() {
         virtualExecutor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
@@ -58,6 +61,11 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         }).collect(Collectors.toSet()));
         recoveredActions.forEach(this::execute);
         blockManager.emitActionRecoveredBlock(recoveredActions);
+    }
+
+    @Shutdown
+    public void shutdown() {
+        closed.set(true);
     }
 
     public void execute(Action action) {
@@ -119,11 +127,16 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     }
 
     private void handleStateAction(StateAction stateAction) {
+        if (closed.get()) {
+            return;
+        }
         blockManager.emitStateActionTriggeredBlock(stateAction);
         stateAction.getTrigger().onTrigger();
     }
 
     private void handleExecutableAction(ExecutableAction executableAction) {
+        actionCapability.putAction(executableAction);
+
         val source = executableAction.getSource();
         val status = executableAction.getStatus();
         if (status != Action.Status.PREPARE && status != Action.Status.EXECUTING) {
@@ -180,6 +193,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         };
         stageCursor.init();
         do {
+            if (closed.get()) {
+                return;
+            }
             val metaActions = actionChain.get(executableAction.getExecutingStage());
             val recognizerRecord = startRecognizerIfNeeded(executableAction, phaser);
             val listeningRecord = executeAndListening(metaActions, phaser, executableAction, source);
@@ -187,6 +203,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             // synchronized 同步防止 accepting 循环间、phase guard 判定后发生 stage 推进
             // 导致新行动的 phaser 投放阶段错乱无法阻塞的场景
             // 该 synchronized 将阶段推进与 accepting 监听 loop 捆绑为互斥的原子事件，避免了细粒度的 phaser 阶段竞态问题
+            if (closed.get()) {
+                return;
+            }
             synchronized (listeningRecord.accepting()) {
                 listeningRecord.accepting().set(false);
                 // 立即尝试推进，本次推进中，如果前方仍有未执行 stage，将执行一次阶段推进

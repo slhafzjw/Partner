@@ -115,8 +115,6 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
         this.mcpDescWatcher = descWatcher;
         this.dynamicActionMcpManager = dynamicManager;
         this.mcpConfigWatcher = configWatcher;
-
-        setupShutdownHook();
     }
 
     private void registerPolicyProviders() {
@@ -166,10 +164,6 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
                 .clientInfo(new io.modelcontextprotocol.spec.McpSchema.Implementation(id, "PARTNER"))
                 .build();
         clientRegistry.register(id, client);
-    }
-
-    private void setupShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
     }
 
     @Override

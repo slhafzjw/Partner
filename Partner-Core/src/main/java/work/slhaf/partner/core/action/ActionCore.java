@@ -16,6 +16,7 @@ import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.framework.agent.config.ConfigCenter;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
+import work.slhaf.partner.framework.agent.factory.context.Shutdown;
 import work.slhaf.partner.framework.agent.state.State;
 import work.slhaf.partner.framework.agent.state.StateSerializable;
 import work.slhaf.partner.framework.agent.state.StateValue;
@@ -23,10 +24,7 @@ import work.slhaf.partner.framework.agent.state.StateValue;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("FieldMayBeFinal")
@@ -56,6 +54,31 @@ public class ActionCore implements StateSerializable {
         // TODO 通过 Config 指定采用何种 runnerClient，当前只提供 LocalRunnerClient
         runnerClient = new LocalRunnerClient(existedMetaActions, virtualExecutor, baseActionPath);
         register();
+    }
+
+    @Shutdown
+    public void shutdown() {
+        try {
+            runnerClient.close();
+        } catch (Exception e) {
+            log.warn("runner client close error", e);
+        }
+        try {
+            platformExecutor.shutdown();
+            virtualExecutor.shutdown();
+
+            int count = 0;
+            if (!platformExecutor.awaitTermination(8, TimeUnit.SECONDS)) {
+                count += platformExecutor.shutdownNow().size();
+            }
+            if (!virtualExecutor.awaitTermination(8, TimeUnit.SECONDS)) {
+                count += virtualExecutor.shutdownNow().size();
+            }
+            if (count != 0) {
+                log.warn("{} tasks still running", count);
+            }
+        } catch (InterruptedException ignored) {
+        }
     }
 
     @CapabilityMethod
