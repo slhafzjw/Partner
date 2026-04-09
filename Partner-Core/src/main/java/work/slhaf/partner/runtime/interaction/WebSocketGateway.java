@@ -46,7 +46,6 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
             return;
         }
         this.start();
-        setShutDownHook();
         startHeartbeatThread();
         AgentRuntime.INSTANCE.registerResponseChannel(getChannelName(), this);
     }
@@ -104,32 +103,6 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
     public void onWebsocketPong(WebSocket conn, Framedata f) {
         lastPongTimes.put(conn, System.currentTimeMillis());
         log.debug("Received Pong from {}", conn.getRemoteSocketAddress());
-    }
-
-    private void setShutDownHook() {
-        try {
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                try {
-                    // 先断开所有客户端连接
-                    for (WebSocket webSocket : getConnections()) {
-                        try {
-                            webSocket.close(1001, "Server shutting down");
-                        } catch (Exception e) {
-                            log.warn("关闭客户端连接时出错: ", e);
-                        }
-                    }
-                    //关闭WebSocketServer，给10秒超时时间确保连接正确关闭
-                    this.stop(10000);
-                    log.info("WebSocketServer 已关闭");
-                } catch (IllegalStateException e) {
-                    log.warn("无法添加关闭钩子，JVM可能已在关闭过程中: ", e);
-                } catch (Exception e) {
-                    log.error("WebSocketServer关闭失败: ", e);
-                }
-            }));
-        } catch (IllegalStateException e) {
-            log.warn("无法添加关闭钩子，JVM可能已在关闭过程中: ", e);
-        }
     }
 
     @Override

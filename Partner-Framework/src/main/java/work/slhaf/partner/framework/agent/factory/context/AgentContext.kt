@@ -36,6 +36,8 @@ object AgentContext {
         get() = _metadata
 
     private val shutdownHooks = mutableMapOf<ShutdownHookDesc.Type, MutableList<ShutdownHookDesc>>()
+    private val preShutdownHooks = mutableListOf<LifecycleShutdownHookDesc>()
+    private val postShutdownHooks = mutableListOf<LifecycleShutdownHookDesc>()
 
     init {
         installShutdownHook()
@@ -89,6 +91,14 @@ object AgentContext {
         }
         shutdownHooks.computeIfAbsent(type) { mutableListOf() }.add(ShutdownHookDesc(clazz, order, method, type))
         return true
+    }
+
+    fun addPreShutdownHook(name: String, order: Int = 0, action: Runnable) {
+        preShutdownHooks.add(LifecycleShutdownHookDesc(name, order, action))
+    }
+
+    fun addPostShutdownHook(name: String, order: Int = 0, action: Runnable) {
+        postShutdownHooks.add(LifecycleShutdownHookDesc(name, order, action))
     }
 
     private fun installShutdownHook() {
@@ -157,13 +167,27 @@ object AgentContext {
                 }
         }
 
+        fun triggerLifecycleHooks(hooks: List<LifecycleShutdownHookDesc>) {
+            val log = LoggerFactory.getLogger(AgentContext::class.java)
+            hooks.sortedBy { it.order }
+                .forEach {
+                    try {
+                        it.action.run()
+                    } catch (e: Exception) {
+                        log.error("Failed to invoke lifecycle shutdown hook {}", it.name, e)
+                    }
+                }
+        }
+
         Runtime.getRuntime().addShutdownHook(Thread {
             val instances = computeInstances()
+            triggerLifecycleHooks(preShutdownHooks)
             shutdownHooks[ShutdownHookDesc.Type.RUNNING]?.let { trigger(it, instances) }
             shutdownHooks[ShutdownHookDesc.Type.ADDITIONAL]?.let { trigger(it, instances) }
             shutdownHooks[ShutdownHookDesc.Type.STANDALONE]?.let { trigger(it, instances) }
             shutdownHooks[ShutdownHookDesc.Type.SUB]?.let { trigger(it, instances) }
             shutdownHooks[ShutdownHookDesc.Type.CAPABILITY]?.let { trigger(it, instances) }
+            triggerLifecycleHooks(postShutdownHooks)
         })
     }
 
@@ -248,3 +272,9 @@ data class ShutdownHookDesc(
         CAPABILITY
     }
 }
+
+data class LifecycleShutdownHookDesc(
+    val name: String,
+    val order: Int,
+    val action: Runnable
+)

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.framework.agent.config.ConfigCenter;
 import work.slhaf.partner.framework.agent.exception.AgentLaunchFailedException;
 import work.slhaf.partner.framework.agent.factory.AgentRegisterFactory;
+import work.slhaf.partner.framework.agent.factory.context.AgentContext;
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration;
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistry;
 import work.slhaf.partner.framework.agent.model.ModelRuntimeRegistry;
@@ -58,6 +59,21 @@ public final class Agent {
                 for (AgentGatewayRegistration registration : gatewayRegistrations) {
                     registration.register();
                 }
+                AgentContext.INSTANCE.addPreShutdownHook(
+                        "agent-gateway-registry-close",
+                        0,
+                        AgentGatewayRegistry.INSTANCE::close
+                );
+                AgentContext.INSTANCE.addPostShutdownHook(
+                        "state-center-save",
+                        0,
+                        StateCenter.INSTANCE::save
+                );
+                AgentContext.INSTANCE.addPostShutdownHook(
+                        "config-center-close",
+                        100,
+                        ConfigCenter.INSTANCE::close
+                );
                 Path externalModuleDir = ConfigCenter.INSTANCE.getPaths().getResourcesDir().resolve("module");
                 AgentRegisterFactory.addScanDir(externalModuleDir.toString());
                 AgentRegisterFactory.launch(applicationClass.getPackageName());

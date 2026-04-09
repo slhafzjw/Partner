@@ -11,7 +11,7 @@ import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegistryConfig> {
+object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegistryConfig>, AutoCloseable {
 
     private val log = LoggerFactory.getLogger(AgentGatewayRegistry::class.java)
     private val registryLock = ReentrantLock()
@@ -55,6 +55,12 @@ object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegis
     }
 
     override fun defaultConfig(): AgentGatewayRegistryConfig? = null
+
+    override fun close() = registryLock.withLock {
+        val currentChannels = runningChannels.keys.toList()
+        currentChannels.forEach(this::stopChannel)
+        AgentRuntime.setDefaultResponseChannel(LogChannel.channelName)
+    }
 
     private fun applyConfig(config: AgentGatewayRegistryConfig) {
         validateConfig(config)
