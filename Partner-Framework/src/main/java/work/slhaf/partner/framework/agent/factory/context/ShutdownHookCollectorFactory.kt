@@ -4,7 +4,7 @@ import work.slhaf.partner.framework.agent.factory.AgentBaseFactory
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.framework.agent.factory.component.exception.ModuleCheckException
-import work.slhaf.partner.framework.agent.util.AgentUtil
+import work.slhaf.partner.framework.agent.factory.util.ReflectUtil
 
 /**
  * 校验并收集 `@Shutdown` 方法。
@@ -24,9 +24,9 @@ class ShutdownHookCollectorFactory : AgentBaseFactory() {
             .forEach { method ->
                 val declaringClass = method.declaringClass
                 val isAgentComponentRelated =
-                    AgentUtil.isAssignableFromAnnotation(declaringClass, AgentComponent::class.java)
+                    ReflectUtil.isAssignableFromAnnotation(declaringClass, AgentComponent::class.java)
                 val isCapabilityCoreRelated =
-                    AgentUtil.isAssignableFromAnnotation(declaringClass, CapabilityCore::class.java)
+                    ReflectUtil.isAssignableFromAnnotation(declaringClass, CapabilityCore::class.java)
 
                 if (!isAgentComponentRelated && !isCapabilityCoreRelated) {
                     throw ModuleCheckException(

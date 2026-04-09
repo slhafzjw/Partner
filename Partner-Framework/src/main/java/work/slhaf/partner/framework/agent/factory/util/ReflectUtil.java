@@ -1,4 +1,4 @@
-package work.slhaf.partner.framework.agent.util;
+package work.slhaf.partner.framework.agent.factory.util;
 
 import org.reflections.Reflections;
 
@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class AgentUtil {
+public final class ReflectUtil {
 
     public static boolean isAssignableFromAnnotation(Class<?> clazz, Class<? extends Annotation> targetAnnotation) {
         Set<Class<?>> visited = new HashSet<>();

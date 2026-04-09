@@ -8,7 +8,7 @@ import work.slhaf.partner.framework.agent.factory.capability.exception.Capabilit
 import work.slhaf.partner.framework.agent.factory.capability.exception.CapabilityFactoryExecuteFailedException
 import work.slhaf.partner.framework.agent.factory.capability.exception.DuplicateMethodException
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
-import work.slhaf.partner.framework.agent.util.AgentUtil.methodSignature
+import work.slhaf.partner.framework.agent.factory.util.ReflectUtil.methodSignature
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import java.util.function.Function

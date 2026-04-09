@@ -12,8 +12,8 @@ import work.slhaf.partner.framework.agent.factory.capability.exception.UnMatched
 import work.slhaf.partner.framework.agent.factory.capability.exception.UnMatchedCapabilityMethodException
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
-import work.slhaf.partner.framework.agent.util.AgentUtil.isAssignableFromAnnotation
-import work.slhaf.partner.framework.agent.util.AgentUtil.methodSignature
+import work.slhaf.partner.framework.agent.factory.util.ReflectUtil.isAssignableFromAnnotation
+import work.slhaf.partner.framework.agent.factory.util.ReflectUtil.methodSignature
 
 /**
  * 校验 Capability 体系注解关系，并将扫描结果写入 `CapabilityFactoryContext`。

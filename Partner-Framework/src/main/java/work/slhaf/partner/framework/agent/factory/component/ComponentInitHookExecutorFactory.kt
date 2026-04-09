@@ -5,7 +5,7 @@ import work.slhaf.partner.framework.agent.factory.component.annotation.Init
 import work.slhaf.partner.framework.agent.factory.component.exception.ModuleInitHookExecuteFailedException
 import work.slhaf.partner.framework.agent.factory.context.AgentContext
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
-import work.slhaf.partner.framework.agent.util.AgentUtil.methodSignature
+import work.slhaf.partner.framework.agent.factory.util.ReflectUtil.methodSignature
 import java.lang.reflect.Method
 
 /**

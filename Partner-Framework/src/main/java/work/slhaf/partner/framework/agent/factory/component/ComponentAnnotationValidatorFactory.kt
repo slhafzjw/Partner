@@ -7,7 +7,7 @@ import work.slhaf.partner.framework.agent.factory.component.annotation.Init
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule
 import work.slhaf.partner.framework.agent.factory.component.exception.ModuleCheckException
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
-import work.slhaf.partner.framework.agent.util.AgentUtil
+import work.slhaf.partner.framework.agent.factory.util.ReflectUtil
 
 /**
  * 校验 Component 层面的注解约束，并缓存 Init 方法扫描结果。
@@ -26,7 +26,7 @@ class ComponentAnnotationValidatorFactory : AgentBaseFactory() {
         reflections.getMethodsAnnotatedWith(Init::class.java)
             .forEach { method ->
                 val declaringClass = method.declaringClass
-                if (!AgentUtil.isAssignableFromAnnotation(declaringClass, AgentComponent::class.java)) {
+                if (!ReflectUtil.isAssignableFromAnnotation(declaringClass, AgentComponent::class.java)) {
                     throw ModuleCheckException(
                         "@Init 只能用于 AgentComponent 中: " +
                                 "${declaringClass.name}#${method.name}"
@@ -47,7 +47,7 @@ class ComponentAnnotationValidatorFactory : AgentBaseFactory() {
         reflections.getFieldsAnnotatedWith(InjectModule::class.java)
             .forEach { field ->
                 val declaringClass = field.declaringClass
-                if (!AgentUtil.isAssignableFromAnnotation(declaringClass, AgentComponent::class.java)) {
+                if (!ReflectUtil.isAssignableFromAnnotation(declaringClass, AgentComponent::class.java)) {
                     throw ModuleCheckException(
                         "@InjectModule 只能用于 AgentComponent 中: " +
                                 "${declaringClass.name}#${field.name}"
