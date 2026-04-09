@@ -18,10 +18,6 @@ object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegis
     private val registrations = linkedMapOf<String, AgentGatewayRegistration>()
     private val runningChannels = linkedMapOf<String, RunningGateway>()
 
-    init {
-        register()
-    }
-
     override fun declare(): Map<Path, ConfigRegistration<out Config>> {
         return mapOf(Path.of("gateway", "gateway.json") to this)
     }

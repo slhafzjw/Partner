@@ -7,7 +7,6 @@ import work.slhaf.partner.framework.agent.factory.AgentBaseFactory
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.framework.agent.factory.component.exception.ModuleFactoryInitFailedException
-import work.slhaf.partner.framework.agent.factory.config.pojo.ModelConfig
 import work.slhaf.partner.framework.agent.factory.context.AgentContext
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.framework.agent.factory.context.ModuleContextData
@@ -30,11 +29,7 @@ class ComponentRegisterFactory : AgentBaseFactory() {
 
     override fun execute(context: AgentRegisterContext) {
         val reflections = context.reflections
-        val configFactoryContext = context.configFactoryContext
         val agentContext = context.agentContext
-
-        val modelConfigMap = configFactoryContext.modelConfigMap
-        val defaultConfig = modelConfigMap["default"]!!
 
         reflections.getTypesAnnotatedWith(AgentComponent::class.java)
             .asSequence()
@@ -52,9 +47,7 @@ class ComponentRegisterFactory : AgentBaseFactory() {
                     registerModule(
                         agentContext,
                         componentClass,
-                        componentInstance,
-                        modelConfigMap,
-                        defaultConfig
+                        componentInstance
                     )
                 } else {
                     addAdditionalComponent(agentContext, componentClass, componentInstance)
@@ -66,9 +59,7 @@ class ComponentRegisterFactory : AgentBaseFactory() {
     private fun registerModule(
         agentContext: AgentContext,
         componentClass: Class<*>,
-        module: AbstractAgentModule,
-        modelConfigMap: Map<String, ModelConfig>,
-        defaultConfig: ModelConfig
+        module: AbstractAgentModule
     ) {
         if (agentContext.modules.containsKey(module.moduleName)) {
             throw ModuleFactoryInitFailedException(
@@ -78,11 +69,8 @@ class ComponentRegisterFactory : AgentBaseFactory() {
 
         val launchTime = ZonedDateTime.now()
         val modelInfo = if (module is ActivateModel) {
-            val modelKey = module.modelKey()
-            val modelConfig = modelConfigMap[modelKey] ?: defaultConfig
             ModuleContextData.ModelInfo(
-                modelConfig.baseUrl,
-                modelConfig.model,
+                module.modelKey(),
                 JSONArray.parseArray(JSONObject.toJSONString(module.modulePrompt()))
             )
         } else {

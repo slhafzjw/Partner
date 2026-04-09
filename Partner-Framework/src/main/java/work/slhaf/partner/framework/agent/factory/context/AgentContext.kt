@@ -217,8 +217,7 @@ sealed class ModuleContextData<out T : AbstractAgentModule> {
     ) : ModuleContextData<T>()
 
     data class ModelInfo(
-        val baseUrl: String,
-        val model: String,
+        val modelKey: String,
         val basePrompt: JSONArray
     )
 }

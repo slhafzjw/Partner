@@ -8,11 +8,9 @@ import work.slhaf.partner.framework.agent.factory.component.ComponentAnnotationV
 import work.slhaf.partner.framework.agent.factory.component.ComponentInitHookExecutorFactory
 import work.slhaf.partner.framework.agent.factory.component.ComponentInjectorFactory
 import work.slhaf.partner.framework.agent.factory.component.ComponentRegisterFactory
-import work.slhaf.partner.framework.agent.factory.config.ConfigLoaderFactory
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.framework.agent.factory.context.ShutdownHookCollectorFactory
 import work.slhaf.partner.framework.agent.factory.exception.ExternalModuleLoadFailedException
-import work.slhaf.partner.framework.agent.factory.exception.ExternalModulePathNotExistException
 import java.io.File
 import java.net.URL
 
@@ -20,15 +18,14 @@ import java.net.URL
  * Agent 注册总入口，按固定顺序串联各 Factory。
  *
  * 启动流程:
- * 1. 加载配置
- * 2. 校验 Component 注解
- * 3. 注册 Component/Module
- * 4. 完成 Module 注入
- * 5. 校验 Capability 注解
- * 6. 注册 Capability 代理与路由
- * 7. 注入 Capability
- * 8. 执行 Init Hook
- * 9. 收集 Shutdown Hook
+ * 1. 校验 Component 注解
+ * 2. 注册 Component/Module
+ * 3. 完成 Module 注入
+ * 4. 校验 Capability 注解
+ * 5. 注册 Capability 代理与路由
+ * 6. 注入 Capability
+ * 7. 执行 Init Hook
+ * 8. 收集 Shutdown Hook
  */
 object AgentRegisterFactory {
     private val urls: MutableList<URL> = mutableListOf()
@@ -37,8 +34,6 @@ object AgentRegisterFactory {
     fun launch(packageName: String) {
         urls.addAll(packageNameToURL(packageName))
         val registerContext = AgentRegisterContext(urls)
-        // 0. 加载配置
-        ConfigLoaderFactory().execute(registerContext)
         // 1. 校验 Component 级别注解是否合规，避免注入到异常位置
         ComponentAnnotationValidatorFactory().execute(registerContext)
         // 2. 收集所有的 AgentComponent 实例
@@ -66,13 +61,12 @@ object AgentRegisterFactory {
     fun addScanDir(externalPackagePath: String) {
         val file = File(externalPackagePath)
         if (!file.exists() || !file.isDirectory) {
-            throw ExternalModulePathNotExistException("不存在的外部模块目录: $externalPackagePath")
+            return
         }
         try {
-            val files = file.listFiles()
-                ?: throw ExternalModulePathNotExistException("外部模块目录为空: $externalPackagePath")
+            val files = file.listFiles() ?: return
             if (files.isEmpty()) {
-                throw ExternalModulePathNotExistException("外部模块目录为空: $externalPackagePath")
+                return
             }
             files.asSequence()
                 .filter { it.name.endsWith(".jar") }

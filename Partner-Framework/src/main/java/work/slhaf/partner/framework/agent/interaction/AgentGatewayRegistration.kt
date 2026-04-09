@@ -11,9 +11,7 @@ interface AgentGatewayRegistration {
     }
 
     fun shutdown(instance: AgentGateway<*, *>) {
-        if (instance is AutoCloseable) {
-            instance.close()
-        }
+        instance.close()
     }
 
     fun register() {
