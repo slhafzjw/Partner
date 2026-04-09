@@ -84,8 +84,7 @@ class ComponentRegisterFactory : AgentBaseFactory() {
                     instance = module,
                     launchTime = launchTime,
                     modelInfo = modelInfo,
-                    order = module.order(),
-                    enabled = true
+                    order = module.order()
                 )
                 agentContext.addModule(module.moduleName, moduleContext as ModuleContextData<AbstractAgentModule>)
             }

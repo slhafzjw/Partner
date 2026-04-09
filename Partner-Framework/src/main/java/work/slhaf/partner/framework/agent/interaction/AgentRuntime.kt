@@ -1,14 +1,20 @@
 package work.slhaf.partner.framework.agent.interaction
 
+import com.alibaba.fastjson2.JSONObject
+import com.alibaba.fastjson2.annotation.JSONField
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import work.slhaf.partner.framework.agent.config.Config
+import work.slhaf.partner.framework.agent.config.ConfigRegistration
+import work.slhaf.partner.framework.agent.config.Configurable
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.framework.agent.factory.context.AgentContext
 import work.slhaf.partner.framework.agent.factory.context.ModuleContextData
 import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent
 import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
+import java.nio.file.Path
 
-object AgentRuntime {
+object AgentRuntime : Configurable, ConfigRegistration<ModuleMaskConfig> {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -23,7 +29,11 @@ object AgentRuntime {
     @Volatile
     private var runningModules: Map<Int, List<AbstractAgentModule.Running<RunningFlowContext>>> = emptyMap()
 
+    @Volatile
+    private var maskedModules: Set<String> = emptySet()
+
     init {
+        register()
         scope.launch {
             for (ctx in channel) {
                 executeTurn(ctx)
@@ -77,7 +87,7 @@ object AgentRuntime {
     private fun refreshRunningModules() {
         runningModules = AgentContext.modules.values
             .filterIsInstance<ModuleContextData.Running<AbstractAgentModule.Running<RunningFlowContext>>>()
-            .filter { it.enabled }
+            .filterNot { maskedModules.contains(it.instance.moduleName) }
             .groupBy { it.order }
             .mapValues { it.value.map { contextData -> contextData.instance } }
             .toSortedMap()
@@ -100,4 +110,40 @@ object AgentRuntime {
         }
     }
 
+    override fun declare(): Map<Path, ConfigRegistration<out Config>> {
+        return mapOf(Path.of("masked_modules.json") to this)
+    }
+
+    override fun type(): Class<ModuleMaskConfig> {
+        return ModuleMaskConfig::class.java
+    }
+
+    override fun init(
+        config: ModuleMaskConfig,
+        json: JSONObject?
+    ) {
+        applyModuleMask(config)
+    }
+
+    override fun onReload(
+        config: ModuleMaskConfig,
+        json: JSONObject?
+    ) {
+        applyModuleMask(config)
+    }
+
+    override fun defaultConfig(): ModuleMaskConfig {
+        return ModuleMaskConfig(setOf())
+    }
+
+    private fun applyModuleMask(config: ModuleMaskConfig) {
+        maskedModules = config.maskedModules
+        refreshRunningModules()
+    }
+
 }
+
+data class ModuleMaskConfig(
+    @field:JSONField(name = "masked_modules")
+    val maskedModules: Set<String>
+) : Config()
