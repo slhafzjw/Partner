@@ -44,8 +44,7 @@ public class VectorClientRegistry implements Configurable, ConfigRegistration<Ve
 
     @Override
     public @NotNull Map<Path, ConfigRegistration<? extends Config>> declare() {
-        return Map.of(Path.of("vector", "config.json"), this);
+        return Map.of(Path.of("vector.json"), this);
     }
 
 }
-

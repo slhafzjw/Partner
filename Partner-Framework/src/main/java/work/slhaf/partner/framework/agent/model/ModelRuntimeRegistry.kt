@@ -60,7 +60,7 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
     }
 
     override fun declare(): Map<Path, ConfigRegistration<out Config>> {
-        return mapOf(Path.of("model", "model.json") to this)
+        return mapOf(Path.of("model.json") to this)
     }
 
     override fun type(): Class<ModelRuntimeRegistryConfig> = ModelRuntimeRegistryConfig::class.java
@@ -178,4 +178,3 @@ data class OpenAiCompatibleProviderConfig(
     val baseUrl: String,
     val apiKey: String
 ) : ProviderConfig()
-

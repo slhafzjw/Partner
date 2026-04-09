@@ -54,7 +54,7 @@ object ExecutionPolicyRegistry : Configurable, ConfigRegistration<ExecutionPolic
     }
 
     override fun declare(): Map<Path, ConfigRegistration<out Config>> {
-        return mapOf(Path.of("core", "action", "runner_policy.json") to this)
+        return mapOf(Path.of("action", "runner_policy.json") to this)
     }
 
     override fun type(): Class<ExecutionPolicy> {
