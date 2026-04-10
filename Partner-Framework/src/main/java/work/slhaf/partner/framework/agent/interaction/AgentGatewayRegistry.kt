@@ -7,11 +7,13 @@ import work.slhaf.partner.framework.agent.config.Config
 import work.slhaf.partner.framework.agent.config.ConfigDoc
 import work.slhaf.partner.framework.agent.config.ConfigRegistration
 import work.slhaf.partner.framework.agent.config.Configurable
+import work.slhaf.partner.framework.agent.exception.*
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegistryConfig>, AutoCloseable {
+    private const val COMPONENT_NAME = "agent-gateway-registry"
 
     private val log = LoggerFactory.getLogger(AgentGatewayRegistry::class.java)
     private val registryLock = ReentrantLock()
@@ -26,8 +28,11 @@ object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegis
 
     fun register(registration: AgentGatewayRegistration) = registryLock.withLock {
         val previous = registrations.putIfAbsent(registration.channelName, registration)
-        check(previous == null || previous === registration) {
-            "AgentGateway channel already registered: ${registration.channelName}"
+        checkAgentStartup(previous == null || previous === registration) {
+            AgentStartupException(
+                "AgentGateway channel already registered: ${registration.channelName}",
+                COMPONENT_NAME
+            )
         }
     }
 
@@ -40,7 +45,13 @@ object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegis
     }
 
     override fun init(config: AgentGatewayRegistryConfig, json: JSONObject?) = registryLock.withLock {
-        applyConfig(config)
+        try {
+            applyConfig(config)
+        } catch (e: GatewayRegistryException) {
+            throw GatewayStartupException(e.message ?: "Failed to apply gateway registry config", e.gatewayName, e)
+        } catch (e: GatewayException) {
+            throw GatewayStartupException(e.message ?: "Failed to apply gateway config", e.gatewayName, e)
+        }
     }
 
     override fun onReload(config: AgentGatewayRegistryConfig, json: JSONObject?) = registryLock.withLock {
@@ -48,7 +59,10 @@ object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegis
         val defaultSnapshot = AgentRuntime.defaultResponseChannel()
         try {
             applyConfig(config)
-        } catch (e: Exception) {
+        } catch (e: GatewayRegistryException) {
+            log.error("Error while reloading gateway config", e)
+            restoreSnapshot(runtimeSnapshot, defaultSnapshot)
+        } catch (e: GatewayException) {
             log.error("Error while reloading gateway config", e)
             restoreSnapshot(runtimeSnapshot, defaultSnapshot)
         }
@@ -69,20 +83,34 @@ object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegis
     }
 
     private fun validateConfig(config: AgentGatewayRegistryConfig) {
-        require(config.defaultChannel.isNotBlank()) { "default_channel must not be blank" }
-        require(config.channels.isNotEmpty()) { "channels must not be empty" }
+        if (config.defaultChannel.isBlank()) {
+            throw GatewayRegistryException("default_channel must not be blank", COMPONENT_NAME)
+        }
+        if (config.channels.isEmpty()) {
+            throw GatewayRegistryException("channels must not be empty", COMPONENT_NAME)
+        }
 
         val channelNames = mutableSetOf<String>()
         config.channels.forEach { channel ->
-            require(channel.channelName.isNotBlank()) { "channel_name must not be blank" }
-            require(channelNames.add(channel.channelName)) { "Duplicated channel_name: ${channel.channelName}" }
-            require(registrations.containsKey(channel.channelName)) {
-                "AgentGateway channel is not registered: ${channel.channelName}"
+            if (channel.channelName.isBlank()) {
+                throw GatewayRegistryException("channel_name must not be blank", COMPONENT_NAME)
+            }
+            if (!channelNames.add(channel.channelName)) {
+                throw GatewayRegistryException("Duplicate channel_name: ${channel.channelName}", channel.channelName)
+            }
+            if (!registrations.containsKey(channel.channelName)) {
+                throw GatewayRegistryException(
+                    "AgentGateway channel is not registered: ${channel.channelName}",
+                    channel.channelName
+                )
             }
         }
 
-        require(channelNames.contains(config.defaultChannel)) {
-            "default_channel must exist in channels: ${config.defaultChannel}"
+        if (!channelNames.contains(config.defaultChannel)) {
+            throw GatewayRegistryException(
+                "default_channel must exist in channels: ${config.defaultChannel}",
+                config.defaultChannel
+            )
         }
     }
 
@@ -93,7 +121,10 @@ object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegis
 
         configuredChannels.forEach { channelConfig ->
             val registration = registrations[channelConfig.channelName]
-                ?: error("AgentGateway channel is not registered: ${channelConfig.channelName}")
+                ?: throw GatewayRegistryException(
+                    "AgentGateway channel is not registered: ${channelConfig.channelName}",
+                    channelConfig.channelName
+                )
             val existing = runningChannels[channelConfig.channelName]
             if (existing != null && existing.registration === registration &&
                 registration.supportsHotReloadReuse(existing.params, channelConfig.params)
@@ -129,7 +160,11 @@ object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegis
                         shutdownError
                     )
                 }
-            throw e
+            throw GatewayException(
+                "Failed to launch gateway channel: ${channelConfig.channelName}",
+                channelConfig.channelName,
+                e
+            )
         }
     }
 

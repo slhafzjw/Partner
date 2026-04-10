@@ -23,3 +23,31 @@ open class FactoryExecutionException @JvmOverloads constructor(
         return report
     }
 }
+
+open class GatewayStartupException @JvmOverloads constructor(
+    message: String,
+    val gatewayName: String,
+    cause: Throwable? = null
+) : AgentStartupException(message, "agent-gateway-registry", cause) {
+    override fun toReport(): ExceptionReport {
+        val report = super.toReport()
+        report.extra["gatewayName"] = gatewayName
+        return report
+    }
+}
+
+open class ModelRegistryStartupException @JvmOverloads constructor(
+    message: String,
+    val providerName: String,
+    val modelKey: String,
+    val override: Map<String, String> = emptyMap(),
+    cause: Throwable? = null
+) : AgentStartupException(message, "model-runtime-registry", cause) {
+    override fun toReport(): ExceptionReport {
+        val report = super.toReport()
+        report.extra["providerName"] = providerName
+        report.extra["modelKey"] = modelKey
+        report.extra["override"] = override
+        return report
+    }
+}

@@ -2,14 +2,12 @@ package work.slhaf.partner.framework.agent.factory.capability
 
 import cn.hutool.core.util.ClassUtil
 import org.reflections.Reflections
+import work.slhaf.partner.framework.agent.exception.FactoryExecutionException
 import work.slhaf.partner.framework.agent.factory.AgentBaseFactory
 import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability
-import work.slhaf.partner.framework.agent.factory.capability.exception.DuplicateCapabilityException
-import work.slhaf.partner.framework.agent.factory.capability.exception.UnMatchedCapabilityException
-import work.slhaf.partner.framework.agent.factory.capability.exception.UnMatchedCapabilityMethodException
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.framework.agent.factory.util.ReflectUtil.isAssignableFromAnnotation
@@ -25,6 +23,8 @@ import work.slhaf.partner.framework.agent.factory.util.ReflectUtil.methodSignatu
  * - `@InjectCapability` 字段仅允许位于 `@AgentComponent` 相关类中。
  */
 class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
+    private val factoryName = "capability-annotation-validator-factory"
+
     override fun execute(context: AgentRegisterContext) {
         val reflections = context.reflections
         val cores = loadCores(reflections)
@@ -61,7 +61,7 @@ class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
             val value = capability.getAnnotation(Capability::class.java).value
             val existed = capabilityByValue.putIfAbsent(value, capability)
             if (existed != null) {
-                throw DuplicateCapabilityException("Capability 注册异常: 重复的Capability接口: $value")
+                throw FactoryExecutionException("Duplicate capability value detected: $value", factoryName)
             }
         }
     }
@@ -73,9 +73,9 @@ class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
         methods.forEach { method ->
             val declaringClass = method.declaringClass
             if (!declaringClass.isAnnotationPresent(CapabilityCore::class.java)) {
-                throw UnMatchedCapabilityException(
-                    "@CapabilityMethod 仅能用于 @CapabilityCore 所标注类中: " +
-                            "${declaringClass.name}#${method.name}"
+                throw FactoryExecutionException(
+                    "@CapabilityMethod can only be declared in @CapabilityCore classes: ${declaringClass.name}#${method.name}",
+                    factoryName
                 )
             }
         }
@@ -109,13 +109,19 @@ class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
                 val signature = methodSignature(method)
                 val implementors = signatureMap[signature].orEmpty()
                 if (implementors.isEmpty()) {
-                    throw UnMatchedCapabilityMethodException(
-                        "Capability方法缺少实现: $capabilityValue.$signature"
+                    throw FactoryExecutionException(
+                        "Missing capability method implementation: $capabilityValue.$signature",
+                        factoryName
                     )
                 }
                 if (implementors.size > 1) {
-                    throw UnMatchedCapabilityMethodException(
-                        "Capability方法存在多个实现: $capabilityValue.$signature -> ${implementors.joinToString(", ")}"
+                    throw FactoryExecutionException(
+                        "Multiple capability method implementations found: $capabilityValue.$signature -> ${
+                            implementors.joinToString(
+                                ", "
+                            )
+                        }",
+                        factoryName
                     )
                 }
             }
@@ -129,8 +135,9 @@ class CapabilityAnnotationValidatorFactory : AgentBaseFactory() {
         reflections.getFieldsAnnotatedWith(InjectCapability::class.java).forEach { field ->
             val declaringClass = field.declaringClass
             if (!isAssignableFromAnnotation(declaringClass, AgentComponent::class.java)) {
-                throw UnMatchedCapabilityException(
-                    "InjectCapability 注解只能用于 AgentComponent 注解所在类，检查该类是否使用了@CapabilityHolder注解或者受其标注的注解或父类: $declaringClass"
+                throw FactoryExecutionException(
+                    "@InjectCapability can only be declared on AgentComponent classes: $declaringClass",
+                    factoryName
                 )
             }
         }

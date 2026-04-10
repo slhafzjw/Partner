@@ -3,7 +3,7 @@ package work.slhaf.partner.framework.agent.factory.context
 import com.alibaba.fastjson2.JSONArray
 import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
-import work.slhaf.partner.framework.agent.exception.deprecated.AgentRunningFailedException
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent
@@ -150,7 +150,7 @@ object AgentContext {
                 ShutdownHookDesc.Type.CAPABILITY -> instances.capability[clazz]
             }
             if (instance == null) {
-                throw AgentRunningFailedException("Instance of type $type not found")
+                throw AgentRuntimeException("Instance of type $type not found")
             }
             return instance
         }

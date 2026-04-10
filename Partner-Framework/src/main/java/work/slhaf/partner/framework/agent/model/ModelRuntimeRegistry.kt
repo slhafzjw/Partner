@@ -6,6 +6,8 @@ import work.slhaf.partner.framework.agent.config.Config
 import work.slhaf.partner.framework.agent.config.ConfigDoc
 import work.slhaf.partner.framework.agent.config.ConfigRegistration
 import work.slhaf.partner.framework.agent.config.Configurable
+import work.slhaf.partner.framework.agent.exception.ModelRegistryException
+import work.slhaf.partner.framework.agent.exception.ModelRegistryStartupException
 import work.slhaf.partner.framework.agent.model.ProviderConfig.ProviderType.OPENAI_COMPATIBLE
 import work.slhaf.partner.framework.agent.model.provider.ModelProvider
 import work.slhaf.partner.framework.agent.model.provider.ProviderOverride
@@ -18,6 +20,7 @@ import kotlin.concurrent.withLock
 object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegistryConfig> {
 
     private const val DEFAULT_PROVIDER = "default"
+    private const val COMPONENT_NAME = "model-runtime-registry"
 
     /**
      * 基础的 provider 提供商，可 fork 出新的 runtime provider，必须提供一个 default provider
@@ -49,13 +52,28 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
 
     private fun forkProvider(config: RuntimeProviderConfig) {
         val provider = baseProvider[config.providerName]
-            ?: throw IllegalArgumentException("Provider ${config.providerName} not found")
+            ?: throw runtimeModelException(
+                "Provider ${config.providerName} not found",
+                config.providerName,
+                config.modelKey,
+                config.override
+            )
         val override = config.override
 
-        runtimeProvider[config.modelKey] = if (override != null) {
-            provider.fork(override)
-        } else {
-            provider
+        try {
+            runtimeProvider[config.modelKey] = if (override != null) {
+                provider.fork(override)
+            } else {
+                provider
+            }
+        } catch (e: Exception) {
+            throw runtimeModelException(
+                "Failed to build runtime provider for model key ${config.modelKey}",
+                config.providerName,
+                config.modelKey,
+                override,
+                e
+            )
         }
     }
 
@@ -66,8 +84,17 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
     override fun type(): Class<ModelRuntimeRegistryConfig> = ModelRuntimeRegistryConfig::class.java
 
     override fun init(config: ModelRuntimeRegistryConfig, json: JSONObject?) = providerLock.withLock {
-        config.providerConfigSet.forEach { registerProvider(it) }
-        config.runtimeConfigSet.forEach { forkProvider(it) }
+        try {
+            applyConfig(config)
+        } catch (e: ModelRegistryException) {
+            throw ModelRegistryStartupException(
+                e.message ?: "Failed to apply model runtime config",
+                e.providerName,
+                e.modelKey,
+                e.override,
+                e
+            )
+        }
     }
 
     override fun onReload(config: ModelRuntimeRegistryConfig, json: JSONObject?) = providerLock.withLock {
@@ -76,18 +103,32 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
         val runtimeProviderSnapshot = runtimeProvider.toMap()
         try {
             val providerSetJson = root.getJSONArray("providerConfigSet")
-                ?: throw IllegalStateException("providerConfigSet is missing or not an array")
+                ?: throw runtimeModelException("providerConfigSet is missing or not an array")
             baseProvider.clear()
             for (i in providerSetJson.indices) {
                 val providerJson = providerSetJson.getJSONObject(i)
-                    ?: throw IllegalStateException("providerConfigSet[$i] is not an object")
+                    ?: throw runtimeModelException("providerConfigSet[$i] is not an object")
                 val typeText = providerJson.getString("type")
-                    ?: throw IllegalStateException("providerConfigSet[$i].type is missing")
-                val providerType = ProviderConfig.ProviderType.valueOf(typeText.uppercase(getDefault()))
+                    ?: throw runtimeModelException(
+                        "providerConfigSet[$i].type is missing",
+                        providerJson.getString("name") ?: COMPONENT_NAME
+                    )
+                val providerType = try {
+                    ProviderConfig.ProviderType.valueOf(typeText.uppercase(getDefault()))
+                } catch (e: IllegalArgumentException) {
+                    throw runtimeModelException(
+                        "Unsupported provider type: $typeText",
+                        providerJson.getString("name") ?: COMPONENT_NAME,
+                        cause = e
+                    )
+                }
                 val concreteProviderConfig = when (providerType) {
                     OPENAI_COMPATIBLE -> providerJson.toJavaObject(OpenAiCompatibleProviderConfig::class.java)
                 }
                 registerProvider(concreteProviderConfig)
+            }
+            if (!baseProvider.containsKey(DEFAULT_PROVIDER)) {
+                throw runtimeModelException("Provider default not found", DEFAULT_PROVIDER)
             }
             runtimeProvider.clear()
             config.runtimeConfigSet.forEach { forkProvider(it) }
@@ -113,6 +154,42 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
                 )
             ), setOf()
         )
+    }
+
+    private fun applyConfig(config: ModelRuntimeRegistryConfig) {
+        baseProvider.clear()
+        runtimeProvider.clear()
+        config.providerConfigSet.forEach { registerProvider(it) }
+        if (!baseProvider.containsKey(DEFAULT_PROVIDER)) {
+            throw runtimeModelException("Provider default not found", DEFAULT_PROVIDER)
+        }
+        config.runtimeConfigSet.forEach { forkProvider(it) }
+    }
+
+    private fun runtimeModelException(
+        message: String,
+        providerName: String = COMPONENT_NAME,
+        modelKey: String = COMPONENT_NAME,
+        override: ProviderOverride? = null,
+        cause: Throwable? = null
+    ): ModelRegistryException {
+        return ModelRegistryException(
+            message,
+            providerName,
+            modelKey,
+            override?.toReportOverride() ?: emptyMap(),
+            cause
+        )
+    }
+
+    private fun ProviderOverride.toReportOverride(): Map<String, String> {
+        val result = linkedMapOf<String, String>()
+        result["model"] = model
+        temperature?.let { result["temperature"] = it.toString() }
+        topP?.let { result["topP"] = it.toString() }
+        maxTokens?.let { result["maxTokens"] = it.toString() }
+        extras?.forEach { (key, value) -> result["extra.$key"] = value?.toString() ?: "null" }
+        return result
     }
 }
 

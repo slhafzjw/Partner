@@ -1,8 +1,8 @@
 package work.slhaf.partner.framework.agent.factory.component
 
+import work.slhaf.partner.framework.agent.exception.FactoryExecutionException
 import work.slhaf.partner.framework.agent.factory.AgentBaseFactory
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule
-import work.slhaf.partner.framework.agent.factory.component.exception.ModuleInstanceGenerateFailedException
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.framework.agent.factory.context.ModuleContextData
 import java.lang.reflect.Field
@@ -19,6 +19,8 @@ import java.lang.reflect.Modifier
  * 当注入目标无匹配实例或存在多个匹配实例时抛出异常。
  */
 class ComponentInjectorFactory : AgentBaseFactory() {
+    private val factoryName = "component-injector-factory"
+
     override fun execute(context: AgentRegisterContext) {
         val agentContext = context.agentContext
         val moduleContextList = agentContext.modules.values.toList()
@@ -62,8 +64,9 @@ class ComponentInjectorFactory : AgentBaseFactory() {
                 field.isAccessible = true
                 field.set(target, value)
             } catch (e: IllegalAccessException) {
-                throw ModuleInstanceGenerateFailedException(
-                    "模块注入失败: ${target::class.java.name}#${field.name}",
+                throw FactoryExecutionException(
+                    "Failed to inject module dependency: ${target::class.java.name}#${field.name}",
+                    factoryName,
                     e
                 )
             }
@@ -73,13 +76,15 @@ class ComponentInjectorFactory : AgentBaseFactory() {
     private fun resolveInjectValue(field: Field, providers: List<Any>, targetClass: Class<*>): Any {
         val matched = providers.filter { field.type.isAssignableFrom(it::class.java) }
         if (matched.isEmpty()) {
-            throw ModuleInstanceGenerateFailedException(
-                "模块注入失败, 未找到可注入实例: ${targetClass.name}#${field.name} -> ${field.type.name}"
+            throw FactoryExecutionException(
+                "No injectable module instance found for: ${targetClass.name}#${field.name} -> ${field.type.name}",
+                factoryName
             )
         }
         if (matched.size > 1) {
-            throw ModuleInstanceGenerateFailedException(
-                "模块注入失败, 存在多个可注入实例: ${targetClass.name}#${field.name} -> ${field.type.name}"
+            throw FactoryExecutionException(
+                "Multiple injectable module instances found for: ${targetClass.name}#${field.name} -> ${field.type.name}",
+                factoryName
             )
         }
         return matched.first()

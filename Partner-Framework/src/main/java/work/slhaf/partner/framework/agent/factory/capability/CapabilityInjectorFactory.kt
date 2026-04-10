@@ -1,9 +1,9 @@
 package work.slhaf.partner.framework.agent.factory.capability
 
+import work.slhaf.partner.framework.agent.exception.FactoryExecutionException
 import work.slhaf.partner.framework.agent.factory.AgentBaseFactory
 import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability
-import work.slhaf.partner.framework.agent.factory.capability.exception.CapabilityProxySetFailedException
 import work.slhaf.partner.framework.agent.factory.context.AgentContext
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
 import java.lang.reflect.Field
@@ -16,6 +16,8 @@ import java.lang.reflect.Modifier
  * 注入值来源于 `AgentContext.capabilities`。
  */
 class CapabilityInjectorFactory : AgentBaseFactory() {
+    private val factoryName = "capability-injector-factory"
+
     override fun execute(context: AgentRegisterContext) {
         val agentContext = context.agentContext
         val targets = buildTargets(agentContext)
@@ -38,11 +40,12 @@ class CapabilityInjectorFactory : AgentBaseFactory() {
                 field.isAccessible = true
                 val value = resolveCapabilityInstance(field, capabilityMap, target::class.java)
                 field.set(target, value)
-            } catch (e: CapabilityProxySetFailedException) {
+            } catch (e: FactoryExecutionException) {
                 throw e
             } catch (e: Exception) {
-                throw CapabilityProxySetFailedException(
-                    "Capability 注入失败: ${target::class.java.name}#${field.name}",
+                throw FactoryExecutionException(
+                    "Failed to inject capability dependency: ${target::class.java.name}#${field.name}",
+                    factoryName,
                     e
                 )
             }
@@ -55,17 +58,20 @@ class CapabilityInjectorFactory : AgentBaseFactory() {
         targetClass: Class<*>
     ): Any {
         val capability = field.type.getAnnotation(Capability::class.java)
-            ?: throw CapabilityProxySetFailedException(
-                "InjectCapability 字段类型未标注 @Capability: ${targetClass.name}#${field.name} -> ${field.type.name}"
+            ?: throw FactoryExecutionException(
+                "InjectCapability target type is not annotated with @Capability: ${targetClass.name}#${field.name} -> ${field.type.name}",
+                factoryName
             )
 
         val capabilityValue = capability.value
-        val implementation = capabilityMap[capabilityValue] ?: throw CapabilityProxySetFailedException(
-            "未找到可注入 Capability 实例: ${targetClass.name}#${field.name} -> $capabilityValue"
+        val implementation = capabilityMap[capabilityValue] ?: throw FactoryExecutionException(
+            "Injectable capability implementation not found: ${targetClass.name}#${field.name} -> $capabilityValue",
+            factoryName
         )
         if (!field.type.isAssignableFrom(implementation.instance.javaClass)) {
-            throw CapabilityProxySetFailedException(
-                "Capability 实例类型不匹配: ${targetClass.name}#${field.name} -> $capabilityValue"
+            throw FactoryExecutionException(
+                "Capability implementation type mismatch: ${targetClass.name}#${field.name} -> $capabilityValue",
+                factoryName
             )
         }
         return implementation.instance

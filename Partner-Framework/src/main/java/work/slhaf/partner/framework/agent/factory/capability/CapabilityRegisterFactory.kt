@@ -1,12 +1,10 @@
 package work.slhaf.partner.framework.agent.factory.capability
 
+import work.slhaf.partner.framework.agent.exception.FactoryExecutionException
 import work.slhaf.partner.framework.agent.factory.AgentBaseFactory
 import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod
-import work.slhaf.partner.framework.agent.factory.capability.exception.CapabilityCoreInstancesCreateFailedException
-import work.slhaf.partner.framework.agent.factory.capability.exception.CapabilityFactoryExecuteFailedException
-import work.slhaf.partner.framework.agent.factory.capability.exception.DuplicateMethodException
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.framework.agent.factory.util.ReflectUtil.methodSignature
 import java.lang.reflect.Method
@@ -23,6 +21,8 @@ import java.util.function.Function
  * - 将 capability 代理、cores 与方法映射注册到 `AgentContext`。
  */
 class CapabilityRegisterFactory : AgentBaseFactory() {
+    private val factoryName = "capability-register-factory"
+
     override fun execute(context: AgentRegisterContext) {
         val capabilityFactoryContext = context.capabilityFactoryContext
         val agentContext = context.agentContext
@@ -30,7 +30,10 @@ class CapabilityRegisterFactory : AgentBaseFactory() {
         val cores = capabilityFactoryContext.cores.toSet()
         val capabilities = capabilityFactoryContext.capabilities.toSet()
         if (cores.isEmpty() || capabilities.isEmpty()) {
-            throw CapabilityFactoryExecuteFailedException("CapabilityFactoryContext 中缺少已校验的 capability/core 信息")
+            throw FactoryExecutionException(
+                "Validated capability/core scan result is missing from CapabilityFactoryContext",
+                factoryName
+            )
         }
 
         val coreInstances = LinkedHashMap<Class<*>, Any>()
@@ -59,7 +62,7 @@ class CapabilityRegisterFactory : AgentBaseFactory() {
                 coreInstances[core] = constructor.newInstance()
             }
         } catch (e: Exception) {
-            throw CapabilityCoreInstancesCreateFailedException("core实例创建失败", e)
+            throw FactoryExecutionException("Failed to instantiate capability cores", factoryName, e)
         }
     }
 
@@ -72,14 +75,17 @@ class CapabilityRegisterFactory : AgentBaseFactory() {
         cores.forEach { core ->
             val capabilityValue = core.getAnnotation(CapabilityCore::class.java).value
             val coreInstance = coreInstances[core]
-                ?: throw CapabilityFactoryExecuteFailedException("未找到CapabilityCore实例: ${core.name}")
+                ?: throw FactoryExecutionException("Capability core instance not found: ${core.name}", factoryName)
 
             core.methods
                 .filter { it.isAnnotationPresent(CapabilityMethod::class.java) }
                 .forEach { method ->
                     val key = "$capabilityValue.${methodSignature(method)}"
                     if (map.containsKey(key) || methodsRouterTable.containsKey(key)) {
-                        throw DuplicateMethodException("重复注册能力方法: ${core.name}#${method.name}")
+                        throw FactoryExecutionException(
+                            "Duplicate capability method binding: ${core.name}#${method.name}",
+                            factoryName
+                        )
                     }
                     map[key] = MethodBinding(core, coreInstance, method)
                     methodsRouterTable[key] = Function { args ->
@@ -106,7 +112,7 @@ class CapabilityRegisterFactory : AgentBaseFactory() {
                 else -> {
                     val key = "$capabilityValue.${methodSignature(method)}"
                     val fn = methodsRouterTable[key]
-                        ?: throw CapabilityFactoryExecuteFailedException("未找到能力方法路由: $key")
+                        ?: throw FactoryExecutionException("Capability method route not found: $key", factoryName)
 
                     @Suppress("UNCHECKED_CAST")
                     val actualArgs = (args ?: emptyArray<Any?>()) as Array<Any?>
@@ -128,7 +134,7 @@ class CapabilityRegisterFactory : AgentBaseFactory() {
             }
             val key = "$capabilityValue.${methodSignature(method)}"
             val binding = methodBindingMap[key]
-                ?: throw CapabilityFactoryExecuteFailedException("Capability方法缺少实现: $key")
+                ?: throw FactoryExecutionException("Missing capability method implementation for: $key", factoryName)
             methods[key] = binding.method
         }
         return methods
@@ -149,8 +155,9 @@ class CapabilityRegisterFactory : AgentBaseFactory() {
         return try {
             method.invoke(instance, *args)
         } catch (e: Exception) {
-            throw CapabilityFactoryExecuteFailedException(
-                "能力方法调用失败: ${instance::class.java.name}#${method.name}",
+            throw FactoryExecutionException(
+                "Failed to invoke capability method: ${instance::class.java.name}#${method.name}",
+                factoryName,
                 e
             )
         }

@@ -1,8 +1,8 @@
 package work.slhaf.partner.framework.agent.factory.component
 
+import work.slhaf.partner.framework.agent.exception.FactoryExecutionException
 import work.slhaf.partner.framework.agent.factory.AgentBaseFactory
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init
-import work.slhaf.partner.framework.agent.factory.component.exception.ModuleInitHookExecuteFailedException
 import work.slhaf.partner.framework.agent.factory.context.AgentContext
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.framework.agent.factory.util.ReflectUtil.methodSignature
@@ -15,6 +15,8 @@ import java.lang.reflect.Method
  * 执行目标包括 modules 与 additionalComponents，按 `order` 升序执行。
  */
 class ComponentInitHookExecutorFactory : AgentBaseFactory() {
+    private val factoryName = "component-init-hook-executor-factory"
+
     override fun execute(context: AgentRegisterContext) {
         val initMethodsByDeclaringType = context.componentFactoryContext.initMethodsByDeclaringType
         val targets = buildTargets(context.agentContext)
@@ -48,21 +50,19 @@ class ComponentInitHookExecutorFactory : AgentBaseFactory() {
         initMethods.forEach { method ->
             try {
                 if (method.parameterCount > 0) {
-                    throw ModuleInitHookExecuteFailedException(
-                        "Init方法不支持参数: ${target::class.java.name}#${methodSignature(method)}"
+                    throw FactoryExecutionException(
+                        "Init method must not declare parameters: ${target::class.java.name}#${methodSignature(method)}",
+                        factoryName
                     )
                 }
                 method.isAccessible = true
                 method.invoke(target)
-            } catch (e: ModuleInitHookExecuteFailedException) {
+            } catch (e: FactoryExecutionException) {
                 throw e
             } catch (e: Exception) {
-                throw ModuleInitHookExecuteFailedException(
-                    "模块的init hook方法执行失败! 模块: ${target::class.java.simpleName} 方法签名: ${
-                        methodSignature(
-                            method
-                        )
-                    }",
+                throw FactoryExecutionException(
+                    "Failed to execute init hook: ${target::class.java.name}#${methodSignature(method)}",
+                    factoryName,
                     e
                 )
             }

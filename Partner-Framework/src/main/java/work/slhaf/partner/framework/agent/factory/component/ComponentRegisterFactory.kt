@@ -3,10 +3,10 @@ package work.slhaf.partner.framework.agent.factory.component
 import com.alibaba.fastjson2.JSONArray
 import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
+import work.slhaf.partner.framework.agent.exception.FactoryExecutionException
 import work.slhaf.partner.framework.agent.factory.AgentBaseFactory
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent
-import work.slhaf.partner.framework.agent.factory.component.exception.ModuleFactoryInitFailedException
 import work.slhaf.partner.framework.agent.factory.context.AgentContext
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.framework.agent.factory.context.ModuleContextData
@@ -25,6 +25,7 @@ import java.time.ZonedDateTime
 class ComponentRegisterFactory : AgentBaseFactory() {
     companion object {
         private val log = LoggerFactory.getLogger(ComponentRegisterFactory::class.java)
+        private const val FACTORY_NAME = "component-register-factory"
     }
 
     override fun execute(context: AgentRegisterContext) {
@@ -40,7 +41,11 @@ class ComponentRegisterFactory : AgentBaseFactory() {
                     constructor.isAccessible = true
                     constructor.newInstance()
                 } catch (e: Exception) {
-                    throw ModuleFactoryInitFailedException("AgentComponent 实例化失败: ${componentClass.name}", e)
+                    throw FactoryExecutionException(
+                        "Failed to instantiate AgentComponent: ${componentClass.name}",
+                        FACTORY_NAME,
+                        e
+                    )
                 }
 
                 if (componentInstance is AbstractAgentModule) {
@@ -62,8 +67,9 @@ class ComponentRegisterFactory : AgentBaseFactory() {
         module: AbstractAgentModule
     ) {
         if (agentContext.modules.containsKey(module.moduleName)) {
-            throw ModuleFactoryInitFailedException(
-                "模块注册失败, 存在重复 moduleName: ${module.moduleName} (class=${componentClass.name})"
+            throw FactoryExecutionException(
+                "Duplicate module name detected: ${module.moduleName} (class=${componentClass.name})",
+                FACTORY_NAME
             )
         }
 

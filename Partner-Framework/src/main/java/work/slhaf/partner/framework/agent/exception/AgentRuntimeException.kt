@@ -34,6 +34,16 @@ open class GatewayException @JvmOverloads constructor(
     }
 }
 
+open class GatewayRegistryException @JvmOverloads constructor(
+    message: String,
+    val gatewayName: String,
+    cause: Throwable? = null
+) : InteractionException(message, cause) {
+    override fun toReport(): ExceptionReport = super.toReport().also {
+        it.extra["gatewayName"] = gatewayName
+    }
+}
+
 open class ModelInvokeException(
     message: String,
     val providerName: String,
@@ -48,6 +58,20 @@ open class ModelInvokeException(
         it.extra["modelKey"] = modelKey
         it.extra["baseUrl"] = baseUrl
         it.extra["model"] = model
+        it.extra["override"] = override
+    }
+}
+
+open class ModelRegistryException(
+    message: String,
+    val providerName: String,
+    val modelKey: String,
+    val override: Map<String, String> = emptyMap(),
+    cause: Throwable? = null
+) : AgentRuntimeException(message, cause) {
+    override fun toReport(): ExceptionReport = super.toReport().also {
+        it.extra["providerName"] = providerName
+        it.extra["modelKey"] = modelKey
         it.extra["override"] = override
     }
 }

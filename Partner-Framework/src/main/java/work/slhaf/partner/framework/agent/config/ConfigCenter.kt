@@ -3,7 +3,8 @@ package work.slhaf.partner.framework.agent.config
 import com.alibaba.fastjson2.JSON
 import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
-import work.slhaf.partner.framework.agent.exception.deprecated.AgentLaunchFailedException
+import work.slhaf.partner.framework.agent.exception.AgentStartupException
+import work.slhaf.partner.framework.agent.exception.checkAgentStartup
 import work.slhaf.partner.framework.agent.support.DirectoryWatchSupport
 import java.io.IOException
 import java.lang.reflect.Field
@@ -19,6 +20,7 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.javaField
 
 object ConfigCenter : AutoCloseable {
+    private const val COMPONENT_NAME = "config-center"
 
     private val log = LoggerFactory.getLogger(ConfigCenter::class.java)
     val paths = resolvePaths()
@@ -31,9 +33,8 @@ object ConfigCenter : AutoCloseable {
 
     @Synchronized
     fun register(configurable: Configurable) {
-
-        check(!started) {
-            "ConfigCenter does not allow registration after watching started"
+        checkAgentStartup(!started) {
+            AgentStartupException("ConfigCenter does not allow registration after watching started", COMPONENT_NAME)
         }
 
         val declared = configurable.declare()
@@ -42,15 +43,18 @@ object ConfigCenter : AutoCloseable {
         declared.forEach { (path, registration) ->
             val normalizedPath = normalizeRelativePath(path)
 
-            check(normalized.putIfAbsent(normalizedPath, registration) == null) {
-                "Duplicated config path declared in the same configurable: $normalizedPath"
+            checkAgentStartup(normalized.putIfAbsent(normalizedPath, registration) == null) {
+                AgentStartupException(
+                    "Duplicated config path declared in the same configurable: $normalizedPath",
+                    COMPONENT_NAME
+                )
             }
 
         }
 
         normalized.forEach { (path, registration) ->
-            check(registrations.putIfAbsent(path, registration) == null) {
-                "Config path already registered: $path"
+            checkAgentStartup(registrations.putIfAbsent(path, registration) == null) {
+                AgentStartupException("Config path already registered: $path", COMPONENT_NAME)
             }
         }
 
@@ -93,7 +97,10 @@ object ConfigCenter : AutoCloseable {
                 (registration as ConfigRegistration<Config>).init(defaultConfig, null)
             }
             val configDoc = resolveConfigDoc(registration.type())
-            throw AgentLaunchFailedException("Failed to init config, related path: $path, config definition: $configDoc")
+            throw AgentStartupException(
+                "Failed to init config, related path: $path, config definition: $configDoc",
+                COMPONENT_NAME
+            )
         }
 
     }
@@ -232,8 +239,8 @@ object ConfigCenter : AutoCloseable {
     }
 
     private fun normalizeRelativePath(path: Path): Path {
-        require(!path.isAbsolute) {
-            "Config path must be relative: $path"
+        checkAgentStartup(!path.isAbsolute) {
+            AgentStartupException("Config path must be relative: $path", COMPONENT_NAME)
         }
         return path.normalize()
     }

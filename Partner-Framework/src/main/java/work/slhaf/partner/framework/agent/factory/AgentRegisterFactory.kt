@@ -1,6 +1,7 @@
 package work.slhaf.partner.framework.agent.factory
 
 import org.reflections.util.ClasspathHelper
+import work.slhaf.partner.framework.agent.exception.FactoryExecutionException
 import work.slhaf.partner.framework.agent.factory.capability.CapabilityAnnotationValidatorFactory
 import work.slhaf.partner.framework.agent.factory.capability.CapabilityInjectorFactory
 import work.slhaf.partner.framework.agent.factory.capability.CapabilityRegisterFactory
@@ -10,7 +11,6 @@ import work.slhaf.partner.framework.agent.factory.component.ComponentInjectorFac
 import work.slhaf.partner.framework.agent.factory.component.ComponentRegisterFactory
 import work.slhaf.partner.framework.agent.factory.context.AgentRegisterContext
 import work.slhaf.partner.framework.agent.factory.context.ShutdownHookCollectorFactory
-import work.slhaf.partner.framework.agent.factory.exception.ExternalModuleLoadFailedException
 import java.io.File
 import java.net.URL
 
@@ -72,7 +72,11 @@ object AgentRegisterFactory {
                 .filter { it.name.endsWith(".jar") }
                 .forEach { urls.add(it.toURI().toURL()) }
         } catch (e: Exception) {
-            throw ExternalModuleLoadFailedException("外部模块URL获取失败: $externalPackagePath", e)
+            throw FactoryExecutionException(
+                "Failed to load external module URLs from: $externalPackagePath",
+                "agent-register-factory",
+                e
+            )
         }
     }
 
