@@ -10,7 +10,7 @@ import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
-import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;

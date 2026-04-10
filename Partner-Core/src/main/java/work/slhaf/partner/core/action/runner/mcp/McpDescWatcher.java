@@ -1,7 +1,7 @@
 package work.slhaf.partner.core.action.runner.mcp;
 
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.framework.agent.common.support.DirectoryWatchSupport;
+import work.slhaf.partner.framework.agent.support.DirectoryWatchSupport;
 
 import java.io.IOException;
 import java.nio.file.Files;

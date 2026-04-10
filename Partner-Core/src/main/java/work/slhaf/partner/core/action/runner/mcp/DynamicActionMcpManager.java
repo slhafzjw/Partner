@@ -15,7 +15,7 @@ import work.slhaf.partner.common.mcp.InProcessMcpTransport;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.ActionInitFailedException;
 import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
-import work.slhaf.partner.framework.agent.common.support.DirectoryWatchSupport;
+import work.slhaf.partner.framework.agent.support.DirectoryWatchSupport;
 
 import java.io.File;
 import java.io.IOException;

@@ -26,7 +26,7 @@ import work.slhaf.partner.module.memory.updater.summarizer.MultiSummarizer;
 import work.slhaf.partner.module.memory.updater.summarizer.SingleSummarizer;
 import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeInput;
 import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeResult;
-import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;

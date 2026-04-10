@@ -1,4 +1,4 @@
-package work.slhaf.partner.runtime.interaction;
+package work.slhaf.partner.runtime.gateway;
 
 import com.alibaba.fastjson2.JSONObject;
 import lombok.ToString;
@@ -13,7 +13,7 @@ import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration;
 import work.slhaf.partner.framework.agent.interaction.AgentRuntime;
 import work.slhaf.partner.framework.agent.interaction.data.InputData;
 import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent;
-import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;

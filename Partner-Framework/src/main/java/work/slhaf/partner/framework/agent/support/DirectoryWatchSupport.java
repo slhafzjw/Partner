@@ -1,4 +1,4 @@
-package work.slhaf.partner.framework.agent.common.support;
+package work.slhaf.partner.framework.agent.support;
 
 import lombok.extern.slf4j.Slf4j;
 

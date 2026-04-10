@@ -4,13 +4,11 @@ import com.alibaba.fastjson2.annotation.JSONCreator
 import com.alibaba.fastjson2.annotation.JSONField
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
-import work.slhaf.partner.framework.agent.common.entity.PersistableObject
-import java.io.Serial
 
 data class Message(
     val role: Character,
     val content: String
-) : PersistableObject() {
+) {
 
     fun roleValue(): String = role.value
 
@@ -34,8 +32,4 @@ data class Message(
         }
     }
 
-    companion object {
-        @Serial
-        private const val serialVersionUID = 1L
-    }
 }

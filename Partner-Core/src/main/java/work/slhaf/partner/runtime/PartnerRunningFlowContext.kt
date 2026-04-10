@@ -1,4 +1,4 @@
-package work.slhaf.partner.runtime.interaction.data.context
+package work.slhaf.partner.runtime
 
 import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
 

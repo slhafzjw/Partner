@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.core.memory.exception.UnExistedDateIndexException;
-import work.slhaf.partner.core.memory.exception.UnExistedTopicException;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.core.memory.pojo.SliceRef;
@@ -19,6 +17,8 @@ import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.state.State;
 import work.slhaf.partner.framework.agent.state.StateSerializable;
 import work.slhaf.partner.framework.agent.state.StateValue;
+import work.slhaf.partner.module.memory.runtime.exception.UnExistedDateIndexException;
+import work.slhaf.partner.module.memory.runtime.exception.UnExistedTopicException;
 import work.slhaf.partner.module.memory.selector.ActivatedMemorySlice;
 
 import java.nio.file.Path;

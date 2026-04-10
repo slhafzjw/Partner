@@ -1,7 +1,7 @@
 package work.slhaf.partner;
 
 import work.slhaf.partner.framework.agent.Agent;
-import work.slhaf.partner.runtime.interaction.WebSocketGatewayRegistration;
+import work.slhaf.partner.runtime.gateway.WebSocketGatewayRegistration;
 
 public class Main {
     public static void main(String[] args) {

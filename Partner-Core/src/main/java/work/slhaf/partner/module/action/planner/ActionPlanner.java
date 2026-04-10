@@ -22,7 +22,7 @@ import work.slhaf.partner.module.action.planner.evaluator.entity.EvaluatorResult
 import work.slhaf.partner.module.action.planner.extractor.ActionExtractor;
 import work.slhaf.partner.module.action.planner.extractor.entity.ExtractorResult;
 import work.slhaf.partner.module.action.scheduler.ActionScheduler;
-import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;

@@ -13,7 +13,7 @@ import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.state.State;
 import work.slhaf.partner.framework.agent.state.StateSerializable;
 import work.slhaf.partner.framework.agent.state.StateValue;
-import work.slhaf.partner.runtime.interaction.data.context.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

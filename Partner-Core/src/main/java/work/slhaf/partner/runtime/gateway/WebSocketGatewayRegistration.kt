@@ -1,4 +1,4 @@
-package work.slhaf.partner.runtime.interaction
+package work.slhaf.partner.runtime.gateway
 
 import work.slhaf.partner.framework.agent.interaction.AgentGateway
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration

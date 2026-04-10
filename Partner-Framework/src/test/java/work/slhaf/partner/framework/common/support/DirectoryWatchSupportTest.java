@@ -3,7 +3,7 @@ package work.slhaf.partner.framework.common.support;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import work.slhaf.partner.framework.agent.common.support.DirectoryWatchSupport;
+import work.slhaf.partner.framework.agent.support.DirectoryWatchSupport;
 
 import java.io.IOException;
 import java.nio.file.Files;
