@@ -3,7 +3,7 @@ package work.slhaf.partner.framework.agent;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.framework.agent.config.ConfigCenter;
-import work.slhaf.partner.framework.agent.exception.AgentLaunchFailedException;
+import work.slhaf.partner.framework.agent.exception.deprecated.AgentLaunchFailedException;
 import work.slhaf.partner.framework.agent.factory.AgentRegisterFactory;
 import work.slhaf.partner.framework.agent.factory.context.AgentContext;
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration;

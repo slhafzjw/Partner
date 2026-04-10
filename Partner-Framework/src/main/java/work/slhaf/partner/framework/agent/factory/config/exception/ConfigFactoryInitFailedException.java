@@ -1,6 +1,6 @@
 package work.slhaf.partner.framework.agent.factory.config.exception;
 
-import work.slhaf.partner.framework.agent.exception.AgentLaunchFailedException;
+import work.slhaf.partner.framework.agent.exception.deprecated.AgentLaunchFailedException;
 
 public class ConfigFactoryInitFailedException extends AgentLaunchFailedException {
     public ConfigFactoryInitFailedException(String message, Throwable cause) {

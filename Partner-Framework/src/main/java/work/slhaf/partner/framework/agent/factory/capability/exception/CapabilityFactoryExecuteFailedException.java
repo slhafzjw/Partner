@@ -1,6 +1,6 @@
 package work.slhaf.partner.framework.agent.factory.capability.exception;
 
-import work.slhaf.partner.framework.agent.exception.AgentLaunchFailedException;
+import work.slhaf.partner.framework.agent.exception.deprecated.AgentLaunchFailedException;
 
 public class CapabilityFactoryExecuteFailedException extends AgentLaunchFailedException {
     public CapabilityFactoryExecuteFailedException(String message) {

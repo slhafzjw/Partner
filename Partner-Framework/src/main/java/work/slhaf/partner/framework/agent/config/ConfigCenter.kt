@@ -3,7 +3,7 @@ package work.slhaf.partner.framework.agent.config
 import com.alibaba.fastjson2.JSON
 import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
-import work.slhaf.partner.framework.agent.exception.AgentLaunchFailedException
+import work.slhaf.partner.framework.agent.exception.deprecated.AgentLaunchFailedException
 import work.slhaf.partner.framework.agent.support.DirectoryWatchSupport
 import java.io.IOException
 import java.lang.reflect.Field

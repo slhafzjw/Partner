@@ -1,6 +1,6 @@
 package work.slhaf.partner.framework.agent.factory.config.exception;
 
-import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
+import work.slhaf.partner.framework.agent.exception.deprecated.AgentRuntimeException;
 
 public class ConfigFactoryRuntimeException extends AgentRuntimeException {
     public ConfigFactoryRuntimeException(String message, Throwable cause) {
