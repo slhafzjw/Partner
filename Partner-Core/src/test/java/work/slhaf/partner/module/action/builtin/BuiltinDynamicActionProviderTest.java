@@ -201,5 +201,10 @@ class BuiltinDynamicActionProviderTest {
         public void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData) {
             persistCalled = true;
         }
+
+        @Override
+        public void close() {
+
+        }
     }
 }

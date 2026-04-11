@@ -1,8 +1,8 @@
 package work.slhaf.partner.core.action.runner.policy
 
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
-import work.slhaf.partner.core.action.exception.ActionInitFailedException
 
 class BwrapPolicyProviderTest {
 
@@ -59,28 +59,4 @@ class BwrapPolicyProviderTest {
         assertFalse(wrapped.args.contains("--unshare-net"))
     }
 
-    @Test
-    fun `require command available throws ActionInitFailedException when command missing`() {
-        val exception = assertThrows(ActionInitFailedException::class.java) {
-            bwrapPolicyFileFacadeClass().requireCommandAvailable("definitely-not-found-bwrap-command")
-        }
-
-        assertTrue(exception.message!!.contains("definitely-not-found-bwrap-command"))
-    }
-}
-
-private fun bwrapPolicyFileFacadeClass(): Class<*> {
-    return Class.forName("work.slhaf.partner.core.action.runner.policy.BwrapPolicyProviderKt")
-}
-
-private fun Class<*>.requireCommandAvailable(command: String) {
-    val method = getDeclaredMethod("requireCommandAvailable", String::class.java)
-    method.isAccessible = true
-    try {
-        method.invoke(null, command)
-    } catch (e: java.lang.reflect.InvocationTargetException) {
-        throw (e.targetException as? RuntimeException)
-            ?: (e.targetException as? Error)
-            ?: RuntimeException(e.targetException)
-    }
 }

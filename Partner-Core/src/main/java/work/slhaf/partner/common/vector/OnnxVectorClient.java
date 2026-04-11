@@ -5,8 +5,7 @@ import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtSession;
-import work.slhaf.partner.common.vector.exception.VectorClientExecuteException;
-import work.slhaf.partner.common.vector.exception.VectorClientLoadFailedException;
+import work.slhaf.partner.common.vector.exception.VectorClientExecutionException;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -38,7 +37,13 @@ public class OnnxVectorClient extends VectorClient {
             OrtSession.SessionOptions ops = new OrtSession.SessionOptions();
             session = env.createSession(modelPath, ops);
         } catch (Exception e) {
-            throw new VectorClientLoadFailedException("加载ONNX模型失败", e);
+            throw new VectorClientExecutionException(
+                    "Failed to load ONNX model",
+                    "onnx",
+                    "MODEL_LOAD",
+                    modelPath,
+                    e
+            );
         }
     }
 
@@ -46,7 +51,13 @@ public class OnnxVectorClient extends VectorClient {
         try {
             tokenizer = HuggingFaceTokenizer.newInstance(Path.of(tokenizerPath));
         } catch (Exception e) {
-            throw new VectorClientLoadFailedException("加载Tokenizer失败", e);
+            throw new VectorClientExecutionException(
+                    "Failed to load tokenizer",
+                    "onnx",
+                    "TOKENIZER_LOAD",
+                    tokenizerPath,
+                    e
+            );
         }
     }
 
@@ -76,7 +87,13 @@ public class OnnxVectorClient extends VectorClient {
             OnnxTensor embeddingTensor = (OnnxTensor) result.get(0);
             return embeddingTensor.getFloatBuffer().array();
         } catch (Exception e) {
-            throw new VectorClientExecuteException("嵌入模型执行出错", e);
+            throw new VectorClientExecutionException(
+                    "Failed to execute embedding model",
+                    "onnx",
+                    "COMPUTE",
+                    modelPath,
+                    e
+            );
         }
     }
 

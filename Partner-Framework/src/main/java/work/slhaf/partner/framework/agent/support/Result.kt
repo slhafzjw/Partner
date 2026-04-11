@@ -21,9 +21,8 @@ class Result<T> private constructor(
             return value as T
         }
         when (exception) {
-            is RuntimeException -> throw exception
-            is Error -> throw exception
-            else -> throw IllegalStateException(exception.message, exception)
+            is AgentRuntimeException, is Error -> throw exception
+            else -> throw AgentRuntimeException(exception.localizedMessage, exception)
         }
     }
 

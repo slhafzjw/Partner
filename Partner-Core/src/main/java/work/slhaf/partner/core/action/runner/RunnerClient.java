@@ -9,7 +9,7 @@ import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaAction.Result;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.exception.ActionInitFailedException;
+import work.slhaf.partner.core.action.exception.ActionInfrastructureStartupException;
 import work.slhaf.partner.module.action.builtin.BuiltinActionRegistry;
 
 import java.io.IOException;
@@ -101,7 +101,13 @@ public abstract class RunnerClient implements AutoCloseable {
             Files.createDirectory(path);
         } catch (IOException e) {
             if (!Files.exists(path)) {
-                throw new ActionInitFailedException("目录创建失败: " + pathStr, e);
+                throw new ActionInfrastructureStartupException(
+                        "Failed to create action directory: " + pathStr,
+                        "runner-client",
+                        pathStr,
+                        null,
+                        e
+                );
             }
         }
     }

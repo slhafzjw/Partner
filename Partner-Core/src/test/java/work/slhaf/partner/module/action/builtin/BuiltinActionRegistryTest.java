@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
+import work.slhaf.partner.core.action.exception.ActionLookupException;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 
 import java.lang.reflect.Field;
@@ -80,14 +80,14 @@ class BuiltinActionRegistryTest {
         registry.defineBuiltinAction("nil", buildMetaActionInfo("nil"), params -> null);
 
         Assertions.assertEquals("hello", registry.call("builtin::echo", Map.of("value", "hello")));
-        Assertions.assertEquals("{\"ok\":true}", registry.call("builtin::json", Map.of()));
+        Assertions.assertEquals("{ok=true}", registry.call("builtin::json", Map.of()));
         Assertions.assertEquals("null", registry.call("builtin::nil", Map.of()));
     }
 
     @Test
     void testCallThrowsWhenMissingDefinition() {
         BuiltinActionRegistry registry = new BuiltinActionRegistry();
-        Assertions.assertThrows(MetaActionNotFoundException.class, () -> registry.call("builtin::missing", Map.of()));
+        Assertions.assertThrows(ActionLookupException.class, () -> registry.call("builtin::missing", Map.of()));
     }
 
     @Test

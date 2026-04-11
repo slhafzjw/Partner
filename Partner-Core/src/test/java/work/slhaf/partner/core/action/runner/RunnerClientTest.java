@@ -34,5 +34,10 @@ public class RunnerClientTest {
         public void persistSerialize(MetaActionInfo metaActionInfo, ActionFileMetaData fileMetaData) {
 
         }
+
+        @Override
+        public void close() {
+
+        }
     }
 }

@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
+import work.slhaf.partner.core.action.exception.ActionLookupException;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
@@ -57,7 +57,11 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
     public String call(@NonNull String actionKey, @NonNull Map<String, Object> params) {
         BuiltinActionDefinition definition = definitions.get(actionKey);
         if (definition == null) {
-            throw new MetaActionNotFoundException("未找到对应的内置行动程序: " + actionKey);
+            throw new ActionLookupException(
+                    "Builtin action definition not found: " + actionKey,
+                    actionKey,
+                    "BUILTIN_DEFINITION"
+            );
         }
         String result = definition.invoker().apply(params);
         if (result == null) {

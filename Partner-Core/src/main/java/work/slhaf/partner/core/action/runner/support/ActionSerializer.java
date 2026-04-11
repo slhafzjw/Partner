@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.exception.ActionSerializeFailedException;
+import work.slhaf.partner.core.action.exception.ActionSerializationException;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +34,7 @@ public class ActionSerializer {
         return codeType.startsWith(".") ? codeType : "." + codeType;
     }
 
-    private static @NotNull Path createActionDir(String baseName, Path baseDir) {
+    private static @NotNull Path createActionDir(String baseName, Path baseDir, String fileExt) {
         for (int i = 0; ; i++) {
             String dirName = i == 0 ? baseName : baseName + "(" + i + ")";
             Path candidate = baseDir.resolve(dirName);
@@ -43,7 +43,14 @@ public class ActionSerializer {
                 return candidate;
             } catch (FileAlreadyExistsException ignored) {
             } catch (IOException e) {
-                throw new ActionSerializeFailedException("无法创建行动目录: " + candidate.toAbsolutePath(), e);
+                throw new ActionSerializationException(
+                        "Failed to create action directory: " + candidate.toAbsolutePath(),
+                        baseName,
+                        baseDir.toAbsolutePath().toString(),
+                        fileExt,
+                        "CREATE_DIRECTORY",
+                        e
+                );
             }
         }
     }
@@ -75,10 +82,16 @@ public class ActionSerializer {
         val baseDir = Path.of(dynamicActionPath);
 
         if (!Files.isDirectory(baseDir)) {
-            throw new ActionSerializeFailedException("目录不存在或不可用: " + baseDir.toAbsolutePath());
+            throw new ActionSerializationException(
+                    "Action base directory is not available: " + baseDir.toAbsolutePath(),
+                    fileMetaData.getName(),
+                    baseDir.toAbsolutePath().toString(),
+                    fileMetaData.getExt(),
+                    "VALIDATE_BASE_DIR"
+            );
         }
 
-        val actionDir = createActionDir(fileMetaData.getName(), baseDir);
+        val actionDir = createActionDir(fileMetaData.getName(), baseDir, fileMetaData.getExt());
         val runTmp = actionDir.resolve("run." + fileMetaData.getExt() + ".tmp");
         val descTmp = actionDir.resolve("desc.json.tmp");
         val runFinal = actionDir.resolve("run." + fileMetaData.getExt());
@@ -95,7 +108,14 @@ public class ActionSerializer {
             safeDelete(runFinal);
             safeDelete(descFinal);
             safeDelete(actionDir);
-            throw new ActionSerializeFailedException("行动文件写入失败", e);
+            throw new ActionSerializationException(
+                    "Failed to persist action files",
+                    fileMetaData.getName(),
+                    baseDir.toAbsolutePath().toString(),
+                    fileMetaData.getExt(),
+                    "WRITE_FILES",
+                    e
+            );
         }
         log.debug("持久序列化结束");
     }

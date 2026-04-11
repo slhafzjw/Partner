@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import work.slhaf.partner.common.vector.exception.VectorClientExecutionException;
+import work.slhaf.partner.common.vector.exception.VectorClientStartupException;
 
 @Slf4j
 public abstract class VectorClient {
@@ -12,14 +14,34 @@ public abstract class VectorClient {
     public static VectorClient INSTANCE;
 
     public static void startClient(VectorConfig config) {
-        if (config instanceof VectorConfig.Ollama ollama) {
-            INSTANCE = new OllamaVectorClient(ollama.ollamaEmbeddingUrl, ollama.ollamaEmbeddingModel);
-        } else if (config instanceof VectorConfig.Onnx onnx) {
-            INSTANCE = new OnnxVectorClient(onnx.tokenizerPath, onnx.embeddingModelPath);
-        } else {
-            return;
+        try {
+            if (config instanceof VectorConfig.Ollama ollama) {
+                INSTANCE = new OllamaVectorClient(ollama.ollamaEmbeddingUrl, ollama.ollamaEmbeddingModel);
+            } else if (config instanceof VectorConfig.Onnx onnx) {
+                INSTANCE = new OnnxVectorClient(onnx.tokenizerPath, onnx.embeddingModelPath);
+            } else {
+                return;
+            }
+            status = true;
+        } catch (VectorClientStartupException e) {
+            throw e;
+        } catch (VectorClientExecutionException e) {
+            throw new VectorClientStartupException(
+                    "Vector client startup failed",
+                    e.getClientType(),
+                    "COMPUTE".equals(e.getPhase()) ? "STARTUP_SELF_TEST" : e.getPhase(),
+                    e.getTarget(),
+                    e
+            );
+        } catch (Exception e) {
+            throw new VectorClientStartupException(
+                    "Vector client startup failed",
+                    resolveClientType(config),
+                    "STARTUP",
+                    resolveTarget(config),
+                    e
+            );
         }
-        status = true;
     }
 
     public float[] compute(String input) {
@@ -30,6 +52,26 @@ public abstract class VectorClient {
     }
 
     protected abstract float[] doCompute(String input);
+
+    private static String resolveClientType(VectorConfig config) {
+        if (config instanceof VectorConfig.Onnx) {
+            return "onnx";
+        }
+        if (config instanceof VectorConfig.Ollama) {
+            return "ollama";
+        }
+        return "unknown";
+    }
+
+    private static String resolveTarget(VectorConfig config) {
+        if (config instanceof VectorConfig.Onnx onnx) {
+            return onnx.embeddingModelPath;
+        }
+        if (config instanceof VectorConfig.Ollama ollama) {
+            return ollama.ollamaEmbeddingUrl;
+        }
+        return null;
+    }
 
     public double compare(float[] v1, float[] v2) {
         if (!status) {

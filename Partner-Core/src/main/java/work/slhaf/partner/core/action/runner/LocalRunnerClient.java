@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import work.slhaf.partner.core.action.entity.ActionFileMetaData;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
-import work.slhaf.partner.core.action.exception.ActionInitFailedException;
+import work.slhaf.partner.core.action.exception.ActionInfrastructureStartupException;
 import work.slhaf.partner.core.action.runner.execution.McpActionExecutor;
 import work.slhaf.partner.core.action.runner.execution.OriginExecutionService;
 import work.slhaf.partner.core.action.runner.mcp.*;
@@ -97,13 +97,26 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
             );
             configWatcher.start();
             configWatcher.registerPolicyListener();
+        } catch (ActionInfrastructureStartupException e) {
+            closeQuietly(configWatcher);
+            closeQuietly(dynamicManager);
+            closeQuietly(descWatcher);
+            closeQuietly(metaRegistry);
+            closeQuietly(clientRegistry);
+            throw e;
         } catch (Exception e) {
             closeQuietly(configWatcher);
             closeQuietly(dynamicManager);
             closeQuietly(descWatcher);
             closeQuietly(metaRegistry);
             closeQuietly(clientRegistry);
-            throw new ActionInitFailedException("LocalRunnerClient 初始化失败", e);
+            throw new ActionInfrastructureStartupException(
+                    "LocalRunnerClient initialization failed",
+                    "local-runner-client",
+                    ACTION_PATH,
+                    null,
+                    e
+            );
         }
 
         this.mcpClientRegistry = clientRegistry;

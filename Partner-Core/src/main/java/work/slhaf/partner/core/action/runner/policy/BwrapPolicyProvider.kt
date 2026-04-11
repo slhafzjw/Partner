@@ -1,6 +1,6 @@
 package work.slhaf.partner.core.action.runner.policy
 
-import work.slhaf.partner.core.action.exception.ActionInitFailedException
+import work.slhaf.partner.core.action.exception.ActionInfrastructureStartupException
 
 private const val BWRAP_COMMAND = "bwrap"
 
@@ -62,10 +62,21 @@ object BwrapPolicyProvider : PolicyProvider(
             val exitCode = process.waitFor()
             exitCode == 0
         } catch (e: Exception) {
-            throw ActionInitFailedException("bwrap provider 初始化失败: 无法检测 $BWRAP_COMMAND 可执行文件", e)
+            throw ActionInfrastructureStartupException(
+                "Failed to detect executable command '$BWRAP_COMMAND'",
+                "bwrap-policy-provider",
+                null,
+                BWRAP_COMMAND,
+                e
+            )
         }
         if (!available) {
-            throw ActionInitFailedException("bwrap provider 初始化失败: 未检测到可执行命令 '$BWRAP_COMMAND'")
+            throw ActionInfrastructureStartupException(
+                "Executable command '$BWRAP_COMMAND' is not available",
+                "bwrap-policy-provider",
+                null,
+                BWRAP_COMMAND
+            )
         }
     }
 }

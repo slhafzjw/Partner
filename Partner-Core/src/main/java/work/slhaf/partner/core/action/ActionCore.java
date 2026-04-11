@@ -10,7 +10,7 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.intervention.InterventionType;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
-import work.slhaf.partner.core.action.exception.MetaActionNotFoundException;
+import work.slhaf.partner.core.action.exception.ActionLookupException;
 import work.slhaf.partner.core.action.runner.LocalRunnerClient;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.framework.agent.config.ConfigCenter;
@@ -117,12 +117,20 @@ public class ActionCore implements StateSerializable {
     public MetaAction loadMetaAction(@NonNull String actionKey) {
         MetaActionInfo metaActionInfo = existedMetaActions.get(actionKey);
         if (metaActionInfo == null) {
-            throw new MetaActionNotFoundException("未找到对应的行动程序信息" + actionKey);
+            throw new ActionLookupException(
+                    "Meta action info not found for action key: " + actionKey,
+                    actionKey,
+                    "META_ACTION"
+            );
         }
 
         String[] split = actionKey.split("::", 2);
         if (split.length < 2) {
-            throw new MetaActionNotFoundException("未找到对应的行动程序，原因: 传入的 actionKey(" + actionKey + ") 存在异常");
+            throw new ActionLookupException(
+                    "Invalid action key format: " + actionKey,
+                    actionKey,
+                    "META_ACTION"
+            );
         }
         MetaAction.Type type = switch (split[0]) {
             case BUILTIN_LOCATION -> MetaAction.Type.BUILTIN;
@@ -142,7 +150,11 @@ public class ActionCore implements StateSerializable {
     public MetaActionInfo loadMetaActionInfo(@NonNull String actionKey) {
         MetaActionInfo info = existedMetaActions.get(actionKey);
         if (info == null) {
-            throw new MetaActionNotFoundException("未找到对应的行动程序描述信息: " + actionKey);
+            throw new ActionLookupException(
+                    "Meta action description not found for action key: " + actionKey,
+                    actionKey,
+                    "META_ACTION_INFO"
+            );
         }
         return info;
     }

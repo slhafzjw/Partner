@@ -5,7 +5,7 @@ import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import work.slhaf.partner.common.vector.exception.VectorClientExecuteException;
+import work.slhaf.partner.common.vector.exception.VectorClientExecutionException;
 
 import java.util.Map;
 
@@ -28,12 +28,23 @@ public class OllamaVectorClient extends VectorClient {
         HttpRequest request = HttpRequest.get(ollamaEmbeddingUrl).body(JSONObject.toJSONString(param));
         try (HttpResponse response = request.execute()) {
             if (!response.isOk())
-                throw new VectorClientExecuteException("嵌入模型执行出错");
+                throw new VectorClientExecutionException(
+                        "Failed to execute embedding model",
+                        "ollama",
+                        "COMPUTE",
+                        ollamaEmbeddingUrl
+                );
             String resStr = response.body();
             EmbeddingModelResponse embeddingResponse = JSONObject.parseObject(resStr, EmbeddingModelResponse.class);
             return embeddingResponse.getEmbeddings()[0];
         } catch (Exception e) {
-            throw new VectorClientExecuteException("嵌入模型执行出错", e);
+            throw new VectorClientExecutionException(
+                    "Failed to execute embedding model",
+                    "ollama",
+                    "COMPUTE",
+                    ollamaEmbeddingUrl,
+                    e
+            );
         }
     }
 
