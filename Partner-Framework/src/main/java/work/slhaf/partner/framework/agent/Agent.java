@@ -3,11 +3,11 @@ package work.slhaf.partner.framework.agent;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import work.slhaf.partner.framework.agent.config.ConfigCenter;
+import work.slhaf.partner.framework.agent.config.Configurable;
 import work.slhaf.partner.framework.agent.exception.AgentStartupException;
 import work.slhaf.partner.framework.agent.exception.ExceptionReporter;
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.AgentRegisterFactory;
-import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent;
 import work.slhaf.partner.framework.agent.factory.context.AgentContext;
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration;
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistry;
@@ -34,6 +34,7 @@ public final class Agent {
         private final Class<?> applicationClass;
         private final Set<AgentGatewayRegistration> gatewayRegistrations = new LinkedHashSet<>();
         private final Set<ExceptionReporter> exceptionReporters = new LinkedHashSet<>();
+        private final Set<Configurable> configurables = new LinkedHashSet<>();
         private final Set<LifecycleHook> preShutdownHooks = new LinkedHashSet<>();
         private final Set<LifecycleHook> postShutdownHooks = new LinkedHashSet<>();
 
@@ -43,6 +44,11 @@ public final class Agent {
 
         public AgentApp addGatewayRegistration(AgentGatewayRegistration... registrations) {
             this.gatewayRegistrations.addAll(Set.of(registrations));
+            return this;
+        }
+
+        public AgentApp addConfigurable(Configurable configurable) {
+            this.configurables.add(configurable);
             return this;
         }
 
@@ -73,17 +79,17 @@ public final class Agent {
             try {
                 // Keep startup order explicit so registries are ready before component scanning.
                 for (ExceptionReporter exceptionReporter : exceptionReporters) {
-                    // AgentComponent will be initialized by factory
-                    if (exceptionReporter.getClass().isAnnotationPresent(AgentComponent.class)) {
-                        continue;
-                    }
                     exceptionReporter.register();
                 }
                 // Load class
                 StateCenter.INSTANCE.toString();
+
                 // Register into config center
                 ModelRuntimeRegistry.INSTANCE.register();
                 AgentGatewayRegistry.INSTANCE.register();
+                for (Configurable configurable : configurables) {
+                    configurable.register();
+                }
 
                 for (AgentGatewayRegistration registration : gatewayRegistrations) {
                     registration.register();
