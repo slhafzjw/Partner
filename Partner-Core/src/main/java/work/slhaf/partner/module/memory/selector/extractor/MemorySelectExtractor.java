@@ -13,6 +13,7 @@ import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAg
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.TaskBlock;
 import work.slhaf.partner.module.memory.runtime.MemoryRuntime;
 import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorInput;
@@ -34,18 +35,19 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInpu
     public ExtractorResult execute(ExtractorInput input) {
         log.debug("[MemorySelectExtractor] 主题提取模块开始...");
         ExtractorResult extractorResult;
-        try {
-            List<Message> messages = List.of(
-                    resolveContextMessage(),
-                    resolveTaskMessage(input)
-            );
-            extractorResult = formattedChat(
-                    messages,
-                    ExtractorResult.class
-            );
+        List<Message> messages = List.of(
+                resolveContextMessage(),
+                resolveTaskMessage(input)
+        );
+        Result<ExtractorResult> result = formattedChat(
+                messages,
+                ExtractorResult.class
+        );
+        if (result.isSuccess()) {
+            extractorResult = result.getOrThrow();
             log.debug("[MemorySelectExtractor] 主题提取结果: {}", extractorResult);
-        } catch (Exception e) {
-            log.error("[MemorySelectExtractor] 主题提取出错: ", e);
+        } else {
+            log.error("[MemorySelectExtractor] 主题提取出错: ", result.exceptionOrNull());
             extractorResult = new ExtractorResult();
             extractorResult.setRecall(false);
             extractorResult.setMatches(List.of());

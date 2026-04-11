@@ -46,7 +46,13 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
     private fun registerProvider(config: ProviderConfig) {
         when (config) {
             is OpenAiCompatibleProviderConfig -> baseProvider[config.name] =
-                OpenAiCompatibleProvider(config.baseUrl, config.apiKey, config.defaultModel)
+                OpenAiCompatibleProvider(
+                    config.name,
+                    DEFAULT_PROVIDER,
+                    config.baseUrl,
+                    config.apiKey,
+                    config.defaultModel
+                )
         }
     }
 
@@ -61,11 +67,7 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
         val override = config.override
 
         try {
-            runtimeProvider[config.modelKey] = if (override != null) {
-                provider.fork(override)
-            } else {
-                provider
-            }
+            runtimeProvider[config.modelKey] = provider.fork(config.modelKey, override)
         } catch (e: Exception) {
             throw runtimeModelException(
                 "Failed to build runtime provider for model key ${config.modelKey}",

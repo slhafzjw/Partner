@@ -30,7 +30,7 @@ public class ActionCorrectionRecognizer extends AbstractAgentModule.Sub<Correcti
                 resolveContextMessage(),
                 resolveTaskMessage(input)
         );
-        return formattedChat(messages, CorrectionRecognizerResult.class);
+        return formattedChat(messages, CorrectionRecognizerResult.class).getOrThrow();
     }
 
     private Message resolveTaskMessage(CorrectionRecognizerInput input) {

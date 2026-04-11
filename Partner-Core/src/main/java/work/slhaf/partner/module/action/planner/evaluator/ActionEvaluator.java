@@ -15,6 +15,7 @@ import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAg
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.action.planner.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.action.planner.evaluator.entity.EvaluatorResult;
 
@@ -61,10 +62,15 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
                             availableMetaActionContext(),
                             new Message(Message.Character.USER, tendency)
                     );
-                    EvaluatorResult evaluatorResult = formattedChat(
+                    Result<EvaluatorResult> result = formattedChat(
                             messages,
                             EvaluatorResult.class
                     );
+                    if (result.isFailure()) {
+                        log.error("ActionEvaluator评估失败: {}", tendency, result.exceptionOrNull());
+                        return;
+                    }
+                    EvaluatorResult evaluatorResult = result.getOrThrow();
                     evaluatorResult.setTendency(tendency);
                     synchronized (evaluatorResults) {
                         evaluatorResults.add(evaluatorResult);

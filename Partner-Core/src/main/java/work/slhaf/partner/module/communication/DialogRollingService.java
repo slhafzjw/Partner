@@ -45,7 +45,7 @@ public class DialogRollingService extends AbstractAgentModule.Standalone impleme
         List<Message> messages = List.of(
                 resolveTaskBlock(snapshotMessages)
         );
-        return chat(messages);
+        return chat(messages).getOrThrow();
     }
 
     private @NotNull BlockContent buildDialogAbstractBlock(String summary, @Nullable String unitId, @Nullable String sliceId) {

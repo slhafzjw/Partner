@@ -15,6 +15,7 @@ import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAg
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.TaskBlock;
 import work.slhaf.partner.module.memory.selector.ActivatedMemorySlice;
 import work.slhaf.partner.module.memory.selector.evaluator.entity.EvaluatorBatchInput;
@@ -64,13 +65,16 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
                             contextMessage,
                             resolveTaskMessage(batchInput)
                     );
-                    EvaluatorBatchResult batchResult = formattedChat(messages, EvaluatorBatchResult.class);
-                    if (batchResult.isPassed()) {
+                    Result<EvaluatorBatchResult> batchResult = formattedChat(messages, EvaluatorBatchResult.class);
+                    if (batchResult.isFailure()) {
+                        log.debug("切片评估失败，已跳过当前切片", batchResult.exceptionOrNull());
+                        return;
+                    }
+                    if (batchResult.getOrThrow().isPassed()) {
                         synchronized (result) {
                             result.add(slice);
                         }
                     }
-                } catch (Exception ignore) {
                 } finally {
                     latch.countDown();
                 }

@@ -17,7 +17,7 @@ public class TotalSummarizer extends AbstractAgentModule.Sub<HashMap<String, Str
         return formattedChat(
                 List.of(new Message(Message.Character.USER, JSONUtil.toJsonPrettyStr(singleMemorySummary))),
                 SummaryContent.class
-        ).getContent();
+        ).getOrThrow().getContent();
     }
 
     @Override

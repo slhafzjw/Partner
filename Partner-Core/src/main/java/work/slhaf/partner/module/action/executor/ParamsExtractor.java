@@ -11,6 +11,7 @@ import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCa
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.TaskBlock;
 import work.slhaf.partner.module.action.executor.entity.ExtractorInput;
 import work.slhaf.partner.module.action.executor.entity.ExtractorResult;
@@ -28,20 +29,19 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
 
     @Override
     public ExtractorResult execute(ExtractorInput input) {
-        ExtractorResult result;
-        try {
-            List<Message> messages = List.of(
-                    resolveContextMessage(),
-                    resolveTaskMessage(input)
-            );
-            result = formattedChat(messages, ExtractorResult.class);
-        } catch (Exception e) {
-            log.error("ParamsExtractor解析结果失败", e);
-            result = new ExtractorResult();
-            result.setOk(false);
-            result.setParams(new HashMap<>());
+        List<Message> messages = List.of(
+                resolveContextMessage(),
+                resolveTaskMessage(input)
+        );
+        Result<ExtractorResult> result = formattedChat(messages, ExtractorResult.class);
+        if (result.isFailure()) {
+            log.error("ParamsExtractor解析结果失败", result.exceptionOrNull());
+            ExtractorResult fallback = new ExtractorResult();
+            fallback.setOk(false);
+            fallback.setParams(new HashMap<>());
+            return fallback;
         }
-        return result;
+        return result.getOrThrow();
     }
 
     private Message resolveTaskMessage(ExtractorInput input) {

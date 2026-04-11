@@ -2,18 +2,22 @@ package work.slhaf.partner.framework.agent.model
 
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.framework.agent.model.pojo.Message
+import work.slhaf.partner.framework.agent.support.Result
 
 interface ActivateModel {
 
-    fun chat(messages: List<Message>): String {
+    fun chat(messages: List<Message>): Result<String> {
         return ModelRuntimeRegistry.resolveProvider(modelKey()).chat(mergeMessages(messages))
     }
 
-    fun streamChat(messages: List<Message>, handler: StreamChatMessageConsumer) {
-        ModelRuntimeRegistry.resolveProvider(modelKey()).streamChat(mergeMessages(messages), handler)
+    fun streamChat(
+        messages: List<Message>,
+        handler: StreamChatMessageConsumer
+    ): work.slhaf.partner.framework.agent.support.Result<Unit> {
+        return ModelRuntimeRegistry.resolveProvider(modelKey()).streamChat(mergeMessages(messages), handler)
     }
 
-    fun <T : Any> formattedChat(messages: List<Message>, responseType: Class<T>): T {
+    fun <T : Any> formattedChat(messages: List<Message>, responseType: Class<T>): Result<T> {
         return ModelRuntimeRegistry.resolveProvider(modelKey()).formattedChat(mergeMessages(messages), responseType)
     }
 

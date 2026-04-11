@@ -12,6 +12,7 @@ import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
 import work.slhaf.partner.framework.agent.model.StreamChatMessageConsumer;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -27,6 +28,8 @@ import java.util.stream.Collectors;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRunningFlowContext> implements ActivateModel {
+
+    private static final String INTERRUPTED_MARKER = " [response interrupted due to internal exception]";
 
     private static final String MODULE_PROMPT = """
             你是 Partner 的表达模块。
@@ -64,7 +67,11 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     private void executeChat(PartnerRunningFlowContext runningFlowContext) {
         StreamChatMessageConsumer consumer = ReplyDispatcher.INSTANCE.createConsumer(runningFlowContext.getTarget());
-        this.streamChat(buildChatMessages(runningFlowContext), consumer);
+        Result<kotlin.Unit> result = this.streamChat(buildChatMessages(runningFlowContext), consumer);
+        if (result.isFailure()) {
+            log.error("Streaming response failed", result.exceptionOrNull());
+            consumer.onDelta(INTERRUPTED_MARKER);
+        }
         updateChatMessages(runningFlowContext, consumer.collectResponse());
         updateContext();
     }

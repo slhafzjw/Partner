@@ -60,7 +60,7 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
 
     private String singleExecute(String primaryContent) {
         try {
-            return chat(List.of(new Message(Message.Character.USER, primaryContent)));
+            return chat(List.of(new Message(Message.Character.USER, primaryContent))).getOrThrow();
         } catch (Exception e) {
             log.error("[SingleSummarizer] 单消息总结出错: ", e);
             return primaryContent;

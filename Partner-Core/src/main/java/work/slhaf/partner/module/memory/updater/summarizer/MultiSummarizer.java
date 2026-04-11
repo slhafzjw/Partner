@@ -28,7 +28,7 @@ public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, Sum
         SummarizeResult result = formattedChat(
                 List.of(new Message(Message.Character.USER, JSONUtil.toJsonPrettyStr(input))),
                 SummarizeResult.class
-        );
+        ).getOrThrow();
         log.debug("[MemorySummarizer] 整体摘要结果: {}", JSONObject.toJSONString(result));
         return fix(result);
     }

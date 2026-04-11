@@ -30,7 +30,7 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Cor
                 resolveContextMessage(),
                 resolveTaskMessage(input)
         );
-        return formattedChat(messages, CorrectorResult.class);
+        return formattedChat(messages, CorrectorResult.class).getOrThrow();
     }
 
     private Message resolveTaskMessage(CorrectorInput input) {
