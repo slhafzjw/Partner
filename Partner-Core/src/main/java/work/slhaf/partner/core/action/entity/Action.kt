@@ -102,7 +102,7 @@ sealed class ExecutableAction(
     /**
      * 行动结果
      */
-    lateinit var result: String
+    var result: String? = null
 
     val history: MutableMap<Int, MutableList<HistoryAction>> = mutableMapOf()
 
@@ -142,7 +142,7 @@ sealed class ExecutableAction(
             tendency = tendency,
             actionChainSize = actionChain.size,
             executingStage = executingStage,
-            result = if (::result.isInitialized) result else null,
+            result = result,
             history = history.mapValues { (_, value) -> value.toList() },
             scheduleType = schedulable?.scheduleType,
             scheduleContent = schedulable?.scheduleContent,
@@ -169,7 +169,7 @@ data class SchedulableExecutableAction @JvmOverloads constructor(
     val scheduleHistories = ArrayList<ScheduleHistory>()
 
     fun recordAndReset() {
-        val newHistory = ScheduleHistory(ZonedDateTime.now(), result, history.toMap())
+        val newHistory = ScheduleHistory(ZonedDateTime.now(), result ?: "null", history.toMap())
         scheduleHistories.add(newHistory)
 
         executingStage = 0

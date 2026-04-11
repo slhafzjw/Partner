@@ -7,11 +7,14 @@ import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.framework.agent.exception.AgentException;
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.framework.agent.factory.context.Shutdown;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.action.executor.entity.*;
 
 import java.util.*;
@@ -311,7 +314,14 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
 
             val executingStage = actionData.getExecutingStage();
 
-            val extractorInput = assemblyHelper.buildExtractorInput(metaAction.getKey(), actionData.getUuid(), actionData.getDescription());
+            Result<ExtractorInput> extractorInputResult = assemblyHelper.buildExtractorInput(metaAction.getKey(), actionData.getUuid(), actionData.getDescription());
+            if (extractorInputResult.isFailure()) {
+                reportFailure(extractorInputResult.exceptionOrNull());
+                Throwable throwable = extractorInputResult.exceptionOrNull();
+                failureReason = buildAttemptFailureReason("参数提取失败", throwable == null ? null : throwable.getLocalizedMessage());
+                break;
+            }
+            val extractorInput = extractorInputResult.getOrNull();
             ExtractorResult extractorResult = paramsExtractor.execute(extractorInput);
 
             if (extractorResult == null || !extractorResult.isOk()) {
@@ -331,7 +341,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             }
 
             if (result.getStatus() == MetaAction.Result.Status.SUCCESS) {
-                val historyAction = new HistoryAction(actionKey, actionCapability.loadMetaActionInfo(actionKey).getDescription(), result.getData());
+                val historyAction = new HistoryAction(actionKey, resolveHistoryDescription(actionKey), result.getData());
                 actionData.getHistory()
                         .computeIfAbsent(executingStage, integer -> new ArrayList<>())
                         .add(historyAction);
@@ -497,6 +507,24 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         }
     }
 
+    private String resolveHistoryDescription(String actionKey) {
+        Result<MetaActionInfo> metaActionInfoResult = actionCapability.loadMetaActionInfo(actionKey);
+        if (metaActionInfoResult.isFailure()) {
+            reportFailure(metaActionInfoResult.exceptionOrNull());
+            return actionKey;
+        }
+        MetaActionInfo metaActionInfo = metaActionInfoResult.getOrNull();
+        return metaActionInfo == null || metaActionInfo.getDescription().isBlank()
+                ? actionKey
+                : metaActionInfo.getDescription();
+    }
+
+    private void reportFailure(Throwable throwable) {
+        if (throwable instanceof AgentException agentException) {
+            ExceptionReporterHandler.INSTANCE.report(agentException);
+        }
+    }
+
     private record MetaActionsListeningRecord(AtomicBoolean accepting, int phase) {
     }
 
@@ -511,12 +539,22 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         private AssemblyHelper() {
         }
 
-        private ExtractorInput buildExtractorInput(String actionKey, @NotNull String uuid, @NotNull String description) {
+        private Result<ExtractorInput> buildExtractorInput(String actionKey, @NotNull String uuid, @NotNull String description) {
+            Result<MetaActionInfo> metaActionInfoResult = actionCapability.loadMetaActionInfo(actionKey);
+            if (metaActionInfoResult.isFailure()) {
+                Throwable throwable = metaActionInfoResult.exceptionOrNull();
+                return Result.failure(throwable == null
+                        ? new work.slhaf.partner.core.action.exception.ActionLookupException(
+                        "Meta action description not found for action key: " + actionKey,
+                        actionKey,
+                        "META_ACTION_INFO"
+                ) : throwable);
+            }
             ExtractorInput input = new ExtractorInput();
-            input.setMetaActionInfo(actionCapability.loadMetaActionInfo(actionKey));
+            input.setMetaActionInfo(metaActionInfoResult.getOrNull());
             input.setTargetActionId(uuid);
             input.setTargetActionDesc(description);
-            return input;
+            return Result.success(input);
         }
 
         private CorrectorInput buildCorrectorInput(ExecutableAction executableAction) {
@@ -525,7 +563,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 List<CorrectorInput.ActionChainItem> overviewItems = list.stream()
                         .map(metaAction -> new CorrectorInput.ActionChainItem(
                                 metaAction.getKey(),
-                                actionCapability.loadMetaActionInfo(metaAction.getKey()).getDescription(),
+                                resolveHistoryDescription(metaAction.getKey()),
                                 metaAction.getResult().getStatus().name().toLowerCase(Locale.ROOT)
                         ))
                         .toList();

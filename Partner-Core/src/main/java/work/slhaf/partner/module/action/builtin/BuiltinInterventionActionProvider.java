@@ -15,8 +15,11 @@ import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.core.cognition.ContextWorkspace;
+import work.slhaf.partner.framework.agent.exception.AgentException;
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent;
+import work.slhaf.partner.framework.agent.support.Result;
 
 import java.util.*;
 import java.util.function.Function;
@@ -291,7 +294,8 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                 Set.of(),
                 true,
                 JSONObject.of(
-                        "result", "Intervene status."
+                        "ok", "Intervene status",
+                        "result", "Intervene result or failed message."
                 )
         );
 
@@ -305,6 +309,15 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
             Integer order = BuiltinActionRegistry.BuiltinActionDefinition.requireInt(params, "order");
             List<String> actions = requireActions(params, type);
             ExecutableAction target = requireTargetAction(targetId);
+            Result<Void> validationResult = validateActionKeys(actions);
+            if (validationResult.isFailure()) {
+                reportFailure(validationResult.exceptionOrNull());
+                Throwable throwable = validationResult.exceptionOrNull();
+                return JSONObject.of(
+                        "ok", false,
+                        "result", throwable == null ? "Intervention action validation failed" : throwable.getLocalizedMessage()
+                ).toJSONString();
+            }
 
             MetaIntervention intervention = new MetaIntervention();
             intervention.setType(type);
@@ -381,6 +394,28 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                 .filter(action -> targetId.equals(action.getUuid()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("未找到对应的 Action: " + targetId));
+    }
+
+    private Result<Void> validateActionKeys(List<String> actions) {
+        for (String actionKey : actions) {
+            Result<work.slhaf.partner.core.action.entity.MetaAction> metaActionResult = actionCapability.loadMetaAction(actionKey);
+            if (metaActionResult.isFailure()) {
+                Throwable throwable = metaActionResult.exceptionOrNull();
+                return Result.failure(throwable == null
+                        ? new work.slhaf.partner.core.action.exception.ActionLookupException(
+                        "Meta action lookup failed: " + actionKey,
+                        actionKey,
+                        "META_ACTION"
+                ) : throwable);
+            }
+        }
+        return Result.success(null);
+    }
+
+    private void reportFailure(Throwable throwable) {
+        if (throwable instanceof AgentException agentException) {
+            ExceptionReporterHandler.INSTANCE.report(agentException);
+        }
     }
 
 }

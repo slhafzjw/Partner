@@ -9,6 +9,7 @@ import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextWorkspace;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.action.executor.entity.ExtractorResult;
 import work.slhaf.partner.module.action.executor.entity.HistoryAction;
 
@@ -121,7 +122,7 @@ class ActionExecutorTest {
         when(actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM)).thenReturn(platformExecutor);
         when(actionCapability.runnerClient()).thenReturn(runnerClient);
         when(actionCapability.listActions(Action.Status.EXECUTING, null)).thenReturn(Set.of());
-        when(actionCapability.loadMetaActionInfo(anyString())).thenReturn(new MetaActionInfo(
+        when(actionCapability.loadMetaActionInfo(anyString())).thenReturn(Result.success(new MetaActionInfo(
                 false,
                 null,
                 Map.of(),
@@ -131,7 +132,7 @@ class ActionExecutorTest {
                 Set.of(),
                 false,
                 new com.alibaba.fastjson2.JSONObject()
-        ));
+        )));
         when(cognitionCapability.contextWorkspace()).thenReturn(new ContextWorkspace());
 
         ExtractorResult extractorResult = new ExtractorResult();
@@ -184,6 +185,130 @@ class ActionExecutorTest {
         assertEquals(Map.of("fresh", "value"), metaAction.getParams());
         assertEquals(MetaAction.Result.Status.SUCCESS, metaAction.getResult().getStatus());
         assertEquals("rerun-ok", metaAction.getResult().getData());
+    }
+
+    @Test
+    void shouldMarkMetaActionFailedWhenMetaActionInfoLookupFailsBeforeExtraction() throws Exception {
+        ActionCapability actionCapability = Mockito.mock(ActionCapability.class);
+        CognitionCapability cognitionCapability = Mockito.mock(CognitionCapability.class);
+        ParamsExtractor paramsExtractor = Mockito.mock(ParamsExtractor.class);
+        ActionCorrector actionCorrector = Mockito.mock(ActionCorrector.class);
+        ActionCorrectionRecognizer actionCorrectionRecognizer = Mockito.mock(ActionCorrectionRecognizer.class);
+        RunnerClient runnerClient = Mockito.mock(RunnerClient.class);
+
+        ExecutorService virtualExecutor = registerExecutor(Executors.newFixedThreadPool(2));
+        ExecutorService platformExecutor = registerExecutor(Executors.newFixedThreadPool(2));
+
+        when(actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL)).thenReturn(virtualExecutor);
+        when(actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM)).thenReturn(platformExecutor);
+        when(actionCapability.runnerClient()).thenReturn(runnerClient);
+        when(actionCapability.listActions(Action.Status.EXECUTING, null)).thenReturn(Set.of());
+        when(actionCapability.loadMetaActionInfo(anyString())).thenReturn(Result.failure(new work.slhaf.partner.core.action.exception.ActionLookupException(
+                "missing",
+                "builtin::command",
+                "META_ACTION_INFO"
+        )));
+        when(cognitionCapability.contextWorkspace()).thenReturn(new ContextWorkspace());
+
+        ActionExecutor actionExecutor = new ActionExecutor();
+        inject(actionExecutor, "actionCapability", actionCapability);
+        inject(actionExecutor, "cognitionCapability", cognitionCapability);
+        inject(actionExecutor, "paramsExtractor", paramsExtractor);
+        inject(actionExecutor, "actionCorrector", actionCorrector);
+        inject(actionExecutor, "actionCorrectionRecognizer", actionCorrectionRecognizer);
+        actionExecutor.init();
+
+        MetaAction metaAction = metaAction("command");
+        ImmediateExecutableAction action = new ImmediateExecutableAction(
+                "urgent",
+                actionChain(metaAction),
+                "reason",
+                "desc",
+                "planner",
+                "lookup-fail-uuid"
+        );
+
+        actionExecutor.execute(action);
+        waitUntilFinished(action);
+
+        verify(paramsExtractor, never()).execute(any());
+        verify(runnerClient, never()).submit(any(MetaAction.class));
+        assertEquals(Action.Status.SUCCESS, action.getStatus());
+        assertEquals(MetaAction.Result.Status.FAILED, metaAction.getResult().getStatus());
+        assertTrue(metaAction.getResult().getData().contains("参数提取失败"));
+        assertEquals(metaAction.getResult().getData(), action.getResult());
+    }
+
+    @Test
+    void shouldFallbackToActionKeyWhenHistoryDescriptionLookupFails() throws Exception {
+        ActionCapability actionCapability = Mockito.mock(ActionCapability.class);
+        CognitionCapability cognitionCapability = Mockito.mock(CognitionCapability.class);
+        ParamsExtractor paramsExtractor = Mockito.mock(ParamsExtractor.class);
+        ActionCorrector actionCorrector = Mockito.mock(ActionCorrector.class);
+        ActionCorrectionRecognizer actionCorrectionRecognizer = Mockito.mock(ActionCorrectionRecognizer.class);
+        RunnerClient runnerClient = Mockito.mock(RunnerClient.class);
+
+        ExecutorService virtualExecutor = registerExecutor(Executors.newFixedThreadPool(2));
+        ExecutorService platformExecutor = registerExecutor(Executors.newFixedThreadPool(2));
+
+        when(actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL)).thenReturn(virtualExecutor);
+        when(actionCapability.getExecutor(ActionCore.ExecutorType.PLATFORM)).thenReturn(platformExecutor);
+        when(actionCapability.runnerClient()).thenReturn(runnerClient);
+        when(actionCapability.listActions(Action.Status.EXECUTING, null)).thenReturn(Set.of());
+        when(cognitionCapability.contextWorkspace()).thenReturn(new ContextWorkspace());
+
+        when(actionCapability.loadMetaActionInfo(anyString()))
+                .thenReturn(Result.success(new MetaActionInfo(
+                        false,
+                        null,
+                        Map.of(),
+                        "demo action",
+                        Set.of(),
+                        Set.of(),
+                        Set.of(),
+                        false,
+                        new com.alibaba.fastjson2.JSONObject()
+                )))
+                .thenReturn(Result.failure(new work.slhaf.partner.core.action.exception.ActionLookupException(
+                        "missing desc",
+                        "builtin::command",
+                        "META_ACTION_INFO"
+                )));
+
+        ExtractorResult extractorResult = new ExtractorResult();
+        extractorResult.setOk(true);
+        extractorResult.setParams(Map.of("fresh", "value"));
+        when(paramsExtractor.execute(any())).thenReturn(extractorResult);
+        doAnswer(invocation -> {
+            MetaAction metaAction = invocation.getArgument(0);
+            metaAction.getResult().setStatus(MetaAction.Result.Status.SUCCESS);
+            metaAction.getResult().setData("history-ok");
+            return null;
+        }).when(runnerClient).submit(any(MetaAction.class));
+
+        ActionExecutor actionExecutor = new ActionExecutor();
+        inject(actionExecutor, "actionCapability", actionCapability);
+        inject(actionExecutor, "cognitionCapability", cognitionCapability);
+        inject(actionExecutor, "paramsExtractor", paramsExtractor);
+        inject(actionExecutor, "actionCorrector", actionCorrector);
+        inject(actionExecutor, "actionCorrectionRecognizer", actionCorrectionRecognizer);
+        actionExecutor.init();
+
+        MetaAction metaAction = metaAction("command");
+        ImmediateExecutableAction action = new ImmediateExecutableAction(
+                "urgent",
+                actionChain(metaAction),
+                "reason",
+                "desc",
+                "planner",
+                "history-fallback-uuid"
+        );
+
+        actionExecutor.execute(action);
+        waitUntilFinished(action);
+
+        assertEquals(Action.Status.SUCCESS, action.getStatus());
+        assertEquals("builtin::command", action.getHistory().get(1).getFirst().description());
     }
 
     private void waitUntilFinished(ImmediateExecutableAction action) throws InterruptedException {

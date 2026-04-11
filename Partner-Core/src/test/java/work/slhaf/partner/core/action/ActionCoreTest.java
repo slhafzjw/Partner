@@ -7,6 +7,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import work.slhaf.partner.core.action.entity.*;
+import work.slhaf.partner.core.action.exception.ActionLookupException;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.action.executor.entity.HistoryAction;
 
 import java.nio.file.Path;
@@ -330,5 +332,33 @@ class ActionCoreTest {
         );
         assertEquals(1, schedulableAction.getScheduleHistories().size());
         assertEquals("cycle-result", schedulableAction.getScheduleHistories().getFirst().getResult());
+    }
+
+    @Test
+    void shouldReturnResultForMetaActionLookup() {
+        MetaActionInfo metaActionInfo = new MetaActionInfo(
+                true,
+                "python",
+                Map.of(),
+                "demo",
+                Set.of(),
+                Set.of(),
+                Set.of(),
+                false,
+                JSONObject.of()
+        );
+        actionCore.registerMetaActions(Map.of("builtin::demo", metaActionInfo));
+
+        Result<MetaAction> success = actionCore.loadMetaAction("builtin::demo");
+        assertTrue(success.isSuccess());
+        assertEquals("demo", success.getOrNull().getName());
+
+        Result<MetaAction> failure = actionCore.loadMetaAction("builtin::missing");
+        assertTrue(failure.isFailure());
+        assertInstanceOf(ActionLookupException.class, failure.exceptionOrNull());
+
+        Result<MetaActionInfo> infoFailure = actionCore.loadMetaActionInfo("builtin::missing");
+        assertTrue(infoFailure.isFailure());
+        assertInstanceOf(ActionLookupException.class, infoFailure.exceptionOrNull());
     }
 }

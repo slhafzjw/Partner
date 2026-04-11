@@ -14,12 +14,14 @@ import work.slhaf.partner.core.action.exception.ActionLookupException;
 import work.slhaf.partner.core.action.runner.LocalRunnerClient;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.framework.agent.config.ConfigCenter;
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.framework.agent.factory.context.Shutdown;
 import work.slhaf.partner.framework.agent.state.State;
 import work.slhaf.partner.framework.agent.state.StateSerializable;
 import work.slhaf.partner.framework.agent.state.StateValue;
+import work.slhaf.partner.framework.agent.support.Result;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -114,49 +116,49 @@ public class ActionCore implements StateSerializable {
     }
 
     @CapabilityMethod
-    public MetaAction loadMetaAction(@NonNull String actionKey) {
+    public Result<MetaAction> loadMetaAction(@NonNull String actionKey) {
         MetaActionInfo metaActionInfo = existedMetaActions.get(actionKey);
         if (metaActionInfo == null) {
-            throw new ActionLookupException(
+            return Result.failure(new ActionLookupException(
                     "Meta action info not found for action key: " + actionKey,
                     actionKey,
                     "META_ACTION"
-            );
+            ));
         }
 
         String[] split = actionKey.split("::", 2);
         if (split.length < 2) {
-            throw new ActionLookupException(
+            return Result.failure(new ActionLookupException(
                     "Invalid action key format: " + actionKey,
                     actionKey,
                     "META_ACTION"
-            );
+            ));
         }
         MetaAction.Type type = switch (split[0]) {
             case BUILTIN_LOCATION -> MetaAction.Type.BUILTIN;
             case ORIGIN_LOCATION -> MetaAction.Type.ORIGIN;
             default -> MetaAction.Type.MCP;
         };
-        return new MetaAction(
+        return Result.success(new MetaAction(
                 split[1],
                 metaActionInfo.getIo(),
                 metaActionInfo.getLauncher(),
                 type,
                 split[0]
-        );
+        ));
     }
 
     @CapabilityMethod
-    public MetaActionInfo loadMetaActionInfo(@NonNull String actionKey) {
+    public Result<MetaActionInfo> loadMetaActionInfo(@NonNull String actionKey) {
         MetaActionInfo info = existedMetaActions.get(actionKey);
         if (info == null) {
-            throw new ActionLookupException(
+            return Result.failure(new ActionLookupException(
                     "Meta action description not found for action key: " + actionKey,
                     actionKey,
                     "META_ACTION_INFO"
-            );
+            ));
         }
-        return info;
+        return Result.success(info);
     }
 
     @CapabilityMethod
@@ -175,7 +177,6 @@ public class ActionCore implements StateSerializable {
         if (executableAction == null) {
             return;
         }
-
         // 加锁确保同步
         synchronized (executableAction.getStatus()) {
             applyInterventions(interventions, executableAction);
@@ -188,10 +189,12 @@ public class ActionCore implements StateSerializable {
         interventions.sort(Comparator.comparingInt(MetaIntervention::getOrder));
 
         for (MetaIntervention intervention : interventions) {
-            List<MetaAction> actions = intervention.getActions()
-                    .stream()
-                    .map(this::loadMetaAction)
-                    .toList();
+            Result<List<MetaAction>> actionsResult = resolveInterventionActions(intervention);
+            if (actionsResult.isFailure()) {
+                reportLookupFailure(actionsResult.exceptionOrNull());
+                continue;
+            }
+            List<MetaAction> actions = actionsResult.getOrNull();
 
             switch (intervention.getType()) {
                 case InterventionType.APPEND -> handleAppend(executableAction, intervention.getOrder(), actions);
@@ -208,6 +211,27 @@ public class ActionCore implements StateSerializable {
             }
         }
 
+    }
+
+    private Result<List<MetaAction>> resolveInterventionActions(MetaIntervention intervention) {
+        List<MetaAction> actions = new ArrayList<>();
+        for (String actionKey : intervention.getActions()) {
+            Result<MetaAction> metaActionResult = loadMetaAction(actionKey);
+            if (metaActionResult.isFailure()) {
+                Throwable throwable = metaActionResult.exceptionOrNull();
+                return Result.failure(throwable == null
+                        ? new ActionLookupException("Meta action lookup failed: " + actionKey, actionKey, "META_ACTION")
+                        : throwable);
+            }
+            actions.add(metaActionResult.getOrNull());
+        }
+        return Result.success(actions);
+    }
+
+    private void reportLookupFailure(Throwable throwable) {
+        if (throwable instanceof ActionLookupException lookupException) {
+            ExceptionReporterHandler.INSTANCE.report(lookupException);
+        }
     }
 
     /**

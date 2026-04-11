@@ -8,6 +8,7 @@ import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability;
+import work.slhaf.partner.framework.agent.support.Result;
 
 import java.util.List;
 import java.util.Map;
@@ -23,9 +24,9 @@ public interface ActionCapability {
 
     ExecutorService getExecutor(ActionCore.ExecutorType type);
 
-    MetaAction loadMetaAction(@NonNull String actionKey);
+    Result<MetaAction> loadMetaAction(@NonNull String actionKey);
 
-    MetaActionInfo loadMetaActionInfo(@NonNull String actionKey);
+    Result<MetaActionInfo> loadMetaActionInfo(@NonNull String actionKey);
 
     void registerMetaActions(@NonNull Map<String, MetaActionInfo> metaActions);
 

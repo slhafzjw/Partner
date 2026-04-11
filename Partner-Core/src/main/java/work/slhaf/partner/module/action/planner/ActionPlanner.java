@@ -11,10 +11,12 @@ import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.CommunicationBlockContent;
 import work.slhaf.partner.core.cognition.ContextBlock;
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.action.executor.ActionExecutor;
 import work.slhaf.partner.module.action.planner.evaluator.ActionEvaluator;
 import work.slhaf.partner.module.action.planner.evaluator.entity.EvaluatorInput;
@@ -147,6 +149,9 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 continue;
             }
             ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, source);
+            if (executableAction == null) {
+                continue;
+            }
             passedActions.add(executableAction);
             if (evaluatorResult.isNeedConfirm()) {
                 registerPendingContextBlock(executableAction, evaluatorResult, input);
@@ -346,6 +351,9 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
 
         private ExecutableAction buildActionData(EvaluatorResult evaluatorResult, String userId) {
             Map<Integer, List<MetaAction>> actionChain = getActionChain(evaluatorResult);
+            if (actionChain == null) {
+                return null;
+            }
             return switch (evaluatorResult.getType()) {
                 case PLANNING -> new SchedulableExecutableAction(
                         evaluatorResult.getTendency(),
@@ -366,20 +374,28 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             };
         }
 
-        private @NotNull Map<Integer, List<MetaAction>> getActionChain(EvaluatorResult evaluatorResult) {
+        private Map<Integer, List<MetaAction>> getActionChain(EvaluatorResult evaluatorResult) {
             Map<Integer, List<MetaAction>> actionChain = new HashMap<>();
             Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChain();
-            fixDependencies(primaryActionChain);
-            primaryActionChain.forEach((order, actionKeys) -> {
-                List<MetaAction> metaActions = actionKeys.stream()
-                        .map(actionKey -> actionCapability.loadMetaAction(actionKey))
-                        .toList();
-                actionChain.put(order, metaActions);
-            });
+            if (!fixDependencies(primaryActionChain)) {
+                return null;
+            }
+            for (Map.Entry<Integer, List<String>> entry : primaryActionChain.entrySet()) {
+                List<MetaAction> metaActions = new ArrayList<>();
+                for (String actionKey : entry.getValue()) {
+                    Result<MetaAction> metaActionResult = actionCapability.loadMetaAction(actionKey);
+                    if (metaActionResult.isFailure()) {
+                        reportFailure(metaActionResult);
+                        return null;
+                    }
+                    metaActions.add(metaActionResult.getOrNull());
+                }
+                actionChain.put(entry.getKey(), metaActions);
+            }
             return actionChain;
         }
 
-        private void fixDependencies(Map<Integer, List<String>> primaryActionChain) {
+        private boolean fixDependencies(Map<Integer, List<String>> primaryActionChain) {
             // 先将 primaryActionChain 的节点序号修正为从1开始依次增大
             fixOrder(primaryActionChain);
             List<Integer> fixedOrders = new ArrayList<>(primaryActionChain.keySet().stream().toList());
@@ -392,7 +408,12 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                     List<String> actionKeys = primaryActionChain.get(fixedOrder);
                     for (String actionKey : actionKeys) {
                         // 根据 actionKey 加载行动信息,并检查是否存在必需前置依赖
-                        MetaActionInfo metaActionInfo = actionCapability.loadMetaActionInfo(actionKey);
+                        Result<MetaActionInfo> metaActionInfoResult = actionCapability.loadMetaActionInfo(actionKey);
+                        if (metaActionInfoResult.isFailure()) {
+                            reportFailure(metaActionInfoResult);
+                            return false;
+                        }
+                        MetaActionInfo metaActionInfo = metaActionInfoResult.getOrNull();
                         Set<String> preActions = metaActionInfo.getPreActions();
                         boolean preActionsExist = preActions.isEmpty();
                         if (!preActionsExist) {
@@ -420,6 +441,13 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 fixedOrders.clear();
                 fixedOrders.addAll(tempOrders);
             } while (fixed.getAndSet(false));
+            return true;
+        }
+
+        private void reportFailure(Result<?> result) {
+            if (result.exceptionOrNull() instanceof work.slhaf.partner.framework.agent.exception.AgentException agentException) {
+                ExceptionReporterHandler.INSTANCE.report(agentException);
+            }
         }
 
         private void fixOrder(Map<Integer, List<String>> primaryActionChain) {
