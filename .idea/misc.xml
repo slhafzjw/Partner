@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
-    <list size="18">
+    <list size="19">
       <item index="0" class="java.lang.String" itemvalue="lombok.Data" />
       <item index="1" class="java.lang.String" itemvalue="net.bytebuddy.implementation.bind.annotation.RuntimeType" />
       <item index="2" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.Capability" />
@@ -20,6 +20,7 @@
       <item index="15" class="java.lang.String" itemvalue="work.slhaf.partner.api.register.capability.annotation.Capability" />
       <item index="16" class="java.lang.String" itemvalue="work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore" />
       <item index="17" class="java.lang.String" itemvalue="work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod" />
+      <item index="18" class="java.lang.String" itemvalue="work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent" />
     </list>
     <writeAnnotations>
       <writeAnnotation name="work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability" />
