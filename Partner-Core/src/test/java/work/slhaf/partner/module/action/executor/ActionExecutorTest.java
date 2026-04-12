@@ -138,7 +138,7 @@ class ActionExecutorTest {
         ExtractorResult extractorResult = new ExtractorResult();
         extractorResult.setOk(true);
         extractorResult.setParams(Map.of("fresh", "value"));
-        when(paramsExtractor.execute(any())).thenReturn(extractorResult);
+        when(paramsExtractor.execute(any())).thenReturn(Result.success(extractorResult));
         doAnswer(invocation -> {
             MetaAction metaAction = invocation.getArgument(0);
             metaAction.getResult().setStatus(MetaAction.Result.Status.SUCCESS);
@@ -209,6 +209,11 @@ class ActionExecutorTest {
                 "META_ACTION_INFO"
         )));
         when(cognitionCapability.contextWorkspace()).thenReturn(new ContextWorkspace());
+        work.slhaf.partner.module.action.executor.entity.CorrectorResult correctorResult =
+                new work.slhaf.partner.module.action.executor.entity.CorrectorResult();
+        correctorResult.setMetaInterventionList(List.of());
+        correctorResult.setCorrectionReason("no-op");
+        when(actionCorrector.execute(any())).thenReturn(Result.success(correctorResult));
 
         ActionExecutor actionExecutor = new ActionExecutor();
         inject(actionExecutor, "actionCapability", actionCapability);
@@ -235,7 +240,7 @@ class ActionExecutorTest {
         verify(runnerClient, never()).submit(any(MetaAction.class));
         assertEquals(Action.Status.SUCCESS, action.getStatus());
         assertEquals(MetaAction.Result.Status.FAILED, metaAction.getResult().getStatus());
-        assertTrue(metaAction.getResult().getData().contains("参数提取失败"));
+        assertTrue(metaAction.getResult().getData().contains("missing"));
         assertEquals(metaAction.getResult().getData(), action.getResult());
     }
 
@@ -278,7 +283,7 @@ class ActionExecutorTest {
         ExtractorResult extractorResult = new ExtractorResult();
         extractorResult.setOk(true);
         extractorResult.setParams(Map.of("fresh", "value"));
-        when(paramsExtractor.execute(any())).thenReturn(extractorResult);
+        when(paramsExtractor.execute(any())).thenReturn(Result.success(extractorResult));
         doAnswer(invocation -> {
             MetaAction metaAction = invocation.getArgument(0);
             metaAction.getResult().setStatus(MetaAction.Result.Status.SUCCESS);
