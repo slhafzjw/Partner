@@ -13,7 +13,7 @@ interface ActivateModel {
     fun streamChat(
         messages: List<Message>,
         handler: StreamChatMessageConsumer
-    ): work.slhaf.partner.framework.agent.support.Result<Unit> {
+    ): Result<Unit> {
         return ModelRuntimeRegistry.resolveProvider(modelKey()).streamChat(mergeMessages(messages), handler)
     }
 

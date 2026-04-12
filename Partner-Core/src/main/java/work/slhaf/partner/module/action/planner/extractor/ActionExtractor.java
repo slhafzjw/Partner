@@ -12,13 +12,13 @@ import work.slhaf.partner.module.action.planner.extractor.entity.ExtractorResult
 
 import java.util.List;
 
-public class ActionExtractor extends AbstractAgentModule.Sub<String, ExtractorResult> implements ActivateModel {
+public class ActionExtractor extends AbstractAgentModule.Sub<String, Result<ExtractorResult>> implements ActivateModel {
 
     @InjectCapability
     private CognitionCapability cognitionCapability;
 
     @Override
-    public ExtractorResult execute(String input) {
+    public @NotNull Result<ExtractorResult> execute(String input) {
         List<Message> messages = List.of(
                 cognitionCapability.contextWorkspace().resolve(List.of(
                         ContextBlock.VisibleDomain.COGNITION,
@@ -26,14 +26,8 @@ public class ActionExtractor extends AbstractAgentModule.Sub<String, ExtractorRe
                 )).encodeToMessage(),
                 new Message(Message.Character.USER, input)
         );
-        Result<ExtractorResult> result = formattedChat(messages, ExtractorResult.class);
-        return result.fold(
-                extractorResult -> extractorResult,
-                exception -> {
-                    log.error("提取信息出错", exception);
-                    return new ExtractorResult();
-                }
-        );
+        return formattedChat(messages, ExtractorResult.class);
+
     }
 
     @NotNull

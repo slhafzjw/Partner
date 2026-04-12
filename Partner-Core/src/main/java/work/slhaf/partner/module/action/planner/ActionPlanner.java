@@ -26,6 +26,7 @@ import work.slhaf.partner.module.action.planner.extractor.ActionExtractor;
 import work.slhaf.partner.module.action.planner.extractor.entity.ExtractorResult;
 import work.slhaf.partner.module.action.scheduler.ActionScheduler;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
+import work.slhaf.partner.runtime.exception.ContextExceptionReporter;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -68,18 +69,21 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
 
     @Override
     public void execute(@NotNull PartnerRunningFlowContext context) {
-        try {
-            String input = context.getInput();
-            ExtractorResult extractorResult = actionExtractor.execute(input);
-            List<String> tendencies = extractorResult.getTendencies();
-            if (tendencies.isEmpty()) {
-                return;
-            }
-            appendTendencyBlock(tendencies, input);
-            evaluateTendency(context.getSource(), input, extractorResult);
-        } catch (Exception e) {
-            log.error("执行异常", e);
+        String input = context.getInput();
+        Result<ExtractorResult> result = actionExtractor.execute(input)
+                .onFailure(exp -> {
+                    ExceptionReporterHandler.INSTANCE.report(exp, ContextExceptionReporter.REPORTER_NAME);
+                });
+        if (result.exceptionOrNull() != null) {
+            return;
         }
+        ExtractorResult extractorResult = result.getOrThrow();
+        List<String> tendencies = extractorResult.getTendencies();
+        if (tendencies.isEmpty()) {
+            return;
+        }
+        appendTendencyBlock(tendencies, input);
+        evaluateTendency(context.getSource(), input, extractorResult);
     }
 
     private void appendTendencyBlock(List<String> tendencies, String input) {

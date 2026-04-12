@@ -16,34 +16,23 @@ import work.slhaf.partner.module.TaskBlock;
 import work.slhaf.partner.module.action.executor.entity.ExtractorInput;
 import work.slhaf.partner.module.action.executor.entity.ExtractorResult;
 
-import java.util.HashMap;
 import java.util.List;
 
 /**
  * 负责依据输入内容进行行动单元的参数信息提取
  */
-public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, ExtractorResult> implements ActivateModel {
+public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Result<ExtractorResult>> implements ActivateModel {
 
     @InjectCapability
     private CognitionCapability cognitionCapability;
 
     @Override
-    public ExtractorResult execute(ExtractorInput input) {
+    public @NotNull Result<ExtractorResult> execute(ExtractorInput input) {
         List<Message> messages = List.of(
                 resolveContextMessage(),
                 resolveTaskMessage(input)
         );
-        Result<ExtractorResult> result = formattedChat(messages, ExtractorResult.class);
-        return result.fold(
-                extractorResult -> extractorResult,
-                exception -> {
-                    log.error("ParamsExtractor解析结果失败", exception);
-                    ExtractorResult fallback = new ExtractorResult();
-                    fallback.setOk(false);
-                    fallback.setParams(new HashMap<>());
-                    return fallback;
-                }
-        );
+        return formattedChat(messages, ExtractorResult.class);
     }
 
     private Message resolveTaskMessage(ExtractorInput input) {

@@ -10,6 +10,7 @@ import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCa
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.TaskBlock;
 import work.slhaf.partner.module.action.executor.entity.CorrectorInput;
 import work.slhaf.partner.module.action.executor.entity.CorrectorResult;
@@ -19,18 +20,18 @@ import java.util.List;
 /**
  * 负责在单组行动执行后，根据行动意图与结果检查后续行动是否符合目的，必要时直接调整行动链，或发起自对话请求进行干预
  */
-public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, CorrectorResult> implements ActivateModel {
+public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Result<CorrectorResult>> implements ActivateModel {
 
     @InjectCapability
     private CognitionCapability cognitionCapability;
 
     @Override
-    public CorrectorResult execute(CorrectorInput input) {
+    public @NotNull Result<CorrectorResult> execute(CorrectorInput input) {
         List<Message> messages = List.of(
                 resolveContextMessage(),
                 resolveTaskMessage(input)
         );
-        return formattedChat(messages, CorrectorResult.class).getOrThrow();
+        return formattedChat(messages, CorrectorResult.class);
     }
 
     private Message resolveTaskMessage(CorrectorInput input) {

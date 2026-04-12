@@ -10,6 +10,7 @@ import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCa
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.TaskBlock;
 import work.slhaf.partner.module.action.executor.entity.CorrectionRecognizerInput;
 import work.slhaf.partner.module.action.executor.entity.CorrectionRecognizerResult;
@@ -19,18 +20,18 @@ import java.util.List;
 /**
  * 负责在行动链执行过程中判断当前进度是否异常，是否需要引入 corrector 介入。
  */
-public class ActionCorrectionRecognizer extends AbstractAgentModule.Sub<CorrectionRecognizerInput, CorrectionRecognizerResult> implements ActivateModel {
+public class ActionCorrectionRecognizer extends AbstractAgentModule.Sub<CorrectionRecognizerInput, Result<CorrectionRecognizerResult>> implements ActivateModel {
 
     @InjectCapability
     private CognitionCapability cognitionCapability;
 
     @Override
-    public CorrectionRecognizerResult execute(CorrectionRecognizerInput input) {
+    public @NotNull Result<CorrectionRecognizerResult> execute(CorrectionRecognizerInput input) {
         List<Message> messages = List.of(
                 resolveContextMessage(),
                 resolveTaskMessage(input)
         );
-        return formattedChat(messages, CorrectionRecognizerResult.class).getOrThrow();
+        return formattedChat(messages, CorrectionRecognizerResult.class);
     }
 
     private Message resolveTaskMessage(CorrectionRecognizerInput input) {

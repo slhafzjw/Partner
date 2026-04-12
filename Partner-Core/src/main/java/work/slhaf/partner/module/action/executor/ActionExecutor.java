@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ActionExecutor extends AbstractAgentModule.Standalone {
@@ -219,24 +220,22 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
 
             boolean hasFailedMetaAction = hasFailedMetaAction(metaActions);
             boolean shouldRunCorrector = hasFailedMetaAction;
-            try {
-                if (!shouldRunCorrector) {
-                    val recognizerResult = resolveRecognizerResult(recognizerRecord);
-                    shouldRunCorrector = recognizerResult != null && recognizerResult.isNeedCorrection();
-                }
-                if (shouldRunCorrector) {
-                    val correctorInput = assemblyHelper.buildCorrectorInput(executableAction);
-                    val correctorResult = actionCorrector.execute(correctorInput);
-                    actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), executableAction);
-
-                    blockManager.emitActionCorrectionBlock(
-                            executableAction,
-                            hasFailedMetaAction ? "has_failed_meta_action" : correctorResult.getCorrectionReason(),
-                            correctorResult.getMetaInterventionList()
-                    );
-
-                }
-            } catch (Exception ignored) {
+            if (!shouldRunCorrector) {
+                val recognizerResult = resolveRecognizerResult(recognizerRecord);
+                shouldRunCorrector = recognizerResult != null && recognizerResult.isNeedCorrection();
+            }
+            if (shouldRunCorrector) {
+                val correctorInput = assemblyHelper.buildCorrectorInput(executableAction);
+                actionCorrector.execute(correctorInput)
+                        .onFailure(ExceptionReporterHandler.INSTANCE::report)
+                        .onSuccess(correctorResult -> {
+                            actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), executableAction);
+                            blockManager.emitActionCorrectionBlock(
+                                    executableAction,
+                                    hasFailedMetaAction ? "has_failed_meta_action" : correctorResult.getCorrectionReason(),
+                                    correctorResult.getMetaInterventionList()
+                            );
+                        });
             }
             // 第二次尝试进行阶段推进，本次负责补充上一次在不存在 stage时，但 corrector 执行期间发生了 actionChain 的插入事件
             // 如果第一次已经推进完毕，本次将会跳过
@@ -305,7 +304,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     }
 
     private void executeMetaActionWithRetry(MetaAction metaAction, ExecutableAction actionData) {
-        String failureReason = "参数提取失败";
+        AtomicReference<String> failureReason = new AtomicReference<>("参数提取失败");
         val actionKey = metaAction.getKey();
         for (int attempt = 1; attempt <= MAX_EXTRACTOR_ATTEMPTS; attempt++) {
             val result = metaAction.getResult();
@@ -318,26 +317,30 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                     .onFailure(ExceptionReporterHandler.INSTANCE::report);
             AgentRuntimeException exception = extractorInputResult.exceptionOrNull();
             if (exception != null) {
-                failureReason = exception.getMessage();
+                failureReason.set(exception.getMessage());
                 break;
             }
 
             ExtractorInput extractorInput = extractorInputResult.getOrThrow();
-            ExtractorResult extractorResult = paramsExtractor.execute(extractorInput);
-
-            if (extractorResult == null || !extractorResult.isOk()) {
-                failureReason = buildAttemptFailureReason("参数提取失败", null);
+            Result<ExtractorResult> extractorResultWrapped = paramsExtractor.execute(extractorInput).onFailure(exp -> {
+                ExceptionReporterHandler.INSTANCE.report(exp);
+                failureReason.set(exp.getLocalizedMessage());
+            });
+            if (extractorResultWrapped.exceptionOrNull() != null) {
                 continue;
             }
 
-            if (extractorResult.getParams() != null) {
-                metaAction.getParams().putAll(extractorResult.getParams());
+            ExtractorResult extractorResult = extractorResultWrapped.getOrThrow();
+            if (!extractorResult.isOk()) {
+                failureReason.set(buildAttemptFailureReason("参数提取失败", null));
+                continue;
             }
+            metaAction.getParams().putAll(extractorResult.getParams());
 
             try {
                 runnerClient.submit(metaAction);
             } catch (Exception e) {
-                failureReason = buildAttemptFailureReason("行动执行异常", e.getLocalizedMessage());
+                failureReason.set(buildAttemptFailureReason("行动执行异常", e.getLocalizedMessage()));
                 continue;
             }
 
@@ -349,10 +352,10 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 return;
             }
 
-            failureReason = buildAttemptFailureReason("行动执行失败", result.getData());
+            failureReason.set(buildAttemptFailureReason("行动执行失败", result.getData()));
         }
         metaAction.getResult().setStatus(MetaAction.Result.Status.FAILED);
-        metaAction.getResult().setData(failureReason);
+        metaAction.getResult().setData(failureReason.get());
     }
 
     private RecognizerTaskRecord startRecognizerIfNeeded(ExecutableAction executableAction, Phaser phaser) {
@@ -369,7 +372,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         phaser.register();
         return () -> {
             try {
-                return actionCorrectionRecognizer.execute(input);
+                return actionCorrectionRecognizer.execute(input)
+                        .onFailure(ExceptionReporterHandler.INSTANCE::report)
+                        .getOrDefault(new CorrectionRecognizerResult());
             } finally {
                 phaser.arriveAndDeregister();
             }
