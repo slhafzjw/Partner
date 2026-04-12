@@ -46,7 +46,6 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
 
     @Override
     public List<ActivatedMemorySlice> execute(EvaluatorInput evaluatorInput) {
-        log.debug("切片评估模块开始...");
         List<ActivatedMemorySlice> preparedSlices = evaluatorInput.getMemorySlices();
         List<ActivatedMemorySlice> result = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(preparedSlices.size());
@@ -65,7 +64,6 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
                             resolveTaskMessage(batchInput)
                     );
                     formattedChat(messages, EvaluatorBatchResult.class)
-                            .onFailure(exception -> log.debug("切片评估失败，已跳过当前切片", exception))
                             .onSuccess(evaluatorBatchResult -> {
                                 if (evaluatorBatchResult.isPassed()) {
                                     synchronized (result) {
@@ -83,7 +81,6 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
             latch.await();
         } catch (InterruptedException ignored) {
         }
-        log.debug("切片评估模块结束...");
 
         return result;
     }

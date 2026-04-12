@@ -8,7 +8,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextBlock;
-import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
@@ -34,7 +33,6 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInpu
 
     @Override
     public ExtractorResult execute(ExtractorInput input) {
-        log.debug("[MemorySelectExtractor] 主题提取模块开始...");
         ExtractorResult extractorResult;
         List<Message> messages = List.of(
                 resolveContextMessage(),
@@ -44,7 +42,7 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInpu
                 messages,
                 ExtractorResult.class
         );
-        extractorResult = result.onFailure(ExceptionReporterHandler.INSTANCE::report).fold(
+        extractorResult = result.fold(
                 value -> value,
                 exception -> {
                     ExtractorResult fallback = new ExtractorResult();

@@ -10,7 +10,6 @@ import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.core.cognition.ResolvedContext;
-import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
@@ -67,7 +66,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
                             messages,
                             EvaluatorResult.class
                     );
-                    result.onFailure(ExceptionReporterHandler.INSTANCE::report).onSuccess(evaluatorResult -> {
+                    result.onSuccess(evaluatorResult -> {
                         evaluatorResult.setTendency(tendency);
                         synchronized (evaluatorResults) {
                             evaluatorResults.add(evaluatorResult);

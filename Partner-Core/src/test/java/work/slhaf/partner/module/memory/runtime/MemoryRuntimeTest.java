@@ -28,7 +28,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MemoryRuntimeTest {
 
@@ -206,24 +207,14 @@ class MemoryRuntimeTest {
     }
 
     @Test
-    void shouldThrowMemoryLookupExceptionWhenTopicOrDateIndexDoesNotExist() throws Exception {
+    void shouldReturnEmptyActivatedMemoryWhenTopicOrDateIndexDoesNotExist() throws Exception {
         StubMemoryCapability memoryCapability = new StubMemoryCapability("session-test");
         MemoryRuntime runtime = new MemoryRuntime();
         setField(runtime, "memoryCapability", memoryCapability);
         setField(runtime, "cognitionCapability", stubCognitionCapability(List.of(message("seed"))));
 
-        MemoryLookupException topicException = assertThrows(
-                MemoryLookupException.class,
-                () -> runtime.queryActivatedMemoryByTopicPath("topic/missing")
-        );
-        assertEquals("不存在的主题: topic/missing", topicException.getMessage());
-
-        MemoryLookupException dateException = assertThrows(
-                MemoryLookupException.class,
-                () -> runtime.queryActivatedMemoryByDate(LocalDate.parse("1970-01-01"))
-        );
-        assertEquals("不存在的日期索引: 1970-01-01", dateException.getMessage());
-        assertInstanceOf(MemoryLookupException.class, dateException);
+        assertTrue(runtime.queryActivatedMemoryByTopicPath("topic/missing").isEmpty());
+        assertTrue(runtime.queryActivatedMemoryByDate(LocalDate.parse("1970-01-01")).isEmpty());
     }
 
     private static final class StubMemoryCapability implements MemoryCapability {

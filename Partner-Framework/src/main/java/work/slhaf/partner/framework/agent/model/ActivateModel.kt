@@ -1,5 +1,6 @@
 package work.slhaf.partner.framework.agent.model
 
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.framework.agent.model.pojo.Message
 import work.slhaf.partner.framework.agent.support.Result
@@ -7,18 +8,24 @@ import work.slhaf.partner.framework.agent.support.Result
 interface ActivateModel {
 
     fun chat(messages: List<Message>): Result<String> {
-        return ModelRuntimeRegistry.resolveProvider(modelKey()).chat(mergeMessages(messages))
+        return ModelRuntimeRegistry.resolveProvider(modelKey())
+            .chat(mergeMessages(messages))
+            .onFailure { ExceptionReporterHandler.report(it) }
     }
 
     fun streamChat(
         messages: List<Message>,
         handler: StreamChatMessageConsumer
     ): Result<Unit> {
-        return ModelRuntimeRegistry.resolveProvider(modelKey()).streamChat(mergeMessages(messages), handler)
+        return ModelRuntimeRegistry.resolveProvider(modelKey())
+            .streamChat(mergeMessages(messages), handler)
+            .onFailure { ExceptionReporterHandler.report(it) }
     }
 
     fun <T : Any> formattedChat(messages: List<Message>, responseType: Class<T>): Result<T> {
-        return ModelRuntimeRegistry.resolveProvider(modelKey()).formattedChat(mergeMessages(messages), responseType)
+        return ModelRuntimeRegistry.resolveProvider(modelKey())
+            .formattedChat(mergeMessages(messages), responseType)
+            .onFailure { ExceptionReporterHandler.report(it) }
     }
 
     fun mergeMessages(messages: List<Message>): List<Message> {

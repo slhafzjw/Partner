@@ -4,7 +4,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
-import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
@@ -41,7 +40,7 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
                     int index = i;
                     executor.execute(() -> {
                         try {
-                            String summarized = chat(List.of(new Message(Message.Character.USER, content))).onFailure(ExceptionReporterHandler.INSTANCE::report).fold(
+                            String summarized = chat(List.of(new Message(Message.Character.USER, content))).fold(
                                     res -> res,
                                     exp -> content
                             );

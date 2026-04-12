@@ -6,7 +6,6 @@ import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import work.slhaf.partner.core.cognition.*;
-import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
@@ -69,7 +68,6 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
         StreamChatMessageConsumer consumer = ReplyDispatcher.INSTANCE.createConsumer(runningFlowContext.getTarget());
         this.streamChat(buildChatMessages(runningFlowContext), consumer)
                 .onFailure(exception -> {
-                    ExceptionReporterHandler.INSTANCE.report(exception);
                     consumer.onDelta(INTERRUPTED_MARKER);
                 });
         updateChatMessages(runningFlowContext, consumer.collectResponse());

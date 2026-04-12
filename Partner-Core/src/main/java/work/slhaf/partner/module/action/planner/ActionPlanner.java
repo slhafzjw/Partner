@@ -390,7 +390,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 for (String actionKey : entry.getValue()) {
                     Result<MetaAction> metaActionResult = actionCapability.loadMetaAction(actionKey);
                     AgentRuntimeException failure = metaActionResult.onSuccess(metaActions::add)
-                            .onFailure(ExceptionReporterHandler.INSTANCE::report)
                             .exceptionOrNull();
                     if (failure != null) {
                         return null;
@@ -415,8 +414,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                     for (String actionKey : actionKeys) {
                         // 根据 actionKey 加载行动信息,并检查是否存在必需前置依赖
 
-                        Result<MetaActionInfo> infoResult = actionCapability.loadMetaActionInfo(actionKey)
-                                .onFailure(ExceptionReporterHandler.INSTANCE::report);
+                        Result<MetaActionInfo> infoResult = actionCapability.loadMetaActionInfo(actionKey);
                         if (infoResult.exceptionOrNull() != null) {
                             return false;
                         }

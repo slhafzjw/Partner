@@ -8,7 +8,6 @@ import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
-import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
@@ -227,7 +226,6 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             if (shouldRunCorrector) {
                 val correctorInput = assemblyHelper.buildCorrectorInput(executableAction);
                 actionCorrector.execute(correctorInput)
-                        .onFailure(ExceptionReporterHandler.INSTANCE::report)
                         .onSuccess(correctorResult -> {
                             actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), executableAction);
                             blockManager.emitActionCorrectionBlock(
@@ -313,8 +311,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
 
             val executingStage = actionData.getExecutingStage();
 
-            Result<ExtractorInput> extractorInputResult = assemblyHelper.buildExtractorInput(metaAction.getKey(), actionData.getUuid(), actionData.getDescription())
-                    .onFailure(ExceptionReporterHandler.INSTANCE::report);
+            Result<ExtractorInput> extractorInputResult = assemblyHelper.buildExtractorInput(metaAction.getKey(), actionData.getUuid(), actionData.getDescription());
             AgentRuntimeException exception = extractorInputResult.exceptionOrNull();
             if (exception != null) {
                 failureReason.set(exception.getMessage());
@@ -323,7 +320,6 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
 
             ExtractorInput extractorInput = extractorInputResult.getOrThrow();
             Result<ExtractorResult> extractorResultWrapped = paramsExtractor.execute(extractorInput).onFailure(exp -> {
-                ExceptionReporterHandler.INSTANCE.report(exp);
                 failureReason.set(exp.getLocalizedMessage());
             });
             if (extractorResultWrapped.exceptionOrNull() != null) {
@@ -373,7 +369,6 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         return () -> {
             try {
                 return actionCorrectionRecognizer.execute(input)
-                        .onFailure(ExceptionReporterHandler.INSTANCE::report)
                         .getOrDefault(new CorrectionRecognizerResult());
             } finally {
                 phaser.arriveAndDeregister();
@@ -515,7 +510,6 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
 
     private String resolveHistoryDescription(String actionKey) {
         return actionCapability.loadMetaActionInfo(actionKey)
-                .onFailure(ExceptionReporterHandler.INSTANCE::report)
                 .fold(
                         metaActionInfo -> metaActionInfo.getDescription().isBlank() ? actionKey : metaActionInfo.getDescription(),
                         exception -> actionKey

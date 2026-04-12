@@ -3,6 +3,8 @@ package work.slhaf.partner.module.action.planner.extractor;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextBlock;
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
+import work.slhaf.partner.framework.agent.exception.ModuleExecutionException;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
@@ -26,8 +28,15 @@ public class ActionExtractor extends AbstractAgentModule.Sub<String, Result<Extr
                 )).encodeToMessage(),
                 new Message(Message.Character.USER, input)
         );
-        return formattedChat(messages, ExtractorResult.class);
-
+        try {
+            return Result.success(formattedChat(messages, ExtractorResult.class).getOrThrow());
+        } catch (AgentRuntimeException e) {
+            return Result.failure(new ModuleExecutionException(
+                    "collecting action tendencies failed",
+                    this.getClass(),
+                    getModuleName()
+            ));
+        }
     }
 
     @NotNull
