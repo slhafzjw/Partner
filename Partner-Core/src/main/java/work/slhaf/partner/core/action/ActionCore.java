@@ -14,6 +14,7 @@ import work.slhaf.partner.core.action.exception.ActionLookupException;
 import work.slhaf.partner.core.action.runner.LocalRunnerClient;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.framework.agent.config.ConfigCenter;
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
@@ -184,31 +185,32 @@ public class ActionCore implements StateSerializable {
     }
 
     private void applyInterventions(List<MetaIntervention> interventions, ExecutableAction executableAction) {
-        boolean rebuildCleanTag = false;
+        boolean[] rebuildCleanTag = {false};
 
         interventions.sort(Comparator.comparingInt(MetaIntervention::getOrder));
 
         for (MetaIntervention intervention : interventions) {
             Result<List<MetaAction>> actionsResult = resolveInterventionActions(intervention);
-            if (actionsResult.isFailure()) {
-                reportLookupFailure(actionsResult.exceptionOrNull());
-                continue;
-            }
-            List<MetaAction> actions = actionsResult.getOrNull();
-
-            switch (intervention.getType()) {
-                case InterventionType.APPEND -> handleAppend(executableAction, intervention.getOrder(), actions);
-                case InterventionType.INSERT -> handleInsert(executableAction, intervention.getOrder(), actions);
-                case InterventionType.DELETE -> handleDelete(executableAction, intervention.getOrder(), actions);
-                case InterventionType.CANCEL -> handleCancel(executableAction);
-                case InterventionType.REBUILD -> {
-                    if (!rebuildCleanTag) {
-                        cleanActionData(executableAction);
-                        rebuildCleanTag = true;
-                    }
-                    handleRebuild(executableAction, intervention.getOrder(), actions);
-                }
-            }
+            actionsResult
+                    .onFailure(ExceptionReporterHandler.INSTANCE::report)
+                    .onSuccess(actions -> {
+                        switch (intervention.getType()) {
+                            case InterventionType.APPEND ->
+                                    handleAppend(executableAction, intervention.getOrder(), actions);
+                            case InterventionType.INSERT ->
+                                    handleInsert(executableAction, intervention.getOrder(), actions);
+                            case InterventionType.DELETE ->
+                                    handleDelete(executableAction, intervention.getOrder(), actions);
+                            case InterventionType.CANCEL -> handleCancel(executableAction);
+                            case InterventionType.REBUILD -> {
+                                if (!rebuildCleanTag[0]) {
+                                    cleanActionData(executableAction);
+                                    rebuildCleanTag[0] = true;
+                                }
+                                handleRebuild(executableAction, intervention.getOrder(), actions);
+                            }
+                        }
+                    });
         }
 
     }
@@ -217,21 +219,12 @@ public class ActionCore implements StateSerializable {
         List<MetaAction> actions = new ArrayList<>();
         for (String actionKey : intervention.getActions()) {
             Result<MetaAction> metaActionResult = loadMetaAction(actionKey);
-            if (metaActionResult.isFailure()) {
-                Throwable throwable = metaActionResult.exceptionOrNull();
-                return Result.failure(throwable == null
-                        ? new ActionLookupException("Meta action lookup failed: " + actionKey, actionKey, "META_ACTION")
-                        : throwable);
+            AgentRuntimeException failure = metaActionResult.onSuccess(actions::add).exceptionOrNull();
+            if (failure != null) {
+                return Result.failure(failure);
             }
-            actions.add(metaActionResult.getOrNull());
         }
         return Result.success(actions);
-    }
-
-    private void reportLookupFailure(Throwable throwable) {
-        if (throwable instanceof ActionLookupException lookupException) {
-            ExceptionReporterHandler.INSTANCE.report(lookupException);
-        }
     }
 
     /**

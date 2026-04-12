@@ -27,11 +27,13 @@ public class ActionExtractor extends AbstractAgentModule.Sub<String, ExtractorRe
                 new Message(Message.Character.USER, input)
         );
         Result<ExtractorResult> result = formattedChat(messages, ExtractorResult.class);
-        if (result.isSuccess()) {
-            return result.getOrThrow();
-        }
-        log.error("提取信息出错", result.exceptionOrNull());
-        return new ExtractorResult();
+        return result.fold(
+                extractorResult -> extractorResult,
+                exception -> {
+                    log.error("提取信息出错", exception);
+                    return new ExtractorResult();
+                }
+        );
     }
 
     @NotNull

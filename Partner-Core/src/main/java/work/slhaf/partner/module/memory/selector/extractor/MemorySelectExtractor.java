@@ -43,15 +43,19 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInpu
                 messages,
                 ExtractorResult.class
         );
-        if (result.isSuccess()) {
-            extractorResult = result.getOrThrow();
-            log.debug("[MemorySelectExtractor] 主题提取结果: {}", extractorResult);
-        } else {
-            log.error("[MemorySelectExtractor] 主题提取出错: ", result.exceptionOrNull());
-            extractorResult = new ExtractorResult();
-            extractorResult.setRecall(false);
-            extractorResult.setMatches(List.of());
-        }
+        extractorResult = result.fold(
+                value -> {
+                    log.debug("[MemorySelectExtractor] 主题提取结果: {}", value);
+                    return value;
+                },
+                exception -> {
+                    log.error("[MemorySelectExtractor] 主题提取出错: ", exception);
+                    ExtractorResult fallback = new ExtractorResult();
+                    fallback.setRecall(false);
+                    fallback.setMatches(List.of());
+                    return fallback;
+                }
+        );
         return fix(extractorResult);
     }
 

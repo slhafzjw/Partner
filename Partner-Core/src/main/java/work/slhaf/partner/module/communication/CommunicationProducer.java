@@ -6,13 +6,13 @@ import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import work.slhaf.partner.core.cognition.*;
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.model.ActivateModel;
 import work.slhaf.partner.framework.agent.model.StreamChatMessageConsumer;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
-import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -67,11 +67,11 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     private void executeChat(PartnerRunningFlowContext runningFlowContext) {
         StreamChatMessageConsumer consumer = ReplyDispatcher.INSTANCE.createConsumer(runningFlowContext.getTarget());
-        Result<kotlin.Unit> result = this.streamChat(buildChatMessages(runningFlowContext), consumer);
-        if (result.isFailure()) {
-            log.error("Streaming response failed", result.exceptionOrNull());
-            consumer.onDelta(INTERRUPTED_MARKER);
-        }
+        this.streamChat(buildChatMessages(runningFlowContext), consumer)
+                .onFailure(exception -> {
+                    ExceptionReporterHandler.INSTANCE.report(exception);
+                    consumer.onDelta(INTERRUPTED_MARKER);
+                });
         updateChatMessages(runningFlowContext, consumer.collectResponse());
         updateContext();
     }

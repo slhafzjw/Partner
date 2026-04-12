@@ -34,14 +34,16 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Ext
                 resolveTaskMessage(input)
         );
         Result<ExtractorResult> result = formattedChat(messages, ExtractorResult.class);
-        if (result.isFailure()) {
-            log.error("ParamsExtractor解析结果失败", result.exceptionOrNull());
-            ExtractorResult fallback = new ExtractorResult();
-            fallback.setOk(false);
-            fallback.setParams(new HashMap<>());
-            return fallback;
-        }
-        return result.getOrThrow();
+        return result.fold(
+                extractorResult -> extractorResult,
+                exception -> {
+                    log.error("ParamsExtractor解析结果失败", exception);
+                    ExtractorResult fallback = new ExtractorResult();
+                    fallback.setOk(false);
+                    fallback.setParams(new HashMap<>());
+                    return fallback;
+                }
+        );
     }
 
     private Message resolveTaskMessage(ExtractorInput input) {

@@ -8,6 +8,7 @@ import com.openai.core.http.StreamResponse;
 import com.openai.models.chat.completions.*;
 import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.framework.agent.exception.ModelInvokeException;
 import work.slhaf.partner.framework.agent.model.StreamChatMessageConsumer;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
@@ -160,21 +161,14 @@ public class OpenAiCompatibleProvider extends ModelProvider {
     }
 
     private <T> Result<T> executeWithRetry(String failureMessage, ThrowingSupplier<T> supplier) {
-        Exception lastFailure = null;
+        AgentRuntimeException lastFailure = null;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             Result<T> result = Result.runCatching(supplier::get);
-            if (result.isSuccess()) {
+            AgentRuntimeException failure = result.exceptionOrNull();
+            if (failure == null) {
                 return result;
             }
-            Throwable throwable = result.exceptionOrNull();
-            if (throwable instanceof Exception exception) {
-                lastFailure = exception;
-                continue;
-            }
-            if (throwable instanceof Error error) {
-                throw error;
-            }
-            return Result.failure(invokeException(failureMessage, throwable));
+            lastFailure = failure;
         }
         return Result.failure(invokeException(failureMessage, lastFailure));
     }

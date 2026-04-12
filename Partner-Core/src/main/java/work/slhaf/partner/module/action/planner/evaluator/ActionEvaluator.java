@@ -66,15 +66,14 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
                             messages,
                             EvaluatorResult.class
                     );
-                    if (result.isFailure()) {
-                        log.error("ActionEvaluator评估失败: {}", tendency, result.exceptionOrNull());
-                        return;
-                    }
-                    EvaluatorResult evaluatorResult = result.getOrThrow();
-                    evaluatorResult.setTendency(tendency);
-                    synchronized (evaluatorResults) {
-                        evaluatorResults.add(evaluatorResult);
-                    }
+                    result
+                            .onFailure(exception -> log.error("ActionEvaluator评估失败: {}", tendency, exception))
+                            .onSuccess(evaluatorResult -> {
+                                evaluatorResult.setTendency(tendency);
+                                synchronized (evaluatorResults) {
+                                    evaluatorResults.add(evaluatorResult);
+                                }
+                            });
                 } finally {
                     latch.countDown();
                 }

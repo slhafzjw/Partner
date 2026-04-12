@@ -11,6 +11,7 @@ import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.CommunicationBlockContent;
 import work.slhaf.partner.core.cognition.ContextBlock;
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
@@ -384,11 +385,12 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 List<MetaAction> metaActions = new ArrayList<>();
                 for (String actionKey : entry.getValue()) {
                     Result<MetaAction> metaActionResult = actionCapability.loadMetaAction(actionKey);
-                    if (metaActionResult.isFailure()) {
-                        reportFailure(metaActionResult);
+                    AgentRuntimeException failure = metaActionResult.onSuccess(metaActions::add)
+                            .onFailure(ExceptionReporterHandler.INSTANCE::report)
+                            .exceptionOrNull();
+                    if (failure != null) {
                         return null;
                     }
-                    metaActions.add(metaActionResult.getOrNull());
                 }
                 actionChain.put(entry.getKey(), metaActions);
             }
@@ -408,12 +410,14 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                     List<String> actionKeys = primaryActionChain.get(fixedOrder);
                     for (String actionKey : actionKeys) {
                         // 根据 actionKey 加载行动信息,并检查是否存在必需前置依赖
-                        Result<MetaActionInfo> metaActionInfoResult = actionCapability.loadMetaActionInfo(actionKey);
-                        if (metaActionInfoResult.isFailure()) {
-                            reportFailure(metaActionInfoResult);
+
+                        Result<MetaActionInfo> infoResult = actionCapability.loadMetaActionInfo(actionKey)
+                                .onFailure(ExceptionReporterHandler.INSTANCE::report);
+                        if (infoResult.exceptionOrNull() != null) {
                             return false;
                         }
-                        MetaActionInfo metaActionInfo = metaActionInfoResult.getOrNull();
+
+                        MetaActionInfo metaActionInfo = infoResult.getOrThrow();
                         Set<String> preActions = metaActionInfo.getPreActions();
                         boolean preActionsExist = preActions.isEmpty();
                         if (!preActionsExist) {
@@ -442,12 +446,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 fixedOrders.addAll(tempOrders);
             } while (fixed.getAndSet(false));
             return true;
-        }
-
-        private void reportFailure(Result<?> result) {
-            if (result.exceptionOrNull() instanceof work.slhaf.partner.framework.agent.exception.AgentException agentException) {
-                ExceptionReporterHandler.INSTANCE.report(agentException);
-            }
         }
 
         private void fixOrder(Map<Integer, List<String>> primaryActionChain) {

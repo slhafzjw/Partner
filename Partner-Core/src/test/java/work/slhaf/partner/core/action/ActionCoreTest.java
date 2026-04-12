@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.exception.ActionLookupException;
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.action.executor.entity.HistoryAction;
 
@@ -350,15 +351,12 @@ class ActionCoreTest {
         actionCore.registerMetaActions(Map.of("builtin::demo", metaActionInfo));
 
         Result<MetaAction> success = actionCore.loadMetaAction("builtin::demo");
-        assertTrue(success.isSuccess());
-        assertEquals("demo", success.getOrNull().getName());
+        assertEquals("demo", success.fold(MetaAction::getName, ex -> fail(ex.getMessage())));
 
         Result<MetaAction> failure = actionCore.loadMetaAction("builtin::missing");
-        assertTrue(failure.isFailure());
-        assertInstanceOf(ActionLookupException.class, failure.exceptionOrNull());
+        assertInstanceOf(ActionLookupException.class, assertThrows(AgentRuntimeException.class, failure::getOrThrow));
 
         Result<MetaActionInfo> infoFailure = actionCore.loadMetaActionInfo("builtin::missing");
-        assertTrue(infoFailure.isFailure());
-        assertInstanceOf(ActionLookupException.class, infoFailure.exceptionOrNull());
+        assertInstanceOf(ActionLookupException.class, assertThrows(AgentRuntimeException.class, infoFailure::getOrThrow));
     }
 }
