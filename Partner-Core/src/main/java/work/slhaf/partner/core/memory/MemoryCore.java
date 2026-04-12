@@ -52,6 +52,7 @@ public class MemoryCore implements StateSerializable {
             conversationMessages.addAll(chatMessages);
 
             unit.getSlices().add(memorySlice);
+            normalizeMemoryUnit(unit);
             return unit;
         } finally {
             memoryLock.unlock();
