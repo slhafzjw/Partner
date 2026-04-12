@@ -7,11 +7,13 @@ import kotlinx.coroutines.channels.Channel
 import work.slhaf.partner.framework.agent.config.Config
 import work.slhaf.partner.framework.agent.config.ConfigRegistration
 import work.slhaf.partner.framework.agent.config.Configurable
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.framework.agent.factory.context.AgentContext
 import work.slhaf.partner.framework.agent.factory.context.ModuleContextData
 import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent
 import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
+import work.slhaf.partner.framework.agent.support.Result
 import java.nio.file.Path
 
 object AgentRuntime : Configurable, ConfigRegistration<ModuleMaskConfig> {
@@ -103,7 +105,8 @@ object AgentRuntime : Configurable, ConfigRegistration<ModuleMaskConfig> {
                     if (runningFlowContext.skippedModules.contains(module.moduleName)) {
                         return@async
                     }
-                    module.execute(runningFlowContext)
+                    Result.runCatching { module.execute(runningFlowContext) }
+                        .onFailure { ExceptionReporterHandler.report(it) }
                 }
             }
             jobs.awaitAll()
