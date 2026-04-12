@@ -16,8 +16,7 @@ import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAg
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.module.memory.runtime.MemoryRuntime;
-import work.slhaf.partner.module.memory.runtime.exception.UnExistedDateIndexException;
-import work.slhaf.partner.module.memory.runtime.exception.UnExistedTopicException;
+import work.slhaf.partner.module.memory.runtime.exception.MemoryLookupException;
 import work.slhaf.partner.module.memory.selector.evaluator.SliceSelectEvaluator;
 import work.slhaf.partner.module.memory.selector.evaluator.entity.EvaluatorInput;
 import work.slhaf.partner.module.memory.selector.extractor.MemorySelectExtractor;
@@ -114,7 +113,7 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
             );
 
             ExtractorResult extractorResult = memorySelectExtractor.execute(input);
-            if (extractorResult.isRecall() || !extractorResult.getMatches().isEmpty()) {
+            if (!extractorResult.getMatches().isEmpty()) {
                 List<ActivatedMemorySlice> activatedSlices = selectAndEvaluateMemory(snapshotInputs, extractorResult);
                 updateMemoryContext(activatedSlices);
             }
@@ -207,7 +206,6 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
     }
 
     private List<ActivatedMemorySlice> selectAndEvaluateMemory(Map<LocalDateTime, String> snapshotInputs, ExtractorResult extractorResult) {
-        log.debug("[MemorySelector] 触发记忆回溯...");
         LinkedHashMap<String, ActivatedMemorySlice> candidates = new LinkedHashMap<>();
         setMemoryCandidates(candidates, extractorResult.getMatches());
         EvaluatorInput evaluatorInput = EvaluatorInput.builder()
@@ -231,7 +229,7 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
                 for (ActivatedMemorySlice recalledSlice : recalledSlices) {
                     candidates.putIfAbsent(recalledSlice.getUnitId() + ":" + recalledSlice.getSliceId(), recalledSlice);
                 }
-            } catch (UnExistedDateIndexException | UnExistedTopicException e) {
+            } catch (MemoryLookupException e) {
                 log.error("[MemorySelector] 不存在的记忆索引", e);
                 log.error("[MemorySelector] 错误索引: {}", match.getText());
             }

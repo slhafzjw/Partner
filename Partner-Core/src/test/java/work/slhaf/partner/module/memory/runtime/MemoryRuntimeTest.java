@@ -12,6 +12,8 @@ import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.core.memory.pojo.SliceRef;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.support.Result;
+import work.slhaf.partner.module.memory.runtime.exception.MemoryLookupException;
 import work.slhaf.partner.module.memory.selector.ActivatedMemorySlice;
 
 import java.lang.reflect.Field;
@@ -26,8 +28,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MemoryRuntimeTest {
 
@@ -204,6 +205,27 @@ class MemoryRuntimeTest {
         assertEquals("second", dateResult.getFirst().getSummary());
     }
 
+    @Test
+    void shouldThrowMemoryLookupExceptionWhenTopicOrDateIndexDoesNotExist() throws Exception {
+        StubMemoryCapability memoryCapability = new StubMemoryCapability("session-test");
+        MemoryRuntime runtime = new MemoryRuntime();
+        setField(runtime, "memoryCapability", memoryCapability);
+        setField(runtime, "cognitionCapability", stubCognitionCapability(List.of(message("seed"))));
+
+        MemoryLookupException topicException = assertThrows(
+                MemoryLookupException.class,
+                () -> runtime.queryActivatedMemoryByTopicPath("topic/missing")
+        );
+        assertEquals("不存在的主题: topic/missing", topicException.getMessage());
+
+        MemoryLookupException dateException = assertThrows(
+                MemoryLookupException.class,
+                () -> runtime.queryActivatedMemoryByDate(LocalDate.parse("1970-01-01"))
+        );
+        assertEquals("不存在的日期索引: 1970-01-01", dateException.getMessage());
+        assertInstanceOf(MemoryLookupException.class, dateException);
+    }
+
     private static final class StubMemoryCapability implements MemoryCapability {
         private final String sessionId;
         private final Map<String, MemoryUnit> units = new HashMap<>();
@@ -222,15 +244,24 @@ class MemoryRuntimeTest {
         }
 
         @Override
-        public MemorySlice getMemorySlice(String unitId, String sliceId) {
+        public Result<MemorySlice> getMemorySlice(String unitId, String sliceId) {
             MemoryUnit unit = units.get(unitId);
             if (unit == null || unit.getSlices() == null) {
-                return null;
+                return Result.failure(new MemoryLookupException(
+                        "Memory slice not found: " + unitId + ":" + sliceId,
+                        unitId + ":" + sliceId,
+                        "MEMORY_SLICE"
+                ));
             }
             return unit.getSlices().stream()
                     .filter(slice -> sliceId.equals(slice.getId()))
                     .findFirst()
-                    .orElse(null);
+                    .map(Result::success)
+                    .orElseGet(() -> Result.failure(new MemoryLookupException(
+                            "Memory slice not found: " + unitId + ":" + sliceId,
+                            unitId + ":" + sliceId,
+                            "MEMORY_SLICE"
+                    )));
         }
 
         @Override

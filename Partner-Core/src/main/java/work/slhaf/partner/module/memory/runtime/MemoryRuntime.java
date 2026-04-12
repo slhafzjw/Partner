@@ -10,6 +10,7 @@ import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.core.memory.pojo.SliceRef;
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
@@ -17,8 +18,8 @@ import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.state.State;
 import work.slhaf.partner.framework.agent.state.StateSerializable;
 import work.slhaf.partner.framework.agent.state.StateValue;
-import work.slhaf.partner.module.memory.runtime.exception.UnExistedDateIndexException;
-import work.slhaf.partner.module.memory.runtime.exception.UnExistedTopicException;
+import work.slhaf.partner.framework.agent.support.Result;
+import work.slhaf.partner.module.memory.runtime.exception.MemoryLookupException;
 import work.slhaf.partner.module.memory.selector.ActivatedMemorySlice;
 
 import java.nio.file.Path;
@@ -105,16 +106,26 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
     private List<SliceRef> findByTopicPath(String topicPath) {
         String normalizedPath = normalizeTopicPath(topicPath);
         List<SliceRef> refs = topicSlices.get(normalizedPath);
-        if (refs == null || refs.isEmpty()) {
-            throw new UnExistedTopicException("不存在的主题: " + normalizedPath);
+        if (refs == null) {
+            ExceptionReporterHandler.INSTANCE.report(new MemoryLookupException(
+                    "Unexisted topic path: " + normalizedPath,
+                    normalizedPath,
+                    "TOPIC"
+            ));
+            return List.of();
         }
         return new ArrayList<>(refs);
     }
 
     private List<SliceRef> findByDate(LocalDate date) {
         List<SliceRef> refs = dateIndex.get(date);
-        if (refs == null || refs.isEmpty()) {
-            throw new UnExistedDateIndexException("不存在的日期索引: " + date);
+        if (refs == null) {
+            ExceptionReporterHandler.INSTANCE.report(new MemoryLookupException(
+                    "Unexisted date index: " + date,
+                    date.toString(),
+                    "DATE_INDEX"
+            ));
+            return List.of();
         }
         return new ArrayList<>(refs);
     }
@@ -160,10 +171,11 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
 
     private ActivatedMemorySlice buildActivatedMemorySlice(SliceRef ref) {
         MemoryUnit memoryUnit = memoryCapability.getMemoryUnit(ref.getUnitId());
-        MemorySlice memorySlice = memoryCapability.getMemorySlice(ref.getUnitId(), ref.getSliceId());
-        if (memoryUnit == null || memorySlice == null) {
+        Result<MemorySlice> memorySliceResult = memoryCapability.getMemorySlice(ref.getUnitId(), ref.getSliceId());
+        if (memorySliceResult.exceptionOrNull() != null) {
             return null;
         }
+        MemorySlice memorySlice = memorySliceResult.getOrThrow();
         List<Message> messages = sliceMessages(memoryUnit, memorySlice);
         LocalDate date = Instant.ofEpochMilli(memorySlice.getTimestamp())
                 .atZone(ZoneId.systemDefault())
@@ -254,7 +266,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
                     try {
                         dateIndex.put(LocalDate.parse(date), decodeSliceRefs(dateObject.getJSONArray("refs")));
                     } catch (Exception e) {
-                        log.warn("[MemoryRuntime] 跳过非法日期索引: {}", date, e);
+                        log.warn("skip invalid date index: {}", date, e);
                     }
                 }
             }

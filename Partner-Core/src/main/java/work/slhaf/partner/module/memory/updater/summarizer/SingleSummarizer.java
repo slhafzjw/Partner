@@ -1,10 +1,10 @@
 package work.slhaf.partner.module.memory.updater.summarizer;
 
-import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
@@ -41,7 +41,10 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
                     int index = i;
                     executor.execute(() -> {
                         try {
-                            String summarized = singleExecute(JSONObject.of("content", content).toString());
+                            String summarized = chat(List.of(new Message(Message.Character.USER, content))).onFailure(ExceptionReporterHandler.INSTANCE::report).fold(
+                                    res -> res,
+                                    exp -> content
+                            );
                             chatMessages.set(index, new Message(Message.Character.ASSISTANT, summarized));
                         } finally {
                             latch.countDown();
@@ -59,12 +62,7 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
     }
 
     private String singleExecute(String primaryContent) {
-        try {
-            return chat(List.of(new Message(Message.Character.USER, primaryContent))).getOrThrow();
-        } catch (Exception e) {
-            log.error("[SingleSummarizer] 单消息总结出错: ", e);
-            return primaryContent;
-        }
+        return chat(List.of(new Message(Message.Character.USER, primaryContent))).getOrThrow();
     }
 
     @Override

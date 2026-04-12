@@ -6,6 +6,5 @@ import java.util.List;
 
 @Data
 public class ExtractorResult {
-    private boolean recall;
     private List<ExtractorMatchData> matches;
 }

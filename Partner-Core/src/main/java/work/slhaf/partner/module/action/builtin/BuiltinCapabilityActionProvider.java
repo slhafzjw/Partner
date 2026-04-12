@@ -14,6 +14,7 @@ import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent;
+import work.slhaf.partner.framework.agent.support.Result;
 
 import java.util.*;
 import java.util.function.Function;
@@ -66,14 +67,14 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
         Function<Map<String, Object>, String> invoker = params -> {
             String unitId = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "unit_id");
             String sliceId = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "slice_id");
-            MemorySlice slice = memoryCapability.getMemorySlice(unitId, sliceId);
-
-            if (slice == null) {
+            Result<MemorySlice> sliceResult = memoryCapability.getMemorySlice(unitId, sliceId);
+            if (sliceResult.exceptionOrNull() != null) {
                 return JSONObject.of(
                         "ok", false,
-                        "message", "Memory slice not found"
+                        "message", sliceResult.exceptionOrNull().getLocalizedMessage()
                 ).toJSONString();
             }
+            MemorySlice slice = sliceResult.getOrThrow();
 
             MemoryUnit unit = memoryCapability.getMemoryUnit(unitId);
             cognitionCapability.contextWorkspace().register(new ContextBlock(
@@ -85,7 +86,7 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
             ));
 
             return JSONObject.of(
-                    "ok", false,
+                    "ok", true,
                     "message", "Memory slice found and recalled into context"
             ).toJSONString();
         };

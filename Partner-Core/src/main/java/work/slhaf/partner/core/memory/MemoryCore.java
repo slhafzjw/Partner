@@ -12,6 +12,8 @@ import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.state.State;
 import work.slhaf.partner.framework.agent.state.StateSerializable;
 import work.slhaf.partner.framework.agent.state.StateValue;
+import work.slhaf.partner.framework.agent.support.Result;
+import work.slhaf.partner.module.memory.runtime.exception.MemoryLookupException;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -71,17 +73,25 @@ public class MemoryCore implements StateSerializable {
     }
 
     @CapabilityMethod
-    public MemorySlice getMemorySlice(String unitId, String sliceId) {
+    public Result<MemorySlice> getMemorySlice(String unitId, String sliceId) {
         MemoryUnit memoryUnit = memoryUnits.get(unitId);
         if (memoryUnit == null || memoryUnit.getSlices() == null) {
-            return null;
+            return Result.failure(new MemoryLookupException(
+                    "Memory slice not found: " + unitId + ":" + sliceId,
+                    unitId + ":" + sliceId,
+                    "MEMORY_SLICE"
+            ));
         }
         for (MemorySlice slice : memoryUnit.getSlices()) {
             if (sliceId.equals(slice.getId())) {
-                return slice;
+                return Result.success(slice);
             }
         }
-        return null;
+        return Result.failure(new MemoryLookupException(
+                "Memory slice not found: " + unitId + ":" + sliceId,
+                unitId + ":" + sliceId,
+                "MEMORY_SLICE"
+        ));
     }
 
     @CapabilityMethod

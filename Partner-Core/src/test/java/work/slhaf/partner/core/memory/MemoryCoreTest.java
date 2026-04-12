@@ -77,7 +77,7 @@ class MemoryCoreTest {
         assertEquals("second-summary", appendedSlice.getSummary());
         assertTrue(appendedSlice.getTimestamp() > 0);
 
-        MemorySlice loadedSlice = memoryCore.getMemorySlice(sessionId, appendedSlice.getId());
+        MemorySlice loadedSlice = memoryCore.getMemorySlice(sessionId, appendedSlice.getId()).getOrThrow();
         assertNotNull(loadedSlice);
         assertEquals(1, loadedSlice.getStartIndex());
         assertEquals(3, loadedSlice.getEndIndex());

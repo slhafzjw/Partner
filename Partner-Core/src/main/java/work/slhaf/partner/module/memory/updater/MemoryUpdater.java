@@ -1,6 +1,5 @@
 package work.slhaf.partner.module.memory.updater;
 
-import com.alibaba.fastjson2.JSONObject;
 import kotlin.Unit;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -25,7 +24,6 @@ import work.slhaf.partner.module.memory.runtime.MemoryRuntime;
 import work.slhaf.partner.module.memory.updater.summarizer.MultiSummarizer;
 import work.slhaf.partner.module.memory.updater.summarizer.SingleSummarizer;
 import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeInput;
-import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeResult;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.util.List;
@@ -126,9 +124,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
             }
 
             RollingRecord record = updateMemory(chatIncrement);
-            if (record != null) {
-                dialogRollingService.rollMessages(chatIncrement, fullChatSnapshot.size(), CONTEXT_RETAIN_DIVISOR, record.unitId, record.sliceId, record.summary);
-            }
+            dialogRollingService.rollMessages(chatIncrement, fullChatSnapshot.size(), CONTEXT_RETAIN_DIVISOR, record.unitId, record.sliceId, record.summary);
 
             if (refreshMemoryId) {
                 memoryCapability.refreshMemorySession();
@@ -167,23 +163,23 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
             return null;
         }
         SummarizeInput summarizeInput = new SummarizeInput(chatSnapshot, memoryRuntime.getTopicTree());
-        log.debug("[MemoryUpdater] 记忆更新-总结流程-输入: {}", JSONObject.toJSONString(summarizeInput));
-        SummarizeResult summarizeResult = summarize(summarizeInput);
-        log.debug("[MemoryUpdater] 记忆更新-总结流程-输出: {}", JSONObject.toJSONString(summarizeResult));
-        MemoryUnit memoryUnit = memoryCapability.updateMemoryUnit(chatSnapshot, summarizeResult.getSummary());
-        memoryRuntime.recordMemory(
-                memoryUnit,
-                summarizeResult.getTopicPath(),
-                summarizeResult.getRelatedTopicPath()
-        );
-        log.debug("[MemoryUpdater] 记忆更新流程结束...");
-        MemorySlice newSlice = memoryUnit.getSlices().getLast();
-        return new RollingRecord(memoryUnit.getId(), newSlice.getId(), newSlice.getSummary());
-    }
-
-    private SummarizeResult summarize(SummarizeInput summarizeInput) {
         singleSummarizer.execute(summarizeInput.getChatMessages());
-        return multiSummarizer.execute(summarizeInput);
+        return multiSummarizer.execute(summarizeInput).fold(
+                summarizeResult -> {
+                    MemoryUnit memoryUnit = memoryCapability.updateMemoryUnit(chatSnapshot, summarizeResult.getSummary());
+                    memoryRuntime.recordMemory(
+                            memoryUnit,
+                            summarizeResult.getTopicPath(),
+                            summarizeResult.getRelatedTopicPath()
+                    );
+                    MemorySlice newSlice = memoryUnit.getSlices().getLast();
+                    return new RollingRecord(memoryUnit.getId(), newSlice.getId(), newSlice.getSummary());
+                },
+                exp -> {
+                    MemoryUnit memoryUnit = memoryCapability.updateMemoryUnit(chatSnapshot, "no summary, due to exception");
+                    MemorySlice newSlice = memoryUnit.getSlices().getLast();
+                    return new RollingRecord(memoryUnit.getId(), newSlice.getId(), newSlice.getSummary());
+                });
     }
 
     @Override

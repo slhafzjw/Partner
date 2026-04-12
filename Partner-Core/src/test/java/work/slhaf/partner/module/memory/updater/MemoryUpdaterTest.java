@@ -8,7 +8,9 @@ import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
+import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.memory.runtime.MemoryRuntime;
+import work.slhaf.partner.module.memory.runtime.exception.MemoryLookupException;
 import work.slhaf.partner.module.memory.updater.summarizer.MultiSummarizer;
 import work.slhaf.partner.module.memory.updater.summarizer.SingleSummarizer;
 import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeResult;
@@ -84,9 +86,9 @@ class MemoryUpdaterTest {
         setField(updater, "singleSummarizer", singleSummarizer);
 
         when(memoryRuntime.getTopicTree()).thenReturn("topic-tree");
-        when(multiSummarizer.execute(Mockito.any())).thenReturn(
+        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success(
                 summarizeResult("new-summary", "topic/main", List.of("topic/related"))
-        );
+        ));
 
         MemoryUnit existingUnit = new MemoryUnit("session-1");
         existingUnit.getConversationMessages().addAll(List.of(
@@ -134,9 +136,9 @@ class MemoryUpdaterTest {
         setField(updater, "singleSummarizer", singleSummarizer);
 
         when(memoryRuntime.getTopicTree()).thenReturn("topic-tree");
-        when(multiSummarizer.execute(Mockito.any())).thenReturn(
+        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success(
                 summarizeResult("fresh-summary", "topic/root", List.of())
-        );
+        ));
 
         Object rollingRecord = invokeUpdateMemory(updater, List.of(
                 message(Message.Character.USER, "first"),
@@ -258,15 +260,24 @@ class MemoryUpdaterTest {
         }
 
         @Override
-        public MemorySlice getMemorySlice(String unitId, String sliceId) {
+        public Result<MemorySlice> getMemorySlice(String unitId, String sliceId) {
             MemoryUnit unit = units.get(unitId);
             if (unit == null || unit.getSlices() == null) {
-                return null;
+                return Result.failure(new MemoryLookupException(
+                        "Memory slice not found: " + unitId + ":" + sliceId,
+                        unitId + ":" + sliceId,
+                        "MEMORY_SLICE"
+                ));
             }
             return unit.getSlices().stream()
                     .filter(slice -> sliceId.equals(slice.getId()))
                     .findFirst()
-                    .orElse(null);
+                    .map(Result::success)
+                    .orElseGet(() -> Result.failure(new MemoryLookupException(
+                            "Memory slice not found: " + unitId + ":" + sliceId,
+                            unitId + ":" + sliceId,
+                            "MEMORY_SLICE"
+                    )));
         }
 
         @Override
