@@ -60,14 +60,24 @@ public abstract class RunnerClient implements AutoCloseable {
      * 执行行动程序
      */
     public void submit(MetaAction metaAction) {
+        log.debug("执行行动: {}", metaAction);
         // 获取已存在行动列表
         Result result = metaAction.getResult();
         if (!result.getStatus().equals(Result.Status.WAITING)) {
             return;
         }
-        RunnerResponse response = doRun(metaAction);
+        RunnerResponse response = work.slhaf.partner.framework.agent.support.Result.runCatching(() -> doRun(metaAction)).fold(
+                runnerResponse -> runnerResponse,
+                ex -> {
+                    RunnerResponse r = new RunnerResponse();
+                    r.setOk(false);
+                    r.setData(ex.getLocalizedMessage());
+                    return r;
+                }
+        );
         result.setData(response.getData());
         result.setStatus(response.isOk() ? Result.Status.SUCCESS : Result.Status.FAILED);
+        log.debug("行动执行结果: {}", response);
     }
 
     protected abstract RunnerResponse doRun(MetaAction metaAction);
@@ -85,13 +95,8 @@ public abstract class RunnerClient implements AutoCloseable {
             response.setData("BuiltinActionRegistry 未初始化");
             return response;
         }
-        try {
-            response.setData(builtinActionRegistry.call(metaAction.getKey(), metaAction.getParams()));
-            response.setOk(true);
-        } catch (Exception e) {
-            response.setOk(false);
-            response.setData(e.getLocalizedMessage());
-        }
+        response.setData(builtinActionRegistry.call(metaAction.getKey(), metaAction.getParams()));
+        response.setOk(true);
         return response;
     }
 

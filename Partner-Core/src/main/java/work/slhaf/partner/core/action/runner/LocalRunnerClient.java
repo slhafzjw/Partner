@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
-public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
+public class LocalRunnerClient extends RunnerClient {
 
     public static final String MCP_NAME_DESC = "mcp-desc";
     public static final String MCP_NAME_DYNAMIC = "mcp-dynamic";
@@ -139,20 +139,12 @@ public class LocalRunnerClient extends RunnerClient implements AutoCloseable {
 
     @Override
     protected RunnerResponse doRun(MetaAction metaAction) {
-        log.debug("执行行动: {}", metaAction);
         RunnerResponse response;
-        try {
-            response = switch (metaAction.getType()) {
-                case MCP -> mcpActionExecutor.run(metaAction);
-                case ORIGIN -> originExecutionService.run(metaAction);
-                case BUILTIN -> doRunWithBuiltin(metaAction);
-            };
-        } catch (Exception e) {
-            response = new RunnerResponse();
-            response.setOk(false);
-            response.setData(e.getLocalizedMessage());
-        }
-        log.debug("行动执行结果: {}", response);
+        response = switch (metaAction.getType()) {
+            case MCP -> mcpActionExecutor.run(metaAction);
+            case ORIGIN -> originExecutionService.run(metaAction);
+            case BUILTIN -> doRunWithBuiltin(metaAction);
+        };
         return response;
     }
 
