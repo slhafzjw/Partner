@@ -1,8 +1,13 @@
 package work.slhaf.partner.core.cognition
 
+import com.alibaba.fastjson2.JSONObject
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import work.slhaf.partner.common.base.Block
+import work.slhaf.partner.framework.agent.config.ConfigCenter
+import work.slhaf.partner.framework.agent.log.TraceEvent
+import work.slhaf.partner.framework.agent.log.TraceRecorder
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.util.*
@@ -13,6 +18,11 @@ import kotlin.math.min
 
 class ContextWorkspace {
 
+    private val tracePath: Path = ConfigCenter.paths.stateDir
+        .resolve("trace")
+        .resolve("context-workspace")
+        .normalize()
+        .toAbsolutePath()
     private val stateSet = mutableSetOf<ContextBlock>()
     private val lock = ReentrantReadWriteLock()
 
@@ -94,6 +104,7 @@ class ContextWorkspace {
      * @param contextBlock 注册的新上下文块
      */
     fun register(contextBlock: ContextBlock) = lock.write {
+        val removedBlocks = mutableListOf<ContextBlock>()
         val iterator = stateSet.iterator()
         while (iterator.hasNext()) {
             val currentBlock = iterator.next()
@@ -103,19 +114,55 @@ class ContextWorkspace {
 
             if (currentBlock.applyReplaceFade() <= 0.0) {
                 iterator.remove()
+                removedBlocks.add(currentBlock)
             }
         }
         stateSet += contextBlock
+        recordRegister(contextBlock, removedBlocks)
     }
 
     fun expire(blockName: String, source: String) = lock.write {
         val sourceKey = ContextBlock.SourceKey(blockName, source)
+        val removedBlocks = mutableListOf<ContextBlock>()
         val iterator = stateSet.iterator()
         while (iterator.hasNext()) {
-            if (iterator.next().sourceKey == sourceKey) {
+            val block = iterator.next()
+            if (block.sourceKey == sourceKey) {
                 iterator.remove()
+                removedBlocks.add(block)
             }
         }
+        if (removedBlocks.isNotEmpty()) {
+            recordExpire(sourceKey, removedBlocks)
+        }
+    }
+
+    private fun recordRegister(addedBlock: ContextBlock, removedBlocks: List<ContextBlock>) {
+        val payload = JSONObject()
+        payload["action"] = "register"
+        payload["added"] = blockSnapshot(addedBlock)
+        payload["removed"] = removedBlocks.map(::blockSnapshot)
+        TraceRecorder.record(TraceEvent(tracePath, payload))
+    }
+
+    private fun recordExpire(sourceKey: ContextBlock.SourceKey, removedBlocks: List<ContextBlock>) {
+        val payload = JSONObject()
+        payload["action"] = "expire"
+        payload["blockName"] = sourceKey.blockName
+        payload["source"] = sourceKey.source
+        payload["removed"] = removedBlocks.map(::blockSnapshot)
+        TraceRecorder.record(TraceEvent(tracePath, payload))
+    }
+
+    private fun blockSnapshot(block: ContextBlock): JSONObject {
+        val payload = JSONObject()
+        payload["blockName"] = block.sourceKey.blockName
+        payload["source"] = block.sourceKey.source
+        payload["visibleTo"] = block.visibleTo.map { it.name }
+        payload["fullRendered"] = block.blockContent.encodeToXmlString()
+        payload["compactRendered"] = block.compactBlock.encodeToXmlString()
+        payload["abstractRendered"] = block.abstractBlock.encodeToXmlString()
+        return payload
     }
 
 }
