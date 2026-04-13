@@ -57,7 +57,7 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
     private Lock inputsLock = new ReentrantLock();
 
     @Override
-    public void execute(@NotNull PartnerRunningFlowContext runningFlowContext) {
+    protected void doExecute(@NotNull PartnerRunningFlowContext runningFlowContext) {
         inputsLock.lock();
         try {
             collectedInputs.put(ZonedDateTime.now().toLocalDateTime(), runningFlowContext.getInput());

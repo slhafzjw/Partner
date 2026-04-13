@@ -45,7 +45,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
      * @return 评估结果集合
      */
     @Override
-    public List<EvaluatorResult> execute(EvaluatorInput data) {
+    protected List<EvaluatorResult> doExecute(EvaluatorInput data) {
         List<String> tendencies = data.getTendencies();
         CountDownLatch latch = new CountDownLatch(tendencies.size());
         List<EvaluatorResult> evaluatorResults = new ArrayList<>();

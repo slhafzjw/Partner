@@ -26,7 +26,7 @@ public class ActionCorrectionRecognizer extends AbstractAgentModule.Sub<Correcti
     private CognitionCapability cognitionCapability;
 
     @Override
-    public @NotNull Result<CorrectionRecognizerResult> execute(CorrectionRecognizerInput input) {
+    protected @NotNull Result<CorrectionRecognizerResult> doExecute(CorrectionRecognizerInput input) {
         List<Message> messages = List.of(
                 resolveContextMessage(),
                 resolveTaskMessage(input)

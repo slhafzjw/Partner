@@ -13,7 +13,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TotalSummarizer extends AbstractAgentModule.Sub<HashMap<String, String>, String> implements ActivateModel {
-    public String execute(HashMap<String, String> singleMemorySummary) {
+    protected String doExecute(HashMap<String, String> singleMemorySummary) {
         return formattedChat(
                 List.of(new Message(Message.Character.USER, JSONUtil.toJsonPrettyStr(singleMemorySummary))),
                 SummaryContent.class

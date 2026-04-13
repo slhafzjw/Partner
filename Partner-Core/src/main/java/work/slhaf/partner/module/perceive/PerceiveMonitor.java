@@ -23,7 +23,7 @@ public class PerceiveMonitor extends AbstractAgentModule.Running<PartnerRunningF
     private CognitionCapability cognitionCapability;
 
     @Override
-    public void execute(@NotNull PartnerRunningFlowContext context) {
+    protected void doExecute(@NotNull PartnerRunningFlowContext context) {
         String lastInteractTime = perceiveCapability.refreshInteract();
         ContextBlock block = new ContextBlock(
                 new CommunicationBlockContent(

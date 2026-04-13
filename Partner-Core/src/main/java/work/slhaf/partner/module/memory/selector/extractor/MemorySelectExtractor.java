@@ -32,7 +32,7 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInpu
     private MemoryRuntime memoryRuntime;
 
     @Override
-    public ExtractorResult execute(ExtractorInput input) {
+    protected ExtractorResult doExecute(ExtractorInput input) {
         ExtractorResult extractorResult;
         List<Message> messages = List.of(
                 resolveContextMessage(),

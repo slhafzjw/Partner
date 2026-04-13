@@ -24,7 +24,7 @@ public class MultiSummarizer extends AbstractAgentModule.Sub<SummarizeInput, Res
     private MemoryRuntime memoryRuntime;
 
     @Override
-    public @NotNull Result<SummarizeResult> execute(SummarizeInput input) {
+    protected @NotNull Result<SummarizeResult> doExecute(SummarizeInput input) {
         return formattedChat(
                 List.of(new Message(Message.Character.USER, JSONUtil.toJsonPrettyStr(input))),
                 SummarizeResult.class

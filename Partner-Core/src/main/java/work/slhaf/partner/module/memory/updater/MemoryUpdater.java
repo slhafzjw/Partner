@@ -85,7 +85,7 @@ public class MemoryUpdater extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     @Override
-    public void execute(@NotNull PartnerRunningFlowContext context) {
+    protected void doExecute(@NotNull PartnerRunningFlowContext context) {
         boolean trigger = cognitionCapability.getChatMessages().size() >= MEMORY_UPDATE_TRIGGER_ROLL_LIMIT;
         if (!trigger) {
             return;

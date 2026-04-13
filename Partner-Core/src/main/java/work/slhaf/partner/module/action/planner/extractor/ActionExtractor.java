@@ -20,7 +20,7 @@ public class ActionExtractor extends AbstractAgentModule.Sub<String, Result<Extr
     private CognitionCapability cognitionCapability;
 
     @Override
-    public @NotNull Result<ExtractorResult> execute(String input) {
+    protected @NotNull Result<ExtractorResult> doExecute(String input) {
         List<Message> messages = List.of(
                 cognitionCapability.contextWorkspace().resolve(List.of(
                         ContextBlock.VisibleDomain.COGNITION,

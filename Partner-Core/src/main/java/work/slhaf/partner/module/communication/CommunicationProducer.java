@@ -59,7 +59,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     @Override
-    public void execute(PartnerRunningFlowContext runningFlowContext) {
+    protected void doExecute(PartnerRunningFlowContext runningFlowContext) {
         log.debug("Communicating with: {}", runningFlowContext.getSource());
         executeChat(runningFlowContext);
     }

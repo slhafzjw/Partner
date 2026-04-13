@@ -29,7 +29,7 @@ public class SingleSummarizer extends AbstractAgentModule.Sub<List<Message>, Voi
     }
 
     @Override
-    public Void execute(List<Message> chatMessages) {
+    protected Void doExecute(List<Message> chatMessages) {
         log.debug("[MemorySummarizer] 长文本摘要开始...");
         CountDownLatch latch = new CountDownLatch(chatMessages.size());
         for (int i = 0; i < chatMessages.size(); i++) {

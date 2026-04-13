@@ -27,7 +27,7 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Res
     private CognitionCapability cognitionCapability;
 
     @Override
-    public @NotNull Result<ExtractorResult> execute(ExtractorInput input) {
+    protected @NotNull Result<ExtractorResult> doExecute(ExtractorInput input) {
         List<Message> messages = List.of(
                 resolveContextMessage(),
                 resolveTaskMessage(input)

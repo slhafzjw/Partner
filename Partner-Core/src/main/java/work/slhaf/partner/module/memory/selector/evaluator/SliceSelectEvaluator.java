@@ -45,7 +45,7 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
     }
 
     @Override
-    public List<ActivatedMemorySlice> execute(EvaluatorInput evaluatorInput) {
+    protected List<ActivatedMemorySlice> doExecute(EvaluatorInput evaluatorInput) {
         List<ActivatedMemorySlice> preparedSlices = evaluatorInput.getMemorySlices();
         List<ActivatedMemorySlice> result = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(preparedSlices.size());
