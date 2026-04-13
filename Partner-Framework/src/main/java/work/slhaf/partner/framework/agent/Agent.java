@@ -11,6 +11,8 @@ import work.slhaf.partner.framework.agent.factory.AgentRegisterFactory;
 import work.slhaf.partner.framework.agent.factory.context.AgentContext;
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration;
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistry;
+import work.slhaf.partner.framework.agent.log.LogAdviceProvider;
+import work.slhaf.partner.framework.agent.log.TraceRecorder;
 import work.slhaf.partner.framework.agent.model.ModelRuntimeRegistry;
 import work.slhaf.partner.framework.agent.state.StateCenter;
 
@@ -77,14 +79,17 @@ public final class Agent {
 
         public boolean launch() {
             try {
+                // load class
+                ConfigCenter.INSTANCE.toString();
+                StateCenter.INSTANCE.toString();
+
                 // Keep startup order explicit so registries are ready before component scanning.
                 for (ExceptionReporter exceptionReporter : exceptionReporters) {
                     exceptionReporter.register();
                 }
-                // Load class
-                StateCenter.INSTANCE.toString();
 
                 // Register into config center
+                LogAdviceProvider.INSTANCE.register();
                 ModelRuntimeRegistry.INSTANCE.register();
                 AgentGatewayRegistry.INSTANCE.register();
                 for (Configurable configurable : configurables) {
@@ -128,6 +133,11 @@ public final class Agent {
                     "state-center-save",
                     0,
                     StateCenter.INSTANCE::save
+            );
+            AgentContext.INSTANCE.addPostShutdownHook(
+                    "trace-recorder-close",
+                    90,
+                    TraceRecorder.INSTANCE::close
             );
             AgentContext.INSTANCE.addPostShutdownHook(
                     "config-center-close",
