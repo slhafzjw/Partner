@@ -30,7 +30,7 @@ object LogAdviceProvider : Configurable, ConfigRegistration<AdviceLoggingConfig>
         inputType: Class<I>,
         outputType: Class<O>,
         meta: Map<String, Any> = emptyMap(),
-        invoker: (I) -> O
+        invoker: (I) -> O?
     ): LogAdvice<I, O> {
         return LogAdvice(
             adviceTarget = adviceTarget,
@@ -61,7 +61,7 @@ object LogAdviceProvider : Configurable, ConfigRegistration<AdviceLoggingConfig>
 
 class LogAdvice<I, O> internal constructor(
     val adviceTarget: String,
-    private val invoker: (I) -> O,
+    private val invoker: (I) -> O?,
     private val adviceMeta: AdviceMeta
 ) {
 
@@ -69,7 +69,7 @@ class LogAdvice<I, O> internal constructor(
         private val log = LoggerFactory.getLogger(LogAdvice::class.java)
     }
 
-    fun invoke(input: I): Result<O> {
+    fun invoke(input: I): Result<O?> {
         val startAt = ZonedDateTime.now()
         return try {
             logEnter(input)
@@ -92,7 +92,7 @@ class LogAdvice<I, O> internal constructor(
         }
     }
 
-    private fun logOutput(output: O) {
+    private fun logOutput(output: O?) {
         when (LogAdviceProvider.logLevel) {
             AdviceLoggingConfig.LogLevel.NONE -> return
             AdviceLoggingConfig.LogLevel.ABSTRACT -> log.info("${adviceMeta.adviceTarget} ended.")
@@ -100,7 +100,7 @@ class LogAdvice<I, O> internal constructor(
                 try {
                     log.info("${adviceMeta.adviceTarget} ended with output: ${JSONObject.toJSONString(output)}")
                 } catch (_: Exception) {
-                    log.info("${adviceMeta.adviceTarget} ended with output: ${output.toString()}, which cannot be printed as json string.")
+                    log.info("${adviceMeta.adviceTarget} ended with output: ${output ?: "null"}, which cannot be printed as json string.")
                 }
             }
         }
@@ -120,17 +120,9 @@ class LogAdvice<I, O> internal constructor(
         }
     }
 
-    private fun createResult(input: I, output: O, startAt: ZonedDateTime) {
-        val inputSerialized = try {
-            JSONObject.toJSONString(input)
-        } catch (_: JSONException) {
-            input.toString()
-        }
-        val outputSerialized = try {
-            JSONObject.toJSONString(output)
-        } catch (_: JSONException) {
-            output.toString()
-        }
+    private fun createResult(input: I, output: O?, startAt: ZonedDateTime) {
+        val inputSerialized = serializeRequired(input)
+        val outputSerialized = serializeNullable(output)
         LogAdviceProvider.record(
             AdviceResult.Normal(
                 adviceTarget,
@@ -143,11 +135,7 @@ class LogAdvice<I, O> internal constructor(
     }
 
     private fun createUnexpectedResult(input: I, throwable: Throwable, startAt: ZonedDateTime) { /* 落盘 */
-        val inputSerialized = try {
-            JSONObject.toJSONString(input)
-        } catch (_: JSONException) {
-            input.toString()
-        }
+        val inputSerialized = serializeRequired(input)
         LogAdviceProvider.record(
             AdviceResult.Unexpected(
                 adviceTarget,
@@ -158,6 +146,26 @@ class LogAdvice<I, O> internal constructor(
                 throwable.stackTraceToString()
             )
         )
+    }
+
+    private fun serializeRequired(value: Any?): String {
+        return try {
+            JSONObject.toJSONString(value)
+        } catch (_: JSONException) {
+            value?.toString() ?: "null"
+        }
+    }
+
+    private fun serializeNullable(value: Any?): String? {
+        return if (value == null) {
+            null
+        } else {
+            try {
+                JSONObject.toJSONString(value)
+            } catch (_: JSONException) {
+                value.toString()
+            }
+        }
     }
 }
 
@@ -191,7 +199,7 @@ sealed class AdviceResult {
         override val input: String,
         override val startAt: ZonedDateTime,
         override val adviceMeta: AdviceMeta,
-        val output: String,
+        val output: String?,
     ) : AdviceResult() {
         override val type: Type = Type.NORMAL
     }
