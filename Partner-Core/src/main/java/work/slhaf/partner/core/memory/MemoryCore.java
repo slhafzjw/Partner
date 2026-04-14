@@ -75,7 +75,7 @@ public class MemoryCore implements StateSerializable {
     @CapabilityMethod
     public Result<MemorySlice> getMemorySlice(String unitId, String sliceId) {
         MemoryUnit memoryUnit = memoryUnits.get(unitId);
-        if (memoryUnit == null || memoryUnit.getSlices() == null) {
+        if (memoryUnit == null) {
             return Result.failure(new MemoryLookupException(
                     "Memory slice not found: " + unitId + ":" + sliceId,
                     unitId + ":" + sliceId,

@@ -50,8 +50,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
     }
 
     private void checkAndSetMemoryId() {
-        String currentMemoryId = memoryCapability.getMemorySessionId();
-        if (currentMemoryId == null || cognitionCapability.getChatMessages().isEmpty()) {
+        if (cognitionCapability.getChatMessages().isEmpty()) {
             memoryCapability.refreshMemorySession();
         }
     }
@@ -75,9 +74,11 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
         MemorySlice memorySlice = memoryUnit.getSlices().getLast();
         SliceRef sliceRef = new SliceRef(memoryUnit.getId(), memorySlice.getId());
         indexMemoryUnit(memoryUnit);
-        bindTopic(topicPath, sliceRef);
-        if (relatedTopicPaths != null) {
-            for (String relatedTopicPath : relatedTopicPaths) {
+        if (topicPath != null && !topicPath.isBlank()) {
+            bindTopic(topicPath, sliceRef);
+        }
+        for (String relatedTopicPath : relatedTopicPaths) {
+            if (relatedTopicPath != null && !relatedTopicPath.isBlank()) {
                 bindTopic(relatedTopicPath, sliceRef);
             }
         }
@@ -89,14 +90,12 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
             for (CopyOnWriteArrayList<SliceRef> refs : dateIndex.values()) {
                 refs.removeIf(ref -> memoryUnit.getId().equals(ref.getUnitId()));
             }
-            if (memoryUnit.getSlices() != null) {
-                for (MemorySlice slice : memoryUnit.getSlices()) {
-                    LocalDate date = Instant.ofEpochMilli(slice.getTimestamp())
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate();
-                    dateIndex.computeIfAbsent(date, key -> new CopyOnWriteArrayList<>())
-                            .addIfAbsent(new SliceRef(memoryUnit.getId(), slice.getId()));
-                }
+            for (MemorySlice slice : memoryUnit.getSlices()) {
+                LocalDate date = Instant.ofEpochMilli(slice.getTimestamp())
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate();
+                dateIndex.computeIfAbsent(date, key -> new CopyOnWriteArrayList<>())
+                        .addIfAbsent(new SliceRef(memoryUnit.getId(), slice.getId()));
             }
         } finally {
             runtimeLock.unlock();
@@ -192,7 +191,7 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
 
     private List<Message> sliceMessages(MemoryUnit memoryUnit, MemorySlice memorySlice) {
         List<Message> conversationMessages = memoryUnit.getConversationMessages();
-        if (conversationMessages == null || conversationMessages.isEmpty()) {
+        if (conversationMessages.isEmpty()) {
             return List.of();
         }
         int size = conversationMessages.size();
