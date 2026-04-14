@@ -21,7 +21,10 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @EqualsAndHashCode(callSuper = true)
@@ -71,24 +74,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
                     consumer.onDelta(INTERRUPTED_MARKER);
                 });
         updateChatMessages(runningFlowContext, consumer.collectResponse());
-        updateContext();
-    }
-
-    private void updateContext() {
-        ContextBlock block = new ContextBlock(
-                new BlockContent("recent_chat_messages", "communication_producer") {
-                    @Override
-                    protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                        List<Message> chatMessages = cognitionCapability.getChatMessages();
-                        appendRepeatedElements(document, root, "chat_message", List.of(chatMessages.subList(chatMessages.size() - 7, chatMessages.size() - 1)));
-                    }
-                },
-                Set.of(ContextBlock.VisibleDomain.COGNITION),
-                100,
-                5,
-                4
-        );
-        cognitionCapability.contextWorkspace().register(block);
+        cognitionCapability.refreshRecentChatMessagesContext();
     }
 
     private List<Message> buildChatMessages(PartnerRunningFlowContext runningFlowContext) {

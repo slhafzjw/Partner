@@ -99,6 +99,32 @@ public class CognitionCore implements StateSerializable {
         return messageLock;
     }
 
+    @CapabilityMethod
+    public void refreshRecentChatMessagesContext() {
+        ContextBlock block = new ContextBlock(
+                new BlockContent("recent_chat_messages", "communication_producer") {
+                    @Override
+                    protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                        appendRepeatedElements(document, root, "chat_message", resolveRecentChatMessages());
+                    }
+                },
+                Set.of(ContextBlock.VisibleDomain.COGNITION),
+                100,
+                10,
+                4
+        );
+        contextWorkspace.register(block);
+    }
+
+    private List<Message> resolveRecentChatMessages() {
+        int exclusiveEnd = Math.max(chatMessages.size() - 1, 0);
+        if (exclusiveEnd == 0) {
+            return List.of();
+        }
+        int start = Math.max(exclusiveEnd - 6, 0);
+        return chatMessages.subList(start, exclusiveEnd);
+    }
+
     @Override
     public @NotNull Path statePath() {
         return Path.of("core", "cognition.json");
@@ -128,19 +154,7 @@ public class CognitionCore implements StateSerializable {
             this.chatMessages.add(new Message(Message.Character.fromValue(role), content));
         }
 
-        ContextBlock block = new ContextBlock(
-                new BlockContent("recent_chat_messages", "communication_producer") {
-                    @Override
-                    protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                        appendRepeatedElements(document, root, "chat_message", List.of(chatMessages.subList(chatMessages.size() - 7, chatMessages.size() - 1)));
-                    }
-                },
-                Set.of(ContextBlock.VisibleDomain.COGNITION),
-                100,
-                10,
-                4
-        );
-        contextWorkspace.register(block);
+        refreshRecentChatMessagesContext();
     }
 
     @Override

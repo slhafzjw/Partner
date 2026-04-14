@@ -19,6 +19,8 @@ public interface CognitionCapability {
 
     void rollChatMessagesWithSnapshot(int snapshotSize, int retainDivisor);
 
+    void refreshRecentChatMessagesContext();
+
     Lock getMessageLock();
 
 }
