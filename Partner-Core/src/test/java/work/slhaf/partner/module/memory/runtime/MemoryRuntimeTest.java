@@ -89,6 +89,11 @@ class MemoryRuntimeTest {
             }
 
             @Override
+            public void refreshRecentChatMessagesContext() {
+
+            }
+
+            @Override
             public Lock getMessageLock() {
                 return lock;
             }
