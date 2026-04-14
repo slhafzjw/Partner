@@ -30,12 +30,26 @@ object LogAdviceProvider : Configurable, ConfigRegistration<AdviceLoggingConfig>
         inputType: Class<I>,
         outputType: Class<O>,
         meta: Map<String, Any> = emptyMap(),
-        invoker: (I) -> O?
+        invoker: (I) -> O
     ): LogAdvice<I, O> {
         return LogAdvice(
-            adviceTarget = adviceTarget,
-            invoker = invoker,
+            adviceTarget,
+            AdviceInvoker.WithResult(invoker),
             AdviceMeta(adviceTarget, inputType, outputType, meta)
+        ).apply { _adviceRegistry.add(this) }
+    }
+
+    @JvmOverloads
+    fun <I> createAdvice(
+        adviceTarget: String,
+        inputType: Class<I>,
+        meta: Map<String, Any> = emptyMap(),
+        invoker: (I) -> Unit
+    ): LogAdvice<I, Void> {
+        return LogAdvice(
+            adviceTarget,
+            AdviceInvoker.WithoutResult(invoker),
+            AdviceMeta(adviceTarget, inputType, Void::class.java, meta)
         ).apply { _adviceRegistry.add(this) }
     }
 
@@ -61,7 +75,7 @@ object LogAdviceProvider : Configurable, ConfigRegistration<AdviceLoggingConfig>
 
 class LogAdvice<I, O> internal constructor(
     val adviceTarget: String,
-    private val invoker: (I) -> O?,
+    private val invoker: AdviceInvoker<I, O>,
     private val adviceMeta: AdviceMeta
 ) {
 
@@ -69,14 +83,32 @@ class LogAdvice<I, O> internal constructor(
         private val log = LoggerFactory.getLogger(LogAdvice::class.java)
     }
 
-    fun invoke(input: I): Result<O?> {
+    fun invoke(input: I): Result<O> {
+        val currentInvoker = invoker as? AdviceInvoker.WithResult<I, O>
+            ?: error("LogAdvice[$adviceTarget] does not provide a return value")
         val startAt = ZonedDateTime.now()
         return try {
             logEnter(input)
-            val output = invoker(input)
+            val output = currentInvoker.invoker(input)
             logOutput(output)
             createResult(input, output, startAt)
             Result.success(output)
+        } catch (e: Exception) {
+            logException(e)
+            createUnexpectedResult(input, e, startAt)
+            throw e
+        }
+    }
+
+    fun invokeWithoutResult(input: I) {
+        val currentInvoker = invoker as? AdviceInvoker.WithoutResult<I>
+            ?: error("LogAdvice[$adviceTarget] expects a return value")
+        val startAt = ZonedDateTime.now()
+        try {
+            logEnter(input)
+            currentInvoker.invoker(input)
+            logNoOutput()
+            createResultWithoutOutput(input, startAt)
         } catch (e: Exception) {
             logException(e)
             createUnexpectedResult(input, e, startAt)
@@ -92,7 +124,7 @@ class LogAdvice<I, O> internal constructor(
         }
     }
 
-    private fun logOutput(output: O?) {
+    private fun logOutput(output: O) {
         when (LogAdviceProvider.logLevel) {
             AdviceLoggingConfig.LogLevel.NONE -> return
             AdviceLoggingConfig.LogLevel.ABSTRACT -> log.info("${adviceMeta.adviceTarget} ended.")
@@ -100,9 +132,17 @@ class LogAdvice<I, O> internal constructor(
                 try {
                     log.info("${adviceMeta.adviceTarget} ended with output: ${JSONObject.toJSONString(output)}")
                 } catch (_: Exception) {
-                    log.info("${adviceMeta.adviceTarget} ended with output: ${output ?: "null"}, which cannot be printed as json string.")
+                    log.info("${adviceMeta.adviceTarget} ended with output: ${output.toString()}, which cannot be printed as json string.")
                 }
             }
+        }
+    }
+
+    private fun logNoOutput() {
+        when (LogAdviceProvider.logLevel) {
+            AdviceLoggingConfig.LogLevel.NONE -> return
+            AdviceLoggingConfig.LogLevel.ABSTRACT -> log.info("${adviceMeta.adviceTarget} ended.")
+            AdviceLoggingConfig.LogLevel.DETAIL -> log.info("${adviceMeta.adviceTarget} ended without output.")
         }
     }
 
@@ -120,16 +160,28 @@ class LogAdvice<I, O> internal constructor(
         }
     }
 
-    private fun createResult(input: I, output: O?, startAt: ZonedDateTime) {
+    private fun createResult(input: I, output: O, startAt: ZonedDateTime) {
         val inputSerialized = serializeRequired(input)
-        val outputSerialized = serializeNullable(output)
         LogAdviceProvider.record(
             AdviceResult.Normal(
                 adviceTarget,
                 inputSerialized,
                 startAt,
                 adviceMeta,
-                outputSerialized
+                serializeRequired(output)
+            )
+        )
+    }
+
+    private fun createResultWithoutOutput(input: I, startAt: ZonedDateTime) {
+        val inputSerialized = serializeRequired(input)
+        LogAdviceProvider.record(
+            AdviceResult.Normal(
+                adviceTarget,
+                inputSerialized,
+                startAt,
+                adviceMeta,
+                null
             )
         )
     }
@@ -155,18 +207,11 @@ class LogAdvice<I, O> internal constructor(
             value?.toString() ?: "null"
         }
     }
+}
 
-    private fun serializeNullable(value: Any?): String? {
-        return if (value == null) {
-            null
-        } else {
-            try {
-                JSONObject.toJSONString(value)
-            } catch (_: JSONException) {
-                value.toString()
-            }
-        }
-    }
+internal sealed interface AdviceInvoker<I, O> {
+    data class WithResult<I, O>(val invoker: (I) -> O) : AdviceInvoker<I, O>
+    data class WithoutResult<I>(val invoker: (I) -> Unit) : AdviceInvoker<I, Void>
 }
 
 data class AdviceMeta(

@@ -24,16 +24,12 @@ sealed class AbstractAgentModule {
             @Suppress("UNCHECKED_CAST")
             LogAdviceProvider.createAdvice(
                 moduleName,
-                resolveGenericType(0) as Class<T>,
-                Void::class.java
-            ) { context ->
-                doExecute(context)
-                null
-            }
+                resolveGenericType(0) as Class<T>
+            ) { context -> doExecute(context) }
         }
 
         fun execute(context: T) {
-            advice.invoke(context)
+            advice.invokeWithoutResult(context)
         }
 
         protected abstract fun doExecute(context: T)
@@ -53,11 +49,11 @@ sealed class AbstractAgentModule {
             }
         }
 
-        fun execute(input: I): O? {
+        fun execute(input: I): O {
             return advice.invoke(input).getOrThrow()
         }
 
-        protected abstract fun doExecute(input: I): O?
+        protected abstract fun doExecute(input: I): O
     }
 
     abstract class Standalone : AbstractAgentModule()
