@@ -1,15 +1,15 @@
 package work.slhaf.partner.runtime
 
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+import work.slhaf.partner.common.base.Block
 import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
 
 class PartnerRunningFlowContext private constructor(
     override val source: String,
     inputs: List<InputEntry>,
-    firstInputEpochMillis: Long,
-    additionalUserInfo: Map<String, String> = emptyMap(),
-    skippedModules: Set<String> = emptySet(),
-    target: String = source
-) : RunningFlowContext(inputs, firstInputEpochMillis, additionalUserInfo, skippedModules, target) {
+    firstInputEpochMillis: Long
+) : RunningFlowContext(inputs, firstInputEpochMillis) {
 
     companion object {
 
@@ -31,6 +31,7 @@ class PartnerRunningFlowContext private constructor(
         }
 
         @JvmStatic
+        @JvmOverloads
         fun fromUser(userId: String, input: String, receivedAtMillis: Long = System.currentTimeMillis()) =
             PartnerRunningFlowContext(
                 SourceTag.buildUserSource(userId),
@@ -39,6 +40,7 @@ class PartnerRunningFlowContext private constructor(
             )
 
         @JvmStatic
+        @JvmOverloads
         fun fromSelf(input: String, receivedAtMillis: Long = System.currentTimeMillis()) =
             PartnerRunningFlowContext(
                 SourceTag.buildAgentSource(),
@@ -50,20 +52,21 @@ class PartnerRunningFlowContext private constructor(
             }
     }
 
-    override fun copyWith(
-        inputs: List<InputEntry>,
-        firstInputEpochMillis: Long,
-        additionalUserInfo: Map<String, String>,
-        skippedModules: Set<String>,
-        target: String
-    ): RunningFlowContext {
+    override fun recreate(inputs: List<InputEntry>): RunningFlowContext {
         return PartnerRunningFlowContext(
             source = source,
             inputs = inputs,
-            firstInputEpochMillis = firstInputEpochMillis,
-            additionalUserInfo = additionalUserInfo,
-            skippedModules = skippedModules,
-            target = target
+            firstInputEpochMillis = System.currentTimeMillis()
         )
     }
+
+    fun encodeInputsBlock(): Block = object : Block("inputs") {
+        override fun fillXml(document: Document, root: Element) {
+            appendRepeatedElements(document, root, "input", inputs) {
+                this.setAttribute("interval-to-first", it.offsetMillis.toString())
+                this.textContent = it.content
+            }
+        }
+    }
+
 }

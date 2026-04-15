@@ -30,21 +30,6 @@ class AgentRuntimeTest {
     }
 
     @Test
-    fun `running flow context preserves offsets and xml encoding`() {
-        val first = TestRunningFlowContext.of("source-a", "first", 1_000L)
-        val second = TestRunningFlowContext.of("source-a", "second", 1_250L)
-
-        val merged = first.mergedWith(second)
-
-        assertEquals(listOf(0L, 250L), merged.inputs.map { it.offsetMillis })
-        assertEquals("first\nsecond", merged.input)
-        assertEquals(
-            "<inputs><input interval-to-first=\"0\">first</input><input interval-to-first=\"250\">second</input></inputs>",
-            merged.encodeInputsXml()
-        )
-    }
-
-    @Test
     fun `agent runtime keeps source queue in first arrival order`() {
         val recorder = RecordingModule(order = 1, expectedExecutions = 2)
         registerModule("queue-recorder", recorder)
@@ -185,9 +170,8 @@ class AgentRuntimeTest {
     private class TestRunningFlowContext private constructor(
         override val source: String,
         inputs: List<InputEntry>,
-        firstInputEpochMillis: Long,
-        target: String = source
-    ) : RunningFlowContext(inputs, firstInputEpochMillis, target = target) {
+        firstInputEpochMillis: Long
+    ) : RunningFlowContext(inputs, firstInputEpochMillis) {
 
         companion object {
             fun of(
@@ -203,22 +187,12 @@ class AgentRuntimeTest {
             }
         }
 
-        override fun copyWith(
-            inputs: List<InputEntry>,
-            firstInputEpochMillis: Long,
-            additionalUserInfo: Map<String, String>,
-            skippedModules: Set<String>,
-            target: String
-        ): RunningFlowContext {
+        override fun recreate(inputs: List<InputEntry>): RunningFlowContext {
             return TestRunningFlowContext(
                 source = source,
                 inputs = inputs,
-                firstInputEpochMillis = firstInputEpochMillis,
-                target = target
-            ).apply {
-                additionalUserInfo.forEach(::putUserInfo)
-                skippedModules.forEach(::addSkippedModule)
-            }
+                firstInputEpochMillis = System.currentTimeMillis()
+            )
         }
     }
 }

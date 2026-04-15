@@ -129,7 +129,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             Element root = document.createElement("input");
             document.appendChild(root);
 
-            runningFlowContext.appendInputsXml(document, root);
+            document.appendChild(document.importNode(runningFlowContext.encodeInputsBlock().encodeToXml(), true));
             appendTextElement(document, root, "source", runningFlowContext.getSource());
             for (Map.Entry<String, String> entry : runningFlowContext.getAdditionalUserInfo().entrySet()) {
                 appendTextElement(document, root, sanitizeTagName(entry.getKey()), entry.getValue());

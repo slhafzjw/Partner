@@ -1,8 +1,6 @@
 package work.slhaf.partner.framework.agent.interaction.flow
 
 import com.alibaba.fastjson2.JSONObject
-import org.w3c.dom.Document
-import org.w3c.dom.Element
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -14,10 +12,7 @@ import kotlin.math.min
  */
 abstract class RunningFlowContext protected constructor(
     inputs: List<InputEntry>,
-    val firstInputEpochMillis: Long,
-    additionalUserInfo: Map<String, String> = emptyMap(),
-    skippedModules: Set<String> = emptySet(),
-    target: String = ""
+    private var firstInputEpochMillis: Long
 ) {
     /**
      * 消息来源: 由谁发出
@@ -38,13 +33,18 @@ abstract class RunningFlowContext protected constructor(
     /**
      * 消息回应对象，默认与 source 一致
      */
-    var target: String = target
+    private var _target: String? = null
+    var target: String
+        get() = _target ?: source
+        set(value) {
+            _target = value
+        }
 
-    private val _additionalUserInfo = additionalUserInfo.toMutableMap()
+    private val _additionalUserInfo = mutableMapOf<String, String>()
     val additionalUserInfo: Map<String, String>
         get() = _additionalUserInfo
 
-    private val _skippedModules = skippedModules.toMutableSet()
+    private val _skippedModules = mutableSetOf<String>()
     val skippedModules: Set<String>
         get() = _skippedModules
 
@@ -73,37 +73,6 @@ abstract class RunningFlowContext protected constructor(
 
     fun formatInputsForHistory(): String = inputs.joinToString("\n") { it.content }
 
-    @JvmOverloads
-    fun appendInputsXml(
-        document: Document,
-        parent: Element,
-        containerTagName: String = "inputs",
-        inputTagName: String = "input",
-        intervalAttributeName: String = "interval-to-first"
-    ) {
-        val inputsElement = document.createElement(containerTagName)
-        parent.appendChild(inputsElement)
-        inputs.forEach { entry ->
-            val inputElement = document.createElement(inputTagName)
-            inputElement.setAttribute(intervalAttributeName, entry.offsetMillis.toString())
-            inputElement.textContent = entry.content
-            inputsElement.appendChild(inputElement)
-        }
-    }
-
-    fun encodeInputsXml(): String {
-        val builder = StringBuilder()
-        builder.append("<inputs>")
-        inputs.forEach { entry ->
-            builder.append("<input interval-to-first=\"")
-                .append(escapeXml(entry.offsetMillis.toString()))
-                .append("\">")
-                .append(escapeXml(entry.content))
-                .append("</input>")
-        }
-        builder.append("</inputs>")
-        return builder.toString()
-    }
 
     fun mergedWith(other: RunningFlowContext): RunningFlowContext {
         require(source == other.source) {
@@ -115,28 +84,17 @@ abstract class RunningFlowContext protected constructor(
             addAll(normalizeInputs(other, mergedFirstEpochMillis))
         }.sortedBy { it.offsetMillis }
 
-        val mergedAdditionalUserInfo = LinkedHashMap<String, String>(_additionalUserInfo)
-        mergedAdditionalUserInfo.putAll(other.additionalUserInfo)
-
-        val mergedSkippedModules = LinkedHashSet<String>(_skippedModules)
-        mergedSkippedModules.addAll(other.skippedModules)
-
-        return copyWith(
-            inputs = mergedInputs,
-            firstInputEpochMillis = mergedFirstEpochMillis,
-            additionalUserInfo = mergedAdditionalUserInfo,
-            skippedModules = mergedSkippedModules,
-            target = other.target.ifBlank { target }
-        )
+        val mergedContext = recreate(mergedInputs)
+        mergedContext.firstInputEpochMillis = mergedFirstEpochMillis
+        mergedContext.target = other.target.ifBlank { target }
+        mergedContext._additionalUserInfo.putAll(_additionalUserInfo)
+        mergedContext._additionalUserInfo.putAll(other.additionalUserInfo)
+        mergedContext._skippedModules.addAll(_skippedModules)
+        mergedContext._skippedModules.addAll(other.skippedModules)
+        return mergedContext
     }
 
-    protected abstract fun copyWith(
-        inputs: List<InputEntry>,
-        firstInputEpochMillis: Long,
-        additionalUserInfo: Map<String, String>,
-        skippedModules: Set<String>,
-        target: String
-    ): RunningFlowContext
+    protected abstract fun recreate(inputs: List<InputEntry>): RunningFlowContext
 
     private fun normalizeInputs(context: RunningFlowContext, firstEpochMillis: Long): List<InputEntry> {
         return context.inputs.map { entry ->
@@ -147,15 +105,6 @@ abstract class RunningFlowContext protected constructor(
         }
     }
 
-    private fun escapeXml(value: String): String {
-        return value
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
-            .replace("'", "&apos;")
-    }
-
     data class InputEntry(
         val offsetMillis: Long,
         val content: String
@@ -163,7 +112,6 @@ abstract class RunningFlowContext protected constructor(
 
     class Info {
         val uuid = UUID.randomUUID().toString()
-        val dateTime: LocalDateTime = LocalDateTime.now()
     }
 
     class Status {
