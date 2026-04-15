@@ -1,8 +1,7 @@
 package work.slhaf.partner.framework.agent.interaction
 
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule
@@ -42,18 +41,64 @@ class AgentRuntimeTest {
     }
 
     @Test
+    fun `agent runtime waits debounce before first execution`() {
+        setPrivateField("debounceWindow", 200)
+        val recorder = RecordingModule(order = 1, expectedExecutions = 1)
+        registerModule("debounce-recorder", recorder)
+
+        AgentRuntime.submit(TestRunningFlowContext.of("source-a", "alpha"))
+
+        assertFalse(recorder.latch.await(100, TimeUnit.MILLISECONDS))
+        assertTrue(recorder.latch.await(500, TimeUnit.MILLISECONDS))
+        assertEquals(listOf(1), recorder.inputSizes)
+    }
+
+    @Test
+    fun `agent runtime resets debounce when same source receives new input`() {
+        setPrivateField("debounceWindow", 200)
+        val recorder = RecordingModule(order = 1, expectedExecutions = 1)
+        registerModule("debounce-merge-recorder", recorder)
+
+        AgentRuntime.submit(TestRunningFlowContext.of("source-a", "first", 1_000L))
+        Thread.sleep(100)
+        AgentRuntime.submit(TestRunningFlowContext.of("source-a", "second", 1_300L))
+
+        assertFalse(recorder.latch.await(120, TimeUnit.MILLISECONDS))
+        assertTrue(recorder.latch.await(500, TimeUnit.MILLISECONDS))
+        assertEquals(listOf(2), recorder.inputSizes)
+        assertEquals(listOf("first\nsecond"), recorder.historyInputs)
+    }
+
+    @Test
+    fun `agent runtime debounce keeps queue head exclusive`() {
+        setPrivateField("debounceWindow", 150)
+        val recorder = RecordingModule(order = 1, expectedExecutions = 2)
+        registerModule("debounce-queue-recorder", recorder)
+
+        AgentRuntime.submit(TestRunningFlowContext.of("source-a", "alpha"))
+        Thread.sleep(50)
+        AgentRuntime.submit(TestRunningFlowContext.of("source-b", "beta"))
+
+        assertFalse(recorder.latch.await(100, TimeUnit.MILLISECONDS))
+        assertTrue(recorder.latch.await(800, TimeUnit.MILLISECONDS))
+        assertEquals(listOf("source-a", "source-b"), recorder.sources)
+    }
+
+    @Test
     fun `agent runtime interrupts current source and reruns from chain head with merged context`() {
+        setPrivateField("debounceWindow", 150)
         val blocking = BlockingModule()
         val finalizer = RecordingModule(order = 2, expectedExecutions = 1)
         registerModule("blocking-module", blocking)
         registerModule("finalizer-module", finalizer)
 
         AgentRuntime.submit(TestRunningFlowContext.of("source-a", "first", 1_000L))
-        assertTrue(blocking.firstExecutionStarted.await(5, TimeUnit.SECONDS))
+        assertTrue(blocking.firstExecutionStarted.await(2, TimeUnit.SECONDS))
 
         AgentRuntime.submit(TestRunningFlowContext.of("source-a", "second", 1_300L))
         blocking.releaseFirstExecution.countDown()
 
+        assertFalse(blocking.secondExecutionStarted.await(100, TimeUnit.MILLISECONDS))
         assertTrue(finalizer.latch.await(5, TimeUnit.SECONDS))
         waitUntil { blocking.seenInputSizes.size >= 2 }
 
@@ -85,6 +130,7 @@ class AgentRuntimeTest {
     private fun resetAgentRuntime() {
         setPrivateField("runningModules", emptyMap<Int, List<AbstractAgentModule.Running<RunningFlowContext>>>())
         setPrivateField("maskedModules", emptySet<String>())
+        setPrivateField("debounceWindow", 0)
         setPrivateField("currentExecutingSource", null)
         setPrivateField("currentExecutingContext", null)
         getPrivateMutableMap<String, RunningFlowContext>("latestContextsBySource").clear()
@@ -149,6 +195,7 @@ class AgentRuntimeTest {
     private class BlockingModule : AbstractAgentModule.Running<TestRunningFlowContext>() {
         val seenInputSizes = CopyOnWriteArrayList<Int>()
         val firstExecutionStarted = CountDownLatch(1)
+        val secondExecutionStarted = CountDownLatch(1)
         val releaseFirstExecution = CountDownLatch(1)
         private val invocationCount = AtomicInteger(0)
 
@@ -161,6 +208,8 @@ class AgentRuntimeTest {
             if (invocationCount.getAndIncrement() == 0) {
                 firstExecutionStarted.countDown()
                 releaseFirstExecution.await(5, TimeUnit.SECONDS)
+            } else {
+                secondExecutionStarted.countDown()
             }
         }
 

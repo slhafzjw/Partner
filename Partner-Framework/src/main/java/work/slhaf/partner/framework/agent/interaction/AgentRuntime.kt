@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.annotation.JSONField
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import work.slhaf.partner.framework.agent.config.Config
+import work.slhaf.partner.framework.agent.config.ConfigDoc
 import work.slhaf.partner.framework.agent.config.ConfigRegistration
 import work.slhaf.partner.framework.agent.config.Configurable
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler
@@ -16,8 +17,9 @@ import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
 import work.slhaf.partner.framework.agent.support.Result
 import java.nio.file.Path
 import java.util.*
+import kotlin.time.Duration.Companion.milliseconds
 
-object AgentRuntime : Configurable, ConfigRegistration<ModuleMaskConfig> {
+object AgentRuntime : Configurable, ConfigRegistration<RuntimeConfig> {
 
     private const val DEFAULT_LOG_CHANNEL = "log_channel"
 
@@ -51,6 +53,9 @@ object AgentRuntime : Configurable, ConfigRegistration<ModuleMaskConfig> {
 
     @Volatile
     private var maskedModules: Set<String> = emptySet()
+
+    @Volatile
+    private var debounceWindow: Long = 0
 
     @Volatile
     private var currentExecutingSource: String? = null
@@ -123,17 +128,7 @@ object AgentRuntime : Configurable, ConfigRegistration<ModuleMaskConfig> {
 
     private suspend fun executeSource(source: String) {
         while (true) {
-            val execution = synchronized(stateLock) {
-                val context = latestContextsBySource[source] ?: run {
-                    sourceQueue.remove(source)
-                    sourceVersions.remove(source)
-                    return
-                }
-                currentExecutingSource = source
-                currentExecutingContext = context
-                context.status.interrupted = false
-                SourceExecution(context, sourceVersions[source] ?: 0L)
-            }
+            val execution = awaitDebouncedExecution(source) ?: return
 
             val interrupted = executeTurn(execution.context)
 
@@ -163,6 +158,64 @@ object AgentRuntime : Configurable, ConfigRegistration<ModuleMaskConfig> {
                 return
             }
         }
+    }
+
+    private suspend fun awaitDebouncedExecution(source: String): SourceExecution? {
+        if (debounceWindow <= 0) {
+            return synchronized(stateLock) { buildSourceExecutionLocked(source) }
+        }
+
+        var observedVersion = synchronized(stateLock) {
+            sourceVersions[source]
+        } ?: return cleanupSourceAndReturnNull(source)
+
+        while (true) {
+            delay(debounceWindow.milliseconds)
+            when (val result = synchronized(stateLock) {
+                val context = latestContextsBySource[source]
+                val latestVersion = sourceVersions[source]
+                when {
+                    context == null || latestVersion == null -> DebounceResult.Missing
+                    latestVersion != observedVersion -> DebounceResult.Retry(latestVersion)
+                    else -> {
+                        currentExecutingSource = source
+                        currentExecutingContext = context
+                        context.status.interrupted = false
+                        DebounceResult.Ready(SourceExecution(context, latestVersion))
+                    }
+                }
+            }) {
+                DebounceResult.Missing -> return cleanupSourceAndReturnNull(source)
+                is DebounceResult.Ready -> return result.execution
+                is DebounceResult.Retry -> observedVersion = result.latestVersion
+            }
+        }
+    }
+
+    private fun buildSourceExecutionLocked(source: String): SourceExecution? {
+        val context = latestContextsBySource[source] ?: run {
+            sourceQueue.remove(source)
+            sourceVersions.remove(source)
+            return null
+        }
+        val version = sourceVersions[source] ?: run {
+            latestContextsBySource.remove(source)
+            sourceQueue.remove(source)
+            return null
+        }
+        currentExecutingSource = source
+        currentExecutingContext = context
+        context.status.interrupted = false
+        return SourceExecution(context, version)
+    }
+
+    private fun cleanupSourceAndReturnNull(source: String): SourceExecution? {
+        synchronized(stateLock) {
+            latestContextsBySource.remove(source)
+            sourceQueue.remove(source)
+            sourceVersions.remove(source)
+        }
+        return null
     }
 
     private suspend fun executeTurn(runningFlowContext: RunningFlowContext): Boolean {
@@ -211,33 +264,34 @@ object AgentRuntime : Configurable, ConfigRegistration<ModuleMaskConfig> {
     }
 
     override fun declare(): Map<Path, ConfigRegistration<out Config>> {
-        return mapOf(Path.of("masked_modules.json") to this)
+        return mapOf(Path.of("runtime.json") to this)
     }
 
-    override fun type(): Class<ModuleMaskConfig> {
-        return ModuleMaskConfig::class.java
+    override fun type(): Class<RuntimeConfig> {
+        return RuntimeConfig::class.java
     }
 
     override fun init(
-        config: ModuleMaskConfig,
+        config: RuntimeConfig,
         json: JSONObject?
     ) {
-        applyModuleMask(config)
+        applyConfig(config)
     }
 
     override fun onReload(
-        config: ModuleMaskConfig,
+        config: RuntimeConfig,
         json: JSONObject?
     ) {
-        applyModuleMask(config)
+        applyConfig(config)
     }
 
-    override fun defaultConfig(): ModuleMaskConfig {
-        return ModuleMaskConfig(setOf())
+    override fun defaultConfig(): RuntimeConfig {
+        return RuntimeConfig(setOf(), 300)
     }
 
-    private fun applyModuleMask(config: ModuleMaskConfig) {
+    private fun applyConfig(config: RuntimeConfig) {
         maskedModules = config.maskedModules
+        debounceWindow = config.debounceWindow
         refreshRunningModules()
     }
 
@@ -245,9 +299,25 @@ object AgentRuntime : Configurable, ConfigRegistration<ModuleMaskConfig> {
         val context: RunningFlowContext,
         val version: Long
     )
+
+    private sealed interface DebounceResult {
+        data object Missing : DebounceResult
+        data class Retry(val latestVersion: Long) : DebounceResult
+        data class Ready(val execution: SourceExecution) : DebounceResult
+    }
 }
 
-data class ModuleMaskConfig(
+data class RuntimeConfig(
     @field:JSONField(name = "masked_modules")
-    val maskedModules: Set<String>
+    @field:ConfigDoc(
+        description = "运行时屏蔽的模块"
+    )
+    val maskedModules: Set<String>,
+
+    @field:JSONField(name = "debounce_window")
+    @field:ConfigDoc(
+        description = "输入后的等待窗口",
+        unit = "ms"
+    )
+    val debounceWindow: Long
 ) : Config()
