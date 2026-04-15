@@ -38,7 +38,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             你接下来收到的消息固定分为三个区段:
             1. system message 是 Head, 用于说明整个输入结构与输出要求。
             2. <context> 区段只承载 type=CONTEXT 的上下文块, 其中每个子块都带有独立来源, 仅作为理解当前状态与辅助决策的依据。
-            3. Conversation 区段是对话轨迹; 最新的一条 user message 会使用 <input> 结构, 其中 <content> 是本轮用户原始输入, 其他子标签是输入元信息与 type=SUPPLY 的补充块, 补充块会按 blockName 分区。
+            3. Conversation 区段是对话轨迹; 最新的一条 user message 会使用 <input> 结构, 其中 <inputs> 承载本轮按时间顺序排列的输入序列, 每个 <input> 节点会带有相对首条输入的时间间隔属性, 其他子标签是输入元信息与 type=SUPPLY 的补充块, 补充块会按 blockName 分区。
             你必须综合 Context 与 Conversation 回答最新输入, 不要把 XML 标签当作需要原样复述给用户的内容。
             直接输出最终回应内容即可, 不需要额外包装为 JSON。
             """;
@@ -129,7 +129,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             Element root = document.createElement("input");
             document.appendChild(root);
 
-            appendTextElement(document, root, "content", runningFlowContext.getInput());
+            runningFlowContext.appendInputsXml(document, root);
             appendTextElement(document, root, "source", runningFlowContext.getSource());
             for (Map.Entry<String, String> entry : runningFlowContext.getAdditionalUserInfo().entrySet()) {
                 appendTextElement(document, root, sanitizeTagName(entry.getKey()), entry.getValue());
@@ -159,7 +159,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private String formatConversationUserMessage(PartnerRunningFlowContext runningFlowContext) {
-        return "[" + runningFlowContext.getSource() + "]" + ": " + runningFlowContext.getInput();
+        return "[" + runningFlowContext.getSource() + "]" + ": " + runningFlowContext.formatInputsForHistory();
     }
 
     private Document newDocument() throws Exception {

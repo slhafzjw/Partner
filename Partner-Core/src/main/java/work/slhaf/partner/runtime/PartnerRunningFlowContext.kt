@@ -4,8 +4,12 @@ import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
 
 class PartnerRunningFlowContext private constructor(
     override val source: String,
-    override val input: String,
-) : RunningFlowContext() {
+    inputs: List<InputEntry>,
+    firstInputEpochMillis: Long,
+    additionalUserInfo: Map<String, String> = emptyMap(),
+    skippedModules: Set<String> = emptySet(),
+    target: String = source
+) : RunningFlowContext(inputs, firstInputEpochMillis, additionalUserInfo, skippedModules, target) {
 
     companion object {
 
@@ -27,15 +31,39 @@ class PartnerRunningFlowContext private constructor(
         }
 
         @JvmStatic
-        fun fromUser(userId: String, input: String) = PartnerRunningFlowContext(
-            SourceTag.buildUserSource(userId),
-            input
-        )
+        fun fromUser(userId: String, input: String, receivedAtMillis: Long = System.currentTimeMillis()) =
+            PartnerRunningFlowContext(
+                SourceTag.buildUserSource(userId),
+                listOf(InputEntry(0L, input)),
+                receivedAtMillis
+            )
 
         @JvmStatic
-        fun fromSelf(input: String) = PartnerRunningFlowContext(SourceTag.buildAgentSource(), input).apply {
-            putUserInfo(InfoKeys.PLATFORM, SOURCE_SELF_PLATFORM)
-            putUserInfo(InfoKeys.NICKNAME, SOURCE_SELF_NICKNAME)
-        }
+        fun fromSelf(input: String, receivedAtMillis: Long = System.currentTimeMillis()) =
+            PartnerRunningFlowContext(
+                SourceTag.buildAgentSource(),
+                listOf(InputEntry(0L, input)),
+                receivedAtMillis
+            ).apply {
+                putUserInfo(InfoKeys.PLATFORM, SOURCE_SELF_PLATFORM)
+                putUserInfo(InfoKeys.NICKNAME, SOURCE_SELF_NICKNAME)
+            }
+    }
+
+    override fun copyWith(
+        inputs: List<InputEntry>,
+        firstInputEpochMillis: Long,
+        additionalUserInfo: Map<String, String>,
+        skippedModules: Set<String>,
+        target: String
+    ): RunningFlowContext {
+        return PartnerRunningFlowContext(
+            source = source,
+            inputs = inputs,
+            firstInputEpochMillis = firstInputEpochMillis,
+            additionalUserInfo = additionalUserInfo,
+            skippedModules = skippedModules,
+            target = target
+        )
     }
 }

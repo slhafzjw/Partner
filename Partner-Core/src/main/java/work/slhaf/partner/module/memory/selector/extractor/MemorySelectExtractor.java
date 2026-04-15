@@ -57,9 +57,12 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInpu
         return new TaskBlock() {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendListElement(document, root, "new_inputs", "input", input.getInputs().entrySet(), (inputElement, input) -> {
-                    inputElement.setAttribute("datetime", input.getKey().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-                    inputElement.setTextContent(input.getValue());
+                appendChildElement(document, root, "new_inputs", (inputsElement) -> {
+                    appendListElement(document, inputsElement, "inputs", "input", input.getInputs(), (inputElement, entry) -> {
+                        inputElement.setAttribute("interval-to-first", String.valueOf(entry.getOffsetMillis()));
+                        inputElement.setTextContent(entry.getContent());
+                        return Unit.INSTANCE;
+                    });
                     return Unit.INSTANCE;
                 });
                 appendTextElement(document, root, "current_date", input.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));

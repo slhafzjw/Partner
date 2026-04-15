@@ -69,7 +69,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
 
     @Override
     protected void doExecute(@NotNull PartnerRunningFlowContext context) {
-        String input = context.getInput();
+        String input = context.encodeInputsXml();
         Result<ExtractorResult> result = actionExtractor.execute(input)
                 .onFailure(exp -> {
                     ExceptionReporterHandler.INSTANCE.report(exp, ContextExceptionReporter.REPORTER_NAME);

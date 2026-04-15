@@ -21,7 +21,6 @@ import work.slhaf.partner.module.memory.selector.evaluator.entity.EvaluatorBatch
 import work.slhaf.partner.module.memory.selector.evaluator.entity.EvaluatorBatchResult;
 import work.slhaf.partner.module.memory.selector.evaluator.entity.EvaluatorInput;
 
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -89,9 +88,12 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
         return new TaskBlock() {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendListElement(document, root, "new_inputs", "input", batchInput.getInputs().entrySet(), (inputElement, input) -> {
-                    inputElement.setAttribute("datetime", input.getKey().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-                    inputElement.setTextContent(input.getValue());
+                appendChildElement(document, root, "new_inputs", (inputsElement) -> {
+                    appendListElement(document, inputsElement, "inputs", "input", batchInput.getInputs(), (inputElement, entry) -> {
+                        inputElement.setAttribute("interval-to-first", String.valueOf(entry.getOffsetMillis()));
+                        inputElement.setTextContent(entry.getContent());
+                        return Unit.INSTANCE;
+                    });
                     return Unit.INSTANCE;
                 });
                 appendChildElement(document, root, "memory_slice", (element) -> {
