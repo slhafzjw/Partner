@@ -175,7 +175,7 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
     private void applyRolling(RollingResult result) {
         cognitionCapability.contextWorkspace().register(new ContextBlock(
                 buildDialogAbstractBlock(result.summary(), result.memoryUnit().getId(), result.memorySlice().getId()),
-                Set.of(ContextBlock.VisibleDomain.MEMORY, ContextBlock.VisibleDomain.COMMUNICATION),
+                Set.of(ContextBlock.FocusedDomain.MEMORY, ContextBlock.FocusedDomain.COMMUNICATION),
                 20,
                 5,
                 10

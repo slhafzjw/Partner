@@ -12,10 +12,7 @@ import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.entity.intervention.InterventionType;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
-import work.slhaf.partner.core.cognition.BlockContent;
-import work.slhaf.partner.core.cognition.CognitionCapability;
-import work.slhaf.partner.core.cognition.ContextBlock;
-import work.slhaf.partner.core.cognition.ContextWorkspace;
+import work.slhaf.partner.core.cognition.*;
 import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
@@ -133,7 +130,7 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
             String blockName = "acquire_intervention-" + actionId;
             String source = "action_executor";
             contextWorkspace.register(new ContextBlock(
-                    new BlockContent(blockName, source) {
+                    new CommunicationBlockContent(blockName, source, BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
                         @Override
                         protected void fillXml(@NotNull Document document, @NotNull Element root) {
                             appendTextElement(document, root, "action_id", actionId);
@@ -141,7 +138,7 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                             appendTextElement(document, root, "demand", demand);
                         }
                     },
-                    Set.of(ContextBlock.VisibleDomain.ACTION, ContextBlock.VisibleDomain.COMMUNICATION),
+                    Set.of(ContextBlock.FocusedDomain.ACTION),
                     10,
                     10,
                     20

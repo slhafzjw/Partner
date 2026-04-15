@@ -108,7 +108,7 @@ public class CognitionCore implements StateSerializable {
                         appendRepeatedElements(document, root, "chat_message", resolveRecentChatMessages());
                     }
                 },
-                Set.of(ContextBlock.VisibleDomain.COGNITION),
+                Set.of(ContextBlock.FocusedDomain.COMMUNICATION),
                 100,
                 10,
                 4

@@ -55,9 +55,10 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
                 try {
                     List<Message> messages = List.of(
                             cognitionCapability.contextWorkspace().resolve(List.of(
-                                    ContextBlock.VisibleDomain.ACTION,
-                                    ContextBlock.VisibleDomain.COGNITION,
-                                    ContextBlock.VisibleDomain.MEMORY
+                                    ContextBlock.FocusedDomain.ACTION,
+                                    ContextBlock.FocusedDomain.COMMUNICATION,
+                                    ContextBlock.FocusedDomain.COGNITION,
+                                    ContextBlock.FocusedDomain.MEMORY
                             )).encodeToMessage(),
                             availableMetaActionContext(),
                             new Message(Message.Character.USER, tendency)

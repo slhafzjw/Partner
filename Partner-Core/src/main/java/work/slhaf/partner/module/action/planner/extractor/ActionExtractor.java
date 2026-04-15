@@ -23,8 +23,8 @@ public class ActionExtractor extends AbstractAgentModule.Sub<String, Result<Extr
     protected @NotNull Result<ExtractorResult> doExecute(String input) {
         List<Message> messages = List.of(
                 cognitionCapability.contextWorkspace().resolve(List.of(
-                        ContextBlock.VisibleDomain.COGNITION,
-                        ContextBlock.VisibleDomain.ACTION
+                        ContextBlock.FocusedDomain.COMMUNICATION,
+                        ContextBlock.FocusedDomain.ACTION
                 )).encodeToMessage(),
                 new Message(Message.Character.USER, input)
         );

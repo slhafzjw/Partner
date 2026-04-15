@@ -39,7 +39,7 @@ public class ContextExceptionReporter implements ExceptionReporter {
         ExceptionReport report = exception.toReport();
         cognitionCapability.contextWorkspace().register(new ContextBlock(
                 buildExceptionReportBlock(report),
-                Set.of(ContextBlock.VisibleDomain.COGNITION),
+                Set.of(ContextBlock.FocusedDomain.COGNITION),
                 10,
                 10,
                 0

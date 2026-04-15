@@ -93,7 +93,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 buildTendenciesEvaluatingFullBlock(tendencies),
                 buildTendenciesEvaluatingCompactBlock(tendencies, datetime, input),
                 buildTendenciesEvaluatingAbstractBlock(tendencies, datetime, input),
-                Set.of(ContextBlock.VisibleDomain.ACTION, ContextBlock.VisibleDomain.COMMUNICATION),
+                Set.of(ContextBlock.FocusedDomain.ACTION),
                 60,
                 18,
                 4
@@ -200,7 +200,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 buildPendingBlock(blockName, executableAction, evaluatorResult),
                 buildPendingCompactBlock(blockName, executableAction, evaluatorResult, input),
                 buildPendingAbstractBlock(blockName, executableAction, evaluatorResult, input),
-                Set.of(ContextBlock.VisibleDomain.ACTION),
+                Set.of(ContextBlock.FocusedDomain.ACTION),
                 30,
                 10,
                 5

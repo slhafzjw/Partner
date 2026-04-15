@@ -79,7 +79,7 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
             MemoryUnit unit = memoryCapability.getMemoryUnit(unitId);
             cognitionCapability.contextWorkspace().register(new ContextBlock(
                     buildMemoryRecallFullBlock(unit, slice),
-                    Set.of(ContextBlock.VisibleDomain.MEMORY),
+                    Set.of(ContextBlock.FocusedDomain.MEMORY),
                     60,
                     16,
                     28

@@ -73,7 +73,7 @@ public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInpu
 
     private Message resolveContextMessage() {
         return cognitionCapability.contextWorkspace().resolve(List.of(
-                ContextBlock.VisibleDomain.COGNITION, ContextBlock.VisibleDomain.MEMORY
+                ContextBlock.FocusedDomain.COMMUNICATION, ContextBlock.FocusedDomain.MEMORY
         )).encodeToMessage();
     }
 

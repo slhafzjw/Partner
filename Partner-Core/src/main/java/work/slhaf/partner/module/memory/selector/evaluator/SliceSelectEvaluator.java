@@ -50,8 +50,7 @@ public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput
         CountDownLatch latch = new CountDownLatch(preparedSlices.size());
 
         Message contextMessage = cognitionCapability.contextWorkspace().resolve(List.of(
-                ContextBlock.VisibleDomain.COGNITION,
-                ContextBlock.VisibleDomain.MEMORY
+                ContextBlock.FocusedDomain.MEMORY
         )).encodeToMessage();
 
         for (ActivatedMemorySlice slice : preparedSlices) {

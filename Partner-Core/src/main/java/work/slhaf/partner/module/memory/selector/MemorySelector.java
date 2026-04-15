@@ -66,7 +66,7 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
                 buildMemoryFullBlock(activatedSlices),
                 buildMemoryCompactBlock(activatedSlices),
                 buildMemoryAbstractBlock(activatedSlices),
-                Set.of(ContextBlock.VisibleDomain.MEMORY),
+                Set.of(ContextBlock.FocusedDomain.MEMORY),
                 18,
                 8,
                 16

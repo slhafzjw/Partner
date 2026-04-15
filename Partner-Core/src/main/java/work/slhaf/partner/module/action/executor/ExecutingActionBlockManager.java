@@ -39,7 +39,7 @@ class ExecutingActionBlockManager {
                 buildExecutingActionRecoveredFullBlock(snapshots, blockName, emittedAt, event),
                 buildExecutingActionRecoveredCompactBlock(snapshots, blockName, emittedAt, event),
                 buildExecutingActionRecoveredAbstractBlock(snapshots, blockName, event),
-                Set.of(ContextBlock.VisibleDomain.ACTION),
+                Set.of(ContextBlock.FocusedDomain.ACTION),
                 100,
                 12,
                 1
@@ -97,7 +97,7 @@ class ExecutingActionBlockManager {
                 buildStateActionFullBlock(snapshot, blockName, emittedAt, event),
                 buildStateActionCompactBlock(snapshot, blockName, emittedAt, event),
                 buildStateActionAbstractBlock(snapshot, blockName, event),
-                Set.of(ContextBlock.VisibleDomain.ACTION),
+                Set.of(ContextBlock.FocusedDomain.ACTION),
                 70,
                 18,
                 10
@@ -151,7 +151,7 @@ class ExecutingActionBlockManager {
                 buildActionLaunchedFullBlock(snapshot, blockName, event, emittedAt),
                 buildActionCompactBlock(snapshot, blockName, event, emittedAt),
                 buildActionAbstractBlock(snapshot, blockName, event),
-                Set.of(ContextBlock.VisibleDomain.ACTION),
+                Set.of(ContextBlock.FocusedDomain.ACTION),
                 28,
                 6,
                 18
@@ -230,7 +230,7 @@ class ExecutingActionBlockManager {
                 buildActionStageFullBlock(snapshot, blockName, emittedAt, event),
                 buildActionStageCompactBlock(snapshot, blockName, emittedAt, event),
                 buildActionStageAbstractBlock(snapshot, blockName, event),
-                Set.of(ContextBlock.VisibleDomain.ACTION),
+                Set.of(ContextBlock.FocusedDomain.ACTION),
                 55,
                 10,
                 12
@@ -305,7 +305,7 @@ class ExecutingActionBlockManager {
                 buildActionCorrectionFullBlock(snapshot, reason, interventions, blockName, emittedAt, event),
                 buildActionCorrectionCompactBlock(snapshot, reason, interventions, blockName, emittedAt, event),
                 buildActionCorrectionAbstractBlock(snapshot, interventions, blockName, event),
-                Set.of(ContextBlock.VisibleDomain.ACTION),
+                Set.of(ContextBlock.FocusedDomain.ACTION),
                 22,
                 5,
                 22
@@ -372,7 +372,7 @@ class ExecutingActionBlockManager {
                 buildActionFinishedFullBlock(snapshot, blockName, emittedAt, event),
                 buildActionFinishedFullBlock(snapshot, blockName, emittedAt, event),
                 buildActionFinishedAbstractBlock(snapshot, blockName, event),
-                Set.of(ContextBlock.VisibleDomain.ACTION),
+                Set.of(ContextBlock.FocusedDomain.ACTION),
                 35,
                 14,
                 24

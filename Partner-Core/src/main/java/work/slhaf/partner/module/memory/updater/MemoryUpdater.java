@@ -45,8 +45,8 @@ public class MemoryUpdater extends AbstractAgentModule.Standalone implements Aft
         Result<MemoryTopicResult> extractResult = formattedChat(
                 List.of(
                         cognitionCapability.contextWorkspace().resolve(List.of(
-                                ContextBlock.VisibleDomain.COGNITION,
-                                ContextBlock.VisibleDomain.MEMORY
+                                ContextBlock.FocusedDomain.COGNITION,
+                                ContextBlock.FocusedDomain.MEMORY
                         )).encodeToMessage(),
                         resolveTopicTaskMessage(result, slicedMessages)
                 ),

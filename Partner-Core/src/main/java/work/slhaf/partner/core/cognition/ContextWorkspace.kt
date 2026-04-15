@@ -27,10 +27,10 @@ class ContextWorkspace {
     private val lock = ReentrantReadWriteLock()
 
     /**
-     * 根据传入的 [ContextBlock.VisibleDomain] 列表，获取上下文块
+     * 根据传入的 [ContextBlock.FocusedDomain] 列表，获取上下文块
      * @param domains 需要获取上下文的域列表，顺序将决定权重优先级，按照列表排序将具备线性权重分层，最终反映到 blockContent 列表的排序上
      */
-    fun resolve(domains: List<ContextBlock.VisibleDomain>): ResolvedContext = lock.write {
+    fun resolve(domains: List<ContextBlock.FocusedDomain>): ResolvedContext = lock.write {
         if (domains.isEmpty()) {
             return@write ResolvedContext(emptyList())
         }
@@ -51,7 +51,7 @@ class ContextWorkspace {
                 continue
             }
 
-            val matchedDomains = block.visibleTo.intersect(domainWeights.keys)
+            val matchedDomains = block.focusedOn.intersect(domainWeights.keys)
             if (matchedDomains.isEmpty()) {
                 continue
             }
@@ -158,7 +158,7 @@ class ContextWorkspace {
         val payload = JSONObject()
         payload["blockName"] = block.sourceKey.blockName
         payload["source"] = block.sourceKey.source
-        payload["visibleTo"] = block.visibleTo.map { it.name }
+        payload["focusedOn"] = block.focusedOn.map { it.name }
         payload["fullRendered"] = block.blockContent.encodeToXmlString()
         payload["compactRendered"] = block.compactBlock.encodeToXmlString()
         payload["abstractRendered"] = block.abstractBlock.encodeToXmlString()
@@ -179,9 +179,9 @@ data class ContextBlock @JvmOverloads constructor(
     val compactBlock: BlockContent = blockContent,
     val abstractBlock: BlockContent = blockContent,
     /**
-     * 对哪些域可见
+     * 该 block 集中在哪些域
      */
-    val visibleTo: Set<VisibleDomain>,
+    val focusedOn: Set<FocusedDomain>,
 
     /**
      * 新的 [blockContent] 属性与其相同时，发生的衰退步长
@@ -216,7 +216,7 @@ data class ContextBlock @JvmOverloads constructor(
     private var activationScore = 100.0
     private var lastTouchedAt = Instant.now()
 
-    enum class VisibleDomain {
+    enum class FocusedDomain {
         ACTION,
         MEMORY,
         PERCEIVE,

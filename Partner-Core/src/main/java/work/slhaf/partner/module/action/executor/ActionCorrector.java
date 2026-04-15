@@ -63,9 +63,10 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
 
     private Message resolveContextMessage() {
         return cognitionCapability.contextWorkspace().resolve(List.of(
-                ContextBlock.VisibleDomain.ACTION,
-                ContextBlock.VisibleDomain.COGNITION,
-                ContextBlock.VisibleDomain.MEMORY
+                ContextBlock.FocusedDomain.ACTION,
+                ContextBlock.FocusedDomain.COMMUNICATION,
+                ContextBlock.FocusedDomain.COGNITION,
+                ContextBlock.FocusedDomain.MEMORY
         )).encodeToMessage();
     }
 

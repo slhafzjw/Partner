@@ -38,7 +38,7 @@ public class PerceiveMonitor extends AbstractAgentModule.Running<PartnerRunningF
                         appendTextElement(document, root, "current_time", ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
                     }
                 },
-                Set.of(ContextBlock.VisibleDomain.COMMUNICATION),
+                Set.of(ContextBlock.FocusedDomain.PERCEIVE),
                 100,
                 30,
                 0

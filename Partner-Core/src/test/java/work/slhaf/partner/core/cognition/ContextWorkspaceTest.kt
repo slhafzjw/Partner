@@ -36,19 +36,19 @@ class ContextWorkspaceTest {
             blockName = "low",
             source = "source-low",
             content = "low",
-            visibleTo = setOf(ContextBlock.VisibleDomain.COGNITION)
+            visibleTo = setOf(ContextBlock.FocusedDomain.COGNITION)
         )
         val midWeight = contextBlock(
             blockName = "mid",
             source = "source-mid",
             content = "mid",
-            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY)
+            visibleTo = setOf(ContextBlock.FocusedDomain.MEMORY)
         )
         val highWeight = contextBlock(
             blockName = "high",
             source = "source-high",
             content = "high",
-            visibleTo = setOf(ContextBlock.VisibleDomain.ACTION, ContextBlock.VisibleDomain.MEMORY)
+            visibleTo = setOf(ContextBlock.FocusedDomain.ACTION, ContextBlock.FocusedDomain.MEMORY)
         )
 
         manager.register(highWeight)
@@ -57,9 +57,9 @@ class ContextWorkspaceTest {
 
         val resolved = manager.resolve(
             listOf(
-                ContextBlock.VisibleDomain.ACTION,
-                ContextBlock.VisibleDomain.MEMORY,
-                ContextBlock.VisibleDomain.COGNITION
+                ContextBlock.FocusedDomain.ACTION,
+                ContextBlock.FocusedDomain.MEMORY,
+                ContextBlock.FocusedDomain.COGNITION
             )
         )
 
@@ -77,27 +77,27 @@ class ContextWorkspaceTest {
             source = "main",
             content = "older",
             replaceFadeFactor = 20.0,
-            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY)
+            visibleTo = setOf(ContextBlock.FocusedDomain.MEMORY)
         )
         val newer = contextBlock(
             blockName = "memory",
             source = "main",
             content = "newer",
             replaceFadeFactor = 20.0,
-            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY)
+            visibleTo = setOf(ContextBlock.FocusedDomain.MEMORY)
         )
         val otherSource = contextBlock(
             blockName = "memory",
             source = "secondary",
             content = "other-source",
-            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY)
+            visibleTo = setOf(ContextBlock.FocusedDomain.MEMORY)
         )
 
         manager.register(older)
         manager.register(newer)
         manager.register(otherSource)
 
-        val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
+        val resolved = manager.resolve(listOf(ContextBlock.FocusedDomain.MEMORY))
 
         assertEquals(2, resolved.blocks.size)
         assertEquals("other-source", (resolved.blocks[1] as TestBlockContent).content)
@@ -117,7 +117,7 @@ class ContextWorkspaceTest {
                 blockContent = AttributedTestBlockContent("memory", "main", "older", "historic"),
                 compactBlock = AttributedTestBlockContent("memory", "main", "older-compact", "historic"),
                 abstractBlock = AttributedTestBlockContent("memory", "main", "older-abstract", "historic"),
-                visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY),
+                focusedOn = setOf(ContextBlock.FocusedDomain.MEMORY),
                 replaceFadeFactor = 20.0,
                 timeFadeFactor = 0.0,
                 activateFactor = 0.0
@@ -128,14 +128,14 @@ class ContextWorkspaceTest {
                 blockContent = AttributedTestBlockContent("memory", "main", "newer", "latest"),
                 compactBlock = AttributedTestBlockContent("memory", "main", "newer-compact", "latest"),
                 abstractBlock = AttributedTestBlockContent("memory", "main", "newer-abstract", "latest"),
-                visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY),
+                focusedOn = setOf(ContextBlock.FocusedDomain.MEMORY),
                 replaceFadeFactor = 20.0,
                 timeFadeFactor = 0.0,
                 activateFactor = 0.0
             )
         )
 
-        val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
+        val resolved = manager.resolve(listOf(ContextBlock.FocusedDomain.MEMORY))
 
         val aggregatedXml = resolved.blocks.single().encodeToXmlString()
         assertTrue(aggregatedXml.contains("<snapshot category=\"latest\" source=\"main\" urgency=\"normal\">"))
@@ -152,20 +152,20 @@ class ContextWorkspaceTest {
             source = "main",
             content = "evicted",
             replaceFadeFactor = 100.0,
-            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY)
+            visibleTo = setOf(ContextBlock.FocusedDomain.MEMORY)
         )
         val replacement = contextBlock(
             blockName = "memory",
             source = "main",
             content = "replacement",
             replaceFadeFactor = 100.0,
-            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY)
+            visibleTo = setOf(ContextBlock.FocusedDomain.MEMORY)
         )
 
         manager.register(evicted)
         manager.register(replacement)
 
-        val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
+        val resolved = manager.resolve(listOf(ContextBlock.FocusedDomain.MEMORY))
 
         assertEquals(listOf("replacement"), resolved.blocks.map { (it as TestBlockContent).content })
     }
@@ -195,7 +195,7 @@ class ContextWorkspaceTest {
 
         manager.expire("memory", "main")
 
-        val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
+        val resolved = manager.resolve(listOf(ContextBlock.FocusedDomain.MEMORY))
 
         assertEquals(listOf("survivor"), resolved.blocks.map { (it as TestBlockContent).content })
     }
@@ -218,7 +218,7 @@ class ContextWorkspaceTest {
         manager.expire("memory", "main")
         manager.register(restored)
 
-        val resolved = manager.resolve(listOf(ContextBlock.VisibleDomain.MEMORY))
+        val resolved = manager.resolve(listOf(ContextBlock.FocusedDomain.MEMORY))
 
         assertEquals(listOf("restored"), resolved.blocks.map { (it as TestBlockContent).content })
     }
@@ -233,7 +233,7 @@ class ContextWorkspaceTest {
             blockContent = original,
             compactBlock = compact,
             abstractBlock = summary,
-            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY),
+            focusedOn = setOf(ContextBlock.FocusedDomain.MEMORY),
             replaceFadeFactor = 40.0,
             timeFadeFactor = 0.0,
             activateFactor = 0.0
@@ -245,7 +245,7 @@ class ContextWorkspaceTest {
             blockContent = original,
             compactBlock = compact,
             abstractBlock = summary,
-            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY),
+            focusedOn = setOf(ContextBlock.FocusedDomain.MEMORY),
             replaceFadeFactor = 80.0,
             timeFadeFactor = 0.0,
             activateFactor = 0.0
@@ -375,17 +375,17 @@ class ContextWorkspaceTest {
             content = "full",
             compactContent = "compact",
             abstractContent = "abstract",
-            visibleTo = setOf(ContextBlock.VisibleDomain.MEMORY, ContextBlock.VisibleDomain.ACTION),
+            visibleTo = setOf(ContextBlock.FocusedDomain.MEMORY, ContextBlock.FocusedDomain.ACTION),
             replaceFadeFactor = 80.0
         )
         block.applyReplaceFade()
         manager.register(block)
 
         val primaryResolved = manager.resolve(
-            listOf(ContextBlock.VisibleDomain.MEMORY, ContextBlock.VisibleDomain.ACTION)
+            listOf(ContextBlock.FocusedDomain.MEMORY, ContextBlock.FocusedDomain.ACTION)
         )
         val secondaryResolved = manager.resolve(
-            listOf(ContextBlock.VisibleDomain.PERCEIVE, ContextBlock.VisibleDomain.ACTION)
+            listOf(ContextBlock.FocusedDomain.PERCEIVE, ContextBlock.FocusedDomain.ACTION)
         )
 
         assertEquals(listOf("compact"), primaryResolved.blocks.map { (it as TestBlockContent).content })
@@ -400,7 +400,7 @@ class ContextWorkspaceTest {
                 blockContent = TestBlockContent("memory", "main", "full-critical", BlockContent.Urgency.CRITICAL),
                 compactBlock = TestBlockContent("memory", "main", "compact-low", BlockContent.Urgency.LOW),
                 abstractBlock = TestBlockContent("memory", "main", "abstract-low", BlockContent.Urgency.LOW),
-                visibleTo = setOf(ContextBlock.VisibleDomain.ACTION),
+                focusedOn = setOf(ContextBlock.FocusedDomain.ACTION),
                 replaceFadeFactor = 20.0,
                 timeFadeFactor = 0.0,
                 activateFactor = 0.0
@@ -411,7 +411,7 @@ class ContextWorkspaceTest {
                 blockContent = TestBlockContent("memory", "main", "full-normal", BlockContent.Urgency.NORMAL),
                 compactBlock = TestBlockContent("memory", "main", "compact-normal", BlockContent.Urgency.NORMAL),
                 abstractBlock = TestBlockContent("memory", "main", "abstract-normal", BlockContent.Urgency.NORMAL),
-                visibleTo = setOf(ContextBlock.VisibleDomain.ACTION),
+                focusedOn = setOf(ContextBlock.FocusedDomain.ACTION),
                 replaceFadeFactor = 80.0,
                 timeFadeFactor = 0.0,
                 activateFactor = 0.0
@@ -419,7 +419,7 @@ class ContextWorkspaceTest {
         )
 
         val resolved = manager.resolve(
-            listOf(ContextBlock.VisibleDomain.PERCEIVE, ContextBlock.VisibleDomain.ACTION)
+            listOf(ContextBlock.FocusedDomain.PERCEIVE, ContextBlock.FocusedDomain.ACTION)
         )
 
         val aggregated = resolved.blocks.single()
@@ -439,7 +439,7 @@ class ContextWorkspaceTest {
         content: String,
         compactContent: String = "${content}-compact",
         abstractContent: String = "${content}-abstract",
-        visibleTo: Set<ContextBlock.VisibleDomain> = setOf(ContextBlock.VisibleDomain.MEMORY),
+        visibleTo: Set<ContextBlock.FocusedDomain> = setOf(ContextBlock.FocusedDomain.MEMORY),
         replaceFadeFactor: Double = 10.0,
         timeFadeFactor: Double = 0.0,
         activateFactor: Double = 0.0
@@ -448,7 +448,7 @@ class ContextWorkspaceTest {
             blockContent = TestBlockContent(blockName, source, content),
             compactBlock = TestBlockContent(blockName, source, compactContent),
             abstractBlock = TestBlockContent(blockName, source, abstractContent),
-            visibleTo = visibleTo,
+            focusedOn = visibleTo,
             replaceFadeFactor = replaceFadeFactor,
             timeFadeFactor = timeFadeFactor,
             activateFactor = activateFactor
