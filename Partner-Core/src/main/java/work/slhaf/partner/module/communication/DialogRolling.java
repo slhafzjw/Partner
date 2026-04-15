@@ -26,18 +26,14 @@ import work.slhaf.partner.framework.agent.factory.component.annotation.InjectMod
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.action.scheduler.ActionScheduler;
-import work.slhaf.partner.module.memory.runtime.MemoryRuntime;
-import work.slhaf.partner.module.memory.updater.summarizer.MultiSummarizer;
-import work.slhaf.partner.module.memory.updater.summarizer.SingleSummarizer;
-import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeInput;
-import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeResult;
+import work.slhaf.partner.module.communication.summarizer.MultiSummarizer;
+import work.slhaf.partner.module.communication.summarizer.SingleSummarizer;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @EqualsAndHashCode(callSuper = true)
@@ -47,8 +43,10 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
     private static final String AUTO_UPDATE_CRON = "0/10 * * * * ?";
     private static final long UPDATE_TRIGGER_INTERVAL = 60 * 60 * 1000;
     private static final int CONTEXT_RETAIN_DIVISOR = 6;
-    private static final int MEMORY_UPDATE_TRIGGER_ROLL_LIMIT = 36;
+    private static final int DIALOG_ROLLING_TRIGGER_LIMIT = 36;
+
     private final AtomicBoolean rolling = new AtomicBoolean(false);
+
     @InjectCapability
     private CognitionCapability cognitionCapability;
     @InjectCapability
@@ -57,8 +55,7 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
     private PerceiveCapability perceiveCapability;
     @InjectCapability
     private ActionCapability actionCapability;
-    @InjectModule
-    private MemoryRuntime memoryRuntime;
+
     @InjectModule
     private MultiSummarizer multiSummarizer;
     @InjectModule
@@ -67,11 +64,9 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
     private ActionScheduler actionScheduler;
     @InjectModule
     private AfterRollingRegistry afterRollingRegistry;
-    private ExecutorService executor;
 
     @Init
     public void init() {
-        executor = actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL);
         registerScheduledUpdater();
     }
 
@@ -93,10 +88,10 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
 
     @Override
     protected void doExecute(@NotNull PartnerRunningFlowContext context) {
-        if (cognitionCapability.getChatMessages().size() < MEMORY_UPDATE_TRIGGER_ROLL_LIMIT) {
+        if (cognitionCapability.getChatMessages().size() < DIALOG_ROLLING_TRIGGER_LIMIT) {
             return;
         }
-        executor.execute(() -> triggerRolling(false));
+        actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL).execute(() -> triggerRolling(false));
     }
 
     private void tryAutoRolling() {
@@ -163,11 +158,10 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
 
     @NotNull
     RollingResult buildRollingResult(List<Message> chatSnapshot, int rollingSize, int retainDivisor) {
-        SummarizeInput summarizeInput = new SummarizeInput(chatSnapshot, memoryRuntime.getTopicTree());
-        singleSummarizer.execute(summarizeInput.getChatMessages());
-        Result<SummarizeResult> summarizeResult = multiSummarizer.execute(summarizeInput);
-        String summary = summarizeResult.fold(
-                SummarizeResult::getSummary,
+        singleSummarizer.execute(chatSnapshot);
+        Result<String> summaryResult = multiSummarizer.execute(chatSnapshot);
+        String summary = summaryResult.fold(
+                value -> value,
                 exp -> "no summary, due to exception"
         );
         if (summary.isBlank()) {

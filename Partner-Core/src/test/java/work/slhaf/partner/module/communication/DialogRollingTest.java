@@ -9,10 +9,8 @@ import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.support.Result;
-import work.slhaf.partner.module.memory.runtime.MemoryRuntime;
-import work.slhaf.partner.module.memory.updater.summarizer.MultiSummarizer;
-import work.slhaf.partner.module.memory.updater.summarizer.SingleSummarizer;
-import work.slhaf.partner.module.memory.updater.summarizer.entity.SummarizeResult;
+import work.slhaf.partner.module.communication.summarizer.MultiSummarizer;
+import work.slhaf.partner.module.communication.summarizer.SingleSummarizer;
 
 import java.lang.reflect.Field;
 import java.nio.file.Path;
@@ -39,31 +37,18 @@ class DialogRollingTest {
         return new Message(role, content);
     }
 
-    private static SummarizeResult summarizeResult(String summary, String topicPath, List<String> relatedTopicPath) {
-        SummarizeResult result = new SummarizeResult();
-        result.setSummary(summary);
-        result.setTopicPath(topicPath);
-        result.setRelatedTopicPath(relatedTopicPath);
-        return result;
-    }
-
     @Test
     void shouldDelegateMemoryUpdateToCapability() throws Exception {
         String sessionId = "dialog-rolling-" + UUID.randomUUID();
         StubMemoryCapability memoryCapability = new StubMemoryCapability(sessionId);
         DialogRolling dialogRolling = new DialogRolling();
-        MemoryRuntime memoryRuntime = Mockito.mock(MemoryRuntime.class);
         MultiSummarizer multiSummarizer = Mockito.mock(MultiSummarizer.class);
         SingleSummarizer singleSummarizer = Mockito.mock(SingleSummarizer.class);
         setField(dialogRolling, "memoryCapability", memoryCapability);
-        setField(dialogRolling, "memoryRuntime", memoryRuntime);
         setField(dialogRolling, "multiSummarizer", multiSummarizer);
         setField(dialogRolling, "singleSummarizer", singleSummarizer);
 
-        when(memoryRuntime.getTopicTree()).thenReturn("topic-tree");
-        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success(
-                summarizeResult("new-summary", "topic/main", List.of("topic/related"))
-        ));
+        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success("new-summary"));
 
         MemoryUnit existingUnit = new MemoryUnit(sessionId);
         existingUnit.getConversationMessages().addAll(List.of(
@@ -98,18 +83,13 @@ class DialogRollingTest {
         String sessionId = "dialog-rolling-" + UUID.randomUUID();
         StubMemoryCapability memoryCapability = new StubMemoryCapability(sessionId);
         DialogRolling dialogRolling = new DialogRolling();
-        MemoryRuntime memoryRuntime = Mockito.mock(MemoryRuntime.class);
         MultiSummarizer multiSummarizer = Mockito.mock(MultiSummarizer.class);
         SingleSummarizer singleSummarizer = Mockito.mock(SingleSummarizer.class);
         setField(dialogRolling, "memoryCapability", memoryCapability);
-        setField(dialogRolling, "memoryRuntime", memoryRuntime);
         setField(dialogRolling, "multiSummarizer", multiSummarizer);
         setField(dialogRolling, "singleSummarizer", singleSummarizer);
 
-        when(memoryRuntime.getTopicTree()).thenReturn("topic-tree");
-        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success(
-                summarizeResult("fresh-summary", "topic/root", List.of())
-        ));
+        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success("fresh-summary"));
 
         RollingResult rollingResult = dialogRolling.buildRollingResult(List.of(
                 message(Message.Character.USER, "first"),
@@ -158,16 +138,13 @@ class DialogRollingTest {
         String sessionId = "dialog-rolling-" + UUID.randomUUID();
         StubMemoryCapability memoryCapability = new StubMemoryCapability(sessionId);
         DialogRolling dialogRolling = new DialogRolling();
-        MemoryRuntime memoryRuntime = Mockito.mock(MemoryRuntime.class);
         MultiSummarizer multiSummarizer = Mockito.mock(MultiSummarizer.class);
         SingleSummarizer singleSummarizer = Mockito.mock(SingleSummarizer.class);
         setField(dialogRolling, "memoryCapability", memoryCapability);
-        setField(dialogRolling, "memoryRuntime", memoryRuntime);
         setField(dialogRolling, "multiSummarizer", multiSummarizer);
         setField(dialogRolling, "singleSummarizer", singleSummarizer);
 
-        when(memoryRuntime.getTopicTree()).thenReturn("topic-tree");
-        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success(summarizeResult("   ", "topic/root", List.of())));
+        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success("   "));
 
         RollingResult rollingResult = dialogRolling.buildRollingResult(List.of(
                 message(Message.Character.USER, "u1"),
