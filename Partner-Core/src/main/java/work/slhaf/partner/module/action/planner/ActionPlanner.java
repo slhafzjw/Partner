@@ -71,9 +71,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     protected void doExecute(@NotNull PartnerRunningFlowContext context) {
         String input = context.encodeInputsBlock().encodeToXmlString();
         Result<ExtractorResult> result = actionExtractor.execute(input)
-                .onFailure(exp -> {
-                    ExceptionReporterHandler.INSTANCE.report(exp, ContextExceptionReporter.REPORTER_NAME);
-                });
+                .onFailure(exp -> ExceptionReporterHandler.INSTANCE.report(exp, ContextExceptionReporter.REPORTER_NAME));
         if (result.exceptionOrNull() != null) {
             return;
         }
@@ -82,17 +80,16 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         if (tendencies.isEmpty()) {
             return;
         }
-        appendTendencyBlock(tendencies, input);
+        appendTendencyBlock(tendencies);
         evaluateTendency(context.getSource(), input, extractorResult);
     }
 
-    private void appendTendencyBlock(List<String> tendencies, String input) {
-        input = trimInput(input);
+    private void appendTendencyBlock(List<String> tendencies) {
         String datetime = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         cognitionCapability.contextWorkspace().register(new ContextBlock(
                 buildTendenciesEvaluatingFullBlock(tendencies),
-                buildTendenciesEvaluatingCompactBlock(tendencies, datetime, input),
-                buildTendenciesEvaluatingAbstractBlock(tendencies, datetime, input),
+                buildTendenciesEvaluatingCompactBlock(tendencies, datetime),
+                buildTendenciesEvaluatingAbstractBlock(tendencies, datetime),
                 Set.of(ContextBlock.FocusedDomain.ACTION),
                 60,
                 18,
@@ -100,25 +97,24 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         ));
     }
 
-    private @NotNull BlockContent buildTendenciesEvaluatingAbstractBlock(List<String> tendencies, String datetime, String input) {
+    private @NotNull BlockContent buildTendenciesEvaluatingAbstractBlock(List<String> tendencies, String datetime) {
         return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "datetime", datetime);
-                appendTextElement(document, root, "related_input", input);
                 appendTextElement(document, root, "abstract", "There are " + tendencies.size() + " related tendencies in evaluating.");
             }
         };
     }
 
-    private @NotNull BlockContent buildTendenciesEvaluatingCompactBlock(List<String> tendencies, String datetime, String input) {
+    private @NotNull BlockContent buildTendenciesEvaluatingCompactBlock(List<String> tendencies, String datetime) {
         return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 int size = tendencies.size();
                 boolean num = size > 3;
                 appendTextElement(document, root, "datetime", datetime);
-                appendTextElement(document, root, "related_input", input);
+                appendTextElement(document, root, "state", "Partner is considering whether to do these");
                 appendTextElement(document, root, "tendencies_count", size);
                 appendListElement(document, root, num ? "tendencies_truncated" : "tendencies", "tendency", num ? tendencies.subList(0, 3) : tendencies);
             }
@@ -126,10 +122,11 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private @NotNull BlockContent buildTendenciesEvaluatingFullBlock(List<String> tendencies) {
-        return new CommunicationBlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
+        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendRepeatedElements(document, root, "tendency", tendencies);
+                appendTextElement(document, root, "state", "Partner is considering whether to do these");
+                appendListElement(document, root, "tendencies", "tendency", tendencies);
             }
         };
     }
@@ -216,20 +213,19 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         return new CommunicationBlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendTextElement(document, root, "state", "waiting_confirm");
+                appendTextElement(document, root, "state", "need_user_confirm");
                 appendTextElement(document, root, "action_uuid", executableAction.getUuid());
                 appendTextElement(document, root, "action_type", evaluatorResult.getType());
                 appendTextElement(document, root, "tendency", executableAction.getTendency());
                 appendTextElement(document, root, "reason", executableAction.getReason());
                 appendTextElement(document, root, "description", executableAction.getDescription());
                 appendTextElement(document, root, "source_user", executableAction.getSource());
-                if (evaluatorResult.getScheduleType() != null) {
-                    appendTextElement(document, root, "schedule_type", evaluatorResult.getScheduleType());
+                EvaluatorResult.ScheduleData scheduleData = evaluatorResult.getScheduleData();
+                if (scheduleData != null) {
+                    appendTextElement(document, root, "schedule_type", scheduleData.getType());
+                    appendTextElement(document, root, "schedule_content", scheduleData.getContent());
                 }
-                if (evaluatorResult.getScheduleContent() != null) {
-                    appendTextElement(document, root, "schedule_content", evaluatorResult.getScheduleContent());
-                }
-                Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChain();
+                Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChainAsMap();
                 if (primaryActionChain == null || primaryActionChain.isEmpty()) {
                     return;
                 }
@@ -253,10 +249,10 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private BlockContent buildPendingCompactBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult, String input) {
-        return new BlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
+        return new CommunicationBlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendTextElement(document, root, "state", "waiting_confirm");
+                appendTextElement(document, root, "state", "need_user_confirm");
                 appendTextElement(document, root, "related_input", input);
                 appendTextElement(document, root, "tendency", executableAction.getTendency());
                 appendTextElement(document, root, "description", executableAction.getDescription());
@@ -269,7 +265,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         return new BlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendTextElement(document, root, "state", "waiting_confirm");
+                appendTextElement(document, root, "state", "need_user_confirm");
                 appendTextElement(document, root, "related_input", input);
                 appendTextElement(document, root, "pending_tendency", executableAction.getTendency());
                 appendTextElement(document, root, "summary", "exists pending action waiting for confirmation");
@@ -366,8 +362,8 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                         evaluatorResult.getReason(),
                         evaluatorResult.getDescription(),
                         userId,
-                        evaluatorResult.getScheduleType(),
-                        evaluatorResult.getScheduleContent()
+                        evaluatorResult.getScheduleData().getType(),
+                        evaluatorResult.getScheduleData().getContent()
                 );
                 case IMMEDIATE -> new ImmediateExecutableAction(
                         evaluatorResult.getTendency(),
@@ -381,7 +377,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
 
         private Map<Integer, List<MetaAction>> getActionChain(EvaluatorResult evaluatorResult) {
             Map<Integer, List<MetaAction>> actionChain = new HashMap<>();
-            Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChain();
+            Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChainAsMap();
             if (!fixDependencies(primaryActionChain)) {
                 return null;
             }
