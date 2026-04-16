@@ -112,6 +112,12 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
             if (value instanceof Number number) {
                 return number.intValue();
             }
+            try {
+                if (value instanceof String string) {
+                    return Integer.parseInt(string);
+                }
+            } catch (NumberFormatException ignored) {
+            }
             throw new IllegalArgumentException("参数 " + key + " 必须为整数");
         }
 
@@ -122,6 +128,12 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
             }
             if (value instanceof Number n) {
                 return n.intValue();
+            }
+            try {
+                if (value instanceof String string) {
+                    return Integer.parseInt(string);
+                }
+            } catch (NumberFormatException ignored) {
             }
             throw new IllegalArgumentException("参数 " + key + " 必须为整数");
         }

@@ -304,12 +304,12 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     private void executeMetaActionWithRetry(MetaAction metaAction, ExecutableAction actionData) {
         AtomicReference<String> failureReason = new AtomicReference<>("参数提取失败");
         val actionKey = metaAction.getKey();
+        int executingStage = actionData.getExecutingStage();
+        boolean succeeded = false;
         for (int attempt = 1; attempt <= MAX_EXTRACTOR_ATTEMPTS; attempt++) {
             val result = metaAction.getResult();
             result.reset();
             metaAction.getParams().clear();
-
-            val executingStage = actionData.getExecutingStage();
 
             Result<ExtractorInput> extractorInputResult = assemblyHelper.buildExtractorInput(metaAction.getKey(), actionData.getUuid(), actionData.getDescription());
             AgentRuntimeException exception = extractorInputResult.exceptionOrNull();
@@ -331,7 +331,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 failureReason.set(buildAttemptFailureReason("参数提取失败", null));
                 continue;
             }
-            metaAction.getParams().putAll(extractorResult.getParams());
+            metaAction.getParams().putAll(toMetaActionParams(extractorResult.getParams()));
 
             try {
                 runnerClient.submit(metaAction);
@@ -341,17 +341,46 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             }
 
             if (result.getStatus() == MetaAction.Result.Status.SUCCESS) {
-                val historyAction = new HistoryAction(actionKey, resolveHistoryDescription(actionKey), result.getData());
-                actionData.getHistory()
-                        .computeIfAbsent(executingStage, integer -> new ArrayList<>())
-                        .add(historyAction);
-                return;
+                succeeded = true;
+                break;
             }
 
             failureReason.set(buildAttemptFailureReason("行动执行失败", result.getData()));
         }
-        metaAction.getResult().setStatus(MetaAction.Result.Status.FAILED);
-        metaAction.getResult().setData(failureReason.get());
+        if (!succeeded) {
+            metaAction.getResult().setStatus(MetaAction.Result.Status.FAILED);
+            metaAction.getResult().setData(failureReason.get());
+        }
+        appendHistoryAction(actionData, executingStage, metaAction);
+    }
+
+    private Map<String, Object> toMetaActionParams(List<ExtractorResult.ParamEntry> params) {
+        if (params == null || params.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Object> converted = new LinkedHashMap<>();
+        for (ExtractorResult.ParamEntry entry : params) {
+            if (entry == null) {
+                continue;
+            }
+            String name = entry.getName();
+            if (name == null || name.isBlank()) {
+                continue;
+            }
+            converted.put(name, entry.getValue());
+        }
+        return converted;
+    }
+
+    private void appendHistoryAction(ExecutableAction actionData, int executingStage, MetaAction metaAction) {
+        HistoryAction historyAction = new HistoryAction(
+                metaAction.getKey(),
+                resolveHistoryDescription(metaAction.getKey()),
+                metaAction.getResult().getData()
+        );
+        actionData.getHistory()
+                .computeIfAbsent(executingStage, integer -> new ArrayList<>())
+                .add(historyAction);
     }
 
     private RecognizerTaskRecord startRecognizerIfNeeded(ExecutableAction executableAction, Phaser phaser) {

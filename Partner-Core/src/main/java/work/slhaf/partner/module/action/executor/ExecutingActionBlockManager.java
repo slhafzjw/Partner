@@ -239,7 +239,7 @@ class ExecutingActionBlockManager {
 
     private @NotNull BlockContent buildActionStageAbstractBlock(ExecutableActionSnapshot snapshot, String blockName, String event) {
         int settledStage = snapshot.getExecutingStage();
-        List<HistoryAction> history = snapshot.getHistory().get(settledStage);
+        List<HistoryAction> history = resolveStageHistory(snapshot, settledStage);
 
         return new ActionBlockContent(blockName, SOURCE) {
             @Override
@@ -252,7 +252,7 @@ class ExecutingActionBlockManager {
 
     private @NotNull BlockContent buildActionStageCompactBlock(ExecutableActionSnapshot snapshot, String blockName, String emittedAt, String event) {
         int settledStage = snapshot.getExecutingStage();
-        List<HistoryAction> history = snapshot.getHistory().get(settledStage);
+        List<HistoryAction> history = resolveStageHistory(snapshot, settledStage);
 
         return new ActionBlockContent(blockName, SOURCE) {
             @Override
@@ -267,7 +267,7 @@ class ExecutingActionBlockManager {
 
     private @NotNull BlockContent buildActionStageFullBlock(ExecutableActionSnapshot snapshot, String blockName, String emittedAt, String event) {
         int settledStage = snapshot.getExecutingStage();
-        List<HistoryAction> history = snapshot.getHistory().get(settledStage);
+        List<HistoryAction> history = resolveStageHistory(snapshot, settledStage);
 
         return new ActionBlockContent(blockName, SOURCE) {
             @Override
@@ -310,6 +310,11 @@ class ExecutingActionBlockManager {
                 5,
                 22
         ));
+    }
+
+    private List<HistoryAction> resolveStageHistory(ExecutableActionSnapshot snapshot, int settledStage) {
+        List<HistoryAction> history = snapshot.getHistory().get(settledStage);
+        return history == null ? List.of() : history;
     }
 
     private @NotNull BlockContent buildActionCorrectionAbstractBlock(ExecutableActionSnapshot snapshot, List<MetaIntervention> interventions, String blockName, String event) {

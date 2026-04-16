@@ -1,7 +1,9 @@
 package work.slhaf.partner.module.action.executor;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.ActionCore;
@@ -14,6 +16,7 @@ import work.slhaf.partner.module.action.executor.entity.ExtractorResult;
 import work.slhaf.partner.module.action.executor.entity.HistoryAction;
 
 import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +31,11 @@ import static org.mockito.Mockito.*;
 class ActionExecutorTest {
 
     private final List<ExecutorService> executors = new ArrayList<>();
+
+    @BeforeAll
+    static void beforeAll(@TempDir Path tempDir) {
+        System.setProperty("user.home", tempDir.toAbsolutePath().toString());
+    }
 
     private static void inject(Object target, String fieldName, Object value) throws Exception {
         Field field = ActionExecutor.class.getDeclaredField(fieldName);
@@ -137,7 +145,7 @@ class ActionExecutorTest {
 
         ExtractorResult extractorResult = new ExtractorResult();
         extractorResult.setOk(true);
-        extractorResult.setParams(Map.of("fresh", "value"));
+        extractorResult.setParams(List.of(new ExtractorResult.ParamEntry("fresh", "value")));
         when(paramsExtractor.execute(any())).thenReturn(Result.success(extractorResult));
         doAnswer(invocation -> {
             MetaAction metaAction = invocation.getArgument(0);
@@ -242,6 +250,9 @@ class ActionExecutorTest {
         assertEquals(MetaAction.Result.Status.FAILED, metaAction.getResult().getStatus());
         assertTrue(metaAction.getResult().getData().contains("missing"));
         assertEquals(metaAction.getResult().getData(), action.getResult());
+        assertEquals(1, action.getHistory().size());
+        assertTrue(action.getHistory().containsKey(1));
+        assertEquals(metaAction.getResult().getData(), action.getHistory().get(1).getFirst().result());
     }
 
     @Test
@@ -282,7 +293,7 @@ class ActionExecutorTest {
 
         ExtractorResult extractorResult = new ExtractorResult();
         extractorResult.setOk(true);
-        extractorResult.setParams(Map.of("fresh", "value"));
+        extractorResult.setParams(List.of(new ExtractorResult.ParamEntry("fresh", "value")));
         when(paramsExtractor.execute(any())).thenReturn(Result.success(extractorResult));
         doAnswer(invocation -> {
             MetaAction metaAction = invocation.getArgument(0);

@@ -39,9 +39,9 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Res
         return new TaskBlock() {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendChildElement(document, root, "target_action", blok -> {
-                    appendTextElement(document, blok, "uuid", input.getTargetActionId());
-                    appendTextElement(document, blok, "description", input.getTargetActionDesc());
+                appendChildElement(document, root, "target_action", block -> {
+                    appendTextElement(document, block, "uuid", input.getTargetActionId());
+                    appendTextElement(document, block, "description", input.getTargetActionDesc());
                     return Unit.INSTANCE;
                 });
                 appendChildElement(document, root, "meta_action_info", element -> {
