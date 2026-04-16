@@ -2,6 +2,7 @@ package work.slhaf.partner.core.cognition;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import kotlin.Unit;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
@@ -26,6 +27,17 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 @CapabilityCore(value = "cognition")
 public class CognitionCore implements StateSerializable {
+
+    private static final String RECENT_CHAT_MESSAGE_NOTES = """
+            消息格式:
+            - user 消息当前写入格式: [[USER]: <userId>]: <正文> 或 [[AGENT]: self]: <正文>
+            - assistant 消息直接记录回复正文；若以 [NOT_REPLIED]: <正文> 形式出现，表示该结果未直接发送给用户
+            
+            标记含义:
+            - [USER]: 外部用户来源
+            - [AGENT]: 系统内部来源
+            - [NOT_REPLIED]: 仅保留在历史中的未直接回复结果
+            """;
 
     private final ReentrantLock messageLock = new ReentrantLock();
 
@@ -105,7 +117,14 @@ public class CognitionCore implements StateSerializable {
                 new BlockContent("recent_chat_messages", "communication_producer") {
                     @Override
                     protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                        appendRepeatedElements(document, root, "chat_message", resolveRecentChatMessages());
+                        appendTextElement(document, root, "message_tag_notes", RECENT_CHAT_MESSAGE_NOTES);
+                        Element chatMessagesElement = document.createElement("chat_messages");
+                        root.appendChild(chatMessagesElement);
+                        appendRepeatedElements(document, chatMessagesElement, "chat_message", resolveRecentChatMessages(), (messageElement, message) -> {
+                            messageElement.setAttribute("role", message.roleValue());
+                            messageElement.setTextContent(message.getContent());
+                            return Unit.INSTANCE;
+                        });
                     }
                 },
                 Set.of(ContextBlock.FocusedDomain.COMMUNICATION),

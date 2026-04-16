@@ -11,6 +11,7 @@ import kotlin.time.Duration.Companion.milliseconds
 object ReplyDispatcher {
 
     private const val AGGREGATE_WINDOW_MILLIS = 100L
+    private const val NO_REPLY_MARKER = "NO_REPLY"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val collectorChannel = Channel<ReplyChunk>(Channel.UNLIMITED)
@@ -79,10 +80,86 @@ object ReplyDispatcher {
         private val target: String,
     ) : StreamChatMessageConsumer() {
 
-        override fun consumeDelta(delta: String?) {
-            if (delta != null) {
-                collectorChannel.trySend(ReplyChunk(delta, target)).isSuccess
+        private enum class VisibilityState {
+            UNDECIDED,
+            NO_REPLY,
+            VISIBLE
+        }
+
+        private val rawResponse = StringBuilder()
+        private val undecidedBuffer = StringBuilder()
+        private var visibilityState = VisibilityState.UNDECIDED
+
+        override fun onDelta(delta: String) {
+            rawResponse.append(delta)
+            routeDelta(delta)
+        }
+
+        override fun collectResponse(): String {
+            finalizeUndecidedBuffer()
+            return rawResponse.toString()
+        }
+
+        private fun routeDelta(delta: String) {
+            when (visibilityState) {
+                VisibilityState.NO_REPLY -> return
+                VisibilityState.VISIBLE -> flushVisible(delta)
+                VisibilityState.UNDECIDED -> {
+                    undecidedBuffer.append(delta)
+                    resolveVisibility()
+                }
             }
+        }
+
+        private fun resolveVisibility() {
+            val content = undecidedBuffer.toString()
+            if (content.length <= NO_REPLY_MARKER.length) {
+                if (NO_REPLY_MARKER.startsWith(content)) {
+                    return
+                }
+                revealBufferedContent()
+                return
+            }
+
+            if (!content.startsWith(NO_REPLY_MARKER)) {
+                revealBufferedContent()
+                return
+            }
+
+            val suffixFirstChar = content[NO_REPLY_MARKER.length]
+            if (suffixFirstChar == '\n' || suffixFirstChar == '\r') {
+                visibilityState = VisibilityState.NO_REPLY
+                undecidedBuffer.setLength(0)
+                return
+            }
+            revealBufferedContent()
+        }
+
+        private fun finalizeUndecidedBuffer() {
+            if (visibilityState != VisibilityState.UNDECIDED) {
+                return
+            }
+            if (undecidedBuffer.toString() == NO_REPLY_MARKER) {
+                visibilityState = VisibilityState.NO_REPLY
+                undecidedBuffer.setLength(0)
+                return
+            }
+            revealBufferedContent()
+        }
+
+        private fun revealBufferedContent() {
+            visibilityState = VisibilityState.VISIBLE
+            if (undecidedBuffer.isNotEmpty()) {
+                flushVisible(undecidedBuffer.toString())
+                undecidedBuffer.setLength(0)
+            }
+        }
+
+        private fun flushVisible(delta: String) {
+            collectorChannel.trySend(ReplyChunk(delta, target)).isSuccess
+        }
+
+        override fun consumeDelta(delta: String?) {
         }
 
     }

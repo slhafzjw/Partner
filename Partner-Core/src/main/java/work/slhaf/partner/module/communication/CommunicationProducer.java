@@ -1,7 +1,5 @@
 package work.slhaf.partner.module.communication;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -27,20 +25,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
 public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRunningFlowContext> implements ActivateModel {
 
     private static final String INTERRUPTED_MARKER = " [response interrupted due to internal exception]";
+    private static final String NO_REPLY_MARKER = "NO_REPLY";
+    private static final String NOT_REPLIED_MARKER = "NOT_REPLIED";
+    private static final String NOT_REPLIED_PREFIX = "[" + NOT_REPLIED_MARKER + "]: ";
 
     private static final String MODULE_PROMPT = """
-            你是 Partner 的表达模块。
-            你接下来收到的消息固定分为三个区段:
-            1. system message 是 Head, 用于说明整个输入结构与输出要求。
-            2. <context> 区段只承载 type=CONTEXT 的上下文块, 其中每个子块都带有独立来源, 仅作为理解当前状态与辅助决策的依据。
-            3. Conversation 区段是对话轨迹; 最新的一条 user message 会使用 <input> 结构, 其中 <inputs> 承载本轮按时间顺序排列的输入序列, 每个 <input> 节点会带有相对首条输入的时间间隔属性, 其他子标签是输入元信息与 type=SUPPLY 的补充块, 补充块会按 blockName 分区。
-            你必须综合 Context 与 Conversation 回答最新输入, 不要把 XML 标签当作需要原样复述给用户的内容。
-            直接输出最终回应内容即可, 不需要额外包装为 JSON。
+            你当前正在承担 Partner 的对外交流职责。你需要基于系统此刻的上下文状态、保留的对话轨迹以及最新输入，生成自然、贴合当前情境、并与系统整体状态一致的交流结果。
+            
+            你接下来收到的消息，将按照出现顺序，固定分为三个区段：
+            1. system message 是 Head，用于说明整个输入结构与输出要求，即本条消息。
+            2. <context> 区段承载系统中所有模块产生的上下文块。上下文块代表 Partner 在此刻的系统状态投影；其中每个子块都带有独立来源，可作为理解当前状态和辅助决策的依据。
+            3. <conversation> 区段是系统此刻保留的对话轨迹；最新的一条 user message 会使用 <input> 结构，其中 <inputs> 承载本轮按时间顺序排列的输入序列，每个 <input> 节点会带有相对首条输入的时间间隔属性；其他子标签是输入元信息与 type=SUPPLY 的补充块，补充块会按 blockName 分区。
+            
+            你的任务：
+            - 综合 <context>、<conversation> 以及 SUPPLY 补充块，理解当前情境，并产出本轮交流结果。
+            - 优先保证交流结果与当前系统状态一致，不要忽略明显相关的上下文信号。
+            - 若最新输入与已有上下文存在张力，应以最新输入为当前交流的直接依据，再结合上下文判断如何回应。
+            - 你当前负责的是对外交流，不负责直接规划行动、修改系统状态，或伪造并不存在的执行结果。
+            
+            输出契约：
+            - 默认情况下，直接输出要发送给用户的最终回复正文，不要添加额外标签、解释或前后缀。
+            - 若当前情境下不应直接向用户发出回复，但仍需要留下本轮交流结果供系统后续保留在交流轨迹中，则输出以 NO_REPLY 开头。
+            - 使用 NO_REPLY 时，格式为：
+            
+            NO_REPLY
+            这里写本轮交流结果正文
+            
+            - 以 NO_REPLY 开头的输出不会直接展示给用户；系统在写入交流轨迹时，会以单独的历史标记形式保留该结果。
+            - 不要输出空字符串；若选择不直接回复用户，应使用 NO_REPLY 契约明确表达。
             """;
 
     @InjectCapability
@@ -99,11 +114,25 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
                     formatConversationUserMessage(runningFlowContext)
             );
             chatMessages.add(primaryUserMessage);
-            Message assistantMessage = new Message(Message.Character.ASSISTANT, response);
+            Message assistantMessage = new Message(Message.Character.ASSISTANT, normalizeAssistantHistoryMessage(response));
             chatMessages.add(assistantMessage);
         } finally {
             cognitionCapability.getMessageLock().unlock();
         }
+    }
+
+    private String normalizeAssistantHistoryMessage(String response) {
+        String trimmed = response == null ? "" : response.trim();
+        if (trimmed.equals(NO_REPLY_MARKER)) {
+            return NOT_REPLIED_PREFIX.trim();
+        }
+        if (trimmed.startsWith(NO_REPLY_MARKER + "\n")) {
+            return NOT_REPLIED_PREFIX + trimmed.substring((NO_REPLY_MARKER + "\n").length()).trim();
+        }
+        if (trimmed.startsWith(NO_REPLY_MARKER + "\r\n")) {
+            return NOT_REPLIED_PREFIX + trimmed.substring((NO_REPLY_MARKER + "\r\n").length()).trim();
+        }
+        return response;
     }
 
     private List<Message> snapshotConversationMessages() {
