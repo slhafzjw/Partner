@@ -133,27 +133,31 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                     new CommunicationBlockContent(blockName, source, BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
                         @Override
                         protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                            appendTextElement(document, root, "state", "Partner needs some help.");
                             appendTextElement(document, root, "action_id", actionId);
                             appendTextElement(document, root, "action_info", actionInfo);
                             appendTextElement(document, root, "demand", demand);
                         }
                     },
-                    Set.of(ContextBlock.FocusedDomain.ACTION),
+                    Set.of(ContextBlock.FocusedDomain.COMMUNICATION),
                     10,
                     10,
                     20
             ));
 
-
+            ExecutableAction executableAction = null;
             try {
-                ExecutableAction executableAction = getExecutableAction(actionId);
+                executableAction = getExecutableAction(actionId);
                 cognitionCapability.initiateTurn(input, target);
                 boolean normal = executableAction.interrupt(timeout);
-                return normal ? target + "not answered" : target + "answered";
+                return normal ? target + "not resumed execution in time" : target + "answered, looking for related answer in recent-chat-messages";
             } catch (Exception e) {
                 return "Error happened while calling turn: " + e.getLocalizedMessage();
             } finally {
                 contextWorkspace.expire(blockName, source);
+                if (executableAction != null) {
+                    executableAction.resume();
+                }
             }
         };
 
@@ -279,7 +283,7 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                 null,
                 Map.of(
                         "id", "The uuid of the Action to be intervened on.",
-                        "type", "Intervention type. Allowed values: APPEND, INSERT, REBUILD, DELETE, CANCEL.",
+                        "type", "Intervention type. Allowed values: APPEND, INSERT, DELETE, CANCEL.",
                         "order", "Action chain order/stage to apply the intervention on.",
                         "actions", "Comma-separated actionKey list to be inserted, appended, rebuilt or deleted. Example: \"builtin::command::execute, builtin::capability::show_memory_slices\""
                 ),

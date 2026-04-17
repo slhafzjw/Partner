@@ -179,7 +179,7 @@ public class ActionCore implements StateSerializable {
             return;
         }
         // 加锁确保同步
-        synchronized (executableAction.getStatus()) {
+        synchronized (executableAction.getExecutionLock()) {
             applyInterventions(interventions, executableAction);
         }
     }
@@ -244,7 +244,10 @@ public class ActionCore implements StateSerializable {
         if (order < executableAction.getExecutingStage())
             return;
 
-        executableAction.getActionChain().computeIfAbsent(order, k -> new ArrayList<>()).addAll(actions);
+        List<MetaAction> stageActions = executableAction.getActionChain().computeIfAbsent(order, k -> new ArrayList<>());
+        synchronized (stageActions) {
+            stageActions.addAll(actions);
+        }
     }
 
     private void handleDelete(ExecutableAction executableAction, int order, List<MetaAction> actions) {

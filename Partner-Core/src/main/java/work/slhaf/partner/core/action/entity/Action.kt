@@ -84,6 +84,8 @@ sealed interface Schedulable {
 sealed class ExecutableAction(
     override val uuid: String = UUID.randomUUID().toString()
 ) : Action(uuid) {
+    val executionLock: Any = Any()
+
     /**
      * 行动倾向
      */
