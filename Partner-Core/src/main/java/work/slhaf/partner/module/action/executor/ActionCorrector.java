@@ -22,6 +22,70 @@ import java.util.List;
  */
 public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Result<CorrectorResult>> implements ActivateModel {
 
+    private static final String MODULE_PROMPT = """
+            你负责在行动链执行过程中进行纠偏。你的任务不是重新评估是否要启动这条行动，而是在当前行动已经进入执行后，根据原始行动意图、当前链路结构与最新语境，判断是否需要调整后续行动链。
+            
+            你会收到：
+            - 一条结构化上下文消息，其中包含近期交流轨迹与当前活跃记忆切片；
+            - 一条任务消息，其中包含：
+              - executable_action_info：当前正在执行的行动信息，包括 executing_action_id、original_tendency、evaluation_passed_reason、description 与 from_who；
+              - current_action_chain_overview：当前行动链概览，按 stage_count 分组，包含各阶段已有 meta_action 的 action_key、description 与 status。
+            
+            你的任务：
+            - 基于当前上下文、原始行动意图与当前行动链进展，判断后续行动是否仍然符合目的；
+            - 若当前链路仍可继续推进，则不要随意干预；
+            - 若当前链路已明显跑偏、缺少必要步骤、顺序不合理、存在冗余、已经不再适合继续，或需要引入新的动作单元，则输出干预方案；
+            - correctionReason 用于简洁说明为何需要这些纠偏。
+            
+            纠偏原则：
+            - executable_action_info 用于说明当前链路最初为何成立、要解决什么问题、当前由谁发起；你的纠偏必须围绕这条行动本身，而不是转向新的无关目标。
+            - executing_action_id 用于标识当前正在执行的行动；current_action_chain_overview 用于说明当前链路整体结构与阶段状态。
+            - original_tendency 是这条行动链最初要解决的问题；后续行动的调整必须仍然围绕它。
+            - evaluation_passed_reason 与 description 表示该行动最初为何能够成立；若当前链路已经与这些前提不一致，可据此进行纠偏。
+            - current_action_chain_overview 是判断后续链路是否缺步骤、顺序失衡、重复冗余或整体方向错误的主要依据。
+            - communication 域用于判断最新交流语境是否已经变化，导致当前链路需要调整。
+            - memory 域只在与当前行动明显相关时作为辅助参考使用。
+            
+            何时应考虑干预：
+            - 当前链路缺少继续推进所必需的动作；
+            - 当前链路顺序明显不合理，继续执行会降低成功率或偏离目的；
+            - 某些动作已经失效、重复、无意义，或不再适合当前状态；
+            - 当前链路在某一阶段之后整体方向需要重建；
+            - 当前行动已不应继续推进，应直接取消整条链路。
+            
+            何时不应轻易干预：
+            - 当前只是正常的多步推进；
+            - 某一步刚完成，尚不足以说明后续链路错误；
+            - 没有足够依据证明当前行动链存在明显问题；
+            - 仅凭旧对话、低相关记忆或轻微波动，不足以支持修改行动链。
+            
+            关于干预类型：
+            - APPEND: 在指定 order 之后追加新的动作。
+            - INSERT: 在指定 order 执行过程中即时插入并执行新的动作。
+            - DELETE: 删除指定 order 上的指定动作。
+            - CANCEL: 取消当前行动链后续执行。
+            - REBUILD: 清空当前行动链与既有执行进度，并用新的规划内容整体重建行动链。
+            
+            关于 intervention 列表：
+            - 系统会按照 metaInterventionList 的顺序逐条应用干预；前面的干预可能改变后续可理解的 order 位置，因此你在生成后续 intervention 时，必须考虑前面 intervention 已经生效后的链路形态。
+            - 不要把一组本应整体表达的修改拆成互相冲突、顺序不自洽的 intervention。
+            - actions 中只能填写当前系统中真实存在、可用的 action_key，不要编造不存在的动作。
+            - order 必须对应当前行动链中的合理阶段位置。
+            
+            关于 REBUILD：
+            - REBUILD 表示放弃当前既有链路，并重新给出新的整体规划。
+            - 一旦本次纠偏结果中使用了 REBUILD，则 metaInterventionList 中所有 intervention 都必须是 REBUILD；不要将 REBUILD 与 APPEND、INSERT、DELETE、CANCEL 混用。
+            - 使用 REBUILD 时，应把新的链路规划完整表达为一组按 order 分布的 REBUILD intervention，而不是只局部补几步。
+            
+            其他约束：
+            - 若无需干预，可返回空的 metaInterventionList，并给出简短的 correctionReason 说明当前为何可继续推进。
+            - 不要输出结构之外的解释、说明或额外文本。
+            
+            输出要求：
+            - 严格按照 CorrectorResult 对应结构输出。
+            - metaInterventionList 中每一项都必须是明确、可执行、且与其他 intervention 顺序一致的干预单元。
+            """;
+
     @InjectCapability
     private CognitionCapability cognitionCapability;
 
@@ -63,11 +127,15 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
 
     private Message resolveContextMessage() {
         return cognitionCapability.contextWorkspace().resolve(List.of(
-                ContextBlock.FocusedDomain.ACTION,
                 ContextBlock.FocusedDomain.COMMUNICATION,
-                ContextBlock.FocusedDomain.COGNITION,
                 ContextBlock.FocusedDomain.MEMORY
         )).encodeToMessage();
+    }
+
+    @Override
+    @NotNull
+    public List<Message> modulePrompt() {
+        return List.of(new Message(Message.Character.SYSTEM, MODULE_PROMPT));
     }
 
     @NotNull

@@ -387,25 +387,25 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         if (!shouldRunCorrectionRecognizer(executableAction)) {
             return RecognizerTaskRecord.disabled();
         }
-        val recognizerInput = assemblyHelper.buildRecognizerInput(executableAction);
+        val recognizerInput = assemblyHelper.buildCorrectorInput(executableAction);
         val task = buildRecognizerTask(recognizerInput, phaser);
-        Future<CorrectionRecognizerResult> future = virtualExecutor.submit(task);
+        Future<RecognizerResult> future = virtualExecutor.submit(task);
         return new RecognizerTaskRecord(true, future);
     }
 
-    private Callable<CorrectionRecognizerResult> buildRecognizerTask(CorrectionRecognizerInput input, Phaser phaser) {
+    private Callable<RecognizerResult> buildRecognizerTask(CorrectorInput input, Phaser phaser) {
         phaser.register();
         return () -> {
             try {
                 return actionCorrectionRecognizer.execute(input)
-                        .getOrDefault(new CorrectionRecognizerResult());
+                        .getOrDefault(new RecognizerResult());
             } finally {
                 phaser.arriveAndDeregister();
             }
         };
     }
 
-    private CorrectionRecognizerResult resolveRecognizerResult(RecognizerTaskRecord record) {
+    private RecognizerResult resolveRecognizerResult(RecognizerTaskRecord record) {
         if (record == null || !record.enabled() || record.future() == null) {
             return null;
         }
@@ -548,7 +548,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     private record MetaActionsListeningRecord(AtomicBoolean accepting, int phase) {
     }
 
-    private record RecognizerTaskRecord(boolean enabled, Future<CorrectionRecognizerResult> future) {
+    private record RecognizerTaskRecord(boolean enabled, Future<RecognizerResult> future) {
         private static RecognizerTaskRecord disabled() {
             return new RecognizerTaskRecord(false, null);
         }
@@ -594,14 +594,5 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                     .build();
         }
 
-        private CorrectionRecognizerInput buildRecognizerInput(ExecutableAction executableAction) {
-            return CorrectionRecognizerInput.builder()
-                    .tendency(executableAction.getTendency())
-                    .source(executableAction.getSource())
-                    .reason(executableAction.getReason())
-                    .description(executableAction.getDescription())
-                    .actionId(executableAction.getUuid())
-                    .build();
-        }
     }
 }
