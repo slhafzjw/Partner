@@ -77,11 +77,10 @@ class ContextWorkspace {
 
         val blocks = activeBlocks
             .sortedWith(
-                compareBy<ResolvedContextBlock> { it.domainWeight }
+                compareByDescending<ResolvedContextBlock> { it.domainWeight }
+                    .thenByDescending { it.activationScore }
                     .thenBy { it.block.sourceKey.blockName }
                     .thenBy { it.block.sourceKey.source }
-                    .thenBy { it.activationScore }
-                    .thenBy { it.block.blockContent.encodeToXmlString() }
             )
             .groupBy { it.block.sourceKey }
             .values
