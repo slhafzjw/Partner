@@ -81,6 +81,7 @@ public class ActionCore implements StateSerializable {
                 log.warn("{} tasks still running", count);
             }
         } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -24,8 +24,8 @@ import work.slhaf.partner.framework.agent.factory.component.annotation.InjectMod
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.action.scheduler.ActionScheduler;
-import work.slhaf.partner.module.communication.summarizer.MultiSummarizer;
-import work.slhaf.partner.module.communication.summarizer.SingleSummarizer;
+import work.slhaf.partner.module.communication.summarizer.MessageCompressor;
+import work.slhaf.partner.module.communication.summarizer.MessageSummarizer;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.time.ZonedDateTime;
@@ -53,9 +53,9 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
     private ActionCapability actionCapability;
 
     @InjectModule
-    private MultiSummarizer multiSummarizer;
+    private MessageSummarizer messageSummarizer;
     @InjectModule
-    private SingleSummarizer singleSummarizer;
+    private MessageCompressor messageCompressor;
     @InjectModule
     private ActionScheduler actionScheduler;
     @InjectModule
@@ -154,8 +154,8 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
 
     @NotNull
     RollingResult buildRollingResult(List<Message> chatSnapshot, int rollingSize, int retainDivisor) {
-        singleSummarizer.execute(chatSnapshot);
-        Result<String> summaryResult = multiSummarizer.execute(chatSnapshot);
+        messageCompressor.execute(chatSnapshot);
+        Result<String> summaryResult = messageSummarizer.execute(chatSnapshot);
         String summary = summaryResult.fold(
                 value -> value,
                 exp -> "no summary, due to exception"

@@ -9,8 +9,8 @@ import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.support.Result;
-import work.slhaf.partner.module.communication.summarizer.MultiSummarizer;
-import work.slhaf.partner.module.communication.summarizer.SingleSummarizer;
+import work.slhaf.partner.module.communication.summarizer.MessageCompressor;
+import work.slhaf.partner.module.communication.summarizer.MessageSummarizer;
 
 import java.lang.reflect.Field;
 import java.nio.file.Path;
@@ -42,13 +42,13 @@ class DialogRollingTest {
         String sessionId = "dialog-rolling-" + UUID.randomUUID();
         StubMemoryCapability memoryCapability = new StubMemoryCapability(sessionId);
         DialogRolling dialogRolling = new DialogRolling();
-        MultiSummarizer multiSummarizer = Mockito.mock(MultiSummarizer.class);
-        SingleSummarizer singleSummarizer = Mockito.mock(SingleSummarizer.class);
+        MessageSummarizer messageSummarizer = Mockito.mock(MessageSummarizer.class);
+        MessageCompressor messageCompressor = Mockito.mock(MessageCompressor.class);
         setField(dialogRolling, "memoryCapability", memoryCapability);
-        setField(dialogRolling, "multiSummarizer", multiSummarizer);
-        setField(dialogRolling, "singleSummarizer", singleSummarizer);
+        setField(dialogRolling, "messageSummarizer", messageSummarizer);
+        setField(dialogRolling, "messageCompressor", messageCompressor);
 
-        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success("new-summary"));
+        when(messageSummarizer.execute(Mockito.any())).thenReturn(Result.success("new-summary"));
 
         MemoryUnit existingUnit = new MemoryUnit(sessionId);
         existingUnit.getConversationMessages().addAll(List.of(
@@ -83,13 +83,13 @@ class DialogRollingTest {
         String sessionId = "dialog-rolling-" + UUID.randomUUID();
         StubMemoryCapability memoryCapability = new StubMemoryCapability(sessionId);
         DialogRolling dialogRolling = new DialogRolling();
-        MultiSummarizer multiSummarizer = Mockito.mock(MultiSummarizer.class);
-        SingleSummarizer singleSummarizer = Mockito.mock(SingleSummarizer.class);
+        MessageSummarizer messageSummarizer = Mockito.mock(MessageSummarizer.class);
+        MessageCompressor messageCompressor = Mockito.mock(MessageCompressor.class);
         setField(dialogRolling, "memoryCapability", memoryCapability);
-        setField(dialogRolling, "multiSummarizer", multiSummarizer);
-        setField(dialogRolling, "singleSummarizer", singleSummarizer);
+        setField(dialogRolling, "messageSummarizer", messageSummarizer);
+        setField(dialogRolling, "messageCompressor", messageCompressor);
 
-        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success("fresh-summary"));
+        when(messageSummarizer.execute(Mockito.any())).thenReturn(Result.success("fresh-summary"));
 
         RollingResult rollingResult = dialogRolling.buildRollingResult(List.of(
                 message(Message.Character.USER, "first"),
@@ -138,13 +138,13 @@ class DialogRollingTest {
         String sessionId = "dialog-rolling-" + UUID.randomUUID();
         StubMemoryCapability memoryCapability = new StubMemoryCapability(sessionId);
         DialogRolling dialogRolling = new DialogRolling();
-        MultiSummarizer multiSummarizer = Mockito.mock(MultiSummarizer.class);
-        SingleSummarizer singleSummarizer = Mockito.mock(SingleSummarizer.class);
+        MessageSummarizer messageSummarizer = Mockito.mock(MessageSummarizer.class);
+        MessageCompressor messageCompressor = Mockito.mock(MessageCompressor.class);
         setField(dialogRolling, "memoryCapability", memoryCapability);
-        setField(dialogRolling, "multiSummarizer", multiSummarizer);
-        setField(dialogRolling, "singleSummarizer", singleSummarizer);
+        setField(dialogRolling, "messageSummarizer", messageSummarizer);
+        setField(dialogRolling, "messageCompressor", messageCompressor);
 
-        when(multiSummarizer.execute(Mockito.any())).thenReturn(Result.success("   "));
+        when(messageSummarizer.execute(Mockito.any())).thenReturn(Result.success("   "));
 
         RollingResult rollingResult = dialogRolling.buildRollingResult(List.of(
                 message(Message.Character.USER, "u1"),

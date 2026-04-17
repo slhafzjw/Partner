@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import work.slhaf.partner.common.base.Block;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.framework.agent.interaction.AgentRuntime;
@@ -30,13 +31,22 @@ public class CognitionCore implements StateSerializable {
 
     private static final String RECENT_CHAT_MESSAGE_NOTES = """
             消息格式:
-            - user 消息当前写入格式: [[USER]: <userId>]: <正文> 或 [[AGENT]: self]: <正文>
-            - assistant 消息直接记录回复正文；若以 [NOT_REPLIED]: <正文> 形式出现，表示该结果未直接发送给用户
+            - 所有消息统一写为“标记行 + 空行 + 正文”，比如：
+            
+                [[AGENT]: self]: [NOT_REPLIED][COMPRESSED]:
+            
+                正文内容
+            
+            - 标记行一定包含身份标签，通常格式为 [[USER]: <userName>] 或 [[AGENT]: self]
+            - 若身份标签提取失败，可能回退为 [[Unknown]: Unknown]
+            - 若存在其他标签，则写为“身份标签: 状态标签串:”
+            - 正文永远从空行后开始
             
             标记含义:
             - [USER]: 外部用户来源
             - [AGENT]: 系统内部来源
             - [NOT_REPLIED]: 仅保留在历史中的未直接回复结果
+            - [COMPRESSED]: 该消息正文经过压缩
             """;
 
     private final ReentrantLock messageLock = new ReentrantLock();
@@ -117,7 +127,7 @@ public class CognitionCore implements StateSerializable {
                 new BlockContent("recent_chat_messages", "communication_producer") {
                     @Override
                     protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                        appendTextElement(document, root, "message_tag_notes", RECENT_CHAT_MESSAGE_NOTES);
+                        document.appendChild(document.importNode(messageNotesElement(), true));
                         Element chatMessagesElement = document.createElement("chat_messages");
                         root.appendChild(chatMessagesElement);
                         appendRepeatedElements(document, chatMessagesElement, "chat_message", resolveRecentChatMessages(), (messageElement, message) -> {
@@ -133,6 +143,16 @@ public class CognitionCore implements StateSerializable {
                 4
         );
         contextWorkspace.register(block);
+    }
+
+    @CapabilityMethod
+    public Element messageNotesElement() {
+        return new Block("message_tag_notes") {
+            @Override
+            protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                root.setTextContent(RECENT_CHAT_MESSAGE_NOTES);
+            }
+        }.encodeToXml();
     }
 
     private List<Message> resolveRecentChatMessages() {

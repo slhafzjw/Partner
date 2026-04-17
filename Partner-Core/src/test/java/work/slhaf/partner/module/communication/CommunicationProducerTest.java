@@ -1,6 +1,7 @@
 package work.slhaf.partner.module.communication;
 
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Element;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextWorkspace;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
@@ -51,8 +52,8 @@ class CommunicationProducerTest {
 
         List<Message> chatMessages = cognitionCapability.getChatMessages();
         assertEquals(2, chatMessages.size());
-        assertEquals("[[USER]: user-1]: hello", chatMessages.get(0).getContent());
-        assertEquals("[NOT_REPLIED]: not now", chatMessages.get(1).getContent());
+        assertEquals("[[USER]: user-1]:\n\nhello", chatMessages.get(0).getContent());
+        assertEquals("[[AGENT]: self]: [NOT_REPLIED]:\n\nnot now", chatMessages.get(1).getContent());
     }
 
     @Test
@@ -68,7 +69,7 @@ class CommunicationProducerTest {
         );
 
         List<Message> chatMessages = cognitionCapability.getChatMessages();
-        assertEquals("normal reply", chatMessages.get(1).getContent());
+        assertEquals("[[AGENT]: self]:\n\nnormal reply", chatMessages.get(1).getContent());
     }
 
     private static final class StubCognitionCapability implements CognitionCapability {
@@ -101,6 +102,11 @@ class CommunicationProducerTest {
 
         @Override
         public void refreshRecentChatMessagesContext() {
+        }
+
+        @Override
+        public Element messageNotesElement() {
+            return null;
         }
 
         @Override

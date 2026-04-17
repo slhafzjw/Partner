@@ -29,8 +29,9 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     private static final String INTERRUPTED_MARKER = " [response interrupted due to internal exception]";
     private static final String NO_REPLY_MARKER = "NO_REPLY";
-    private static final String NOT_REPLIED_MARKER = "NOT_REPLIED";
-    private static final String NOT_REPLIED_PREFIX = "[" + NOT_REPLIED_MARKER + "]: ";
+    private static final String AGENT_MARKER = "[[AGENT]: self]";
+    private static final String NOT_REPLIED_PREFIX = "[NOT_REPLIED]";
+    private static final String MARKER_BODY_SEPARATOR = ":\n\n";
 
     private static final String MODULE_PROMPT = """
             你当前正在承担 Partner 的对外交流职责。你需要基于系统此刻的上下文状态、保留的对话轨迹以及最新输入，生成自然、贴合当前情境、并与系统整体状态一致的交流结果。
@@ -86,9 +87,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     private void executeChat(PartnerRunningFlowContext runningFlowContext) {
         StreamChatMessageConsumer consumer = ReplyDispatcher.INSTANCE.createConsumer(runningFlowContext.getTarget());
         this.streamChat(buildChatMessages(runningFlowContext), consumer)
-                .onFailure(exception -> {
-                    consumer.onDelta(INTERRUPTED_MARKER);
-                });
+                .onFailure(exception -> consumer.onDelta(INTERRUPTED_MARKER));
         updateChatMessages(runningFlowContext, consumer.collectResponse());
         cognitionCapability.refreshRecentChatMessagesContext();
     }
@@ -115,7 +114,10 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
                     formatConversationUserMessage(runningFlowContext)
             );
             chatMessages.add(primaryUserMessage);
-            Message assistantMessage = new Message(Message.Character.ASSISTANT, normalizeAssistantHistoryMessage(response));
+            Message assistantMessage = new Message(
+                    Message.Character.ASSISTANT,
+                    normalizeAssistantHistoryMessage(response)
+            );
             chatMessages.add(assistantMessage);
         } finally {
             cognitionCapability.getMessageLock().unlock();
@@ -125,15 +127,23 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     private String normalizeAssistantHistoryMessage(String response) {
         String trimmed = response == null ? "" : response.trim();
         if (trimmed.equals(NO_REPLY_MARKER)) {
-            return NOT_REPLIED_PREFIX.trim();
+            return formatMarkedHistoryMessage(AGENT_MARKER, NOT_REPLIED_PREFIX, "");
         }
         if (trimmed.startsWith(NO_REPLY_MARKER + "\n")) {
-            return NOT_REPLIED_PREFIX + trimmed.substring((NO_REPLY_MARKER + "\n").length()).trim();
+            return formatMarkedHistoryMessage(
+                    AGENT_MARKER,
+                    NOT_REPLIED_PREFIX,
+                    trimmed.substring((NO_REPLY_MARKER + "\n").length()).trim()
+            );
         }
         if (trimmed.startsWith(NO_REPLY_MARKER + "\r\n")) {
-            return NOT_REPLIED_PREFIX + trimmed.substring((NO_REPLY_MARKER + "\r\n").length()).trim();
+            return formatMarkedHistoryMessage(
+                    AGENT_MARKER,
+                    NOT_REPLIED_PREFIX,
+                    trimmed.substring((NO_REPLY_MARKER + "\r\n").length()).trim()
+            );
         }
-        return response;
+        return formatMarkedHistoryMessage(AGENT_MARKER, "", trimmed);
     }
 
     private List<Message> snapshotConversationMessages() {
@@ -189,7 +199,17 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private String formatConversationUserMessage(PartnerRunningFlowContext runningFlowContext) {
-        return "[" + runningFlowContext.getSource() + "]" + ": " + runningFlowContext.formatInputsForHistory();
+        return formatMarkedHistoryMessage("[" + runningFlowContext.getSource() + "]", "", runningFlowContext.formatInputsForHistory());
+    }
+
+    private String formatMarkedHistoryMessage(String identityMarker, String statusMarkers, String body) {
+        String markerLine = statusMarkers == null || statusMarkers.isBlank()
+                ? identityMarker
+                : identityMarker + ": " + statusMarkers;
+        if (body == null || body.isBlank()) {
+            return markerLine + ":";
+        }
+        return markerLine + MARKER_BODY_SEPARATOR + body.trim();
     }
 
     private Document newDocument() throws Exception {

@@ -1,5 +1,6 @@
 package work.slhaf.partner.core.cognition;
 
+import org.w3c.dom.Element;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 
@@ -20,6 +21,8 @@ public interface CognitionCapability {
     void rollChatMessagesWithSnapshot(int snapshotSize, int retainDivisor);
 
     void refreshRecentChatMessagesContext();
+
+    Element messageNotesElement();
 
     Lock getMessageLock();
 

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.w3c.dom.Element;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
@@ -91,6 +92,11 @@ class MemoryRuntimeTest {
             @Override
             public void refreshRecentChatMessagesContext() {
 
+            }
+
+            @Override
+            public Element messageNotesElement() {
+                return null;
             }
 
             @Override
