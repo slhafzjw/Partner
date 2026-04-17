@@ -1,8 +1,6 @@
 package work.slhaf.partner.module.communication;
 
 import kotlin.Unit;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -36,8 +34,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
 public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final String AUTO_UPDATE_CRON = "0/10 * * * * ?";

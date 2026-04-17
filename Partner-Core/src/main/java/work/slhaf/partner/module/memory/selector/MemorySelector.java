@@ -1,8 +1,6 @@
 package work.slhaf.partner.module.memory.selector;
 
 import kotlin.Unit;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -27,8 +25,6 @@ import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 import java.time.LocalDate;
 import java.util.*;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
 public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final String BLOCK_NAME = "activated_memory_slices";

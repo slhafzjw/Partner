@@ -2,7 +2,6 @@ package work.slhaf.partner.module.memory.runtime;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.cognition.CognitionCapability;
@@ -30,7 +29,6 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
 
-@EqualsAndHashCode(callSuper = true)
 @Slf4j
 public class MemoryRuntime extends AbstractAgentModule.Standalone implements StateSerializable {
 

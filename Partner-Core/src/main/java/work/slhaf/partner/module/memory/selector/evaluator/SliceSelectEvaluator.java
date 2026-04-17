@@ -1,8 +1,6 @@
 package work.slhaf.partner.module.memory.selector.evaluator;
 
 import kotlin.Unit;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -27,8 +25,6 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
 public class SliceSelectEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<ActivatedMemorySlice>> implements ActivateModel {
 
     @InjectCapability

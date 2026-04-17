@@ -1,8 +1,6 @@
 package work.slhaf.partner.module.memory.selector.extractor;
 
 import kotlin.Unit;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -23,8 +21,6 @@ import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorResul
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
 public class MemorySelectExtractor extends AbstractAgentModule.Sub<ExtractorInput, ExtractorResult> implements ActivateModel {
     @InjectCapability
     private CognitionCapability cognitionCapability;
