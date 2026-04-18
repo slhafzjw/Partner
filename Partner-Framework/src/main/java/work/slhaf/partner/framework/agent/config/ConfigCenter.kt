@@ -3,7 +3,9 @@ package work.slhaf.partner.framework.agent.config
 import com.alibaba.fastjson2.JSON
 import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException
 import work.slhaf.partner.framework.agent.exception.AgentStartupException
+import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler
 import work.slhaf.partner.framework.agent.exception.checkAgentStartup
 import work.slhaf.partner.framework.agent.support.DirectoryWatchSupport
 import java.io.IOException
@@ -197,7 +199,7 @@ object ConfigCenter : AutoCloseable {
                 (registration as ConfigRegistration<Config>).onReload(pair.first, pair.second)
             }
         } catch (e: Exception) {
-            log.error("Config reload failed: {}", relativePath, e)
+            ExceptionReporterHandler.report(AgentRuntimeException("Config load failed: $relativePath", e))
         }
     }
 
@@ -206,8 +208,7 @@ object ConfigCenter : AutoCloseable {
             val json = JSON.parseObject(Files.readString(file, StandardCharsets.UTF_8))
             val config = json.toJavaObject(registration.type())
             config to json
-        } catch (e: Exception) {
-            log.error("Config reload failed: {}", file, e)
+        } catch (_: Exception) {
             null
         }
     }

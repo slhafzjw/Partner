@@ -11,7 +11,7 @@ abstract class AgentException @JvmOverloads constructor(
         return ExceptionReport(
             this::class.java.simpleName,
             message ?: "",
-            cause
+            this
         )
     }
 }
@@ -19,11 +19,12 @@ abstract class AgentException @JvmOverloads constructor(
 data class ExceptionReport @JvmOverloads constructor(
     val type: String,
     val message: String,
-    val cause: Throwable? = null,
+    val exception: Throwable? = null,
     val extra: MutableMap<String, Any?> = linkedMapOf()
 ) {
 
     override fun toString(): String {
+        val cause = exception?.cause
         val causeType = cause?.javaClass?.simpleName ?: ""
         val causeMessage = cause?.message ?: ""
         return """type: $type,
@@ -36,8 +37,8 @@ data class ExceptionReport @JvmOverloads constructor(
 
     fun toDetailedString(): String {
         return buildString {
-            appendLine(toString())
-            val stackTrace = cause?.stackTraceToString()
+            appendLine(this@ExceptionReport.toString())
+            val stackTrace = exception?.stackTraceToString()
             if (!stackTrace.isNullOrBlank()) {
                 appendLine("stackTrace:")
                 appendLine(stackTrace)
