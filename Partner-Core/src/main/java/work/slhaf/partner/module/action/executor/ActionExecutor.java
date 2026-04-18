@@ -63,6 +63,9 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         recoveredActions.addAll(actionCapability.listActions(Action.Status.INTERRUPTED, null).stream()
                 .peek(executableAction -> executableAction.setStatus(Action.Status.EXECUTING))
                 .collect(Collectors.toSet()));
+        if (recoveredActions.isEmpty()) {
+            return;
+        }
         recoveredActions.forEach(this::execute);
         blockManager.emitActionRecoveredBlock(recoveredActions);
     }
