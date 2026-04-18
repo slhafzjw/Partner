@@ -1,5 +1,6 @@
 package work.slhaf.partner.module.action.executor;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.action.ActionCapability;
@@ -23,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class ActionExecutor extends AbstractAgentModule.Standalone {
 
     private static final int MAX_EXTRACTOR_ATTEMPTS = 3;

@@ -1,6 +1,7 @@
 package work.slhaf.partner.module.action.planner;
 
 import kotlin.Unit;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -37,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * 负责针对本次输入生成基础的行动计划
  */
+@Slf4j
 public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";

@@ -1,6 +1,7 @@
 package work.slhaf.partner.module.communication;
 
 import kotlin.Unit;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Slf4j
 public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final String AUTO_UPDATE_CRON = "0/10 * * * * ?";

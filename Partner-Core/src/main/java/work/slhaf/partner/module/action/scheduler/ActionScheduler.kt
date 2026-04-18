@@ -287,7 +287,7 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                     val now1 = System.nanoTime()
                     val sleepNanos = nextTickNanos - now1
                     if (sleepNanos > 0) {
-                        delay(sleepNanos / 1_000_000L) // 毫秒级 delay 足够；剩余 nanos 不必忙等
+                        delay((sleepNanos / 1_000_000L).milliseconds) // 毫秒级 delay 足够；剩余 nanos 不必忙等
                     }
                 }
             }
@@ -299,7 +299,7 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                 ).toMillis()
                 // withTimeoutOrNull 内部已处理 seconds 小于 0 的情况
                 log.debug("Start waiting {} ms at {}, target time: {}", seconds, currentTime, nextHour)
-                withTimeoutOrNull(seconds) {
+                withTimeoutOrNull(seconds.milliseconds) {
                     state.first { it == WheelState.ACTIVE }
                 }
                 log.debug("Waiting ended at {}", ZonedDateTime.now())
