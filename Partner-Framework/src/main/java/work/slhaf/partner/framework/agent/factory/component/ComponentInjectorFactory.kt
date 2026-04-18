@@ -13,7 +13,7 @@ import java.lang.reflect.Modifier
  *
  * 注入关系:
  * - `sub + standalone -> running`
- * - `sub -> standalone`
+ * - `sub + standalone -> standalone`
  * - `sub + standalone -> additionalComponent`
  *
  * 当注入目标无匹配实例或存在多个匹配实例时抛出异常。
@@ -45,7 +45,8 @@ class ComponentInjectorFactory : AgentBaseFactory() {
         }
 
         standaloneModules.forEach { standalone ->
-            injectIntoTarget(standalone.instance, subInstances)
+            val providersForStandalone = subInstances + standaloneInstances.filter { it !== standalone.instance }
+            injectIntoTarget(standalone.instance, providersForStandalone)
             subModules.forEach { it.injectTarget.add(standalone.instance) }
         }
 
