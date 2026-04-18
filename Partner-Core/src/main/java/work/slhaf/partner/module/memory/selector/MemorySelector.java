@@ -14,11 +14,10 @@ import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.module.memory.runtime.MemoryRuntime;
 import work.slhaf.partner.module.memory.runtime.exception.MemoryLookupException;
-import work.slhaf.partner.module.memory.selector.evaluator.SliceSelectEvaluator;
+import work.slhaf.partner.module.memory.selector.evaluator.MemoryRecallEvaluator;
 import work.slhaf.partner.module.memory.selector.evaluator.entity.EvaluatorInput;
-import work.slhaf.partner.module.memory.selector.extractor.MemorySelectExtractor;
+import work.slhaf.partner.module.memory.selector.extractor.MemoryRecallCueExtractor;
 import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorInput;
-import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorMatchData;
 import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorResult;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
@@ -36,9 +35,9 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
     @InjectModule
     private MemoryRuntime memoryRuntime;
     @InjectModule
-    private SliceSelectEvaluator sliceSelectEvaluator;
+    private MemoryRecallEvaluator memoryRecallEvaluator;
     @InjectModule
-    private MemorySelectExtractor memorySelectExtractor;
+    private MemoryRecallCueExtractor memoryRecallCueExtractor;
 
     @Override
     protected void doExecute(@NotNull PartnerRunningFlowContext runningFlowContext) {
@@ -49,7 +48,7 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
                 runningFlowContext.getFirstInputDateTime().toLocalDate()
         );
 
-        ExtractorResult extractorResult = memorySelectExtractor.execute(input);
+        ExtractorResult extractorResult = memoryRecallCueExtractor.execute(input);
         if (extractorResult.getMatches().isEmpty()) {
             return;
         }
@@ -149,17 +148,16 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
                 .inputs(snapshotInputs)
                 .memorySlices(new ArrayList<>(candidates.values()))
                 .build();
-        return sliceSelectEvaluator.execute(evaluatorInput);
+        return memoryRecallEvaluator.execute(evaluatorInput);
     }
 
-    private void setMemoryCandidates(LinkedHashMap<String, ActivatedMemorySlice> candidates,
-                                     List<ExtractorMatchData> matches) {
-        for (ExtractorMatchData match : matches) {
+    private void setMemoryCandidates(LinkedHashMap<String, ActivatedMemorySlice> candidates, List<ExtractorResult.ExtractorMatchData> matches) {
+        for (ExtractorResult.ExtractorMatchData match : matches) {
             try {
                 List<ActivatedMemorySlice> recalledSlices = switch (match.getType()) {
-                    case ExtractorMatchData.Constant.TOPIC ->
+                    case ExtractorResult.ExtractorMatchData.Constant.TOPIC ->
                             memoryRuntime.queryActivatedMemoryByTopicPath(match.getText());
-                    case ExtractorMatchData.Constant.DATE ->
+                    case ExtractorResult.ExtractorMatchData.Constant.DATE ->
                             memoryRuntime.queryActivatedMemoryByDate(LocalDate.parse(match.getText()));
                     default -> List.of();
                 };
