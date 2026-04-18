@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class MemoryUpdaterTest {
+class MemoryRecallProfileExtractorTest {
 
     @BeforeAll
     static void beforeAll(@TempDir Path tempDir) {
@@ -43,7 +43,7 @@ class MemoryUpdaterTest {
 
     @Test
     void shouldRegisterItselfToAfterRollingRegistryOnInit() throws Exception {
-        MemoryUpdater updater = Mockito.spy(new MemoryUpdater());
+        MemoryRecallProfileExtractor updater = Mockito.spy(new MemoryRecallProfileExtractor());
         AfterRollingRegistry registry = Mockito.mock(AfterRollingRegistry.class);
         setField(updater, "afterRollingRegistry", registry);
 
@@ -54,7 +54,7 @@ class MemoryUpdaterTest {
 
     @Test
     void shouldExtractTopicAndRecordMemoryOnConsume() throws Exception {
-        MemoryUpdater updater = Mockito.spy(new MemoryUpdater());
+        MemoryRecallProfileExtractor updater = Mockito.spy(new MemoryRecallProfileExtractor());
         MemoryRuntime memoryRuntime = Mockito.mock(MemoryRuntime.class);
         setField(updater, "memoryRuntime", memoryRuntime);
         when(memoryRuntime.getTopicTree()).thenReturn("topic-tree");
@@ -97,7 +97,7 @@ class MemoryUpdaterTest {
 
     @Test
     void shouldFallbackToDateOnlyRecordWhenExtractionFails() throws Exception {
-        MemoryUpdater updater = Mockito.spy(new MemoryUpdater());
+        MemoryRecallProfileExtractor updater = Mockito.spy(new MemoryRecallProfileExtractor());
         MemoryRuntime memoryRuntime = Mockito.mock(MemoryRuntime.class);
         setField(updater, "memoryRuntime", memoryRuntime);
         when(memoryRuntime.getTopicTree()).thenReturn("topic-tree");
@@ -128,7 +128,7 @@ class MemoryUpdaterTest {
 
     @Test
     void shouldClampAndAdjustActivationProfileBeforeRecording() throws Exception {
-        MemoryUpdater updater = Mockito.spy(new MemoryUpdater());
+        MemoryRecallProfileExtractor updater = Mockito.spy(new MemoryRecallProfileExtractor());
         MemoryRuntime memoryRuntime = Mockito.mock(MemoryRuntime.class);
         setField(updater, "memoryRuntime", memoryRuntime);
         when(memoryRuntime.getTopicTree()).thenReturn("topic-tree");
