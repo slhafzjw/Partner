@@ -177,6 +177,6 @@ public class MemoryRecallCueExtractor extends AbstractAgentModule.Sub<ExtractorI
     @NotNull
     @Override
     public String modelKey() {
-        return "topic_extractor";
+        return "memory_recall_cue_extractor";
     }
 }
