@@ -1,6 +1,5 @@
 package work.slhaf.partner.framework.agent.config
 
-import com.alibaba.fastjson2.JSON
 import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.framework.agent.exception.AgentRuntimeException
@@ -88,23 +87,40 @@ object ConfigCenter : AutoCloseable {
 
     @Suppress("UNCHECKED_CAST")
     fun initAll() {
+        val errorConfig = mutableMapOf<Path, String>()
         registrations.forEach { (path, registration) ->
             val pair = loadConfig(path, registration)
             if (pair != null) {
                 (registration as ConfigRegistration<Config>).init(pair.first, pair.second)
-                return
+                return@forEach
             }
             val defaultConfig = registration.defaultConfig()
             if (defaultConfig != null) {
                 (registration as ConfigRegistration<Config>).init(defaultConfig, null)
+                return@forEach
             }
             val configDoc = resolveConfigDoc(registration.type())
+            errorConfig[path] = configDoc
+        }
+        if (errorConfig.isNotEmpty()) {
             throw AgentStartupException(
-                "Failed to init config, related path: $path, config definition: $configDoc",
+                "Failed to init configurations: ${buildErrorConfigReport(errorConfig)}",
                 COMPONENT_NAME
             )
         }
+    }
 
+    private fun buildErrorConfigReport(errorConfig: MutableMap<Path, String>): String {
+        return buildString {
+            appendLine()
+            append("\n=====Config Missing=====\n")
+            errorConfig.forEach { (path, config) ->
+                appendLine("\n>>>\t$path\t>>>\n")
+                append(config)
+                appendLine()
+                appendLine("\n<<<\t$path\t<<<")
+            }
+        }
     }
 
     private fun resolveConfigDoc(type: Class<out Config>): String {
@@ -205,10 +221,11 @@ object ConfigCenter : AutoCloseable {
 
     private fun loadConfig(file: Path, registration: ConfigRegistration<out Config>): Pair<Config, JSONObject>? {
         return try {
-            val json = JSON.parseObject(Files.readString(file, StandardCharsets.UTF_8))
+            val json = JSONObject.parseObject(Files.readString(file, StandardCharsets.UTF_8))
             val config = json.toJavaObject(registration.type())
             config to json
         } catch (_: Exception) {
+            log.warn("Unable to load config from ${file.toAbsolutePath()}")
             null
         }
     }
@@ -243,7 +260,7 @@ object ConfigCenter : AutoCloseable {
         checkAgentStartup(!path.isAbsolute) {
             AgentStartupException("Config path must be relative: $path", COMPONENT_NAME)
         }
-        return path.normalize()
+        return paths.configDir.resolve(path).normalize()
     }
 }
 
