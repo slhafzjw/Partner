@@ -10,15 +10,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CommandExecutionService {
 
     public static final CommandExecutionService INSTANCE = new CommandExecutionService();
-
-    private final ExecutorService readerExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     private CommandExecutionService() {
     }
@@ -47,7 +43,7 @@ public class CommandExecutionService {
         try {
             Process process = startProcess(launchSpec);
 
-            Thread stdoutThread = new Thread(() -> {
+            Thread stdoutThread = Thread.startVirtualThread(() -> {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -57,7 +53,7 @@ public class CommandExecutionService {
                 }
             });
 
-            Thread stderrThread = new Thread(() -> {
+            Thread stderrThread = Thread.startVirtualThread(() -> {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -66,9 +62,6 @@ public class CommandExecutionService {
                 } catch (Exception ignored) {
                 }
             });
-
-            readerExecutor.execute(stdoutThread);
-            readerExecutor.execute(stderrThread);
 
             int exitCode = process.waitFor();
             stdoutThread.join();
@@ -103,8 +96,8 @@ public class CommandExecutionService {
             session.setStdoutBuffer(stdoutBuffer);
             session.setStderrBuffer(stderrBuffer);
 
-            readerExecutor.execute(() -> readToBuffer(process.getInputStream(), stdoutBuffer));
-            readerExecutor.execute(() -> readToBuffer(process.getErrorStream(), stderrBuffer));
+            Thread.startVirtualThread(() -> readToBuffer(process.getInputStream(), stdoutBuffer));
+            Thread.startVirtualThread(() -> readToBuffer(process.getErrorStream(), stderrBuffer));
 
             return session;
         } catch (Exception e) {
