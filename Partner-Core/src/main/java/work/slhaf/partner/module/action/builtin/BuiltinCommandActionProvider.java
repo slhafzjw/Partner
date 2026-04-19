@@ -4,6 +4,8 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.AllArgsConstructor;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
+import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
+import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
 
 import java.time.Instant;
 import java.util.*;
@@ -58,7 +60,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         );
         Function<Map<String, Object>, String> invoker = params -> {
             List<String> commands = requireCommandArguments(params);
-            CommandExecutionService.Result result = commandExecutionService.exec(commands);
+            CommandExecutionService.Result result = commandExecutionService.exec(wrapCommands(commands));
             return JSONObject.of("result", result.getTotal()).toJSONString();
         };
         return new BuiltinActionRegistry.BuiltinActionDefinition(
@@ -93,7 +95,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         Function<Map<String, Object>, String> invoker = params -> {
             String desc = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "desc");
             List<String> commands = requireCommandArguments(params);
-            CommandExecutionService.CommandSession session = commandExecutionService.createSessionTask(commands);
+            CommandExecutionService.CommandSession session = commandExecutionService.createSessionTask(wrapCommands(commands));
             String executionId = UUID.randomUUID().toString();
             CommandHandle handle = new CommandHandle(
                     executionId,
@@ -334,6 +336,10 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 handle.exitAt = Instant.now();
             }
         });
+    }
+
+    private WrappedLaunchSpec wrapCommands(List<String> commands) {
+        return ExecutionPolicyRegistry.INSTANCE.prepare(commands);
     }
 
     private CommandHandle requireHandle(String id) {
