@@ -150,4 +150,8 @@ interface RunnerExecutionPolicyListener {
     fun registerPolicyListener() {
         ExecutionPolicyRegistry.addListener(this)
     }
+
+    fun unregisterPolicyListener() {
+        ExecutionPolicyRegistry.removeListener(this)
+    }
 }

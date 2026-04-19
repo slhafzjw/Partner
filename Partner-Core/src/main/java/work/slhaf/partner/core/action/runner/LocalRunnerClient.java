@@ -176,6 +176,7 @@ public class LocalRunnerClient extends RunnerClient {
         if (!closed.compareAndSet(false, true)) {
             return;
         }
+        mcpConfigWatcher.unregisterPolicyListener();
         closeQuietly(mcpConfigWatcher);
         closeQuietly(dynamicActionMcpManager);
         closeQuietly(mcpDescWatcher);
