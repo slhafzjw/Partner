@@ -29,7 +29,14 @@ public class McpActionExecutor {
                 .name(metaAction.getName())
                 .arguments(metaAction.getParams())
                 .build();
-        McpSchema.CallToolResult callToolResult = mcpClient.callTool(callToolRequest);
+        McpSchema.CallToolResult callToolResult;
+        try {
+            callToolResult = mcpClient.callTool(callToolRequest);
+        } catch (Exception e) {
+            response.setOk(false);
+            response.setData("MCP tool call failed: " + e.getMessage());
+            return response;
+        }
         Boolean error = callToolResult.isError();
         response.setOk(error == null || !error);
         response.setData(extractResponseData(callToolResult));
