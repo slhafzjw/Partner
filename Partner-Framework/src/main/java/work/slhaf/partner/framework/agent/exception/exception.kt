@@ -11,7 +11,7 @@ abstract class AgentException @JvmOverloads constructor(
         return ExceptionReport(
             this::class.java.simpleName,
             message ?: "",
-            this
+            cause
         )
     }
 }
