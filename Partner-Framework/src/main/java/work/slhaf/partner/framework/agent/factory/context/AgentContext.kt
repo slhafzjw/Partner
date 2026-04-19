@@ -13,6 +13,8 @@ import java.time.ZonedDateTime
 
 object AgentContext {
 
+    private val log = LoggerFactory.getLogger(this::class.java)
+
     private val _modules =
         mutableMapOf<String, ModuleContextData<AbstractAgentModule>>()
 
@@ -156,7 +158,6 @@ object AgentContext {
         }
 
         fun trigger(hooks: List<ShutdownHookDesc>, instances: Instances) {
-            val log = LoggerFactory.getLogger(AgentContext::class.java)
             hooks.sortedBy { it.order }
                 .forEach {
                     try {
@@ -168,7 +169,6 @@ object AgentContext {
         }
 
         fun triggerLifecycleHooks(hooks: List<LifecycleShutdownHookDesc>) {
-            val log = LoggerFactory.getLogger(AgentContext::class.java)
             hooks.sortedBy { it.order }
                 .forEach {
                     try {
@@ -180,6 +180,7 @@ object AgentContext {
         }
 
         Runtime.getRuntime().addShutdownHook(Thread {
+            log.info("Shutdown hooks triggering...")
             val instances = computeInstances()
             triggerLifecycleHooks(preShutdownHooks)
             shutdownHooks[ShutdownHookDesc.Type.RUNNING]?.let { trigger(it, instances) }
@@ -188,6 +189,7 @@ object AgentContext {
             shutdownHooks[ShutdownHookDesc.Type.SUB]?.let { trigger(it, instances) }
             shutdownHooks[ShutdownHookDesc.Type.CAPABILITY]?.let { trigger(it, instances) }
             triggerLifecycleHooks(postShutdownHooks)
+            log.info("Shutdown hooks triggered...")
         })
     }
 
