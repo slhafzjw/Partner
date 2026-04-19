@@ -1,9 +1,11 @@
 package work.slhaf.partner.core.action.runner.execution;
 
 import lombok.Data;
+import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,15 +39,13 @@ public class CommandExecutionService {
         return exec(commands.toArray(new String[0]));
     }
 
-    public Result exec(String... commands) {
+    public Result exec(WrappedLaunchSpec launchSpec) {
         Result result = new Result();
         List<String> output = new ArrayList<>();
         List<String> error = new ArrayList<>();
 
         try {
-            Process process = new ProcessBuilder(commands)
-                    .redirectErrorStream(false)
-                    .start();
+            Process process = startProcess(launchSpec);
 
             Thread stdoutThread = new Thread(() -> {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
@@ -85,15 +85,17 @@ public class CommandExecutionService {
         return result;
     }
 
+    public Result exec(String... commands) {
+        return exec(defaultLaunchSpec(commands));
+    }
+
     public CommandSession createSessionTask(List<String> commands) {
         return createSessionTask(commands.toArray(new String[0]));
     }
 
-    public CommandSession createSessionTask(String... commands) {
+    public CommandSession createSessionTask(WrappedLaunchSpec launchSpec) {
         try {
-            Process process = new ProcessBuilder(commands)
-                    .redirectErrorStream(false)
-                    .start();
+            Process process = startProcess(launchSpec);
             CommandSession session = new CommandSession();
             StringBuilder stdoutBuffer = new StringBuilder();
             StringBuilder stderrBuffer = new StringBuilder();
@@ -110,6 +112,10 @@ public class CommandExecutionService {
         }
     }
 
+    public CommandSession createSessionTask(String... commands) {
+        return createSessionTask(defaultLaunchSpec(commands));
+    }
+
     private void readToBuffer(java.io.InputStream inputStream, StringBuilder buffer) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
@@ -123,6 +129,31 @@ public class CommandExecutionService {
             }
         } catch (Exception ignored) {
         }
+    }
+
+    private Process startProcess(WrappedLaunchSpec launchSpec) throws Exception {
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        List<String> command = new ArrayList<>();
+        command.add(launchSpec.getCommand());
+        command.addAll(launchSpec.getArgs());
+        processBuilder.command(command);
+        processBuilder.redirectErrorStream(false);
+        if (launchSpec.getWorkingDirectory() != null && !launchSpec.getWorkingDirectory().isBlank()) {
+            processBuilder.directory(new File(launchSpec.getWorkingDirectory()));
+        }
+        Map<String, String> environment = processBuilder.environment();
+        environment.clear();
+        environment.putAll(launchSpec.getEnvironment());
+        return processBuilder.start();
+    }
+
+    private WrappedLaunchSpec defaultLaunchSpec(String... commands) {
+        return new WrappedLaunchSpec(
+                commands[0],
+                List.of(commands).subList(1, commands.length),
+                null,
+                System.getenv()
+        );
     }
 
     @Data

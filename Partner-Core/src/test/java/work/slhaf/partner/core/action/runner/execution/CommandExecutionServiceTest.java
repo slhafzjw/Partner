@@ -2,6 +2,7 @@ package work.slhaf.partner.core.action.runner.execution;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -103,6 +104,32 @@ class CommandExecutionServiceTest {
 
         Assertions.assertEquals("hello\nworld", session.getStdoutBuffer().toString());
         Assertions.assertEquals("oops", session.getStderrBuffer().toString());
+    }
+
+    @Test
+    void testExecWrappedLaunchSpecAppliesWorkingDirectory(@org.junit.jupiter.api.io.TempDir Path tempDir) {
+        CommandExecutionService.Result result = service.exec(new WrappedLaunchSpec(
+                "sh",
+                List.of("-lc", "pwd"),
+                tempDir.toString(),
+                System.getenv()
+        ));
+
+        Assertions.assertTrue(result.isOk());
+        Assertions.assertEquals(tempDir.toString(), result.getTotal());
+    }
+
+    @Test
+    void testExecWrappedLaunchSpecAppliesEnvironmentOverride() {
+        CommandExecutionService.Result result = service.exec(new WrappedLaunchSpec(
+                "sh",
+                List.of("-lc", "printf '%s' \"$PARTNER_TEST_ENV\""),
+                null,
+                Map.of("PARTNER_TEST_ENV", "applied")
+        ));
+
+        Assertions.assertTrue(result.isOk());
+        Assertions.assertEquals("applied", result.getTotal());
     }
 
     private void waitForBufferContains(StringBuilder buffer, String expected) throws InterruptedException {
