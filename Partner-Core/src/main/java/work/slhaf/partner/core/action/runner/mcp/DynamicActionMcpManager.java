@@ -15,6 +15,7 @@ import work.slhaf.partner.common.mcp.InProcessMcpTransport;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.exception.ActionInfrastructureStartupException;
 import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
+import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
 import work.slhaf.partner.framework.agent.support.DirectoryWatchSupport;
 
 import java.io.File;
@@ -331,7 +332,9 @@ public class DynamicActionMcpManager implements AutoCloseable {
                         .build());
             }
             return Mono.fromCallable(() -> {
-                CommandExecutionService.Result execResult = commandExecutionService.exec(commands);
+                CommandExecutionService.Result execResult = commandExecutionService.exec(
+                        ExecutionPolicyRegistry.INSTANCE.prepare(List.of(commands))
+                );
                 McpSchema.CallToolResult.Builder builder = McpSchema.CallToolResult.builder()
                         .isError(!execResult.isOk());
                 List<String> resultList = execResult.getResultList();
