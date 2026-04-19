@@ -3,16 +3,25 @@ package work.slhaf.partner.core.action.runner;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import work.slhaf.partner.core.action.entity.MetaAction;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
+import work.slhaf.partner.core.action.runner.mcp.McpClientRegistry;
+import work.slhaf.partner.core.action.runner.mcp.McpConfigWatcher;
+import work.slhaf.partner.core.action.runner.mcp.McpMetaRegistry;
+import work.slhaf.partner.core.action.runner.mcp.McpTransportConfig;
+import work.slhaf.partner.core.action.runner.mcp.McpTransportFactory;
 import work.slhaf.partner.core.action.runner.policy.ExecutionPolicy;
 import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
 import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
 import work.slhaf.partner.module.action.builtin.BuiltinActionRegistry;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +39,22 @@ import static work.slhaf.partner.core.action.runner.LocalRunnerClientTest.Fs.*;
 
 @Slf4j
 public class LocalRunnerClientTest {
+
+    private static String originalUserHome;
+
+    @BeforeAll
+    static void prepareTestHome() throws IOException {
+        originalUserHome = System.getProperty("user.home");
+        Path tempHome = Files.createTempDirectory("partner-test-home");
+        System.setProperty("user.home", tempHome.toString());
+    }
+
+    @AfterAll
+    static void restoreUserHome() {
+        if (originalUserHome != null) {
+            System.setProperty("user.home", originalUserHome);
+        }
+    }
 
     @SuppressWarnings("LoggingSimilarMessage")
     static class Fs {
@@ -839,6 +864,60 @@ public class LocalRunnerClientTest {
             }
         }
 
+        @Test
+        void testMcpConfigWatcherDeleteFallsBackWhenClientListFails(@TempDir Path tempDir) throws Exception {
+            ConcurrentHashMap<String, MetaActionInfo> existedMetaActions = new ConcurrentHashMap<>();
+            ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+            McpClientRegistry clientRegistry = new McpClientRegistry();
+            McpMetaRegistry metaRegistry = new McpMetaRegistry(existedMetaActions);
+            McpConfigWatcher watcher = new McpConfigWatcher(
+                    tempDir,
+                    existedMetaActions,
+                    clientRegistry,
+                    new McpTransportFactory(),
+                    metaRegistry,
+                    executor
+            );
+            Path configFile = tempDir.resolve("servers.json");
+            Files.writeString(configFile, "{\n}\n");
+            existedMetaActions.put("demo::stale_tool", buildMetaActionInfo("stale"));
+            clientRegistry.register("demo", buildThrowingMcpClient());
+
+            try {
+                Field cacheField = McpConfigWatcher.class.getDeclaredField("mcpConfigFileCache");
+                cacheField.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                Map<java.io.File, Object> cache = (Map<java.io.File, Object>) cacheField.get(watcher);
+
+                Class<?> recordClass = Arrays.stream(McpConfigWatcher.class.getDeclaredClasses())
+                        .filter(Class::isRecord)
+                        .findFirst()
+                        .orElseThrow();
+                var constructor = recordClass.getDeclaredConstructor(long.class, long.class, Map.class);
+                constructor.setAccessible(true);
+                Object fileRecord = constructor.newInstance(
+                                Files.getLastModifiedTime(configFile).toMillis(),
+                                Files.size(configFile),
+                                new HashMap<>(Map.of(
+                                        "demo",
+                                        new McpTransportConfig.Http(30, "http://127.0.0.1:9", "", Map.of())
+                                ))
+                        );
+                cache.put(configFile.toFile(), fileRecord);
+
+                Method handleDelete = McpConfigWatcher.class.getDeclaredMethod("handleDelete", Path.class, Path.class);
+                handleDelete.setAccessible(true);
+                handleDelete.invoke(watcher, tempDir, configFile);
+
+                Assertions.assertFalse(existedMetaActions.containsKey("demo::stale_tool"));
+                Assertions.assertFalse(clientRegistry.contains("demo"));
+            } finally {
+                watcher.close();
+                metaRegistry.close();
+                executor.shutdownNow();
+            }
+        }
+
     }
 
     @Nested
@@ -976,6 +1055,17 @@ public class LocalRunnerClientTest {
             } finally {
                 executor.shutdownNow();
             }
+        }
+    }
+
+    private static io.modelcontextprotocol.client.McpSyncClient buildThrowingMcpClient() {
+        try {
+            Field unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+            unsafeField.setAccessible(true);
+            sun.misc.Unsafe unsafe = (sun.misc.Unsafe) unsafeField.get(null);
+            return (io.modelcontextprotocol.client.McpSyncClient) unsafe.allocateInstance(io.modelcontextprotocol.client.McpSyncClient.class);
+        } catch (Exception e) {
+            throw new IllegalStateException("failed to build throwing mcp client", e);
         }
     }
 
