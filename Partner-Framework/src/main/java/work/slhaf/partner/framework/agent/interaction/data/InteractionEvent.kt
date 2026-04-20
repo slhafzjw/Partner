@@ -44,7 +44,7 @@ sealed class InteractionEvent {
 
 }
 
-data class Reply @JvmOverloads constructor(
+data class ReplyEvent @JvmOverloads constructor(
     override val status: EventStatus,
     override val target: String,
     val content: String,
@@ -60,7 +60,7 @@ data class Reply @JvmOverloads constructor(
     }
 }
 
-data class Module(
+data class ModuleEvent(
     override val status: EventStatus,
     override val target: String,
     val data: Data
@@ -73,7 +73,7 @@ data class Module(
     )
 }
 
-data class System @JvmOverloads constructor(
+data class SystemEvent @JvmOverloads constructor(
     override val status: EventStatus,
     override val target: String,
     val title: String,

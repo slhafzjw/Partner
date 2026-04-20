@@ -4,7 +4,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import work.slhaf.partner.framework.agent.interaction.AgentRuntime
 import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent.EventStatus
-import work.slhaf.partner.framework.agent.interaction.data.Reply
+import work.slhaf.partner.framework.agent.interaction.data.ReplyEvent
 import work.slhaf.partner.framework.agent.model.StreamChatMessageConsumer
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -55,11 +55,11 @@ object ReplyDispatcher {
         if (content.isEmpty()) {
             return
         }
-        val event = Reply(
+        val event = ReplyEvent(
             status = EventStatus.RUNNING,
             target = target,
             content = content,
-            mode = Reply.ContentMode.APPEND,
+            mode = ReplyEvent.ContentMode.APPEND,
             done = false
         )
         AgentRuntime.response(event)

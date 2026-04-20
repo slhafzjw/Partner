@@ -1,5 +1,6 @@
 package work.slhaf.partner.runtime.gateway;
 
+import com.alibaba.fastjson2.JSONException;
 import com.alibaba.fastjson2.JSONObject;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -121,9 +122,13 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
 
     @Override
     public void onMessage(WebSocket webSocket, String s) {
-        InputData inputData = JSONObject.parseObject(s, InputData.class);
-        userSessions.put(inputData.getSource(), webSocket); // 注册连接
-        receive(inputData);
+        try {
+            InputData inputData = JSONObject.parseObject(s, InputData.class);
+            userSessions.put(inputData.getSource(), webSocket); // 注册连接
+            receive(inputData);
+        } catch (JSONException ignored) {
+            log.warn("Invalid input format: {}", s);
+        }
     }
 
     @Override
