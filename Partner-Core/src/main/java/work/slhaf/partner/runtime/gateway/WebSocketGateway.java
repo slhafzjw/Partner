@@ -34,11 +34,13 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
     // 记录最后一次收到Pong的时间
     private final ConcurrentHashMap<WebSocket, Long> lastPongTimes = new ConcurrentHashMap<>();
 
-    public WebSocketGateway(int port, long heartbeatInterval) {
-        super(new InetSocketAddress(port));
+    public WebSocketGateway(int port, @NotNull String hostname, long heartbeatInterval) {
+        super(new InetSocketAddress(hostname, port));
         this.heartbeatInterval = heartbeatInterval;
         this.setReuseAddr(true);
         this.executor = Executors.newSingleThreadExecutor();
+
+        log.info("WebSocketGateway started on {}: {}", hostname, port);
     }
 
     public void launch() {
