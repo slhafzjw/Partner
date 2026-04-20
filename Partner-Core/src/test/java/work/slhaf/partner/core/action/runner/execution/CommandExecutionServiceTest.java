@@ -56,6 +56,8 @@ class CommandExecutionServiceTest {
 
         Assertions.assertTrue(result.isOk());
         Assertions.assertEquals(List.of("hello", "world"), result.getResultList());
+        Assertions.assertEquals(List.of("hello", "world"), result.getStdoutLines());
+        Assertions.assertEquals(List.of(), result.getStderrLines());
         Assertions.assertEquals("hello\nworld", result.getTotal());
     }
 
@@ -67,6 +69,8 @@ class CommandExecutionServiceTest {
 
         Assertions.assertTrue(result.isOk());
         Assertions.assertEquals(List.of("ok"), result.getResultList());
+        Assertions.assertEquals(List.of("ok"), result.getStdoutLines());
+        Assertions.assertEquals(List.of(), result.getStderrLines());
         Assertions.assertEquals("ok", result.getTotal());
     }
 
@@ -78,6 +82,8 @@ class CommandExecutionServiceTest {
 
         Assertions.assertFalse(result.isOk());
         Assertions.assertEquals(List.of("fail"), result.getResultList());
+        Assertions.assertEquals(List.of(), result.getStdoutLines());
+        Assertions.assertEquals(List.of("fail"), result.getStderrLines());
         Assertions.assertEquals("fail", result.getTotal());
     }
 
@@ -89,7 +95,9 @@ class CommandExecutionServiceTest {
 
         Assertions.assertTrue(result.isOk());
         Assertions.assertEquals(List.of("out"), result.getResultList());
-        Assertions.assertEquals("out", result.getTotal());
+        Assertions.assertEquals(List.of("out"), result.getStdoutLines());
+        Assertions.assertEquals(List.of("err"), result.getStderrLines());
+        Assertions.assertEquals("out\nerr", result.getTotal());
     }
 
     @Test

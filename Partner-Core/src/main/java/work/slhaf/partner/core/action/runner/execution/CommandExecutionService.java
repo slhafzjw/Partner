@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,8 +38,8 @@ public class CommandExecutionService {
 
     public Result exec(WrappedLaunchSpec launchSpec) {
         Result result = new Result();
-        List<String> output = new ArrayList<>();
-        List<String> error = new ArrayList<>();
+        List<String> output = Collections.synchronizedList(new ArrayList<>());
+        List<String> error = Collections.synchronizedList(new ArrayList<>());
 
         try {
             Process process = startProcess(launchSpec);
@@ -68,11 +69,18 @@ public class CommandExecutionService {
             stderrThread.join();
 
             result.setOk(exitCode == 0);
-            result.setResultList(output.isEmpty() ? error : output);
-            result.setTotal(String.join("\n", output.isEmpty() ? error : output));
+            List<String> stdoutLines = List.copyOf(output);
+            List<String> stderrLines = List.copyOf(error);
+            result.setStdoutLines(stdoutLines);
+            result.setStderrLines(stderrLines);
+            result.setResultList(stdoutLines.isEmpty() ? stderrLines : stdoutLines);
+            result.setTotal(buildDisplayText(stdoutLines, stderrLines));
         } catch (Exception e) {
             result.setOk(false);
             result.setTotal(e.getMessage());
+            result.setStdoutLines(List.of());
+            result.setStderrLines(List.of(e.getMessage()));
+            result.setResultList(result.getStderrLines());
         }
 
         return result;
@@ -149,11 +157,23 @@ public class CommandExecutionService {
         );
     }
 
+    private String buildDisplayText(List<String> stdoutLines, List<String> stderrLines) {
+        if (stdoutLines.isEmpty()) {
+            return String.join("\n", stderrLines);
+        }
+        if (stderrLines.isEmpty()) {
+            return String.join("\n", stdoutLines);
+        }
+        return String.join("\n", stdoutLines) + "\n" + String.join("\n", stderrLines);
+    }
+
     @Data
     public static class Result {
         private boolean ok;
         private String total;
         private List<String> resultList;
+        private List<String> stdoutLines;
+        private List<String> stderrLines;
     }
 
     @Data
