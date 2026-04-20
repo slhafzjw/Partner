@@ -3,6 +3,7 @@ package work.slhaf.partner.module.action.planner.evaluator.entity;
 import lombok.Data;
 import work.slhaf.partner.core.action.entity.Schedulable;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,9 +32,15 @@ public class EvaluatorResult {
     }
 
     public Map<Integer, List<String>> getPrimaryActionChainAsMap() {
+        if (primaryActionChain == null || primaryActionChain.isEmpty()) {
+            return new LinkedHashMap<>();
+        }
         return primaryActionChain.stream().collect(Collectors.toMap(
                 ChainElement::getOrder,
-                ChainElement::getActionKeys,
+                chainElement -> {
+                    List<String> actionKeys = chainElement.getActionKeys();
+                    return actionKeys == null ? new ArrayList<>() : new ArrayList<>(actionKeys);
+                },
                 (oldValue, newValue) -> newValue,
                 LinkedHashMap::new
         ));

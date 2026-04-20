@@ -399,6 +399,9 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         }
 
         private boolean fixDependencies(Map<Integer, List<String>> primaryActionChain) {
+            if (primaryActionChain == null || primaryActionChain.isEmpty()) {
+                return false;
+            }
             // 先将 primaryActionChain 的节点序号修正为从1开始依次增大
             fixOrder(primaryActionChain);
             List<Integer> fixedOrders = new ArrayList<>(primaryActionChain.keySet().stream().toList());
@@ -409,6 +412,9 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 for (Integer fixedOrder : fixedOrders) {
                     int lastOrder = fixedOrder - 1;
                     List<String> actionKeys = primaryActionChain.get(fixedOrder);
+                    if (actionKeys == null || actionKeys.isEmpty()) {
+                        continue;
+                    }
                     for (String actionKey : actionKeys) {
                         // 根据 actionKey 加载行动信息,并检查是否存在必需前置依赖
 
@@ -451,9 +457,12 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         private void fixOrder(Map<Integer, List<String>> primaryActionChain) {
             Map<Integer, List<String>> tempChain = new HashMap<>(primaryActionChain);
             primaryActionChain.clear();
-            int chainSize = tempChain.size();
-            for (int i = 0; i < chainSize; i++) {
-                primaryActionChain.put(i, tempChain.get(i));
+            List<Integer> orders = new ArrayList<>(tempChain.keySet());
+            orders.sort(Integer::compareTo);
+            int fixedOrder = 1;
+            for (Integer order : orders) {
+                List<String> actionKeys = tempChain.get(order);
+                primaryActionChain.put(fixedOrder++, actionKeys == null ? new ArrayList<>() : new ArrayList<>(actionKeys));
             }
         }
 
