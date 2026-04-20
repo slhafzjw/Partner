@@ -11,8 +11,11 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
 class DirectoryWatchSupportTest {
@@ -112,6 +115,41 @@ class DirectoryWatchSupportTest {
             waitForCondition(() -> harness.events().contains("recreated.txt"), 3000);
 
             Assertions.assertTrue(harness.events().contains("recreated.txt"));
+        }
+    }
+
+    @Test
+    void testHandlerExceptionDoesNotStopWatching(@TempDir Path tempDir) throws Exception {
+        AtomicBoolean shouldThrow = new AtomicBoolean(true);
+        CountDownLatch goodEventLatch = new CountDownLatch(1);
+
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+             DirectoryWatchSupport watchSupport = new DirectoryWatchSupport(
+                     new DirectoryWatchSupport.Context(tempDir),
+                     executor,
+                     0,
+                     null
+             )) {
+            List<String> events = new CopyOnWriteArrayList<>();
+            watchSupport.onCreate((thisDir, context) -> {
+                if (context == null || Files.isDirectory(context)) {
+                    return;
+                }
+                String relative = tempDir.relativize(context).toString().replace('\\', '/');
+                if (shouldThrow.getAndSet(false)) {
+                    throw new IllegalStateException("boom");
+                }
+                events.add(relative);
+                goodEventLatch.countDown();
+            });
+
+            watchSupport.start();
+
+            Files.writeString(tempDir.resolve("first.txt"), "first");
+            Files.writeString(tempDir.resolve("second.txt"), "second");
+
+            Assertions.assertTrue(goodEventLatch.await(2, TimeUnit.SECONDS));
+            Assertions.assertEquals(List.of("second.txt"), events);
         }
     }
 

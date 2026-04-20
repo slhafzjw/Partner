@@ -6,9 +6,7 @@ import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
 import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static work.slhaf.partner.core.action.ActionCore.ORIGIN_LOCATION;
 
@@ -22,10 +20,7 @@ public class OriginExecutionService {
         File file = new File(resolveOriginPath(metaAction));
         String[] commands = CommandExecutionService.INSTANCE.buildFileExecutionCommands(metaAction.getLauncher(), metaAction.getParams(), file.getAbsolutePath());
         WrappedLaunchSpec wrapped = ExecutionPolicyRegistry.INSTANCE.prepare(Arrays.stream(commands).toList());
-        List<String> wrappedCommands = new ArrayList<>();
-        wrappedCommands.add(wrapped.getCommand());
-        wrappedCommands.addAll(wrapped.getArgs());
-        CommandExecutionService.Result execResult = CommandExecutionService.INSTANCE.exec(wrappedCommands);
+        CommandExecutionService.Result execResult = CommandExecutionService.INSTANCE.exec(wrapped);
         response.setOk(execResult.isOk());
         response.setData(execResult.getTotal());
         return response;

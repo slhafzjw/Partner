@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,14 +96,7 @@ public class McpConfigWatcher implements AutoCloseable, RunnerExecutionPolicyLis
             return;
         }
         for (String clientId : fileRecord.paramsCacheMap().keySet()) {
-            McpSyncClient client = mcpClientRegistry.detach(clientId);
-            if (client == null) {
-                continue;
-            }
-            for (McpSchema.Tool tool : client.listTools().tools()) {
-                existedMetaActions.remove(clientId + "::" + tool.name());
-            }
-            client.close();
+            unregisterClient(clientId);
         }
     }
 
@@ -123,6 +117,39 @@ public class McpConfigWatcher implements AutoCloseable, RunnerExecutionPolicyLis
         } catch (Exception e) {
             log.warn("[{}] MCP client init failed, skipped (probably non-stdio-safe)", id, e);
             client.close();
+        }
+    }
+
+    private void unregisterClient(String clientId) {
+        McpSyncClient client = mcpClientRegistry.detach(clientId);
+        removeClientActions(clientId, client);
+        if (client != null) {
+            try {
+                client.close();
+            } catch (Exception e) {
+                log.warn("[{}] MCP client close failed", clientId, e);
+            }
+        }
+    }
+
+    private void removeClientActions(String clientId, McpSyncClient client) {
+        boolean removedByListing = false;
+        if (client != null) {
+            try {
+                List<McpSchema.Tool> tools = client.listTools().tools();
+                if (tools != null) {
+                    for (McpSchema.Tool tool : tools) {
+                        existedMetaActions.remove(clientId + "::" + tool.name());
+                    }
+                    removedByListing = true;
+                }
+            } catch (Exception e) {
+                log.warn("[{}] MCP client listTools failed during unregister, fallback to key scan", clientId, e);
+            }
+        }
+        if (!removedByListing) {
+            String prefix = clientId + "::";
+            existedMetaActions.keySet().removeIf(actionKey -> actionKey.startsWith(prefix));
         }
     }
 
@@ -237,13 +264,16 @@ public class McpConfigWatcher implements AutoCloseable, RunnerExecutionPolicyLis
     }
 
     private void updateMcpClients(HashMap<String, McpTransportConfig> changedMap, HashSet<String> existingMcpIdSet) {
-        changedMap.forEach(this::registerMcpClient);
+        changedMap.forEach((clientId, config) -> {
+            unregisterClient(clientId);
+            registerMcpClient(clientId, config);
+        });
         for (String clientId : mcpClientRegistry.listIds()) {
             if (clientId.equals(LocalRunnerClient.MCP_NAME_DESC) || clientId.equals(LocalRunnerClient.MCP_NAME_DYNAMIC)) {
                 continue;
             }
             if (!existingMcpIdSet.contains(clientId)) {
-                mcpClientRegistry.remove(clientId);
+                unregisterClient(clientId);
             }
         }
         existedMetaActions.keySet().removeIf(actionKey -> {

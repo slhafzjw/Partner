@@ -4,8 +4,11 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.AllArgsConstructor;
 import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
+import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
+import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
 
 import java.time.Instant;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -19,6 +22,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
     private static final int DEFAULT_READ_LIMIT = 4096;
     private static final int SUMMARY_MAX_LINES = 5;
     private static final int SUMMARY_MAX_LENGTH = 2048;
+    private static final Duration COMMAND_SESSION_TTL = Duration.ofMinutes(10);
 
     private final Set<String> basicTags = Set.of("Builtin MetaAction", "System Command Tool");
 
@@ -58,7 +62,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         );
         Function<Map<String, Object>, String> invoker = params -> {
             List<String> commands = requireCommandArguments(params);
-            CommandExecutionService.Result result = commandExecutionService.exec(commands);
+            CommandExecutionService.Result result = commandExecutionService.exec(wrapCommands(commands));
             return JSONObject.of("result", result.getTotal()).toJSONString();
         };
         return new BuiltinActionRegistry.BuiltinActionDefinition(
@@ -91,9 +95,10 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 JSONObject.of("executionId", "Command execution session id.")
         );
         Function<Map<String, Object>, String> invoker = params -> {
+            cleanupExpiredHandles();
             String desc = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "desc");
             List<String> commands = requireCommandArguments(params);
-            CommandExecutionService.CommandSession session = commandExecutionService.createSessionTask(commands);
+            CommandExecutionService.CommandSession session = commandExecutionService.createSessionTask(wrapCommands(commands));
             String executionId = UUID.randomUUID().toString();
             CommandHandle handle = new CommandHandle(
                     executionId,
@@ -143,6 +148,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 )
         );
         Function<Map<String, Object>, String> invoker = params -> {
+            cleanupExpiredHandles();
             CommandHandle handle = requireHandle(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "id"));
             return JSONObject.of(
                     "executionId", handle.executionId,
@@ -194,6 +200,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 )
         );
         Function<Map<String, Object>, String> invoker = params -> {
+            cleanupExpiredHandles();
             CommandHandle handle = requireHandle(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "id"));
             String stream = BuiltinActionRegistry.BuiltinActionDefinition.optionalString(params, "stream", "stdout");
             if (!"stdout".equals(stream) && !"stderr".equals(stream)) {
@@ -254,6 +261,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 )
         );
         Function<Map<String, Object>, String> invoker = params -> {
+            cleanupExpiredHandles();
             CommandHandle handle = requireHandle(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "id"));
             if (handle.process.isAlive()) {
                 handle.process.destroy();
@@ -306,6 +314,7 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 )
         );
         Function<Map<String, Object>, String> invoker = params -> {
+            cleanupExpiredHandles();
             List<JSONObject> items = commandHandles.values().stream()
                     .sorted(Comparator.comparing(handle -> handle.startAt))
                     .map(handle -> JSONObject.of(
@@ -334,6 +343,20 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 handle.exitAt = Instant.now();
             }
         });
+    }
+
+    private void cleanupExpiredHandles() {
+        Instant now = Instant.now();
+        commandHandles.entrySet().removeIf(entry -> isExpired(entry.getValue(), now));
+    }
+
+    private boolean isExpired(CommandHandle handle, Instant now) {
+        Instant exitTime = handle.exitAt;
+        return exitTime != null && !exitTime.plus(COMMAND_SESSION_TTL).isAfter(now);
+    }
+
+    private WrappedLaunchSpec wrapCommands(List<String> commands) {
+        return ExecutionPolicyRegistry.INSTANCE.prepare(commands);
     }
 
     private CommandHandle requireHandle(String id) {

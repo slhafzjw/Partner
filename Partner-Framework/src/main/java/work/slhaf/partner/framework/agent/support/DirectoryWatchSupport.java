@@ -157,7 +157,11 @@ public class DirectoryWatchSupport implements Closeable {
                         if (handler == null) {
                             continue;
                         }
-                        handler.handle(thisDir, resolvedContext);
+                        try {
+                            handler.handle(thisDir, resolvedContext);
+                        } catch (Exception e) {
+                            log.error("监听事件处理失败: dir={}, kind={}, context={}", thisDir, kind.name(), resolvedContext, e);
+                        }
                     }
                 } catch (InterruptedException e) {
                     log.info("监听线程被中断，准备退出...");
