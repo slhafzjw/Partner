@@ -33,6 +33,7 @@ object StateCenter {
         }
 
         if (!finalStatePath.exists()) {
+            stateRecord.saveEnabled = true
             return null
         }
 
@@ -43,18 +44,18 @@ object StateCenter {
             return null
         }
 
-        stateRecord.loaded = true
+        stateRecord.saveEnabled = true
 
         return JSONObject.parseObject(finalStatePath.readText())
     }
 
     fun load(path: Path) {
         val finalStatePath = ConfigCenter.paths.stateDir.normalize().resolve(path).normalize()
-        if (!stateRegistry.containsKey(path)) {
+        if (!stateRegistry.containsKey(finalStatePath)) {
             return
         }
         val record = stateRegistry[finalStatePath] ?: return
-        record.loaded = true
+        record.saveEnabled = true
         if (!finalStatePath.exists()) {
             return
         }
@@ -68,7 +69,7 @@ object StateCenter {
 
     fun save() {
         stateRegistry.forEach { (path, record) ->
-            if (!record.loaded) {
+            if (!record.saveEnabled) {
                 return@forEach
             }
             path.parent?.let(Files::createDirectories)
@@ -156,5 +157,5 @@ sealed interface StateValue {
 
 data class StateRecord(
     val serializable: StateSerializable,
-    var loaded: Boolean = false
+    var saveEnabled: Boolean = false
 )
