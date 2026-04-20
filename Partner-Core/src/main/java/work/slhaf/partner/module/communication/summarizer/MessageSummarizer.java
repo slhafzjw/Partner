@@ -65,7 +65,7 @@ public class MessageSummarizer extends AbstractAgentModule.Sub<List<Message>, Re
         return new TaskBlock() {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                document.appendChild(document.importNode(cognitionCapability.messageNotesElement(), true));
+                root.appendChild(document.importNode(cognitionCapability.messageNotesElement(), true));
                 appendListElement(document, root, "chat_messages", "message", messages, (element, message) -> {
                     element.setAttribute("role", message.roleValue());
                     element.setTextContent(message.getContent());

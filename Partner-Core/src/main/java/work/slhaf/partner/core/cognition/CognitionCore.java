@@ -127,7 +127,7 @@ public class CognitionCore implements StateSerializable {
                 new BlockContent("recent_chat_messages", "communication_producer") {
                     @Override
                     protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                        document.appendChild(document.importNode(messageNotesElement(), true));
+                        root.appendChild(document.importNode(messageNotesElement(), true));
                         Element chatMessagesElement = document.createElement("chat_messages");
                         root.appendChild(chatMessagesElement);
                         appendRepeatedElements(document, chatMessagesElement, "chat_message", resolveRecentChatMessages(), (messageElement, message) -> {

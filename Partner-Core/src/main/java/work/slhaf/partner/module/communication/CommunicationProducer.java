@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import work.slhaf.partner.core.cognition.*;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
@@ -171,7 +172,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             Element root = document.createElement("input");
             document.appendChild(root);
 
-            document.appendChild(document.importNode(runningFlowContext.encodeInputsBlock().encodeToXml(), true));
+            root.appendChild(importExternalNode(document, runningFlowContext.encodeInputsBlock().encodeToXml()));
             appendTextElement(document, root, "source", runningFlowContext.getSource());
             for (Map.Entry<String, String> entry : runningFlowContext.getAdditionalUserInfo().entrySet()) {
                 appendTextElement(document, root, sanitizeTagName(entry.getKey()), entry.getValue());
@@ -242,9 +243,23 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
             inputRoot.appendChild(groupElement);
             for (CommunicationBlockContent block : entry.getValue()) {
                 Element blockElement = block.encodeToXml();
-                groupElement.appendChild(document.importNode(blockElement, true));
+                groupElement.appendChild(importExternalNode(document, blockElement));
             }
         }
+    }
+
+    private Node importExternalNode(Document targetDocument, Node externalNode) {
+        Node nodeToImport = externalNode;
+        if (externalNode != null && externalNode.getNodeType() == Node.DOCUMENT_NODE) {
+            nodeToImport = ((Document) externalNode).getDocumentElement();
+        }
+        if (nodeToImport == null) {
+            throw new IllegalArgumentException("待导入节点不能为空");
+        }
+        if (nodeToImport.getOwnerDocument() == targetDocument) {
+            return nodeToImport.cloneNode(true);
+        }
+        return targetDocument.importNode(nodeToImport, true);
     }
 
     private String sanitizeTagName(String rawTagName) {
