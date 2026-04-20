@@ -98,8 +98,8 @@ class ExecutingActionBlockManager {
                 buildStateActionCompactBlock(snapshot, blockName, emittedAt, event),
                 buildStateActionAbstractBlock(snapshot, blockName, event),
                 Set.of(ContextBlock.FocusedDomain.ACTION),
-                70,
-                18,
+                90,
+                30,
                 10
         ));
     }
