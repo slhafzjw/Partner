@@ -96,6 +96,34 @@ class BuiltinCommandActionProviderTtlTest {
         )));
     }
 
+    @Test
+    void testReadCanAccessSpilledLogBeyondTailBuffer() throws Exception {
+        BuiltinCommandActionProvider provider = new BuiltinCommandActionProvider();
+        List<BuiltinActionRegistry.BuiltinActionDefinition> definitions = provider.provideBuiltinActions();
+        BuiltinActionRegistry.BuiltinActionDefinition start = requireDefinition(definitions, "builtin::command::start");
+        BuiltinActionRegistry.BuiltinActionDefinition inspect = requireDefinition(definitions, "builtin::command::inspect");
+        BuiltinActionRegistry.BuiltinActionDefinition read = requireDefinition(definitions, "builtin::command::read");
+
+        String startResult = start.invoker().apply(Map.of(
+                "desc", "spill-session",
+                "arg", "python3",
+                "arg1", "-c",
+                "arg2", "print('A'*120000, end='')"
+        ));
+        String executionId = JSONObject.parseObject(startResult).getString("executionId");
+        waitForInspectExit(inspect, executionId);
+
+        JSONObject readResult = JSONObject.parseObject(read.invoker().apply(Map.of(
+                "id", executionId,
+                "stream", "stdout",
+                "offset", 70000,
+                "limit", 20
+        )));
+
+        Assertions.assertEquals("AAAAAAAAAAAAAAAAAAAA", readResult.getString("content"));
+        Assertions.assertEquals(70020, readResult.getIntValue("nextOffset"));
+    }
+
     private void expireHandle(BuiltinCommandActionProvider provider, String executionId) throws Exception {
         Field handlesField = BuiltinCommandActionProvider.class.getDeclaredField("commandHandles");
         handlesField.setAccessible(true);
