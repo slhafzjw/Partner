@@ -2,6 +2,7 @@ package work.slhaf.partner.module.action.executor.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -12,6 +13,7 @@ public class ExtractorResult {
 
     @Data
     @AllArgsConstructor
+    @NoArgsConstructor
     public static class ParamEntry {
         private String name;
         private String value;
