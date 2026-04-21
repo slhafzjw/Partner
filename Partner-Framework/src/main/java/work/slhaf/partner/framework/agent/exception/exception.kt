@@ -2,6 +2,9 @@ package work.slhaf.partner.framework.agent.exception
 
 import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
+import work.slhaf.partner.framework.agent.config.ConfigCenter
+import work.slhaf.partner.framework.agent.log.TraceEvent
+import work.slhaf.partner.framework.agent.log.TraceRecorder
 
 abstract class AgentException @JvmOverloads constructor(
     message: String,
@@ -93,11 +96,17 @@ interface ExceptionReporter {
 object LoggerExceptionReporter : ExceptionReporter {
 
     private val log = LoggerFactory.getLogger(this::class.java)
+    private val tracePath = ConfigCenter.paths.stateDir
+        .resolve("trace")
+        .resolve("log-exception-reporter")
+        .toAbsolutePath()
+        .normalize()
 
     override fun reporterName(): String = "logger-reporter"
 
     override fun report(exception: AgentException) {
         val exceptionReport = exception.toReport().toDetailedString()
+        TraceRecorder.record(TraceEvent(tracePath, JSONObject.of("exception", exceptionReport)))
         log.error("exception occurred: $exceptionReport")
     }
 
