@@ -315,17 +315,8 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private void watcherSelfTalk(ImmediateExecutableAction action) {
-        String result = action.getResult();
-        String structuredSignal = String.format(
-                "{event=immediate_action_finished,actionUuid=%s,tendency=%s,status=%s,source=%s,result=%s}",
-                action.getUuid(),
-                action.getTendency(),
-                action.getStatus(),
-                action.getSource(),
-                result == null ? "" : result //将会在 ActionExecutor
-        );
         try {
-            cognitionCapability.initiateTurn(structuredSignal, action.getSource());
+            cognitionCapability.initiateTurn("An action was finished, which uuid is " + action.getUuid(), action.getSource());
         } catch (Exception e) {
             log.warn("触发 immediate 行动完成自对话失败, actionUuid: {}", action.getUuid(), e);
         }
