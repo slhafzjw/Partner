@@ -201,8 +201,13 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                 val shouldBreak: Boolean
             )
 
-            fun collectToTrigger(tick: Int, previousTick: Int, triggerHour: Int): Set<Schedulable>? {
-                if (tick > previousTick) {
+            fun collectToTrigger(
+                tick: Int,
+                previousTick: Int,
+                triggerHour: Int,
+                includeRemainingHour: Boolean = false
+            ): Set<Schedulable>? {
+                if (tick >= previousTick) {
                     val toTrigger = mutableSetOf<Schedulable>()
                     for (i in previousTick..tick) {
                         val bucket = wheel[i]
@@ -211,6 +216,13 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                             val bucketUuids = bucket.asSequence().map { it.uuid }.toHashSet()
                             schedulableGroupByHour[triggerHour].removeIf { it.uuid in bucketUuids }
                             bucket.clear() // 避免重复触发
+                        }
+                    }
+                    if (includeRemainingHour) {
+                        val remainingHourBucket = schedulableGroupByHour[triggerHour]
+                        if (remainingHourBucket.isNotEmpty()) {
+                            toTrigger.addAll(remainingHourBucket.filter { it.enabled })
+                            remainingHourBucket.clear()
                         }
                     }
                     return toTrigger
@@ -261,7 +273,12 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                         checkThenExecute(false) {
                             if (it.hour != launchingHour) {
                                 shouldBreak = true
-                                toTrigger = collectToTrigger(wheel.lastIndex, previousTick, launchingHour)
+                                toTrigger = collectToTrigger(
+                                    wheel.lastIndex,
+                                    previousTick,
+                                    launchingHour,
+                                    includeRemainingHour = true
+                                )
                                 log.debug(
                                     "Hour changed, previousTick: {}, tick: {}, toTriggerSize: {}",
                                     previousTick,
@@ -270,7 +287,12 @@ class ActionScheduler : AbstractAgentModule.Standalone() {
                                 )
                                 return@checkThenExecute
                             }
-                            toTrigger = collectToTrigger(tick, previousTick, launchingHour)
+                            toTrigger = collectToTrigger(
+                                tick,
+                                previousTick,
+                                launchingHour,
+                                includeRemainingHour = tick >= wheel.lastIndex
+                            )
                             if (tick >= wheel.lastIndex || schedulableGroupByHour[launchingHour].isEmpty()) {
                                 state.value = WheelState.SLEEPING
                                 shouldBreak = true
