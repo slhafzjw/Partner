@@ -99,6 +99,7 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Res
         return cognitionCapability.contextWorkspace()
                 .resolve(List.of(
                         ContextBlock.FocusedDomain.ACTION,
+                        ContextBlock.FocusedDomain.PERCEIVE,
                         ContextBlock.FocusedDomain.COMMUNICATION,
                         ContextBlock.FocusedDomain.MEMORY
                 ))
