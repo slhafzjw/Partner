@@ -96,6 +96,9 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
     }
 
     public String fixTopicPath(String topicPath) {
+        if (topicPath == null || topicPath.isBlank()) {
+            return "";
+        }
         String[] parts = topicPath.split("->");
         List<String> cleanedParts = new ArrayList<>();
         for (String part : parts) {

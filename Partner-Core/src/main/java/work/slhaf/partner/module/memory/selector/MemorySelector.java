@@ -155,6 +155,9 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
 
     private void setMemoryCandidates(LinkedHashMap<String, ActivatedMemorySlice> candidates, List<ExtractorResult.ExtractorMatchData> matches) {
         for (ExtractorResult.ExtractorMatchData match : matches) {
+            if (match == null || match.getType() == null || match.getText() == null || match.getText().isBlank()) {
+                continue;
+            }
             try {
                 List<ActivatedMemorySlice> recalledSlices = switch (match.getType()) {
                     case ExtractorResult.ExtractorMatchData.Constant.TOPIC ->

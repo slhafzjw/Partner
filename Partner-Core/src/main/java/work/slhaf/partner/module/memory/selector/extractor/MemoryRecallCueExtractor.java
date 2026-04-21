@@ -18,6 +18,7 @@ import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorInput
 import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorResult;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MemoryRecallCueExtractor extends AbstractAgentModule.Sub<ExtractorInput, ExtractorResult> implements ActivateModel {
@@ -155,17 +156,40 @@ public class MemoryRecallCueExtractor extends AbstractAgentModule.Sub<ExtractorI
     }
 
     private ExtractorResult fix(ExtractorResult extractorResult) {
-        extractorResult.getMatches().forEach(m -> {
-            if (m.getType().equals(ExtractorResult.ExtractorMatchData.Constant.DATE)) {
-                return;
-            }
-            m.setText(memoryRuntime.fixTopicPath(m.getText()));
-        });
-        if (extractorResult.getMatches().isEmpty()) {
-            return extractorResult;
+        ExtractorResult safeResult = extractorResult == null ? new ExtractorResult() : extractorResult;
+        List<ExtractorResult.ExtractorMatchData> rawMatches = safeResult.getMatches();
+        if (rawMatches == null || rawMatches.isEmpty()) {
+            safeResult.setMatches(List.of());
+            return safeResult;
         }
-        extractorResult.getMatches().removeIf(m -> m.getText().split("->")[0].isEmpty());
-        return extractorResult;
+
+        List<ExtractorResult.ExtractorMatchData> normalizedMatches = new ArrayList<>();
+        for (ExtractorResult.ExtractorMatchData match : rawMatches) {
+            if (match == null) {
+                continue;
+            }
+            String type = match.getType();
+            String text = match.getText();
+            if (text == null || text.isBlank()) {
+                continue;
+            }
+
+            if (ExtractorResult.ExtractorMatchData.Constant.TOPIC.equals(type)) {
+                text = memoryRuntime.fixTopicPath(text);
+                if (text.isBlank() || text.split("->")[0].isEmpty()) {
+                    continue;
+                }
+                match.setText(text);
+                normalizedMatches.add(match);
+                continue;
+            }
+
+            if (ExtractorResult.ExtractorMatchData.Constant.DATE.equals(type)) {
+                normalizedMatches.add(match);
+            }
+        }
+        safeResult.setMatches(normalizedMatches);
+        return safeResult;
     }
 
     @Override
