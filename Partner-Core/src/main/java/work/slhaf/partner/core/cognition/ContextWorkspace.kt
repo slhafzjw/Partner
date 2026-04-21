@@ -103,7 +103,7 @@ class ContextWorkspace {
      * @param contextBlock 注册的新上下文块
      */
     fun register(contextBlock: ContextBlock) = lock.write {
-        val removedBlocks = mutableListOf<ContextBlock>()
+        val changedSourceKeys = linkedSetOf<ContextBlock.SourceKey>()
         val iterator = stateSet.iterator()
         while (iterator.hasNext()) {
             val currentBlock = iterator.next()
@@ -113,44 +113,44 @@ class ContextWorkspace {
 
             if (currentBlock.applyReplaceFade() <= 0.0) {
                 iterator.remove()
-                removedBlocks.add(currentBlock)
+                changedSourceKeys.add(currentBlock.sourceKey)
             }
         }
         stateSet += contextBlock
-        recordRegister(contextBlock, removedBlocks)
+        changedSourceKeys.add(contextBlock.sourceKey)
+        record("register", changedSourceKeys)
     }
 
     fun expire(blockName: String, source: String) = lock.write {
         val sourceKey = ContextBlock.SourceKey(blockName, source)
-        val removedBlocks = mutableListOf<ContextBlock>()
+        val changedSourceKeys = linkedSetOf<ContextBlock.SourceKey>()
         val iterator = stateSet.iterator()
         while (iterator.hasNext()) {
             val block = iterator.next()
             if (block.sourceKey == sourceKey) {
                 iterator.remove()
-                removedBlocks.add(block)
+                changedSourceKeys.add(block.sourceKey)
             }
         }
-        if (removedBlocks.isNotEmpty()) {
-            recordExpire(sourceKey)
+        if (changedSourceKeys.isNotEmpty()) {
+            record("expire", changedSourceKeys)
         }
     }
 
-    private fun recordRegister(addedBlock: ContextBlock, removedBlocks: List<ContextBlock>) {
+    private fun record(action: String, changedSourceKeys: Set<ContextBlock.SourceKey>) {
         val payload = JSONObject()
-        payload["action"] = "register"
-        payload["added"] = blockSnapshot(addedBlock)
-        payload["removed"] = removedBlocks.map(::blockSnapshot)
-        TraceRecorder.record(TraceEvent(tracePath, payload))
-    }
-
-    private fun recordExpire(sourceKey: ContextBlock.SourceKey) {
-        val payload = JSONObject()
-        payload["action"] = "expire"
-        payload["changedSourceKey"] = JSONObject.of(
-            "blockName", sourceKey.blockName,
-            "source", sourceKey.source
-        )
+        payload["action"] = action
+        payload["changedSourceKeys"] = changedSourceKeys
+            .sortedWith(
+                compareBy<ContextBlock.SourceKey> { it.blockName }
+                    .thenBy { it.source }
+            )
+            .map { sourceKey ->
+                JSONObject.of(
+                    "blockName", sourceKey.blockName,
+                    "source", sourceKey.source
+                )
+            }
         payload["blocks"] = stateSet
             .sortedWith(
                 compareBy<ContextBlock> { it.sourceKey.blockName }
