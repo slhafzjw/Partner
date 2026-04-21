@@ -71,7 +71,7 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
         Function<Map<String, Object>, String> invoker = params -> {
             String actionId = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "actionId");
             try {
-                ExecutableAction executableAction = getExecutableAction(actionId);
+                ExecutableAction executableAction = getExecutableAction(actionId, Action.Status.INTERRUPTED);
                 executableAction.resume();
                 return "Resume succeed";
             } catch (Exception e) {
@@ -147,7 +147,7 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
 
             ExecutableAction executableAction = null;
             try {
-                executableAction = getExecutableAction(actionId);
+                executableAction = getExecutableAction(actionId, Action.Status.EXECUTING);
                 cognitionCapability.initiateTurn(input, target);
                 boolean normal = executableAction.interrupt(timeout);
                 return normal ? target + "not resumed execution in time" : target + "answered, looking for related answer in recent-chat-messages";
@@ -168,12 +168,12 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
         );
     }
 
-    private ExecutableAction getExecutableAction(String actionId) {
-        return actionCapability.listActions(Action.Status.EXECUTING, null)
+    private ExecutableAction getExecutableAction(String actionId, Action.Status status) {
+        return actionCapability.listActions(status, null)
                 .stream()
                 .filter(action -> action.getUuid().equals(actionId))
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalArgumentException("未找到对应状态的 Action: " + actionId + ", status=" + status));
     }
 
     /**
@@ -324,8 +324,7 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
 
             actionCapability.handleInterventions(List.of(intervention), target);
 
-            ExecutableAction executableAction = getExecutableAction(targetId);
-            executableAction.resume();
+            target.resume();
 
             return JSONObject.of("ok", true).toJSONString();
         };
