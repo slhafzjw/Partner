@@ -43,7 +43,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
 
     private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";
     private static final String BLOCK_SOURCE = "action_planner_pending";
-    private static final String TENDENCIES_EVALUATING_BLOCK_NAME = "tendencies_in_evaluating";
+    private static final String TENDENCIES_EVALUATING_BLOCK_NAME = "action_tendencies_under_evaluation";
 
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
@@ -93,30 +93,28 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 buildTendenciesEvaluatingCompactBlock(tendencies, datetime),
                 buildTendenciesEvaluatingAbstractBlock(tendencies, datetime),
                 Set.of(ContextBlock.FocusedDomain.ACTION),
-                60,
-                18,
-                4
+                60, 18, 4
         ));
     }
 
     private @NotNull BlockContent buildTendenciesEvaluatingAbstractBlock(List<String> tendencies, String datetime) {
-        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH) {
+        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName()) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "datetime", datetime);
-                appendTextElement(document, root, "abstract", "There are " + tendencies.size() + " related tendencies in evaluating.");
+                appendTextElement(document, root, "abstract", "There are " + tendencies.size() + " candidate action tendencies under evaluation.");
             }
         };
     }
 
     private @NotNull BlockContent buildTendenciesEvaluatingCompactBlock(List<String> tendencies, String datetime) {
-        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH) {
+        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName()) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 int size = tendencies.size();
                 boolean num = size > 3;
                 appendTextElement(document, root, "datetime", datetime);
-                appendTextElement(document, root, "state", "Partner is considering whether to do these");
+                appendTextElement(document, root, "state", "Candidate action tendencies are under evaluation");
                 appendTextElement(document, root, "tendencies_count", size);
                 appendListElement(document, root, num ? "tendencies_truncated" : "tendencies", "tendency", num ? tendencies.subList(0, 3) : tendencies);
             }
@@ -124,10 +122,10 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private @NotNull BlockContent buildTendenciesEvaluatingFullBlock(List<String> tendencies) {
-        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName(), BlockContent.Urgency.HIGH) {
+        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName()) {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendTextElement(document, root, "state", "Partner is considering whether to do these");
+                appendTextElement(document, root, "state", "Candidate action tendencies are under evaluation");
                 appendListElement(document, root, "tendencies", "tendency", tendencies);
             }
         };
