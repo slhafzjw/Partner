@@ -49,11 +49,10 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
                 false,
                 null,
                 Map.of(
-                        "unit_id", "The id of the memory unit that contains the target memory slice.",
-                        "slice_id", "The id of the memory slice to recall into context."
+                        "unit_id", param("required", "string", "Memory unit id that contains the target memory slice."),
+                        "slice_id", param("required", "string", "Memory slice id to load into short-lived context.")
                 ),
-                "Recall the target memory slice into context using its unit_id and slice_id. " +
-                        "This action loads the slice's original conversation messages as a short-lived recalled memory context block.",
+                "Purpose: bring a known memory slice back into the agent's working context so later reasoning can use the original conversation messages. Use when: the exact memory unit and slice have already been identified. Input: memory slice id and memory unit id. Does not: search, rank, summarize, or infer memories. Returns: whether the slice was recalled and a short result message.",
                 tags,
                 Set.of(),
                 Set.of(),
@@ -125,10 +124,10 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
                 false,
                 null,
                 Map.of(
-                        "input", "Input required to initiate an internal Agent Turn.",
-                        "target", "The people expected to reply to this internal Agent Turn."
+                        "input", param("required", "string", "Prompt content for the internal Agent Turn."),
+                        "target", param("required", "string", "Target user expected to receive/respond to the turn.")
                 ),
-                "Create an internal Agent Turn to resolve a task.",
+                "Purpose: initiate a self-dialogue or proactive dialogue by sending input to a target participant. Use when: the agent needs to start a new turn for reflection, clarification, coordination, or active communication. Input: input content and the user expected to respond. Returns: confirmation that the turn was initiated. Does not: wait for or include the target's answer.",
                 tags,
                 Set.of(),
                 Set.of(),

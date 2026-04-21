@@ -43,13 +43,13 @@ class BuiltinDynamicActionProvider implements BuiltinActionProvider {
                 false,
                 null,
                 Map.of(
-                        "desc", "Human-readable description for the temporary action. Required because the generated action name is only a short id.",
-                        "code", "Dynamic action source code content.",
-                        "codeType", "Code extension, for example py/sh/js.",
-                        "launcher", "Interpreter or launcher used for ORIGIN execution.",
-                        "meta", "MetaActionInfo extra fields as JSON string. Available fields example: {\"io\":true,\"params\":{\"input\":\"user input\"},\"tags\":[\"dynamic\"],\"preActions\":[\"builtin::command::execute\"],\"postActions\":[\"builtin::dynamic::persist\"],\"strictDependencies\":false,\"responseSchema\":{\"result\":\"dynamic result\"}}"
+                        "desc", param("required", "string", "Human-readable description for the generated temporary action. This becomes the new action's planning description."),
+                        "code", param("required", "string", "Dynamic action source code content."),
+                        "codeType", param("required", "string", "Source file extension without or with leading dot, for example py, sh, js, or .py."),
+                        "launcher", param("required", "string", "Interpreter or launcher command used to run the generated code, for example python3, bash, or node."),
+                        "meta", param("required", "json-string", "MetaActionInfo fields for the generated action. Supported fields: io, params, tags, preActions, postActions, strictDependencies, responseSchema.")
                 ),
-                "Generate a temporary ORIGIN action from source code and return a temporary actionKey.",
+                "Purpose: generate and register a temporary script as an ORIGIN MetaAction from supplied source code. Inputs: desc, code, codeType, launcher, and meta info. Returns: JSON with ok and temporary actionKey. Use when: existing MetaActions cannot perform the task and a temporary code-backed action is needed. Notes: this registers executable code with cleanup TTL; the generated action is temporary until builtin::dynamic::persist is called.",
                 basicTags,
                 Set.of(),
                 Set.of(createActionKey("persist")),
@@ -110,8 +110,8 @@ class BuiltinDynamicActionProvider implements BuiltinActionProvider {
         MetaActionInfo info = new MetaActionInfo(
                 false,
                 null,
-                Map.of("actionKey", "Temporary ORIGIN actionKey returned by generate."),
-                "Persist a temporary ORIGIN action and cancel its cleanup task.",
+                Map.of("actionKey", param("required", "string", "Temporary ORIGIN actionKey returned by builtin::dynamic::generate.")),
+                "Purpose: persist a previously generated temporary ORIGIN MetaAction and cancel its cleanup task. Inputs: actionKey from dynamic::generate. Returns: JSON with ok and actionKey. Use when: a generated temporary action should become reusable beyond its cleanup TTL. Notes: this has persistence side effects and should only be used when the generated action is validated or explicitly requested.",
                 basicTags,
                 Set.of(createActionKey("generate")),
                 Set.of(),

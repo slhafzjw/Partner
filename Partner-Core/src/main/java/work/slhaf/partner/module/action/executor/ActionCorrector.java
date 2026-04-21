@@ -4,6 +4,7 @@ import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
@@ -30,6 +31,7 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
             - 一条任务消息，其中包含：
               - executable_action_info：当前正在执行的行动信息，包括 executing_action_id、original_tendency、evaluation_passed_reason、description 与 from_who；
               - current_action_chain_overview：当前行动链概览，按 stage_count 分组，包含各阶段已有 meta_action 的 action_key、description 与 status。
+              - available_meta_action：当前系统真实可用的 MetaAction 候选，包含 meta_action_key 与 meta_action_description。
             
             你的任务：
             - 基于当前上下文、原始行动意图与当前行动链进展，判断后续行动是否仍然符合目的；
@@ -43,6 +45,7 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
             - original_tendency 是这条行动链最初要解决的问题；后续行动的调整必须仍然围绕它。
             - evaluation_passed_reason 与 description 表示该行动最初为何能够成立；若当前链路已经与这些前提不一致，可据此进行纠偏。
             - current_action_chain_overview 是判断后续链路是否缺步骤、顺序失衡、重复冗余或整体方向错误的主要依据。
+            - available_meta_action 是你进行 APPEND、INSERT 或 REBUILD 时可选择的动作全集；不要使用其中不存在的 action_key。
             - communication 域用于判断最新交流语境是否已经变化，导致当前链路需要调整。
             - memory 域只在与当前行动明显相关时作为辅助参考使用。
             
@@ -88,6 +91,8 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
 
     @InjectCapability
     private CognitionCapability cognitionCapability;
+    @InjectCapability
+    private ActionCapability actionCapability;
 
     @Override
     protected @NotNull Result<CorrectorResult> doExecute(CorrectorInput input) {
@@ -121,6 +126,17 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
                     });
                     return Unit.INSTANCE;
                 });
+                appendRepeatedElements(
+                        document,
+                        root,
+                        "available_meta_action",
+                        actionCapability.listAvailableMetaActions().entrySet(),
+                        (block, value) -> {
+                            appendTextElement(document, block, "meta_action_key", value.getKey());
+                            appendTextElement(document, block, "meta_action_description", value.getValue().getDescription());
+                            return Unit.INSTANCE;
+                        }
+                );
             }
         }.encodeToMessage();
     }

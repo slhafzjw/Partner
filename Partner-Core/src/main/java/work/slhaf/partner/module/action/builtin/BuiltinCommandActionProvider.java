@@ -7,14 +7,14 @@ import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
 import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
 import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
 
-import java.time.Instant;
-import java.time.Duration;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -37,6 +37,22 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
 
     private final ConcurrentHashMap<String, CommandHandle> commandHandles = new ConcurrentHashMap<>();
     private final CommandExecutionService commandExecutionService = CommandExecutionService.INSTANCE;
+
+    private Map<String, String> commandParams() {
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("arg", param("required", "string", "Command executable name or path."));
+        params.put("arg1", param("optional", "string", "First command argument after the executable."));
+        params.put("arg2", param("optional", "string", "Second command argument after the executable."));
+        params.put("argN", param("optional", "string", "Additional command arguments after arg2. Use consecutive numeric keys such as arg3, arg4, arg5, ... when more arguments are needed."));
+        return params;
+    }
+
+    private Map<String, String> commandSessionParams() {
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("desc", param("required", "string", "Short human-readable description of why this background command session exists."));
+        params.putAll(commandParams());
+        return params;
+    }
 
     @Override
     public List<BuiltinActionRegistry.BuiltinActionDefinition> provideBuiltinActions() {
@@ -61,8 +77,8 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         MetaActionInfo info = new MetaActionInfo(
                 false,
                 null,
-                Map.of("arg / argN", "Command arguments. Use arg for first argument, arg1/arg2... for remaining arguments."),
-                "Execute any allowed system commands and get result instantly, the number of arguments is not limited.",
+                commandParams(),
+                "Purpose: execute a short, non-interactive system command synchronously and return its completed output. Inputs: argv entries through arg/argN. Returns: JSON with result containing stdout/stderr/exit summary text. Use when: the task can finish quickly in one process call. Notes: do not use for long-running services, interactive programs, streaming output, or processes that need later inspection.",
                 tags,
                 Set.of(),
                 Set.of(createActionKey("inspect")),
@@ -92,11 +108,8 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         MetaActionInfo info = new MetaActionInfo(
                 false,
                 null,
-                Map.of(
-                        "desc", "Command session description.",
-                        "arg / argN", "Command arguments. Use arg for first argument, arg1/arg2... for remaining arguments."
-                ),
-                "Start a background command session and return execution id.",
+                commandSessionParams(),
+                "Purpose: start a long-running or streaming command as a background session. Inputs: session description and argument entries. Returns: JSON with executionId; pass it as id to inspect, read, or cancel. Use when: the command may run for a while, produce incremental output, or need later control. Notes: usually follow with builtin::command::inspect or builtin::command::read.",
                 tags,
                 Set.of(),
                 Set.of(createActionKey("inspect")),
@@ -145,8 +158,8 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         MetaActionInfo info = new MetaActionInfo(
                 false,
                 null,
-                Map.of("id", "Command session id."),
-                "Inspect a background command session.",
+                Map.of("id", param("required", "string", "Command executionId returned by builtin::command::start.")),
+                "Purpose: inspect status and short output summaries for an existing background command session. Inputs: id from command::start. Returns: JSON with executionId, desc, exitCode, stdoutSize, stderrSize, stdoutSummary, stderrSummary, startAt, and endAt. Use when: deciding whether a background command is still running, failed, or needs a full output read. Notes: use builtin::command::read for complete or paginated output.",
                 tags,
                 Set.of(createActionKey("overview")),
                 Set.of(),
@@ -195,12 +208,12 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 false,
                 null,
                 Map.of(
-                        "id", "Command execution session id.",
-                        "stream", "Target stream, stdout or stderr. Default stdout.",
-                        "offset", "Read start offset. Default 0.",
-                        "limit", "Read max length. Default 4096."
+                        "id", param("required", "string", "Command executionId returned by builtin::command::start."),
+                        "stream", param("optional", "string", "Target stream to read. Allowed values: stdout, stderr. Default: stdout."),
+                        "offset", param("optional", "int", "Start byte offset in the persisted stream log. Default: 0. Use nextOffset from a previous read to continue."),
+                        "limit", param("optional", "int", "Maximum bytes to read from the persisted stream log. Default: 4096. Must be greater than 0.")
                 ),
-                "Read output from a background command session.",
+                "Purpose: read stdout or stderr content from a background command session with offset pagination. Returns: JSON with content, contentTruncated, nextOffset, and eof. Use when: inspect summaries are insufficient or a command failed and stderr/stdout details are needed. Notes: repeat with nextOffset until eof or enough evidence is collected.",
                 tags,
                 Set.of(createActionKey("overview")),
                 Set.of(),
@@ -263,8 +276,8 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
         MetaActionInfo info = new MetaActionInfo(
                 false,
                 null,
-                Map.of("id", "Command session id."),
-                "Cancel a background command session.",
+                Map.of("id", param("required", "string", "Command executionId returned by builtin::command::start.")),
+                "Purpose: terminate an existing background command session. Inputs: id from command::start. Returns: JSON with ok and executionId. Use when: the user explicitly asks to stop a command, or correction determines the running command is wrong, stuck, unsafe, or no longer needed. Notes: this has process side effects and should not be used as a status check.",
                 tags,
                 Set.of(),
                 Set.of(createActionKey("overview")),
@@ -316,16 +329,16 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
                 false,
                 null,
                 Map.of(),
-                "List all background command sessions.",
+                "Purpose: list known background command sessions. Inputs: none. Returns: JSON with result array of session overviews containing executionId, desc, and exitCode. Use when: an id is missing or correction needs to discover active command sessions before inspect/read/cancel. Notes: this does not start, stop, or read a command.",
                 tags,
                 Set.of(createActionKey("start")),
                 Set.of(createActionKey("inspect"), createActionKey("read"), createActionKey("cancel")),
                 false,
                 JSONObject.of(
-                        "commands", "Array of command session overview items.",
-                        "command.executionId", "Command execution session id for each overview item.",
-                        "command.desc", "Command session description for each overview item.",
-                        "command.exitCode", "Process exit code for each overview item. Null when still running."
+                        "result", "Array of command session overview items.",
+                        "result[].executionId", "Command execution session id for each overview item.",
+                        "result[].desc", "Command session description for each overview item.",
+                        "result[].exitCode", "Process exit code for each overview item. Null when still running."
                 )
         );
         Function<Map<String, Object>, String> invoker = params -> {
@@ -492,30 +505,36 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
     }
 
     private List<String> requireCommandArguments(Map<String, Object> params) {
-        List<Map.Entry<String, Object>> entries = params.entrySet().stream()
+        List<Map.Entry<String, Object>> unexpectedArgs = params.entrySet().stream()
                 .filter(entry -> entry.getKey().startsWith(COMMAND_ARG_PREFIX))
-                .sorted(Comparator.comparingInt(entry -> commandArgIndex(entry.getKey())))
+                .filter(entry -> !COMMAND_ARG_PREFIX.equals(entry.getKey()) && !isNumberedCommandArg(entry.getKey()))
                 .toList();
-        if (entries.isEmpty()) {
-            throw new IllegalArgumentException("缺少命令参数");
+        if (!unexpectedArgs.isEmpty()) {
+            throw new IllegalArgumentException("非法命令参数: " + unexpectedArgs.getFirst().getKey());
         }
+
         List<String> commands = new ArrayList<>();
-        for (Map.Entry<String, Object> entry : entries) {
-            commands.add(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, entry.getKey()));
-        }
+        commands.add(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, COMMAND_ARG_PREFIX));
+        params.entrySet().stream()
+                .filter(entry -> isNumberedCommandArg(entry.getKey()))
+                .sorted(Comparator.comparingInt(entry -> commandArgIndex(entry.getKey())))
+                .forEach(entry -> commands.add(BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, entry.getKey())));
         return commands;
     }
 
-    private int commandArgIndex(String key) {
+    private boolean isNumberedCommandArg(String key) {
+        if (!key.startsWith(COMMAND_ARG_PREFIX) || COMMAND_ARG_PREFIX.equals(key)) {
+            return false;
+        }
         String suffix = key.substring(COMMAND_ARG_PREFIX.length()).trim();
         if (suffix.isEmpty()) {
-            return 0;
+            return false;
         }
-        try {
-            return Integer.parseInt(suffix);
-        } catch (NumberFormatException ignored) {
-            return Integer.MAX_VALUE;
-        }
+        return suffix.chars().allMatch(Character::isDigit);
+    }
+
+    private int commandArgIndex(String key) {
+        return Integer.parseInt(key.substring(COMMAND_ARG_PREFIX.length()).trim());
     }
 
     private String bufferSnapshot(StringBuilder buffer) {

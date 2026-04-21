@@ -56,9 +56,9 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                 false,
                 null,
                 Map.of(
-                        "actionId", "Uuid of the interrupted executable action to resume."
+                        "actionId", param("required", "string", "Uuid of an executable action currently in INTERRUPTED status.")
                 ),
-                "Resume action that is interrupted.",
+                "Purpose: resume an executable action that is currently interrupted. Inputs: actionId. Returns: plain text success or failure reason. Use when: an intervention or user decision is complete and the original action should continue. Notes: this does not modify the action chain; use create_intervention before resuming when chain changes are required.",
                 tags,
                 Set.of(),
                 Set.of(),
@@ -101,14 +101,14 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                 true,
                 null,
                 Map.of(
-                        "actionId", "Uuid of the executing action that should enter intervention flow.",
-                        "actionInfo", "Readable summary of the current action, used to explain the intervention context to the target.",
-                        "demand", "What feedback, decision or operation is required from the target user.",
-                        "target", "Target user or channel identifier that should receive the intervention request.",
-                        "input", "Prompt content used to initiate the intervention turn toward the target.",
-                        "timeout", "Maximum wait time for the interruption result, in the unit expected by ExecutableAction.interrupt(timeout)."
+                        "actionId", param("required", "string", "Uuid of the executing action that should be interrupted for external intervention."),
+                        "actionInfo", param("required", "string", "Readable summary of the current action and why intervention is needed."),
+                        "demand", param("required", "string", "Specific feedback, decision, permission, or operation required from the target."),
+                        "target", param("required", "string", "Target user or channel identifier that should receive the intervention request."),
+                        "input", param("required", "string", "Prompt content used to initiate the intervention turn toward the target."),
+                        "timeout", param("required", "int", "Maximum wait time passed to ExecutableAction.interrupt(timeout).")
                 ),
-                "Try to acquire the target user to intervene this Action.",
+                "Purpose: interrupt an executing action and ask a target participant/channel for intervention. Inputs: actionId, actionInfo, demand, target, input, timeout. Returns: plain text intervention status. Use when: execution cannot safely continue without user decision, missing information, permission, or manual operation. Notes: this creates communication side effects and temporarily interrupts the action.",
                 tags,
                 Set.of(),
                 Set.of(),
@@ -190,7 +190,7 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                 false,
                 null,
                 Map.of(),
-                "List existing actions that can be intervened",
+                "Purpose: list executable actions that can be inspected for possible intervention. Inputs: none. Returns: JSON array with tendency, description, status, and uuid for each action. Use when: an action id is needed before acquire_intervention, create_intervention, or resume_interrupted_action. Notes: this only discovers actions; it does not modify them.",
                 tags,
                 Set.of(),
                 Set.of(),
@@ -237,7 +237,7 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                 false,
                 null,
                 Map.of(),
-                "List available MetaActions.",
+                "Purpose: list currently available MetaActions that can be used in action chains or interventions. Inputs: none. Returns: JSON array with action key/location, description, tags, and params. Use when: correction needs to discover valid action_key values for APPEND, INSERT, DELETE, or REBUILD. Notes: this is a discovery action and does not execute those MetaActions.",
                 tags,
                 Set.of(),
                 Set.of(),
@@ -282,12 +282,12 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
                 false,
                 null,
                 Map.of(
-                        "id", "The uuid of the Action to be intervened on.",
-                        "type", "Intervention type. Allowed values: APPEND, INSERT, DELETE, CANCEL.",
-                        "order", "Action chain order/stage to apply the intervention on.",
-                        "actions", "Comma-separated actionKey list to be inserted, appended, rebuilt or deleted. Example: \"builtin::command::execute, builtin::capability::show_memory_slices\""
+                        "id", param("required", "string", "Uuid of the executable action to modify."),
+                        "type", param("required", "string", "Intervention type. Allowed values: APPEND, INSERT, DELETE, CANCEL, REBUILD."),
+                        "order", param("required", "int", "Action chain order/stage where the intervention applies."),
+                        "actions", param("conditional", "string", "Comma-separated actionKey list to insert, append, rebuild, or delete. Required except for CANCEL. Example: builtin::command::execute,builtin::command::read.")
                 ),
-                "Used to create an Action Intervention and act on the specified Executable Action.",
+                "Purpose: apply a structural intervention to an executable action chain. Inputs: id, type, order, and conditional actions. Returns: JSON with ok and optional result. Use when: correction must append, insert, delete, cancel, or rebuild future action-chain steps. Notes: actions must be valid action_key values; CANCEL may omit actions; this has direct action-chain side effects and resumes the target action after applying changes.",
                 basicTags,
                 Set.of(
                         createActionKey("list_available_meta_actions"),
