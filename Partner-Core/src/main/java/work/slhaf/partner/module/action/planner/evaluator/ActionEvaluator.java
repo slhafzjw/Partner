@@ -199,8 +199,8 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
                         "available_meta_action",
                         actionCapability.listAvailableMetaActions().entrySet(),
                         (block, value) -> {
-                            appendTextElement(document, root, "action_key", value.getKey());
-                            appendTextElement(document, root, "action_value", value.getValue().getDescription());
+                            appendTextElement(document, block, "meta_action_key", value.getKey());
+                            appendTextElement(document, block, "meta_action_description", value.getValue().getDescription());
                             return Unit.INSTANCE;
                         }
                 );
