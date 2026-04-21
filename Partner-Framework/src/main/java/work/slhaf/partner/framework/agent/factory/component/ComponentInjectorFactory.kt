@@ -13,6 +13,7 @@ import java.lang.reflect.Modifier
  *
  * 注入关系:
  * - `sub + standalone -> running`
+ * - `standalone -> sub`
  * - `sub + standalone -> standalone`
  * - `sub + standalone -> additionalComponent`
  *
@@ -42,6 +43,11 @@ class ComponentInjectorFactory : AgentBaseFactory() {
             injectIntoTarget(running.instance, providersForRunning)
             subModules.forEach { it.injectTarget.add(running.instance) }
             standaloneModules.forEach { it.injectTarget.add(running.instance) }
+        }
+
+        subModules.forEach { sub ->
+            injectIntoTarget(sub.instance, standaloneInstances)
+            standaloneModules.forEach { it.injectTarget.add(sub.instance) }
         }
 
         standaloneModules.forEach { standalone ->
