@@ -65,6 +65,10 @@ class ConfigCenterTest {
         writeJson(workingDir.resolve(INVALID_PATH), "invalid-init", 1);
         writeJson(workingDir.resolve(IDEMPOTENT_PATH), "idempotent-init", 1);
         writeJson(configDir.resolve(INITIAL_PATH), "initial-config-dir", 1);
+        writeJson(configDir.resolve(NESTED_PATH), "nested-config-dir", 1);
+        writeJson(configDir.resolve(DELETE_PATH), "delete-config-dir", 1);
+        writeJson(configDir.resolve(INVALID_PATH), "invalid-config-dir", 1);
+        writeJson(configDir.resolve(IDEMPOTENT_PATH), "idempotent-config-dir", 1);
 
         ConfigCenter.INSTANCE.register(() -> {
             Map<Path, ConfigRegistration<? extends Config>> declared = new LinkedHashMap<>();
@@ -159,7 +163,7 @@ class ConfigCenterTest {
     @Test
     @Order(1)
     void testStartOnlyInitializesOneRegisteredConfigAndDoesNotTriggerReload() {
-        Assertions.assertEquals(1, totalInitCount());
+        Assertions.assertEquals(5, totalInitCount());
         Assertions.assertEquals(0, totalReloadCount());
     }
 

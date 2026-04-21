@@ -89,7 +89,8 @@ object ConfigCenter : AutoCloseable {
     fun initAll() {
         val errorConfig = mutableMapOf<Path, String>()
         registrations.forEach { (path, registration) ->
-            val pair = loadConfig(path, registration)
+            val configFile = paths.configDir.resolve(path).normalize()
+            val pair = loadConfig(configFile, registration)
             if (pair != null) {
                 (registration as ConfigRegistration<Config>).init(pair.first, pair.second)
                 return@forEach
@@ -175,6 +176,7 @@ object ConfigCenter : AutoCloseable {
         return field.isSynthetic || Modifier.isStatic(field.modifiers)
     }
 
+    @Suppress("unused")
     private fun handleUpsert(thisDir: Path, context: Path?) {
         if (context == null || !Files.isRegularFile(context) || !isJsonFile(context)) {
             return
@@ -182,6 +184,7 @@ object ConfigCenter : AutoCloseable {
         reloadIfRegistered(context)
     }
 
+    @Suppress("unused")
     private fun handleDelete(thisDir: Path, context: Path?) {
         if (context == null || !isJsonFile(context)) {
             return
@@ -260,7 +263,7 @@ object ConfigCenter : AutoCloseable {
         checkAgentStartup(!path.isAbsolute) {
             AgentStartupException("Config path must be relative: $path", COMPONENT_NAME)
         }
-        return paths.configDir.resolve(path).normalize()
+        return path.normalize()
     }
 }
 

@@ -70,6 +70,13 @@ object LogAdviceProvider : Configurable, ConfigRegistration<AdviceLoggingConfig>
         logLevel = config.logLevel
     }
 
+    override fun onReload(
+        config: AdviceLoggingConfig,
+        json: JSONObject?
+    ) {
+        this.logLevel = config.logLevel
+    }
+
     override fun defaultConfig(): AdviceLoggingConfig = AdviceLoggingConfig(AdviceLoggingConfig.LogLevel.NONE)
 }
 

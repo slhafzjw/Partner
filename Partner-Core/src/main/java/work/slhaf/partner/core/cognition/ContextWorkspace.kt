@@ -132,7 +132,7 @@ class ContextWorkspace {
             }
         }
         if (removedBlocks.isNotEmpty()) {
-            recordExpire(sourceKey, removedBlocks)
+            recordExpire(sourceKey)
         }
     }
 
@@ -144,12 +144,19 @@ class ContextWorkspace {
         TraceRecorder.record(TraceEvent(tracePath, payload))
     }
 
-    private fun recordExpire(sourceKey: ContextBlock.SourceKey, removedBlocks: List<ContextBlock>) {
+    private fun recordExpire(sourceKey: ContextBlock.SourceKey) {
         val payload = JSONObject()
         payload["action"] = "expire"
-        payload["blockName"] = sourceKey.blockName
-        payload["source"] = sourceKey.source
-        payload["removed"] = removedBlocks.map(::blockSnapshot)
+        payload["changedSourceKey"] = JSONObject.of(
+            "blockName", sourceKey.blockName,
+            "source", sourceKey.source
+        )
+        payload["blocks"] = stateSet
+            .sortedWith(
+                compareBy<ContextBlock> { it.sourceKey.blockName }
+                    .thenBy { it.sourceKey.source }
+            )
+            .map(::blockSnapshot)
         TraceRecorder.record(TraceEvent(tracePath, payload))
     }
 
