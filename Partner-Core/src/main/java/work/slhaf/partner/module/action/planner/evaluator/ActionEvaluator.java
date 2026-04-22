@@ -91,7 +91,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
             - 不要输出自然语言步骤说明，不要输出伪代码，只输出动作链结构。
             
             scheduleData 的要求：
-            - 仅当该 tendency 明确包含调度语义时填写；
+            - 仅当该 tendency 明确包含未来时刻的调度语义时填写，否则留为空对象；
             - 若用户只是泛泛表示“以后提醒我”“找时间做”，但无法稳定落到可调度语义，则不要强填；
             - scheduleData.type 表示一次性或周期性计划；
             - scheduleData.content 必须符合 Quartz 标准的 Cron 表达式。
