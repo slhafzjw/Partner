@@ -19,6 +19,7 @@ import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAg
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.framework.agent.support.Result;
+import work.slhaf.partner.module.StateHintContent;
 import work.slhaf.partner.module.action.executor.ActionExecutor;
 import work.slhaf.partner.module.action.planner.evaluator.ActionEvaluator;
 import work.slhaf.partner.module.action.planner.evaluator.entity.EvaluatorInput;
@@ -89,12 +90,22 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     private void appendTendencyBlock(List<String> tendencies) {
         String datetime = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         cognitionCapability.contextWorkspace().register(new ContextBlock(
-                buildTendenciesEvaluatingFullBlock(tendencies),
+                buildTendenciesEvaluatingCompactBlock(tendencies, datetime),
                 buildTendenciesEvaluatingCompactBlock(tendencies, datetime),
                 buildTendenciesEvaluatingAbstractBlock(tendencies, datetime),
                 Set.of(ContextBlock.FocusedDomain.ACTION),
                 60, 18, 4
         ));
+
+        cognitionCapability.contextWorkspace().register(StateHintContent.createBlock(new StateHintContent(
+                BLOCK_SOURCE,
+                "Partner is evaluating whether any action tendency should be taken for the latest input."
+        ) {
+            @Override
+            public void fillStateContent(@NotNull Document document, @NotNull Element stateElement) {
+                appendListElement(document, stateElement, "action_tendencies", "tendency", tendencies);
+            }
+        }));
     }
 
     private @NotNull BlockContent buildTendenciesEvaluatingAbstractBlock(List<String> tendencies, String datetime) {
@@ -114,19 +125,8 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                 int size = tendencies.size();
                 boolean num = size > 3;
                 appendTextElement(document, root, "datetime", datetime);
-                appendTextElement(document, root, "state", "Candidate action tendencies are under evaluation");
                 appendTextElement(document, root, "tendencies_count", size);
                 appendListElement(document, root, num ? "tendencies_truncated" : "tendencies", "tendency", num ? tendencies.subList(0, 3) : tendencies);
-            }
-        };
-    }
-
-    private @NotNull BlockContent buildTendenciesEvaluatingFullBlock(List<String> tendencies) {
-        return new BlockContent(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName()) {
-            @Override
-            protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendTextElement(document, root, "state", "Candidate action tendencies are under evaluation");
-                appendListElement(document, root, "tendencies", "tendency", tendencies);
             }
         };
     }

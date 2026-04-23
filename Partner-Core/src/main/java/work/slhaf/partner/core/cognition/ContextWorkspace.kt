@@ -183,7 +183,7 @@ private data class ResolvedContextBlock(
 data class ContextBlock @JvmOverloads constructor(
     val blockContent: BlockContent,
     val compactBlock: BlockContent = blockContent,
-    val abstractBlock: BlockContent = blockContent,
+    val abstractBlock: BlockContent = compactBlock,
     /**
      * 该 block 集中在哪些域
      */
