@@ -41,7 +41,8 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
     private static final String AUTO_UPDATE_CRON = "0/10 * * * * ?";
     private static final long UPDATE_TRIGGER_INTERVAL = 60 * 60 * 1000;
     private static final int CONTEXT_RETAIN_DIVISOR = 6;
-    private static final int DIALOG_ROLLING_TRIGGER_LIMIT = 36;
+    private static final int FULL_ROLLING_RETAIN_DIVISOR = Integer.MAX_VALUE;
+    private static final int DIALOG_ROLLING_TRIGGER_LIMIT = 72;
 
     private final AtomicBoolean rolling = new AtomicBoolean(false);
 
@@ -119,7 +120,8 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
                 return;
             }
 
-            RollingResult result = buildRollingResult(chatIncrement, fullChatSnapshot.size(), CONTEXT_RETAIN_DIVISOR);
+            int retainDivisor = refreshMemoryId ? FULL_ROLLING_RETAIN_DIVISOR : CONTEXT_RETAIN_DIVISOR;
+            RollingResult result = buildRollingResult(chatIncrement, fullChatSnapshot.size(), retainDivisor);
             applyRolling(result);
             afterRollingRegistry.trigger(result);
 
