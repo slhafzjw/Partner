@@ -9,6 +9,7 @@ import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
 import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.core.cognition.ContextWorkspace;
+import work.slhaf.partner.module.StateHintContent;
 import work.slhaf.partner.module.action.executor.entity.HistoryAction;
 
 import java.time.ZonedDateTime;
@@ -382,6 +383,7 @@ class ExecutingActionBlockManager {
                 14,
                 24
         ));
+        contextWorkspace.register(buildActionFinishedStateHintBlock(snapshot, emittedAt, event));
     }
 
     private @NotNull BlockContent buildActionFinishedAbstractBlock(ExecutableActionSnapshot snapshot, String blockName, String event) {
@@ -404,6 +406,24 @@ class ExecutingActionBlockManager {
                 appendTextElement(document, root, "result", snapshot.getResult());
             }
         };
+    }
+
+    private @NotNull ContextBlock buildActionFinishedStateHintBlock(ExecutableActionSnapshot snapshot, String emittedAt, String event) {
+        return StateHintContent.createBlock(new StateHintContent(
+                SOURCE,
+                "An executable action has finished."
+        ) {
+            @Override
+            public void fillStateContent(@NotNull Document document, @NotNull Element stateElement) {
+                appendTextElement(document, stateElement, "event", event);
+                appendTextElement(document, stateElement, "emitted_at", emittedAt);
+                appendTextElement(document, stateElement, "action_id", snapshot.getUuid());
+                appendTextElement(document, stateElement, "final_status", snapshot.getStatus().name().toLowerCase(Locale.ROOT));
+                appendTextElement(document, stateElement, "description", snapshot.getDescription());
+                appendTextElement(document, stateElement, "result", snapshot.getResult());
+                appendTextElement(document, stateElement, "source_user", snapshot.getSource());
+            }
+        });
     }
 
     private String emittedAt() {

@@ -105,12 +105,12 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 if (action instanceof ExecutableAction executableAction) {
                     if (action.getStatus() == Action.Status.FAILED) {
                         ensureExecutableResult(executableAction, true, null);
-                        blockManager.emitActionFinishedBlock(executableAction);
+                        emitExecutableActionFinished(executableAction);
                         return;
                     }
                     action.setStatus(Action.Status.SUCCESS);
                     ensureExecutableResult(executableAction, false, null);
-                    blockManager.emitActionFinishedBlock(executableAction);
+                    emitExecutableActionFinished(executableAction);
                     return;
                 }
                 if (action.getStatus() == Action.Status.FAILED) {
@@ -122,7 +122,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 action.setStatus(Action.Status.FAILED);
                 if (action instanceof ExecutableAction executableAction) {
                     ensureExecutableResult(executableAction, true, e.getLocalizedMessage());
-                    blockManager.emitActionFinishedBlock(executableAction);
+                    emitExecutableActionFinished(executableAction);
                 }
             }
         };
@@ -131,6 +131,15 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
     private void handleUnknownAction(Action action) {
         log.warn("unknown Action type: {}", action.getClass().getSimpleName());
         action.setStatus(Action.Status.FAILED);
+    }
+
+    private void emitExecutableActionFinished(ExecutableAction executableAction) {
+        blockManager.emitActionFinishedBlock(executableAction);
+        cognitionCapability.initiateTurn(
+                "An executable action has finished. Check the latest action-finished state and inform the user of the outcome if it is relevant to the current conversation.",
+                executableAction.getSource(),
+                "action_planner"
+        );
     }
 
     private void handleStateAction(StateAction stateAction) {
