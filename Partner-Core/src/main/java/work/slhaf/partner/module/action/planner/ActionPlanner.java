@@ -10,7 +10,6 @@ import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
-import work.slhaf.partner.core.cognition.CommunicationBlockContent;
 import work.slhaf.partner.core.cognition.ContextBlock;
 import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
@@ -43,7 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";
-    private static final String BLOCK_SOURCE = "action_planner_pending";
     private static final String TENDENCIES_EVALUATING_BLOCK_NAME = "action_tendencies_under_evaluation";
 
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
@@ -84,7 +82,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             return;
         }
         appendTendencyBlock(tendencies);
-        evaluateTendency(context.getSource(), input, extractorResult);
+        evaluateTendency(context.getSource(), extractorResult);
     }
 
     private void appendTendencyBlock(List<String> tendencies) {
@@ -98,7 +96,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         ));
 
         cognitionCapability.contextWorkspace().register(StateHintContent.createBlock(new StateHintContent(
-                BLOCK_SOURCE,
+                "action_tendencies_under_evaluation",
                 "Partner is evaluating whether any action tendency should be taken for the latest input."
         ) {
             @Override
@@ -131,49 +129,44 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         };
     }
 
-    private void evaluateTendency(String source, String input, ExtractorResult extractorResult) {
+    private void evaluateTendency(String source, ExtractorResult extractorResult) {
         executor.execute(() -> {
             EvaluatorInput evaluatorInput = assemblyHelper.buildEvaluatorInput(extractorResult);
             List<EvaluatorResult> evaluatorResults = actionEvaluator.execute(evaluatorInput); // 并发操作均为访问
-            handleEvaluatorResults(evaluatorResults, source, input);
+            handleEvaluatorResults(evaluatorResults, source);
 
             cognitionCapability.contextWorkspace().expire(TENDENCIES_EVALUATING_BLOCK_NAME, getModuleName());
         });
     }
 
-    private void handleEvaluatorResults(List<EvaluatorResult> evaluatorResults, String source, String input) {
-        List<ExecutableAction> passedActions = new ArrayList<>();
-        int approvedExecutableCount = 0;
-        int pendingConfirmCount = 0;
+    private void handleEvaluatorResults(List<EvaluatorResult> evaluatorResults, String source) {
+        boolean hasPassedAction = false;
+        boolean hasPendingConfirmation = false;
+        List<String> refusedTendencies = new ArrayList<>();
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
             expireResolvedPending(evaluatorResult);
             if (!evaluatorResult.isOk()) {
+                refusedTendencies.add(evaluatorResult.getTendency());
                 continue;
             }
             ExecutableAction executableAction = assemblyHelper.buildActionData(evaluatorResult, source);
             if (executableAction == null) {
                 continue;
             }
-            passedActions.add(executableAction);
+            hasPassedAction = true;
             if (evaluatorResult.isNeedConfirm()) {
-                registerPendingContextBlock(executableAction, evaluatorResult, input);
-                pendingConfirmCount++;
+                hasPendingConfirmation = true;
+                registerPendingContextBlock(executableAction, evaluatorResult);
                 continue;
             }
             executeOrSchedule(executableAction);
-            approvedExecutableCount++;
         }
-        if (passedActions.isEmpty()) {
-            return;
+        if (hasPassedAction && !refusedTendencies.isEmpty()) {
+            cognitionCapability.initiateTurn("Some candidate action tendencies were refused during evaluation. If any of them were promised to the user, acknowledge that they will not be executed and explain why.", source, getModuleName());
         }
-        createTurn(approvedExecutableCount, pendingConfirmCount, source, input);
-    }
-
-    private void createTurn(int approvedExecutableCount, int pendingConfirmCount, String source, String input) {
-        String turnInput = approvedExecutableCount + " actions are approved for execution, " +
-                pendingConfirmCount + " actions are waiting for confirmation, " +
-                "according to input: " + trimInput(input) + ". For more information, please refer to the context content or other tags in this input block.";
-        cognitionCapability.initiateTurn(turnInput, source, getModuleName());
+        if (hasPendingConfirmation) {
+            cognitionCapability.initiateTurn("Some actions are pending user confirmation. Ask the user to confirm before executing them.", source, getModuleName());
+        }
     }
 
     private void expireResolvedPending(EvaluatorResult evaluatorResult) {
@@ -190,47 +183,30 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         );
     }
 
-    private void registerPendingContextBlock(ExecutableAction executableAction, EvaluatorResult evaluatorResult, String input) {
-        String blockName = buildPendingBlockName(executableAction);
-        input = trimInput(input);
-        ContextBlock block = new ContextBlock(
-                buildPendingBlock(blockName, executableAction, evaluatorResult),
-                buildPendingCompactBlock(blockName, executableAction, evaluatorResult, input),
-                buildPendingAbstractBlock(blockName, executableAction, evaluatorResult, input),
-                Set.of(ContextBlock.FocusedDomain.ACTION),
-                30,
-                10,
-                5
-        );
-        cognitionCapability.contextWorkspace().register(block);
-    }
-
-    private String buildPendingBlockName(ExecutableAction executableAction) {
-        return "pending_action-" + executableAction.getUuid();
-    }
-
-    private BlockContent buildPendingBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
-        return new CommunicationBlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
+    private void registerPendingContextBlock(ExecutableAction executableAction, EvaluatorResult evaluatorResult) {
+        cognitionCapability.contextWorkspace().register(StateHintContent.createBlock(new StateHintContent(
+                "actions_need_confirmation",
+                "Partner is waiting for user confirmation before executing a pending action."
+        ) {
             @Override
-            protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendTextElement(document, root, "state", "need_user_confirm");
-                appendTextElement(document, root, "action_uuid", executableAction.getUuid());
-                appendTextElement(document, root, "action_type", evaluatorResult.getType());
-                appendTextElement(document, root, "tendency", executableAction.getTendency());
-                appendTextElement(document, root, "reason", executableAction.getReason());
-                appendTextElement(document, root, "description", executableAction.getDescription());
-                appendTextElement(document, root, "source_user", executableAction.getSource());
+            public void fillStateContent(@NotNull Document document, @NotNull Element stateElement) {
+                appendTextElement(document, stateElement, "state", "need_user_confirm");
+                appendTextElement(document, stateElement, "action_type", evaluatorResult.getType());
+                appendTextElement(document, stateElement, "tendency", executableAction.getTendency());
+                appendTextElement(document, stateElement, "reason", executableAction.getReason());
+                appendTextElement(document, stateElement, "description", executableAction.getDescription());
+                appendTextElement(document, stateElement, "source_user", executableAction.getSource());
                 EvaluatorResult.ScheduleData scheduleData = evaluatorResult.getScheduleData();
                 if (scheduleData != null) {
-                    appendTextElement(document, root, "schedule_type", scheduleData.getType());
-                    appendTextElement(document, root, "schedule_content", scheduleData.getContent());
+                    appendTextElement(document, stateElement, "schedule_type", scheduleData.getType());
+                    appendTextElement(document, stateElement, "schedule_content", scheduleData.getContent());
                 }
                 Map<Integer, List<String>> primaryActionChain = evaluatorResult.getPrimaryActionChainAsMap();
                 if (primaryActionChain == null || primaryActionChain.isEmpty()) {
                     return;
                 }
                 Element chainRoot = document.createElement("primary_action_chain");
-                root.appendChild(chainRoot);
+                stateElement.appendChild(chainRoot);
                 List<Integer> orders = new ArrayList<>(primaryActionChain.keySet());
                 orders.sort(Integer::compareTo);
                 for (Integer order : orders) {
@@ -245,33 +221,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                     );
                 }
             }
-        };
-    }
-
-    private BlockContent buildPendingCompactBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult, String input) {
-        return new CommunicationBlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH, CommunicationBlockContent.Projection.SUPPLY) {
-            @Override
-            protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendTextElement(document, root, "state", "need_user_confirm");
-                appendTextElement(document, root, "related_input", input);
-                appendTextElement(document, root, "tendency", executableAction.getTendency());
-                appendTextElement(document, root, "description", executableAction.getDescription());
-                appendTextElement(document, root, "action_type", evaluatorResult.getType());
-            }
-        };
-    }
-
-    private BlockContent buildPendingAbstractBlock(String blockName, ExecutableAction executableAction, EvaluatorResult evaluatorResult, String input) {
-        return new BlockContent(blockName, BLOCK_SOURCE, BlockContent.Urgency.HIGH) {
-            @Override
-            protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendTextElement(document, root, "state", "need_user_confirm");
-                appendTextElement(document, root, "related_input", input);
-                appendTextElement(document, root, "pending_tendency", executableAction.getTendency());
-                appendTextElement(document, root, "summary", "exists pending action waiting for confirmation");
-                appendTextElement(document, root, "action_type", evaluatorResult.getType());
-            }
-        };
+        }));
     }
 
     private void executeOrSchedule(ExecutableAction executableAction) {
@@ -304,7 +254,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                     if (!notified.compareAndSet(false, true)) {
                         return Unit.INSTANCE;
                     }
-                    watcherSelfTalk(action);
                     return Unit.INSTANCE;
                 })
         );
@@ -312,23 +261,9 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         actionScheduler.schedule(watcher);
     }
 
-    private void watcherSelfTalk(ImmediateExecutableAction action) {
-        try {
-            cognitionCapability.initiateTurn("An action was finished, which uuid is " + action.getUuid(), action.getSource());
-        } catch (Exception e) {
-            log.warn("触发 immediate 行动完成自对话失败, actionUuid: {}", action.getUuid(), e);
-        }
-    }
-
     @Override
     public int order() {
         return 2;
-    }
-
-    private String trimInput(@NotNull String input) {
-        input = input.trim();
-        input = input.length() <= 100 ? input : input.substring(0, 100);
-        return input;
     }
 
     private final class ActionAssemblyHelper {

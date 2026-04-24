@@ -36,7 +36,7 @@ abstract class StateHintContent protected constructor(
             blockContent = this,
             focusedOn = setOf(ContextBlock.FocusedDomain.COGNITION),
             replaceFadeFactor = 60.0,
-            timeFadeFactor = 30.0,
+            timeFadeFactor = 100.0,
             activateFactor = 0.0
         )
     }
