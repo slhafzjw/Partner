@@ -193,7 +193,7 @@ object ConfigCenter : AutoCloseable {
         if (!registrations.containsKey(relativePath)) {
             return
         }
-        log.info("Config deleted, skipped reload: {}", relativePath)
+        log.debug("Config deleted, skipped reload: {}", relativePath)
     }
 
     private fun reconcileAll() {
