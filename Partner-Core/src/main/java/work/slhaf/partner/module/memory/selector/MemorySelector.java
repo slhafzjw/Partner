@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import work.slhaf.partner.core.action.ActionCapability;
+import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.cognition.BlockContent;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.ContextBlock;
@@ -23,7 +25,11 @@ import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorResul
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
@@ -33,6 +39,7 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
 
     @InjectCapability
     private CognitionCapability cognitionCapability;
+    private final AtomicBoolean memoryCalling = new AtomicBoolean(false);
 
     @InjectModule
     private MemoryRuntime memoryRuntime;
@@ -40,22 +47,123 @@ public class MemorySelector extends AbstractAgentModule.Running<PartnerRunningFl
     private MemoryRecallEvaluator memoryRecallEvaluator;
     @InjectModule
     private MemoryRecallCueExtractor memoryRecallCueExtractor;
+    private final Lock inputsLock = new ReentrantLock();
+    private final List<MemoryInputEntry> collectedInputs = new ArrayList<>();
+    @InjectCapability
+    private ActionCapability actionCapability;
 
     @Override
     protected void doExecute(@NotNull PartnerRunningFlowContext runningFlowContext) {
-        List<RunningFlowContext.InputEntry> snapshotInputs = List.copyOf(runningFlowContext.getInputs());
+        collectInputs(runningFlowContext);
+        tryStartMemoryRecallWorker();
+    }
+
+    private void collectInputs(PartnerRunningFlowContext runningFlowContext) {
+        inputsLock.lock();
+        try {
+            collectedInputs.add(new MemoryInputEntry(
+                    runningFlowContext.getFirstInputDateTime(),
+                    List.copyOf(runningFlowContext.getInputs())
+            ));
+        } finally {
+            inputsLock.unlock();
+        }
+    }
+
+    private void tryStartMemoryRecallWorker() {
+        if (!memoryCalling.compareAndSet(false, true)) {
+            return;
+        }
+
+        actionCapability.getExecutor(ActionCore.ExecutorType.VIRTUAL).execute(() -> {
+            try {
+                drainMemoryRecall();
+            } finally {
+                memoryCalling.set(false);
+                if (hasCollectedInputs()) {
+                    tryStartMemoryRecallWorker();
+                }
+            }
+        });
+    }
+
+    private void drainMemoryRecall() {
+        while (true) {
+            List<MemoryInputEntry> snapshotInputs = drainCollectedInputs();
+            if (snapshotInputs.isEmpty()) {
+                return;
+            }
+            try {
+                recallMemory(snapshotInputs);
+            } catch (Exception e) {
+                log.error("[MemorySelector] 记忆召回任务执行失败", e);
+            }
+        }
+    }
+
+    private void recallMemory(List<MemoryInputEntry> memoryInputEntries) {
         ExtractorInput input = new ExtractorInput(
-                snapshotInputs,
-                memoryRuntime.getTopicTree(),
-                runningFlowContext.getFirstInputDateTime().toLocalDate()
+                memoryInputEntries,
+                memoryRuntime.getTopicTree()
         );
 
         ExtractorResult extractorResult = memoryRecallCueExtractor.execute(input);
         if (extractorResult.getMatches().isEmpty()) {
             return;
         }
-        List<ActivatedMemorySlice> activatedSlices = selectAndEvaluateMemory(snapshotInputs, extractorResult);
+        List<ActivatedMemorySlice> activatedSlices = selectAndEvaluateMemory(flattenInputs(memoryInputEntries), extractorResult);
         updateMemoryContext(activatedSlices);
+    }
+
+    private List<MemoryInputEntry> drainCollectedInputs() {
+        inputsLock.lock();
+        try {
+            if (collectedInputs.isEmpty()) {
+                return List.of();
+            }
+            List<MemoryInputEntry> snapshot = new ArrayList<>(collectedInputs);
+            collectedInputs.clear();
+            snapshot.sort(Comparator.comparing(MemoryInputEntry::getReceivedDateTime));
+            return snapshot;
+        } finally {
+            inputsLock.unlock();
+        }
+    }
+
+    private boolean hasCollectedInputs() {
+        inputsLock.lock();
+        try {
+            return !collectedInputs.isEmpty();
+        } finally {
+            inputsLock.unlock();
+        }
+    }
+
+    private List<RunningFlowContext.InputEntry> flattenInputs(List<MemoryInputEntry> memoryInputEntries) {
+        if (memoryInputEntries.isEmpty()) {
+            return List.of();
+        }
+        long firstEpochMillis = memoryInputEntries.stream()
+                .map(MemoryInputEntry::getReceivedDateTime)
+                .mapToLong(this::toEpochMillis)
+                .min()
+                .orElseThrow();
+
+        return memoryInputEntries.stream()
+                .flatMap(entry -> {
+                    long entryEpochMillis = toEpochMillis(entry.getReceivedDateTime());
+                    return entry.getInputs().stream()
+                            .map(input -> new RunningFlowContext.InputEntry(
+                                    entryEpochMillis + input.getOffsetMillis() - firstEpochMillis,
+                                    input.getContent()
+                            ));
+                })
+                .sorted(Comparator.comparingLong(RunningFlowContext.InputEntry::getOffsetMillis))
+                .toList();
+    }
+
+    private long toEpochMillis(java.time.LocalDateTime dateTime) {
+        return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     private void updateMemoryContext(List<ActivatedMemorySlice> activatedSlices) {

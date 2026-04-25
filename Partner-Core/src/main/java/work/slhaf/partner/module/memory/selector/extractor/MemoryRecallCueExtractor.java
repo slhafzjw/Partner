@@ -19,6 +19,7 @@ import work.slhaf.partner.module.memory.selector.extractor.entity.ExtractorResul
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class MemoryRecallCueExtractor extends AbstractAgentModule.Sub<ExtractorInput, ExtractorResult> implements ActivateModel {
@@ -29,12 +30,11 @@ public class MemoryRecallCueExtractor extends AbstractAgentModule.Sub<ExtractorI
             你会收到：
             - 一条结构化上下文消息，其中包含当前活跃的 communication 域与 memory 域内容；
             - 一条任务消息，其中包含：
-              - new_inputs：一组按时间顺序累积的新输入，每条输入附带 interval-to-first；
-              - current_date：当前日期；
+              - memory_input_entries：一组按接收时间排序的新输入批次；每个批次包含 received_date_time 与该批次内按时间顺序排列的 inputs；
               - memory_topic_tree：当前可用的记忆主题树结构。
             
             你的任务：
-            - 基于 new_inputs、当前语境与已有记忆主题树，提取本次记忆召回最值得尝试的匹配项；
+            - 基于 memory_input_entries、当前语境与已有记忆主题树，提取本次记忆召回最值得尝试的匹配项；
             - 匹配项只允许有两类：topic 或 date；
             - topic 用于表示应优先检索的记忆主题路径；
             - date 用于表示应优先检索的具体日期；
@@ -42,7 +42,7 @@ public class MemoryRecallCueExtractor extends AbstractAgentModule.Sub<ExtractorI
             
             提取原则：
             - 你的目标是提取“可用于后续召回”的线索，而不是复述输入内容本身。
-            - new_inputs 应整体理解，不要只抓最后一句；如果多条输入共同收敛到同一记忆方向，应提取更稳定的主题线索。
+            - memory_input_entries 应整体理解，不要只抓最后一个批次或最后一句；如果多个批次共同收敛到同一记忆方向，应提取更稳定的主题线索。
             - communication 域用于判断当前输入是否在承接近期某段对话、某个旧话题或某个已出现过的指代对象。
             - memory 域用于辅助判断当前输入与哪些已激活记忆方向明显相关；只有在这种相关性明确时才使用，不要机械复述 memory 域内容。
             - memory_topic_tree 是 topic 提取的主要参照；topic 应尽量贴近主题树中已有的层级与命名，不要随意发明与主题树无关的新路径。
@@ -60,8 +60,8 @@ public class MemoryRecallCueExtractor extends AbstractAgentModule.Sub<ExtractorI
             关于 date：
             - date 表示一个明确的记忆日期。
             - date 的 text 必须是可被 Java LocalDate.parse 正常解析的日期文本，即 yyyy-MM-dd。
-            - 只有在输入中存在明确日期，或结合 current_date 后可以稳定推断出具体某一天时，才输出 date。
-            - 像“今天”“昨天”“前天”“上周六”这类表达，只有在能够稳定落到某个具体日期时才可输出。
+            - 只有在输入中存在明确日期，或结合相关输入批次的 received_date_time 后可以稳定推断出具体某一天时，才输出 date。
+            - 像“今天”“昨天”“前天”“上周六”这类表达，只有在能够根据对应批次 received_date_time 稳定落到某个具体日期时才可输出。
             - 对于“最近”“前几天”“那段时间”“之前”“上次”这类无法稳定定位到某一天的表达，不要输出 date。
             
             何时应提取 topic：
@@ -72,7 +72,7 @@ public class MemoryRecallCueExtractor extends AbstractAgentModule.Sub<ExtractorI
             
             何时应提取 date：
             - 当前输入明确提到了某个具体日期；
-            - 当前输入使用相对日期表达，但结合 current_date 可以稳定还原到具体某一天；
+            - 当前输入使用相对日期表达，但结合对应批次的 received_date_time 可以稳定还原到具体某一天；
             - 当前输入中的回忆目标明显依赖某个特定日期，且该日期能够被明确确定。
             
             何时不应轻易输出：
@@ -135,15 +135,20 @@ public class MemoryRecallCueExtractor extends AbstractAgentModule.Sub<ExtractorI
         return new TaskBlock() {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
-                appendChildElement(document, root, "new_inputs", (inputsElement) -> {
-                    appendListElement(document, inputsElement, "inputs", "input", input.getInputs(), (inputElement, entry) -> {
-                        inputElement.setAttribute("interval-to-first", String.valueOf(entry.getOffsetMillis()));
-                        inputElement.setTextContent(entry.getContent());
+                appendChildElement(document, root, "memory_input_entries", (entriesElement) -> {
+                    appendRepeatedElements(document, entriesElement, "memory_input_entry", input.getMemoryInputEntries().stream()
+                            .sorted(Comparator.comparing(work.slhaf.partner.module.memory.selector.MemoryInputEntry::getReceivedDateTime))
+                            .toList(), (entryElement, memoryInputEntry) -> {
+                        appendTextElement(document, entryElement, "received_date_time", memoryInputEntry.getReceivedDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                        appendListElement(document, entryElement, "inputs", "input", memoryInputEntry.getInputs(), (inputElement, entry) -> {
+                            inputElement.setAttribute("interval-to-first", String.valueOf(entry.getOffsetMillis()));
+                            inputElement.setTextContent(entry.getContent());
+                            return Unit.INSTANCE;
+                        });
                         return Unit.INSTANCE;
                     });
                     return Unit.INSTANCE;
                 });
-                appendTextElement(document, root, "current_date", input.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                 appendTextElement(document, root, "memory_topic_tree", input.getTopic_tree());
             }
         }.encodeToMessage();
