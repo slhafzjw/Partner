@@ -100,7 +100,7 @@ public class OpenAiCompatibleProvider extends ModelProvider {
         return executeWithRetry(
                 "OpenAI-compatible provider failed to complete the structured chat request after 3 attempts.",
                 () -> {
-                    StructuredChatCompletionCreateParams<T> params = buildParams(ensureJsonInstruction(messages)).toBuilder()
+                    StructuredChatCompletionCreateParams<T> params = buildParams(ensureJsonInstruction(messages, responseType)).toBuilder()
                             .responseFormat(responseType)
                             .build();
                     return extractStructured(client.chat().completions().create(params));
@@ -108,23 +108,17 @@ public class OpenAiCompatibleProvider extends ModelProvider {
         );
     }
 
-    private List<Message> ensureJsonInstruction(List<Message> messages) {
-        boolean containsJsonInstruction = messages.stream()
-                .map(Message::getContent)
-                .filter(content -> !content.isBlank())
-                .anyMatch(content -> content.toLowerCase(Locale.ROOT).contains("json"));
-        if (containsJsonInstruction) {
-            return messages;
-        }
+    private List<Message> ensureJsonInstruction(List<Message> messages, Class<?> responseType) {
+        String jsonInstruction = JsonShapeInstructionBuilder.build(responseType);
 
-        String jsonInstruction = "Return only a valid JSON object.";
         List<Message> patched = new ArrayList<>(messages.size() + 1);
         boolean merged = false;
         for (Message message : messages) {
             if (!merged && message.getRole() == Message.Character.SYSTEM) {
+                String separator = message.getContent().isBlank() ? "" : "\n\n";
                 patched.add(new Message(
                         Message.Character.SYSTEM,
-                        message.getContent() + "\n\n" + jsonInstruction
+                        message.getContent() + separator + jsonInstruction
                 ));
                 merged = true;
                 continue;
@@ -136,6 +130,7 @@ public class OpenAiCompatibleProvider extends ModelProvider {
         }
         return patched;
     }
+
 
     private ChatCompletionCreateParams buildParams(List<Message> messages) {
         ChatCompletionCreateParams.Builder paramsBuilder = ChatCompletionCreateParams.builder()
