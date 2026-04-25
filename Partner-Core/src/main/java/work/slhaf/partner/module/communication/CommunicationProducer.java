@@ -38,6 +38,10 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     private static final String MODULE_PROMPT = """
             你当前正在承担 Partner 的对外交流职责。你需要基于系统此刻的上下文状态、保留的对话轨迹以及最新输入，生成自然、贴合当前情境、并与系统整体状态一致的交流结果。
+            - 不要承诺、暗示或宣称自己即将执行某个动作；例如不要说“稍等”“我去查看”“正在为你获取”“马上执行”。
+            - 只有当 <context> 的 action 域明确存在正在执行、等待确认、刚完成、或正在评估的行动状态时，才可以提及行动链进展。
+            - 若最新输入看起来像行动请求，但 <context> 中没有对应的 action 状态信号，不要自行补出“将会执行”的过渡话术；应直接给出可交流的回应，或说明当前没有可确认的执行状态。
+            - 若收到“action finished”一类内部触发输入，只能依据 <context> 中真实存在的行动完成状态回复；若没有可验证的完成结果，应使用 NO_REPLY 或说明没有可确认结果，不得编造结果。
             
             你接下来收到的消息，将按照出现顺序，固定分为三个区段：
             1. system message 是 Head，用于说明整个输入结构与输出要求，即本条消息。

@@ -26,101 +26,140 @@ import java.util.concurrent.ExecutorService;
 
 public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, List<EvaluatorResult>> implements ActivateModel {
     private static final String MODULE_PROMPT = """
-            你负责评估单条行动倾向，并判断它是否应该进入后续行动链。
+            你负责评估单条行动倾向 tendency，并判断它在当前系统状态下是否可以进入后续行动链。
             
             你会收到：
-            - 一条结构化上下文消息，其中可能包含当前活跃的 action、communication、perceive、memory、cognition 相关信息；
+            - 一条结构化上下文消息，其中可能包含 action、communication、perceive、memory、cognition 等上下文；
             - 一组 <available_meta_actions>，表示当前系统真实可用的 MetaAction 候选；
-            - 一条最新 user message，其内容就是当前需要评估的单条 tendency。
+            - 一条 user message，其内容是上游 ActionExtractor 提取出的单条 tendency。
+            
+            重要前提：
+            - 你的输入 tendency 已经由 ActionExtractor 根据当前输入和上下文提取完成。
+            - 你不负责重新判断 tendency 是否来自最新用户输入。
+            - 你不负责重新做意图抽取、指代解析或上下文对齐。
+            - recent_chatmessage 中的最后一条不一定是最新输入，可能只是上一轮对话记录；不要依赖它来否定 tendency。
+            - 除非上下文中存在明确证据表明 tendency 已过期、已被取消、已被覆盖或与当前行动状态冲突，否则应把 tendency 当作当前待评估的候选行动。
             
             你的任务：
-            - 判断该 tendency 是否成立；
-            - 判断它是否真的需要通过“行动推进”来处理，而不是直接交流回应；
-            - 判断它更适合立即执行，还是先进入规划；
-            - 判断是否需要先向用户确认；
-            - 只有在确实可推进时，才生成 primaryActionChain；
-            - 若当前 tendency 与某个待处理 pending 明确对应，且本轮已完成承接或推进，应正确填写 resolvedPending；
-            - 若当前 tendency 明确包含调度语义，再填写 scheduleData。
+            - 判断该 tendency 在当前系统状态下是否可推进；
+            - 判断完成该 tendency 是否需要行动链；
+            - 判断 available_meta_actions 是否能承接该 tendency；
+            - 判断是否需要用户确认；
+            - 判断该 tendency 更适合立即执行还是进入规划；
+            - 输出严格符合 EvaluatorResult 的评估结果。
             
-            你的核心目标：
-            - 不要把“可以做点什么”误判成“应该进入行动链”；
-            - 不要把“值得回应”误判成“值得行动”；
-            - 不要返回“能推进但实际上没有动作链”的假阳性结果；
-            - 如果用户确实提出了一个行动请求，但当前系统无法承接，也要明确评估出来，而不是伪造可执行结果。
+            核心原则：
+            - 不要把“需要确认”误判成“不可执行”。
+            - 不要把“有风险”误判成“用户没有要求”。
+            - 不要把“能力不足”误判成“用户没有要求”。
+            - 不要因为 recent_chatmessage 没有出现对应内容就否定 tendency。
+            - 不要根据上一轮聊天内容推翻当前 tendency。
+            - 只有在可行性、能力、风险、状态覆盖、信息完整性等评估层面拒绝 tendency。
             
-            基本判断原则：
-            - 只有当该 tendency 需要依赖后续动作链、能力调用、系统操作、任务推进或计划安排，才考虑返回 ok=true。
-            - 若当前输入更适合直接交流回应，即使它看起来“也可以通过行动补充更多信息”，通常也应返回 ok=false。
-            - 若当前上下文、记忆、感知信息已经足以直接回答，则不应为了获取更多信息而发起行动。
-            - “信息查询”不等于“行动请求”；只有当用户明确要求系统执行查询、访问外部资源、操作对象、推进任务或完成某项动作时，才可能成立为行动倾向。
-            - 若 tendency 只是解释、分析、总结、评价、翻译、闲聊、感叹、上下文询问、系统状态询问、记忆内容询问，通常应返回 ok=false。
-            - 若 tendency 只是对当前交流内容的自然延续，且通过正常回复即可完成，也应返回 ok=false。
+            决策流程：
             
-            与现有行动状态的关系：
-            - 若 tendency 与已有正在执行、等待确认、或已明确覆盖的行动完全等价，通常不应重复建立新的行动链。
-            - 若 tendency 是对已有 pending 的确认、拒绝、补充条件、修改要求、继续推进或取消，应优先视为对原有行动状态的承接。
-            - 若 action 上下文中存在等待确认的 block，且当前 tendency 明显与其相关，则必须显式承接这一点，不要将其误判为全新无关任务。
+            1. 判断是否已经被现有 action 状态覆盖
             
-            关于可执行性：
-            - 当 ok=true 时，primaryActionChain 必须非空。
-            - primaryActionChain 中只能使用 <available_meta_actions> 中实际存在的 action_key。
-            - 若当前系统没有任何可用 MetaAction 能承接该 tendency，则不得返回 ok=true。
-            - 不允许输出“该 tendency 成立，但没有动作链”的结果。
-            - “理论上值得做”不等于“当前可推进”；只有当当前系统存在真实可用的 action chain 时，才可返回 ok=true。
+            - 若 tendency 与已有正在执行、等待确认、已完成且仍有效的 action 完全等价，通常不应重复建立行动链。
+            - 若 tendency 是对 pending action 的确认、拒绝、修改、补充或取消，应承接该 pending。
+            - 若 tendency 与现有 action 相关但不是重复，而是追加约束、改变目标或要求继续，应按新的行动需求评估。
+            - 若拒绝是因为已有 action 覆盖，ok=false，并在 reason 中说明覆盖关系。
+            - 不要仅因为 conversation 中存在相似历史内容就认为已覆盖；必须有 action 状态证据。
             
-            关于“做不了”的情况：
-            - 若 tendency 确实对应用户明确提出的行动要求，但当前系统无法生成有效的 primaryActionChain，则应返回 ok=false。
-            - 在这种情况下，reason 与 description 应明确指出：当前无法执行、无法推进、暂不支持，或缺少必要能力。
-            - 这样后续交流模块才能自然向用户说明“当前做不了”，而不是假装已进入执行。
+            2. 判断是否需要行动链
             
-            needConfirm 的判断：
-            - 若该 tendency 代表的行动具有明显副作用、资源消耗、系统修改、外部操作、风险、持续执行或用户可能希望先确认的影响，则可设 needConfirm=true。
-            - 若该 tendency 是低风险、明确、可立即推进的动作，且上下文中没有要求先确认的信号，可设 needConfirm=false。
+            按照完成条件判断，而不是按行为类别死板判断：
             
-            type 的判断：
-            - IMMEDIATE：当前可直接进入即时执行链。
-            - PLANNING：需要先形成规划、拆分步骤、组织执行路径，再决定后续执行。
-            - 若 ok=false，则 type 通常留空或无效默认值，不要强行填写。
+            - 如果完成 tendency 需要系统获取当前状态、访问资源、调用能力、操作对象、改变状态、触发过程、安排未来动作或向外部系统发出请求，则通常需要行动链。
+            - 如果完成 tendency 只需要基于已有上下文进行解释、分析、总结、评价、翻译、改写、闲聊或普通交流，且不需要任何系统能力介入，则通常不需要行动链。
+            - 如果 tendency 的完成结果依赖“实际执行后发生什么”“当前对象真实状态是什么”“外部资源现在是什么结果”，则通常需要行动链。
+            - 如果用户目标本身是让系统代为完成某件事，而不是只要建议、说明或解释，则通常需要行动链。
             
-            primaryActionChain 的要求：
+            这里的“对象”可以是任何可被系统能力作用的东西，包括本地资源、远程资源、应用状态、文件系统、运行环境、记忆、计划、任务、接口、页面、数据、设备或会话状态。
+            
+            这里的“产生影响”包括改变对象状态、创建结果、触发过程、安排未来动作或向外部系统发出请求。
+            
+            不要试图枚举所有用户行为；依据“是否需要系统能力介入才能完成”来判断。
+            
+            3. 判断 available_meta_actions 是否能承接
+            
+            ok=true 的必要条件：
+            - tendency 当前没有被已有 action 状态覆盖；
+            - 完成 tendency 需要行动链；
+            - available_meta_actions 中存在能承接该 tendency 的 action_key；
+            - 可以生成非空 primaryActionChain。
+            
+            规则：
+            - ok=true 时 primaryActionChain 必须非空。
+            - primaryActionChain 只能使用 available_meta_actions 中真实存在的 action_key。
+            - 不要编造 action_key。
+            - 如果没有任何可用能力能承接，即使 tendency 本身合理，也必须 ok=false。
+            - 如果无法承接，reason 应说明缺少能力、能力不匹配、信息不足或策略限制，不要说用户没有要求。
+            
+            4. 判断信息是否足够
+            
+            - 若 tendency 的目标、对象、范围、参数或约束足够明确，可以继续评估可执行性。
+            - 若缺少必要信息，但可以通过向用户确认或澄清补足，应 ok=false，并说明需要澄清。
+            - 若缺少的信息可以通过已有 action/context/pending 状态明确补足，则可以继续推进。
+            - 不要因为 tendency 中的信息来自上游解析或上下文补全就认为信息不足；只判断当前 tendency 自身是否足以形成行动链。
+            
+            5. 判断是否需要确认
+            
+            needConfirm 判断的是“是否需要先获得用户确认”，不是“是否能执行”。
+            
+            - needConfirm=true 仍然可以 ok=true。
+            - 若行动可能产生副作用、不可逆影响、权限风险、隐私风险、安全风险、资源消耗、外部可见影响、长期运行影响，或用户可能希望先确认，则应 needConfirm=true。
+            - 若行动是低风险、短时、可逆、范围明确、授权清晰，且系统策略允许直接推进，则可 needConfirm=false。
+            - 如果风险或目标不确定到无法形成可确认行动，应 ok=false，并说明需要澄清或缺少必要信息。
+            - 不要因为行动有副作用就直接拒绝；先判断是否可以通过 needConfirm 承接。
+            - 不要把“需要确认”写成“无法执行”。
+            
+            6. 判断 type
+            
+            - IMMEDIATE：目标清楚，能力链清楚，可以直接由当前 action chain 推进。
+            - PLANNING：目标需要拆解、多步协调、长期推进、条件判断或中间决策。
+            - ok=false 时，type 不应表达可执行状态；若结构必须填默认值，不要在 reason/description 中暗示会执行。
+            
+            7. 输出字段要求
+            
+            primaryActionChain：
             - 只在 ok=true 时填写。
-            - 每个元素包含：
-              - order：执行顺序
-              - actionKeys：该顺序下要使用的 action_key 列表
-            - 不要编造不存在的 action_key。
-            - 不要输出自然语言步骤说明，不要输出伪代码，只输出动作链结构。
+            - 每个元素包含 order 和 actionKeys。
+            - 不要写自然语言步骤。
+            - 不要写伪代码。
+            - 若一个能力即可承接，使用单步链。
             
-            scheduleData 的要求：
-            - 仅当该 tendency 明确包含未来时刻的调度语义时填写，否则留为空对象；
-            - 若用户只是泛泛表示“以后提醒我”“找时间做”，但无法稳定落到可调度语义，则不要强填；
-            - scheduleData.type 表示一次性或周期性计划；
-            - scheduleData.content 必须符合 Quartz 标准的 Cron 表达式。
+            scheduleData：
+            - 仅当 tendency 明确要求未来、周期、延迟、提醒、定时或计划安排时填写。
+            - 没有调度语义时留空。
+            - 不要为了完整性强行填写。
             
-            resolvedPending 的要求：
-            - 仅当你能明确判断当前 tendency 已承接某个 pending block 时填写；
-            - 若无法明确对应，则留空；
-            - 不要为了“看起来完整”而猜测填写。
+            resolvedPending：
+            - 仅当当前 tendency 明确承接某个 pending block 时填写。
+            - 无法明确对应时留空。
+            - 不要猜测。
             
-            reason 与 description 的要求：
-            - reason 用于简洁说明你为何做出该判断；
-            - description 用于概括这条 tendency 的处理结论，帮助后续模块快速理解；
-            - 若 ok=false 且原因是“更适合直接回复”，应明确体现这一点；
-            - 若 ok=false 且原因是“用户要求行动，但当前做不了”，也应明确体现这一点。
+            reason：
+            - 说明可行性判断依据。
+            - 若 ok=true，说明为什么当前可以推进、使用能力链是否充分、是否需要确认。
+            - 若 ok=false，必须说明真正失败的层级：
+              - 不需要行动链，直接交流即可；
+              - 已有 action 覆盖；
+              - 缺少可用 MetaAction；
+              - action_key 无法承接；
+              - 必要信息不足；
+              - 指代或目标不明确；
+              - 风险/权限/策略限制导致无法推进；
+              - 需要澄清。
+            - 不得把“能力不足”“需要确认”“有风险”“信息不足”“上下文缺失”写成“用户没有要求”。
+            - 不得基于 recent_chatmessage 的上一轮内容否定 tendency。
+            - 不得输出“用户当前并未提出该要求”这类意图抽取判断，除非上下文中存在明确取消、冲突或过期证据。
             
-            以下情形通常应返回 ok=false：
-            - 当前输入本质上是可直接回答的问题；
-            - 当前输入只是解释型、说明型、分析型、评价型、总结型请求；
-            - 当前输入只是询问上下文、系统状态、记忆内容、当前可见内容；
-            - 当前输入只是轻量追问、闲聊、感叹、态度表达；
-            - tendency 与已有行动完全重复，且没有新的推进信息；
-            - tendency 虽然像一个行动请求，但当前没有任何 available_meta_actions 能承接，无法形成有效 primaryActionChain。
-            
-            以下情形通常才应返回 ok=true：
-            - 用户明确要求系统执行某项动作、访问外部资源、操作系统对象、调用能力、推进某项任务；
-            - 用户明确要求继续、修改、取消、确认某个已有待处理行动；
-            - 用户明确要求调度未来动作；
-            - 当前若不进入行动链，就无法真正完成该 tendency；
-            - 且当前系统确实存在可用的 primaryActionChain。
+            description：
+            - 简短概括处理结论。
+            - 若 ok=true，描述将要推进的行动。
+            - 若 needConfirm=true，描述应体现该行动需要确认。
+            - 若 ok=false，描述应体现不推进的真实原因。
             
             输出要求：
             - 严格按照 EvaluatorResult 对应结构输出。
