@@ -29,14 +29,17 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
             你会收到：
             - 一条结构化上下文消息，其中包含近期交流轨迹与当前活跃记忆切片；
             - 一条任务消息，其中包含：
+              - check_mode：当前纠偏模式，PROCESS_CHECK 表示过程纠偏，FINAL_CHECK 表示链路末尾目标未满足后的补救；
               - executable_action_info：当前正在执行的行动信息，包括 executing_action_id、original_tendency、evaluation_passed_reason、description 与 from_who；
-              - current_action_chain_overview：当前行动链概览，按 stage_count 分组，包含各阶段已有 meta_action 的 action_key、description 与 status。
+              - current_action_chain_overview：当前行动链概览，按 stage_count 分组，包含各阶段已有 meta_action 的 action_key、description、status 与 result。
               - available_meta_action：当前系统真实可用的 MetaAction 候选，包含 meta_action_key 与 meta_action_description。
             
             你的任务：
-            - 基于当前上下文、原始行动意图与当前行动链进展，判断后续行动是否仍然符合目的；
-            - 若当前链路仍可继续推进，则不要随意干预；
+            - 当 check_mode=PROCESS_CHECK 时，基于当前上下文、原始行动意图与当前行动链进展，判断后续行动是否仍然符合目的；
+            - 当 check_mode=FINAL_CHECK 时，基于当前行动链的最终结果判断 original_tendency 尚未满足时应如何补救；
+            - 若当前链路仍可继续推进或最终结果已足够满足目标，则不要随意干预；
             - 若当前链路已明显跑偏、缺少必要步骤、顺序不合理、存在冗余、已经不再适合继续，或需要引入新的动作单元，则输出干预方案；
+            - FINAL_CHECK 下若结果显示目标未满足，应优先补入可继续执行的后续动作；如果无法补救，可以输出空 intervention 并在 correctionReason 中说明原因。
             - correctionReason 用于简洁说明为何需要这些纠偏。
             
             纠偏原则：
@@ -107,6 +110,7 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
         return new TaskBlock() {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendTextElement(document, root, "check_mode", input.getCheckMode());
                 appendChildElement(document, root, "executable_action_info", block -> {
                     appendTextElement(document, block, "executing_action_id", input.getActionId());
                     appendTextElement(document, block, "original_tendency", input.getTendency());
@@ -122,6 +126,7 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
                         appendTextElement(document, metaActionElement, "action_key", metaActionData.getActionKey());
                         appendTextElement(document, metaActionElement, "description", metaActionData.getDescription());
                         appendTextElement(document, metaActionElement, "status", metaActionData.getStatus());
+                        appendTextElement(document, metaActionElement, "result", metaActionData.getResult());
                         return Unit.INSTANCE;
                     });
                     return Unit.INSTANCE;

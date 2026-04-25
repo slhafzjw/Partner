@@ -10,6 +10,7 @@ import java.util.Map;
 @Data
 @Builder
 public class CorrectorInput {
+    private CheckMode checkMode = CheckMode.PROCESS_CHECK;
     private String tendency;
     private String source;
     private String reason;
@@ -18,11 +19,17 @@ public class CorrectorInput {
 
     private Map<Integer, List<ActionChainItem>> actionChainOverview;
 
+    public enum CheckMode {
+        PROCESS_CHECK,
+        FINAL_CHECK
+    }
+
     @Data
     @AllArgsConstructor
     public static class ActionChainItem {
         private String actionKey;
         private String description;
         private String status;
+        private String result;
     }
 }

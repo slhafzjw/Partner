@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class ActionExecutor extends AbstractAgentModule.Standalone {
 
     private static final int MAX_EXTRACTOR_ATTEMPTS = 3;
+    private static final int MAX_FINAL_CORRECTION_ATTEMPTS = 1;
 
     private final AssemblyHelper assemblyHelper = new AssemblyHelper();
 
@@ -162,6 +163,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         blockManager.emitActionLaunchedBlock(executableAction);
 
         val stageCursor = initStageCursor(executableAction, actionChain);
+        int finalCorrectionAttempts = 0;
         while (true) {
             val stageSelection = selectCurrentStage(executableAction, actionChain);
             if (stageSelection.shouldReturn()) {
@@ -175,7 +177,10 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 return;
             }
             if (!applyStageCorrectionAndAdvance(executableAction, stageCursor, stageExecution)) {
-                break;
+                if (finalCorrectionAttempts >= MAX_FINAL_CORRECTION_ATTEMPTS || !applyFinalCorrection(executableAction, stageCursor)) {
+                    break;
+                }
+                finalCorrectionAttempts++;
             }
         }
         finishExecutableAction(executableAction);
@@ -257,7 +262,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             shouldRunCorrector = recognizerResult != null && recognizerResult.isNeedCorrection();
         }
         if (shouldRunCorrector) {
-            val correctorInput = assemblyHelper.buildCorrectorInput(executableAction);
+            val correctorInput = assemblyHelper.buildCorrectorInput(executableAction, CorrectorInput.CheckMode.PROCESS_CHECK);
             actionCorrector.execute(correctorInput)
                     .onSuccess(correctorResult -> {
                         actionCapability.handleInterventions(correctorResult.getMetaInterventionList(), executableAction);
@@ -272,6 +277,59 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         // 如果第一次已经推进完毕，本次将会跳过
         synchronized (executableAction.getExecutionLock()) {
             stageCursor.requestAdvance();
+            return stageCursor.next();
+        }
+    }
+
+    private boolean applyFinalCorrection(ExecutableAction executableAction, StageCursor stageCursor) {
+        val recognizerInput = assemblyHelper.buildCorrectorInput(executableAction, CorrectorInput.CheckMode.FINAL_CHECK);
+        val recognizerResult = actionCorrectionRecognizer.execute(recognizerInput)
+                .getOrDefault(new RecognizerResult());
+        if (!recognizerResult.isNeedCorrection()) {
+            return false;
+        }
+
+        val previousStage = executableAction.getExecutingStage();
+        val correctorResult = actionCorrector.execute(recognizerInput).getOrDefault(new CorrectorResult());
+        val interventions = correctorResult.getMetaInterventionList() == null
+                ? new ArrayList<work.slhaf.partner.core.action.entity.intervention.MetaIntervention>()
+                : correctorResult.getMetaInterventionList();
+        if (!interventions.isEmpty()) {
+            actionCapability.handleInterventions(interventions, executableAction);
+        }
+        blockManager.emitActionCorrectionBlock(
+                executableAction,
+                recognizerResult.getReason() == null || recognizerResult.getReason().isBlank()
+                        ? correctorResult.getCorrectionReason()
+                        : recognizerResult.getReason(),
+                interventions
+        );
+
+        synchronized (executableAction.getExecutionLock()) {
+            if (executableAction.getStatus() == Action.Status.FAILED) {
+                return false;
+            }
+            if (interventions.isEmpty() || executableAction.getActionChain().isEmpty()) {
+                executableAction.setStatus(Action.Status.FAILED);
+                ensureExecutableResult(executableAction, true, "行动未达到目标，且未能生成可继续执行的纠偏行动");
+                return false;
+            }
+            if (executableAction.getStatus() == Action.Status.PREPARE) {
+                normalizeExecutingStage(executableAction, executableAction.getActionChain());
+                executableAction.setStatus(Action.Status.EXECUTING);
+            } else {
+                Integer nextStage = executableAction.getActionChain().keySet().stream()
+                        .filter(stage -> stage > previousStage)
+                        .min(Integer::compareTo)
+                        .orElse(null);
+                if (nextStage == null) {
+                    executableAction.setStatus(Action.Status.FAILED);
+                    ensureExecutableResult(executableAction, true, "行动未达到目标，纠偏未生成后续执行阶段");
+                    return false;
+                }
+                executableAction.setExecutingStage(nextStage);
+            }
+            stageCursor.refresh();
             return stageCursor.next();
         }
     }
@@ -422,7 +480,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         if (!shouldRunCorrectionRecognizer(executableAction)) {
             return RecognizerTaskRecord.disabled();
         }
-        val recognizerInput = assemblyHelper.buildCorrectorInput(executableAction);
+        val recognizerInput = assemblyHelper.buildCorrectorInput(executableAction, CorrectorInput.CheckMode.PROCESS_CHECK);
         val task = buildRecognizerTask(recognizerInput, phaser);
         Future<RecognizerResult> future = virtualExecutor.submit(task);
         return new RecognizerTaskRecord(true, future);
@@ -664,6 +722,17 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             return stageCount < actionChain.size();
         }
 
+        private void refresh() {
+            val orderList = new ArrayList<>(actionChain.keySet());
+            orderList.sort(Integer::compareTo);
+            stageCount = orderList.indexOf(executableAction.getExecutingStage());
+            if (stageCount < 0) {
+                stageCount = 0;
+            }
+            executingStageUpdated = false;
+            stageCountUpdated = false;
+        }
+
         private void update() {
             val orderList = new ArrayList<>(actionChain.keySet());
             orderList.sort(Integer::compareTo);
@@ -689,19 +758,21 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             );
         }
 
-        private CorrectorInput buildCorrectorInput(ExecutableAction executableAction) {
+        private CorrectorInput buildCorrectorInput(ExecutableAction executableAction, CorrectorInput.CheckMode checkMode) {
             Map<Integer, List<CorrectorInput.ActionChainItem>> overview = new LinkedHashMap<>();
             executableAction.getActionChain().forEach((stage, list) -> {
                 List<CorrectorInput.ActionChainItem> overviewItems = list.stream()
                         .map(metaAction -> new CorrectorInput.ActionChainItem(
                                 metaAction.getKey(),
                                 resolveHistoryDescription(metaAction.getKey()),
-                                metaAction.getResult().getStatus().name().toLowerCase(Locale.ROOT)
+                                metaAction.getResult().getStatus().name().toLowerCase(Locale.ROOT),
+                                metaAction.getResult().getData()
                         ))
                         .toList();
                 overview.put(stage, overviewItems);
             });
             return CorrectorInput.builder()
+                    .checkMode(checkMode)
                     .tendency(executableAction.getTendency())
                     .source(executableAction.getSource())
                     .reason(executableAction.getReason())

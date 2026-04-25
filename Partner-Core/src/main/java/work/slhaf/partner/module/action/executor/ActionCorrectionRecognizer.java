@@ -28,21 +28,25 @@ public class ActionCorrectionRecognizer extends AbstractAgentModule.Sub<Correcto
             你会收到：
             - 一条结构化上下文消息，其中包含近期交流轨迹与当前活跃记忆切片；
             - 一条任务消息，其中包含：
+              - check_mode：当前识别模式，PROCESS_CHECK 表示过程纠偏识别，FINAL_CHECK 表示链路末尾完成度验收；
               - executable_action_info：当前正在执行的行动信息，包括 executing_action_id、original_tendency、evaluation_passed_reason、description 与 from_who；
-              - current_action_chain_overview：当前行动链概览，按 stage_count 分组，包含各阶段已有 meta_action 的 action_key、description 与 status。
+              - current_action_chain_overview：当前行动链概览，按 stage_count 分组，包含各阶段已有 meta_action 的 action_key、description、status 与 result。
             
             你的任务：
-            - 基于当前上下文、当前行动信息与当前行动链概览，判断这条行动链是否仍在合理推进；
-            - 判断当前是否已经出现明显偏航、停滞、重复打转、条件失配、目标漂移，或与最新语境不再一致的情况；
+            - 当 check_mode=PROCESS_CHECK 时，基于当前上下文、当前行动信息与当前行动链概览，判断这条行动链是否仍在合理推进；
+            - 当 check_mode=FINAL_CHECK 时，判断当前行动链即将结束时，original_tendency 是否已经被执行结果满足；
+            - 判断当前是否已经出现明显偏航、停滞、重复打转、条件失配、目标漂移、目标未完成，或与最新语境不再一致的情况；
             - 若需要引入 corrector，则返回 needCorrection=true，并给出简洁明确的 reason；
-            - 若当前仍可继续推进，则返回 needCorrection=false。
+            - 若当前仍可继续推进或已经满足目标，则返回 needCorrection=false。
             
             识别原则：
             - executable_action_info 用于说明当前链路最初为何成立、要解决什么问题、当前由谁发起；你的判断必须围绕这条行动本身，而不是被无关历史带偏。
-            - executing_action_id 用于标识当前正在执行的行动；current_action_chain_overview 用于说明当前链路整体结构与已知阶段状态。
+            - executing_action_id 用于标识当前正在执行的行动；current_action_chain_overview 用于说明当前链路整体结构、已知阶段状态与执行结果。
             - original_tendency 表示这条行动链最初要解决的问题；若当前链路明显偏离这一倾向，应优先视为异常信号。
             - evaluation_passed_reason 与 description 表示该行动最初为何被判定为可推进；若当前状态已经与这些前提不再一致，应考虑触发纠正。
-            - current_action_chain_overview 是判断当前链路是否停滞、重复、缺步骤、顺序异常或整体失衡的主要依据。
+            - current_action_chain_overview 是判断当前链路是否停滞、重复、缺步骤、顺序异常、整体失衡或最终目标未满足的主要依据。
+            - PROCESS_CHECK 关注执行过程是否仍然合理；FINAL_CHECK 关注链路结果是否满足 original_tendency。
+            - FINAL_CHECK 时应重点查看各 meta_action 的 result；如果 result 显示对象不存在、权限不足、参数错误、输出为空、命令失败、目标未产生或结果明显不符合 original_tendency，应触发纠正。
             - communication 域用于判断最新交流语境是否已发生明显变化，导致当前行动继续推进不再合适。
             - memory 域只在与当前行动明显相关时作为辅助参考使用。
             
@@ -51,12 +55,14 @@ public class ActionCorrectionRecognizer extends AbstractAgentModule.Sub<Correcto
             - 当前执行显著偏离 original_tendency，开始围绕无关目标展开；
             - 当前行动所依赖的前提已被新的交流内容或上下文推翻；
             - 当前行动链反复遇到同类失败、阻塞或空转迹象，继续按原链推进意义不大；
-            - 当前行动链已经明显需要改写策略、调整阶段顺序、补入新步骤或删除无效步骤，但现有链路无法自行收敛。
+            - 当前行动链已经明显需要改写策略、调整阶段顺序、补入新步骤或删除无效步骤，但现有链路无法自行收敛；
+            - FINAL_CHECK 时，执行结果明确显示 original_tendency 尚未满足，且可能通过补救步骤继续推进。
             
             不应轻易触发纠正的情形：
-            - 只是正常的多步推进；
-            - 存在短暂等待、一次性失败或合理重试，但整体方向仍正确；
+            - PROCESS_CHECK 时，只是正常的多步推进；
+            - PROCESS_CHECK 时，存在短暂等待、一次性失败或合理重试，但整体方向仍正确；
             - 行动链整体仍与 original_tendency、evaluation_passed_reason 和当前语境保持一致；
+            - FINAL_CHECK 时，执行结果已经足以满足 original_tendency，只需要向用户报告结果；
             - 仅凭旧对话、低相关记忆或轻微波动，不足以判定当前行动异常。
             
             关于输出：
@@ -85,6 +91,7 @@ public class ActionCorrectionRecognizer extends AbstractAgentModule.Sub<Correcto
         return new TaskBlock() {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
+                appendTextElement(document, root, "check_mode", input.getCheckMode());
                 appendChildElement(document, root, "executable_action_info", block -> {
                     appendTextElement(document, block, "executing_action_id", input.getActionId());
                     appendTextElement(document, block, "original_tendency", input.getTendency());
@@ -100,6 +107,7 @@ public class ActionCorrectionRecognizer extends AbstractAgentModule.Sub<Correcto
                         appendTextElement(document, metaActionElement, "action_key", metaActionData.getActionKey());
                         appendTextElement(document, metaActionElement, "description", metaActionData.getDescription());
                         appendTextElement(document, metaActionElement, "status", metaActionData.getStatus());
+                        appendTextElement(document, metaActionElement, "result", metaActionData.getResult());
                         return Unit.INSTANCE;
                     });
                     return Unit.INSTANCE;
