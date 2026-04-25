@@ -112,6 +112,7 @@ object ModelRuntimeRegistry : Configurable, ConfigRegistration<ModelRuntimeRegis
         try {
             val parsedConfig = parseJsonConfig(root)
             applyConfig(parsedConfig)
+            log.info("Model config updated")
         } catch (e: Exception) {
             log.error("Error while loading runtime provider config", e)
             baseProvider.clear()

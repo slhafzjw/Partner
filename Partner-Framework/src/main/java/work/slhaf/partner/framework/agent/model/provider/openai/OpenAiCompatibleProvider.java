@@ -117,7 +117,7 @@ public class OpenAiCompatibleProvider extends ModelProvider {
             return messages;
         }
 
-        String jsonInstruction = "Return only a valid JSON object that matches the requested response schema.";
+        String jsonInstruction = "Return only a valid JSON object.";
         List<Message> patched = new ArrayList<>(messages.size() + 1);
         boolean merged = false;
         for (Message message : messages) {

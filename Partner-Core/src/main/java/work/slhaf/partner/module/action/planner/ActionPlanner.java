@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";
-    private static final String TENDENCIES_EVALUATING_BLOCK_NAME = "action_tendencies_under_evaluation";
+    private static final String TENDENCIES_EVALUATING_BLOCK_NAME = "tendencies_under_evaluation";
 
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
@@ -96,12 +96,12 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         ));
 
         cognitionCapability.contextWorkspace().register(StateHintContent.createBlock(new StateHintContent(
-                "action_tendencies_under_evaluation",
+                "tendencies_under_evaluation",
                 "Partner is evaluating whether any action tendency should be taken for the latest input."
         ) {
             @Override
             public void fillStateContent(@NotNull Document document, @NotNull Element stateElement) {
-                appendListElement(document, stateElement, "action_tendencies", "tendency", tendencies);
+                appendListElement(document, stateElement, "tendencies", "tendency", tendencies);
             }
         }));
     }
@@ -161,7 +161,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             }
             executeOrSchedule(executableAction);
         }
-        if (hasPassedAction && !refusedTendencies.isEmpty()) {
+        if (!refusedTendencies.isEmpty()) {
             cognitionCapability.initiateTurn("Some candidate action tendencies were refused during evaluation. If any of them were promised to the user, acknowledge that they will not be executed and explain why.", source, getModuleName());
         }
         if (hasPendingConfirmation) {
