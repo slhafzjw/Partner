@@ -1,5 +1,6 @@
 package work.slhaf.partner.framework.agent.model.provider.openai;
 
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.openai.client.OpenAIClient;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
@@ -18,10 +19,13 @@ import work.slhaf.partner.framework.agent.support.Result;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class OpenAiCompatibleProvider extends ModelProvider {
 
     private static final int MAX_ATTEMPTS = 3;
+    private static final ConcurrentMap<StructuredOutputCacheKey, StructuredOutputMode> STRUCTURED_OUTPUT_MODE_CACHE = new ConcurrentHashMap<>();
 
     private final String baseUrl;
     private final String apiKey;
@@ -99,13 +103,50 @@ public class OpenAiCompatibleProvider extends ModelProvider {
     public <T> @NotNull Result<T> formattedChat(@NotNull List<Message> messages, @NotNull Class<T> responseType) {
         return executeWithRetry(
                 "OpenAI-compatible provider failed to complete the structured chat request after 3 attempts.",
-                () -> {
-                    StructuredChatCompletionCreateParams<T> params = buildParams(ensureJsonInstruction(messages, responseType)).toBuilder()
-                            .responseFormat(responseType)
-                            .build();
-                    return extractStructured(client.chat().completions().create(params));
-                }
+                () -> formattedChatByCachedMode(messages, responseType)
         );
+    }
+
+    private <T> T formattedChatByCachedMode(List<Message> messages, Class<T> responseType) {
+        StructuredOutputCacheKey cacheKey = new StructuredOutputCacheKey(baseUrl, model);
+        StructuredOutputMode mode = STRUCTURED_OUTPUT_MODE_CACHE.getOrDefault(cacheKey, StructuredOutputMode.UNKNOWN);
+        if (mode == StructuredOutputMode.PROMPT_ONLY_JSON) {
+            return promptOnlyFormattedChat(messages, responseType);
+        }
+        return strictThenPromptFallback(messages, responseType, cacheKey);
+    }
+
+    private <T> T strictThenPromptFallback(List<Message> messages, Class<T> responseType, StructuredOutputCacheKey cacheKey) {
+        try {
+            T result = strictFormattedChat(messages, responseType);
+            STRUCTURED_OUTPUT_MODE_CACHE.put(cacheKey, StructuredOutputMode.STRICT_RESPONSE_FORMAT);
+            return result;
+        } catch (Exception structuredFailure) {
+            try {
+                T result = promptOnlyFormattedChat(messages, responseType);
+                if (StructuredOutputFailureClassifier.shouldDowngradeToPromptOnlyJson(structuredFailure)) {
+                    STRUCTURED_OUTPUT_MODE_CACHE.put(cacheKey, StructuredOutputMode.PROMPT_ONLY_JSON);
+                }
+                return result;
+            } catch (Exception fallbackFailure) {
+                structuredFailure.addSuppressed(fallbackFailure);
+                throw structuredFailure;
+            }
+        }
+    }
+
+    private <T> T strictFormattedChat(List<Message> messages, Class<T> responseType) {
+        StructuredChatCompletionCreateParams<T> params = buildParams(ensureJsonInstruction(messages, responseType)).toBuilder()
+                .responseFormat(responseType)
+                .build();
+        return extractStructured(client.chat().completions().create(params));
+    }
+
+    private <T> T promptOnlyFormattedChat(List<Message> messages, Class<T> responseType) {
+        ChatCompletionCreateParams params = buildParams(ensureJsonInstruction(messages, responseType));
+        String rawText = extractText(client.chat().completions().create(params));
+        String jsonText = extractJsonObject(rawText);
+        return JSON.parseObject(jsonText, responseType);
     }
 
     private List<Message> ensureJsonInstruction(List<Message> messages, Class<?> responseType) {
@@ -131,6 +172,32 @@ public class OpenAiCompatibleProvider extends ModelProvider {
         return patched;
     }
 
+
+    private String extractJsonObject(String text) {
+        String trimmed = text == null ? "" : text.trim();
+        if (trimmed.isBlank()) {
+            throw invokeException("OpenAI-compatible provider returned empty content in prompt-only JSON fallback.", null);
+        }
+        trimmed = stripMarkdownFence(trimmed);
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            return trimmed;
+        }
+        int start = trimmed.indexOf('{');
+        int end = trimmed.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            return trimmed.substring(start, end + 1).trim();
+        }
+        throw invokeException("OpenAI-compatible provider prompt-only JSON fallback returned no JSON object.", null);
+    }
+
+    private String stripMarkdownFence(String text) {
+        String trimmed = text.trim();
+        if (!trimmed.startsWith("```")) {
+            return trimmed;
+        }
+        String withoutOpeningFence = trimmed.replaceFirst("^```[a-zA-Z0-9_-]*\\s*", "");
+        return withoutOpeningFence.replaceFirst("\\s*```$", "").trim();
+    }
 
     private ChatCompletionCreateParams buildParams(List<Message> messages) {
         ChatCompletionCreateParams.Builder paramsBuilder = ChatCompletionCreateParams.builder()
@@ -223,6 +290,15 @@ public class OpenAiCompatibleProvider extends ModelProvider {
             extras.forEach((key, value) -> result.put("extra." + key, value == null ? "null" : value.toString()));
         }
         return result;
+    }
+
+    private enum StructuredOutputMode {
+        UNKNOWN,
+        STRICT_RESPONSE_FORMAT,
+        PROMPT_ONLY_JSON
+    }
+
+    private record StructuredOutputCacheKey(String baseUrl, String model) {
     }
 
     @FunctionalInterface
