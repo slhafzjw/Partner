@@ -58,10 +58,34 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
             
             决策流程：
             
+            0. 优先处理 pending action 的确认、拒绝、修改或取消
+            
+            - 如果 action 上下文中存在等待用户确认的 pending action，且 tendency 表达的是确认、同意、继续、执行、可以、拒绝、取消、修改、补充条件等承接行为，应优先按 pending action 承接处理。
+            - 这类 tendency 不是新的独立行动，不要为“确认、拒绝、继续”本身寻找 available_meta_actions。
+            - 不要因为 pending action 有副作用就再次设置 needConfirm=true；用户确认 pending action 时，needConfirm 必须为 false，避免确认循环。
+            - 若 tendency 表示确认、同意、继续或执行 pending action：
+              - 应返回 ok=true；
+              - needConfirm=false；
+              - resolvedPending 应填写对应 pending block 的 blockName 与 source；
+              - primaryActionChain 应从 pending action 的 primary_action_chain 承接；
+              - type 应从 pending action 的 action_type 承接；
+              - scheduleData 应从 pending action 的 schedule 信息承接；若 pending action 没有调度信息则留空；
+              - reason 应说明用户已确认该 pending action，现在可以执行。
+            - 若 tendency 表示拒绝、取消或不执行 pending action：
+              - 应填写 resolvedPending；
+              - ok=false；
+              - reason 应说明用户取消了 pending action，因此不再推进；
+              - 不要生成 primaryActionChain。
+            - 若 tendency 表示修改 pending action、补充条件或改变目标：
+              - 应填写 resolvedPending；
+              - 不要把它当作全新无关任务；
+              - 若修改后的目标足够明确且 available_meta_actions 可承接，则按修改后的行动返回 ok=true；
+              - 若信息不足，则 ok=false，并说明需要澄清。
+            - 只有当 action 上下文中不存在相关 pending action，或 tendency 明显不是对 pending action 的承接时，才继续后续可行性评估。
+            
             1. 判断是否已经被现有 action 状态覆盖
             
             - 若 tendency 与已有正在执行、等待确认、已完成且仍有效的 action 完全等价，通常不应重复建立行动链。
-            - 若 tendency 是对 pending action 的确认、拒绝、修改、补充或取消，应承接该 pending。
             - 若 tendency 与现有 action 相关但不是重复，而是追加约束、改变目标或要求继续，应按新的行动需求评估。
             - 若拒绝是因为已有 action 覆盖，ok=false，并在 reason 中说明覆盖关系。
             - 不要仅因为 conversation 中存在相似历史内容就认为已覆盖；必须有 action 状态证据。
@@ -93,6 +117,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
             - ok=true 时 primaryActionChain 必须非空。
             - primaryActionChain 只能使用 available_meta_actions 中真实存在的 action_key。
             - 不要编造 action_key。
+            - 对 pending action 的确认行为，不要为“确认”本身寻找 action_key；应从 pending action 中承接原 action chain。
             - 如果没有任何可用能力能承接，即使 tendency 本身合理，也必须 ok=false。
             - 如果无法承接，reason 应说明缺少能力、能力不匹配、信息不足或策略限制，不要说用户没有要求。
             
@@ -108,6 +133,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
             needConfirm 判断的是“是否需要先获得用户确认”，不是“是否能执行”。
             
             - needConfirm=true 仍然可以 ok=true。
+            - 如果当前 tendency 是对已有 pending action 的确认、同意、继续或执行，needConfirm 必须为 false；确认行为不能再次触发确认。
             - 若行动可能产生副作用、不可逆影响、权限风险、隐私风险、安全风险、资源消耗、外部可见影响、长期运行影响，或用户可能希望先确认，则应 needConfirm=true。
             - 若行动是低风险、短时、可逆、范围明确、授权清晰，且系统策略允许直接推进，则可 needConfirm=false。
             - 如果风险或目标不确定到无法形成可确认行动，应 ok=false，并说明需要澄清或缺少必要信息。
@@ -152,6 +178,7 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
               - 风险/权限/策略限制导致无法推进；
               - 需要澄清。
             - 不得把“能力不足”“需要确认”“有风险”“信息不足”“上下文缺失”写成“用户没有要求”。
+            - 对确认类 tendency，不得输出“缺少确认动作能力”“确认本身不需要行动链”作为拒绝理由；应判断是否能承接 pending action。
             - 不得基于 recent_chatmessage 的上一轮内容否定 tendency。
             - 不得输出“用户当前并未提出该要求”这类意图抽取判断，除非上下文中存在明确取消、冲突或过期证据。
             

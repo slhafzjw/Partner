@@ -162,7 +162,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             executeOrSchedule(executableAction);
         }
         if (!refusedTendencies.isEmpty()) {
-            cognitionCapability.initiateTurn("Some candidate action tendencies were refused during evaluation. If any of them were promised to the user, acknowledge that they will not be executed and explain why.", source, getModuleName());
+            cognitionCapability.initiateTurn("Some candidate action tendencies were refused during evaluation. Only reply if the user has not already received a suitable response and one of the refused tendencies was explicitly promised or implied as executable. If a response has already been given, or no promise was made, respond with NO_REPLY.", source, getModuleName());
         }
         if (hasPendingConfirmation) {
             cognitionCapability.initiateTurn("Some actions are pending user confirmation. Ask the user to confirm before executing them.", source, getModuleName());
