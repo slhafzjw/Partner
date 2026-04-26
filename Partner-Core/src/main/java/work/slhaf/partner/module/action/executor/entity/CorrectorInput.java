@@ -10,7 +10,7 @@ import java.util.Map;
 @Data
 @Builder
 public class CorrectorInput {
-    private CheckMode checkMode = CheckMode.PROCESS_CHECK;
+    private CheckMode checkMode;
     private String tendency;
     private String source;
     private String reason;
