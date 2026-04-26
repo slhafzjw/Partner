@@ -1,4 +1,4 @@
-package work.slhaf.partner.common.mcp;
+package work.slhaf.partner.core.action.runner.mcp;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;

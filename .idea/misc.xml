@@ -40,6 +40,7 @@
     </option>
     <option name="ignoredFiles">
       <set>
+        <option value="$PROJECT_DIR$/Partner-Common/pom.xml" />
         <option value="$PROJECT_DIR$/Partner-SandboxRunner/pom.xml" />
         <option value="$PROJECT_DIR$/Partner-Test-Demo/pom.xml" />
       </set>

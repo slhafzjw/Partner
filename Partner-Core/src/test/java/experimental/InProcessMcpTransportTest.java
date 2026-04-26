@@ -7,7 +7,7 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
-import work.slhaf.partner.common.mcp.InProcessMcpTransport;
+import work.slhaf.partner.core.action.runner.mcp.InProcessMcpTransport;
 
 import java.util.List;
 
