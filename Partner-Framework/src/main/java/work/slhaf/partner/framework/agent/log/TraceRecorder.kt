@@ -4,7 +4,7 @@ import com.alibaba.fastjson2.JSONObject
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import org.slf4j.LoggerFactory
-import work.slhaf.partner.framework.agent.factory.context.AgentContext
+import work.slhaf.partner.framework.agent.config.ConfigCenter
 import java.io.BufferedWriter
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
@@ -16,10 +16,79 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.zip.GZIPOutputStream
 
+object TraceSinkRegistry {
+
+    private val log = LoggerFactory.getLogger(TraceSinkRegistry::class.java)
+    private val sinks = CopyOnWriteArrayList<TraceSink>()
+    private val closed = AtomicBoolean(false)
+
+    init {
+        register(FileTraceSink)
+    }
+
+    @JvmStatic
+    fun register(sink: TraceSink) {
+        if (closed.get()) {
+            log.warn("TraceSinkRegistry is closed, skip trace sink: {}", sink.javaClass.name)
+            return
+        }
+        if (!sinks.contains(sink)) {
+            sinks.add(sink)
+        }
+    }
+
+    @JvmStatic
+    fun unregister(sink: TraceSink) {
+        sinks.remove(sink)
+    }
+
+    @JvmStatic
+    fun publish(event: TraceEvent) {
+        for (sink in sinks) {
+            runCatching {
+                sink.consume(event)
+            }.onFailure {
+                log.error("Trace sink failed: {}", sink.javaClass.name, it)
+            }
+        }
+    }
+
+    @JvmStatic
+    fun close() {
+        if (!closed.compareAndSet(false, true)) {
+            return
+        }
+        sinks.forEach { sink ->
+            runCatching {
+                sink.close()
+            }.onFailure {
+                log.error("Failed to close trace sink: {}", sink.javaClass.name, it)
+            }
+        }
+        sinks.clear()
+    }
+}
+
+interface TraceSink : AutoCloseable {
+    fun consume(event: TraceEvent)
+
+    override fun close() {
+    }
+}
+
 object TraceRecorder {
+
+    @JvmStatic
+    fun record(event: TraceEvent) {
+        TraceSinkRegistry.publish(event)
+    }
+}
+
+object FileTraceSink : TraceSink {
 
     private const val ACTIVE_FILE_NAME = "active.jsonl"
     private const val HISTORICAL_DIR_NAME = "historical"
@@ -40,7 +109,6 @@ object TraceRecorder {
     private val writerJob: Job
 
     init {
-        AgentContext.addPostShutdownHook("trace-recorder-close") { close() }
         writerJob = scope.launch {
             try {
                 for (event in channel) {
@@ -54,18 +122,18 @@ object TraceRecorder {
         }
     }
 
-    fun record(event: TraceEvent) {
+    override fun consume(event: TraceEvent) {
         if (closed.get()) {
-            log.warn("TraceRecorder is closed, skip event for path: {}", event.path)
+            log.warn("FileTraceSink is closed, skip event for key: {}", event.key)
             return
         }
         val result = channel.trySend(event)
         if (result.isFailure) {
-            log.error("Failed to enqueue trace event for path: {}", event.path, result.exceptionOrNull())
+            log.error("Failed to enqueue trace event for key: {}", event.key, result.exceptionOrNull())
         }
     }
 
-    fun close() {
+    override fun close() {
         if (!closed.compareAndSet(false, true)) {
             return
         }
@@ -77,7 +145,7 @@ object TraceRecorder {
     }
 
     private fun handleEvent(event: TraceEvent) {
-        val basePath = event.path.normalize().toAbsolutePath()
+        val basePath = resolveBasePath(event.key)
         runCatching {
             val state = writerStates.getOrPut(basePath) { openWriterState(basePath) }
             writeEvent(state, event)
@@ -85,12 +153,27 @@ object TraceRecorder {
                 rotateActiveFile(state)
             }
         }.onFailure {
-            log.error("Failed to persist trace event for path: {}", basePath, it)
+            log.error("Failed to persist trace event for key: {}, path: {}", event.key, basePath, it)
         }
+    }
+
+    private fun resolveBasePath(key: String): Path {
+        val traceRoot = ConfigCenter.paths.stateDir.resolve("trace").normalize().toAbsolutePath()
+        val normalizedKey = key.trim().ifBlank { "default" }
+        val candidate = traceRoot.resolve(normalizedKey).normalize().toAbsolutePath()
+        if (candidate.startsWith(traceRoot)) {
+            return candidate
+        }
+        return traceRoot.resolve(sanitizeKey(normalizedKey)).normalize().toAbsolutePath()
+    }
+
+    private fun sanitizeKey(key: String): String {
+        return key.replace(Regex("[^A-Za-z0-9._-]+"), "_").trim('_').ifBlank { "default" }
     }
 
     private fun writeEvent(state: WriterState, event: TraceEvent) {
         val json = JSONObject(event.payload)
+        json["traceKey"] = event.key
         json["timestamp"] = event.timestamp
         val line = json.toJSONString()
         state.writer.write(line)
@@ -327,7 +410,7 @@ object TraceRecorder {
 }
 
 data class TraceEvent @JvmOverloads constructor(
-    val path: Path,
+    val key: String,
     val payload: JSONObject,
     val timestamp: Long = System.currentTimeMillis()
 )

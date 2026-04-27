@@ -4,25 +4,19 @@ import com.alibaba.fastjson2.JSONException
 import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
 import work.slhaf.partner.framework.agent.config.Config
-import work.slhaf.partner.framework.agent.config.ConfigCenter
 import work.slhaf.partner.framework.agent.config.ConfigRegistration
 import work.slhaf.partner.framework.agent.config.Configurable
-import java.nio.file.Files
 import java.nio.file.Path
 import java.time.ZonedDateTime
 
 object LogAdviceProvider : Configurable, ConfigRegistration<AdviceLoggingConfig> {
 
-    private val logPath = ConfigCenter.paths.stateDir.resolve("trace").normalize().toAbsolutePath()
     private val _adviceRegistry = mutableSetOf<LogAdvice<*, *>>()
     val adviceRegistry: Set<LogAdvice<*, *>>
         get() = _adviceRegistry
 
     var logLevel = AdviceLoggingConfig.LogLevel.NONE
 
-    init {
-        Files.createDirectories(logPath)
-    }
 
     @JvmOverloads
     fun <I, O> createAdvice(
@@ -54,8 +48,7 @@ object LogAdviceProvider : Configurable, ConfigRegistration<AdviceLoggingConfig>
     }
 
     internal fun record(result: AdviceResult) {
-        val path = logPath.resolve(result.adviceTarget).normalize().toAbsolutePath()
-        val traceEvent = TraceEvent(path, result.toJSON(), result.finishTime.toInstant().toEpochMilli())
+        val traceEvent = TraceEvent(result.adviceTarget, result.toJSON(), result.finishTime.toInstant().toEpochMilli())
         TraceRecorder.record(traceEvent)
     }
 

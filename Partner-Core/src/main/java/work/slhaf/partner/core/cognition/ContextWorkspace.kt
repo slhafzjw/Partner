@@ -4,10 +4,8 @@ import com.alibaba.fastjson2.JSONObject
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import work.slhaf.partner.common.base.Block
-import work.slhaf.partner.framework.agent.config.ConfigCenter
 import work.slhaf.partner.framework.agent.log.TraceEvent
 import work.slhaf.partner.framework.agent.log.TraceRecorder
-import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
 import java.util.*
@@ -18,11 +16,6 @@ import kotlin.math.min
 
 class ContextWorkspace {
 
-    private val tracePath: Path = ConfigCenter.paths.stateDir
-        .resolve("trace")
-        .resolve("context-workspace")
-        .normalize()
-        .toAbsolutePath()
     private val stateSet = mutableSetOf<ContextBlock>()
     private val lock = ReentrantReadWriteLock()
 
@@ -157,7 +150,7 @@ class ContextWorkspace {
                     .thenBy { it.sourceKey.source }
             )
             .map(::blockSnapshot)
-        TraceRecorder.record(TraceEvent(tracePath, payload))
+        TraceRecorder.record(TraceEvent("context-workspace", payload))
     }
 
     private fun blockSnapshot(block: ContextBlock): JSONObject {

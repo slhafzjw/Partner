@@ -12,7 +12,7 @@ import work.slhaf.partner.framework.agent.factory.context.AgentContext;
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration;
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistry;
 import work.slhaf.partner.framework.agent.log.LogAdviceProvider;
-import work.slhaf.partner.framework.agent.log.TraceRecorder;
+import work.slhaf.partner.framework.agent.log.TraceSinkRegistry;
 import work.slhaf.partner.framework.agent.model.ModelRuntimeRegistry;
 import work.slhaf.partner.framework.agent.state.StateCenter;
 
@@ -135,9 +135,9 @@ public final class Agent {
                     StateCenter.INSTANCE::save
             );
             AgentContext.INSTANCE.addPostShutdownHook(
-                    "trace-recorder-close",
+                    "trace-sink-registry-close",
                     90,
-                    TraceRecorder.INSTANCE::close
+                    TraceSinkRegistry::close
             );
             AgentContext.INSTANCE.addPostShutdownHook(
                     "config-center-close",
