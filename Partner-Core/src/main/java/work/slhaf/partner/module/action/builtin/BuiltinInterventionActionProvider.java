@@ -17,6 +17,8 @@ import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent;
+import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
+import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.framework.agent.support.Result;
 
 import java.util.*;
@@ -35,6 +37,13 @@ class BuiltinInterventionActionProvider implements BuiltinActionProvider {
     private ActionCapability actionCapability;
     @InjectCapability
     private CognitionCapability cognitionCapability;
+    @InjectModule
+    private BuiltinActionRegistry builtinActionRegistry;
+
+    @Init
+    public void init() {
+        builtinActionRegistry.register(this);
+    }
 
     @Override
     public List<BuiltinActionRegistry.BuiltinActionDefinition> provideBuiltinActions() {

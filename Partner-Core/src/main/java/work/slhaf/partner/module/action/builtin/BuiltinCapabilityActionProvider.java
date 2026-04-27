@@ -14,6 +14,8 @@ import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent;
+import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
+import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.framework.agent.support.Result;
 
 import java.util.*;
@@ -32,6 +34,13 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
     private CognitionCapability cognitionCapability;
     @InjectCapability
     private MemoryCapability memoryCapability;
+    @InjectModule
+    private BuiltinActionRegistry builtinActionRegistry;
+
+    @Init
+    public void init() {
+        builtinActionRegistry.register(this);
+    }
 
     @Override
     public List<BuiltinActionRegistry.BuiltinActionDefinition> provideBuiltinActions() {

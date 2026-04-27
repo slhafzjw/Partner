@@ -9,7 +9,6 @@ import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCa
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,32 +25,26 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
 
     @Init
     public void init() {
-        definitions.clear();
-        for (BuiltinActionDefinition definition : buildDefaultActionDefinitions()) {
-            definitions.put(definition.actionKey(), definition);
-        }
-        actionCapability.registerMetaActions(exportMetaActionInfos());
         actionCapability.runnerClient().setBuiltinActionRegistry(this);
     }
 
-    protected List<BuiltinActionDefinition> buildDefaultActionDefinitions() {
-        List<BuiltinActionDefinition> builtinActionDefinitions = new ArrayList<>();
-        BuiltinActionProvider commandActionProvider = new BuiltinCommandActionProvider();
-        BuiltinActionProvider capabilityActionProvider = new BuiltinCapabilityActionProvider();
-        BuiltinActionProvider interventionActionProvider = new BuiltinInterventionActionProvider();
-        BuiltinActionProvider dynamicActionProvider = new BuiltinDynamicActionProvider();
-
-        builtinActionDefinitions.addAll(commandActionProvider.provideBuiltinActions());
-        builtinActionDefinitions.addAll(capabilityActionProvider.provideBuiltinActions());
-        builtinActionDefinitions.addAll(interventionActionProvider.provideBuiltinActions());
-        builtinActionDefinitions.addAll(dynamicActionProvider.provideBuiltinActions());
-
-        return builtinActionDefinitions;
+    public void register(BuiltinActionProvider provider) {
+        List<BuiltinActionDefinition> builtinActionDefinitions = provider.provideBuiltinActions();
+        if (builtinActionDefinitions == null || builtinActionDefinitions.isEmpty()) {
+            return;
+        }
+        Map<String, MetaActionInfo> metaActionInfos = new LinkedHashMap<>();
+        for (BuiltinActionDefinition definition : builtinActionDefinitions) {
+            definitions.put(definition.actionKey(), definition);
+            metaActionInfos.put(definition.actionKey(), definition.metaActionInfo());
+        }
+        actionCapability.registerMetaActions(metaActionInfos);
     }
 
     public void defineBuiltinAction(String name, MetaActionInfo metaActionInfo, Function<Map<String, Object>, String> invoker) {
         BuiltinActionDefinition definition = new BuiltinActionDefinition(BUILTIN_LOCATION + "::" + name, metaActionInfo, invoker);
         definitions.put(definition.actionKey(), definition);
+        actionCapability.registerMetaActions(Map.of(definition.actionKey(), definition.metaActionInfo()));
     }
 
     public String call(@NonNull String actionKey, @NonNull Map<String, Object> params) {
@@ -70,11 +63,6 @@ public class BuiltinActionRegistry extends AbstractAgentModule.Standalone {
         return result;
     }
 
-    private Map<String, MetaActionInfo> exportMetaActionInfos() {
-        Map<String, MetaActionInfo> metaActions = new LinkedHashMap<>();
-        definitions.forEach((key, value) -> metaActions.put(key, value.metaActionInfo()));
-        return metaActions;
-    }
 
     public record BuiltinActionDefinition(
             String actionKey,

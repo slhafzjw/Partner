@@ -7,6 +7,7 @@ import work.slhaf.partner.core.action.ActionCapability;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent;
+import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
 import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 import work.slhaf.partner.module.action.scheduler.ActionScheduler;
 
@@ -29,6 +30,13 @@ class BuiltinDynamicActionProvider implements BuiltinActionProvider {
     private ActionCapability actionCapability;
     @InjectModule
     private ActionScheduler actionScheduler;
+    @InjectModule
+    private BuiltinActionRegistry builtinActionRegistry;
+
+    @Init
+    public void init() {
+        builtinActionRegistry.register(this);
+    }
 
     @Override
     public List<BuiltinActionRegistry.BuiltinActionDefinition> provideBuiltinActions() {

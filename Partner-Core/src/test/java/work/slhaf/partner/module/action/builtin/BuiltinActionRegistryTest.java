@@ -52,29 +52,51 @@ class BuiltinActionRegistryTest {
     }
 
     @Test
-    void testInitRegistersMetaActionsAndMountsRunner() throws Exception {
+    void testInitMountsRunner() throws Exception {
         ActionCapability actionCapability = mock(ActionCapability.class);
         RunnerClient runnerClient = mock(RunnerClient.class);
         when(actionCapability.runnerClient()).thenReturn(runnerClient);
 
-        BuiltinActionRegistry registry = spy(new BuiltinActionRegistry());
-        doReturn(List.of(
-                buildDefinition("echo", buildMetaActionInfo("echo"), params -> params.get("value").toString())
-        )).when(registry).buildDefaultActionDefinitions();
+        BuiltinActionRegistry registry = new BuiltinActionRegistry();
         injectActionCapability(registry, actionCapability);
 
         registry.init();
+
+        verify(runnerClient).setBuiltinActionRegistry(registry);
+    }
+
+    @Test
+    void testRegisterProviderRegistersDefinitionsAndMetaActions() throws Exception {
+        ActionCapability actionCapability = mock(ActionCapability.class);
+        BuiltinActionRegistry registry = new BuiltinActionRegistry();
+        injectActionCapability(registry, actionCapability);
+
+        BuiltinActionProvider provider = new BuiltinActionProvider() {
+            @Override
+            public List<BuiltinActionRegistry.BuiltinActionDefinition> provideBuiltinActions() {
+                return List.of(buildDefinition("echo", buildMetaActionInfo("echo"), params -> params.get("value").toString()));
+            }
+
+            @Override
+            public String createActionKey(String actionName) {
+                return BUILTIN_LOCATION + "::" + actionName;
+            }
+        };
+
+        registry.register(provider);
 
         verify(actionCapability).registerMetaActions(argThat(metaActions ->
                 metaActions.containsKey("builtin::echo")
                         && "echo".equals(metaActions.get("builtin::echo").getDescription())
         ));
-        verify(runnerClient).setBuiltinActionRegistry(registry);
+        Assertions.assertEquals("hello", registry.call("builtin::echo", Map.of("value", "hello")));
     }
 
     @Test
-    void testCallReturnsStringifiedResults() {
+    void testCallReturnsStringifiedResults() throws Exception {
+        ActionCapability actionCapability = mock(ActionCapability.class);
         BuiltinActionRegistry registry = new BuiltinActionRegistry();
+        injectActionCapability(registry, actionCapability);
         registry.defineBuiltinAction("echo", buildMetaActionInfo("echo"), params -> params.get("value").toString());
         registry.defineBuiltinAction("json", buildMetaActionInfo("json"), params -> Map.of("ok", true).toString());
         registry.defineBuiltinAction("nil", buildMetaActionInfo("nil"), params -> null);
@@ -91,8 +113,10 @@ class BuiltinActionRegistryTest {
     }
 
     @Test
-    void testCallPropagatesInvokerFailure() {
+    void testCallPropagatesInvokerFailure() throws Exception {
+        ActionCapability actionCapability = mock(ActionCapability.class);
         BuiltinActionRegistry registry = new BuiltinActionRegistry();
+        injectActionCapability(registry, actionCapability);
         registry.defineBuiltinAction("boom", buildMetaActionInfo("boom"), params -> {
             throw new IllegalStateException("boom");
         });

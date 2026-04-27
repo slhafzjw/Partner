@@ -6,6 +6,9 @@ import work.slhaf.partner.core.action.entity.MetaActionInfo;
 import work.slhaf.partner.core.action.runner.execution.CommandExecutionService;
 import work.slhaf.partner.core.action.runner.policy.ExecutionPolicyRegistry;
 import work.slhaf.partner.core.action.runner.policy.WrappedLaunchSpec;
+import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent;
+import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
+import work.slhaf.partner.framework.agent.factory.component.annotation.InjectModule;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -21,6 +24,7 @@ import java.util.function.Function;
 
 import static work.slhaf.partner.core.action.ActionCore.BUILTIN_LOCATION;
 
+@AgentComponent
 class BuiltinCommandActionProvider implements BuiltinActionProvider {
 
     private static final String COMMAND_LOCATION = BUILTIN_LOCATION + "::" + "command";
@@ -37,6 +41,14 @@ class BuiltinCommandActionProvider implements BuiltinActionProvider {
 
     private final ConcurrentHashMap<String, CommandHandle> commandHandles = new ConcurrentHashMap<>();
     private final CommandExecutionService commandExecutionService = CommandExecutionService.INSTANCE;
+
+    @InjectModule
+    private BuiltinActionRegistry builtinActionRegistry;
+
+    @Init
+    public void init() {
+        builtinActionRegistry.register(this);
+    }
 
     private Map<String, String> commandParams() {
         Map<String, String> params = new LinkedHashMap<>();
