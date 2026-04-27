@@ -97,6 +97,11 @@ sealed class ExecutableAction(
     abstract val actionChain: MutableMap<Int, MutableList<MetaAction>>
 
     /**
+     * 行动阶段描述，用于为每个 stage 提供可落地的执行目标说明
+     */
+    val stageDescriptions: MutableMap<Int, String> = mutableMapOf()
+
+    /**
      * 行动阶段（当前阶段）
      */
     var executingStage: Int = 0
@@ -143,6 +148,7 @@ sealed class ExecutableAction(
             status = status,
             tendency = tendency,
             actionChainSize = actionChain.size,
+            stageDescriptions = stageDescriptions.toMap(),
             executingStage = executingStage,
             result = result,
             history = history.mapValues { (_, value) -> value.toList() },
@@ -268,6 +274,7 @@ data class ExecutableActionSnapshot(
 
     val tendency: String,
     val actionChainSize: Int,
+    val stageDescriptions: Map<Int, String>,
     val executingStage: Int,
     val result: String?,
     val history: Map<Int, List<HistoryAction>>,

@@ -406,7 +406,12 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             result.reset();
             metaAction.getParams().clear();
 
-            Result<ExtractorInput> extractorInputResult = assemblyHelper.buildExtractorInput(metaAction.getKey(), actionData.getUuid(), actionData.getDescription());
+            Result<ExtractorInput> extractorInputResult = assemblyHelper.buildExtractorInput(
+                    metaAction.getKey(),
+                    actionData.getUuid(),
+                    actionData.getDescription(),
+                    resolveCurrentStageDescription(actionData, executingStage)
+            );
             AgentRuntimeException exception = extractorInputResult.exceptionOrNull();
             if (exception != null) {
                 failureReason.set(exception.getMessage());
@@ -510,6 +515,10 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String resolveCurrentStageDescription(ExecutableAction executableAction, int executingStage) {
+        return executableAction.getStageDescriptions().get(executingStage);
     }
 
     private String buildAttemptFailureReason(String prefix, String detail) {
@@ -745,13 +754,14 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         private AssemblyHelper() {
         }
 
-        private Result<ExtractorInput> buildExtractorInput(String actionKey, @NotNull String uuid, @NotNull String description) {
+        private Result<ExtractorInput> buildExtractorInput(String actionKey, @NotNull String uuid, @NotNull String description, String currentStageDescription) {
             return actionCapability.loadMetaActionInfo(actionKey).fold(
                     metaActionInfo -> {
                         ExtractorInput input = new ExtractorInput();
                         input.setMetaActionInfo(metaActionInfo);
                         input.setTargetActionId(uuid);
                         input.setTargetActionDesc(description);
+                        input.setCurrentStageDesc(currentStageDescription);
                         return Result.success(input);
                     },
                     Result::failure

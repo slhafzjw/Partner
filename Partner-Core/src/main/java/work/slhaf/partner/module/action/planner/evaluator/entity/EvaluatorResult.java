@@ -55,6 +55,7 @@ public class EvaluatorResult {
     @Data
     public static class ChainElement {
         private Integer order;
+        private String description;
         private List<String> actionKeys;
     }
 }

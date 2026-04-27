@@ -17,6 +17,11 @@ public class ExtractorInput {
     private String targetActionDesc;
 
     /**
+     * 当前执行阶段的 description
+     */
+    private String currentStageDesc;
+
+    /**
      * 目标 MetaActionInfo
      */
     private MetaActionInfo metaActionInfo;

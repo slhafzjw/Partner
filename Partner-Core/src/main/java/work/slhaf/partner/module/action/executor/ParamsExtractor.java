@@ -29,7 +29,7 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Res
             你会收到：
             - 一条结构化上下文消息，其中可能包含当前行动相关状态、近期交流轨迹、以及活跃记忆切片；
             - 一条任务消息，其中包含：
-              - target_action：本次参数提取所面向的目标行动，用于帮助你判断上下文中哪些内容与当前提取直接相关；
+              - target_action：本次参数提取所面向的目标行动，用于帮助你判断上下文中哪些内容与当前提取直接相关；其中 current_stage_description 表示本次 MetaAction 所属阶段的具体执行目标，应优先用于约束参数提取；
               - meta_action_info：该行动对应的说明，以及允许提取的参数列表。每个 <param name="..."> 节点的文本内容表示该参数的含义或期望内容。
             
             你的任务：
@@ -78,6 +78,9 @@ public class ParamsExtractor extends AbstractAgentModule.Sub<ExtractorInput, Res
                 appendChildElement(document, root, "target_action", block -> {
                     appendTextElement(document, block, "uuid", input.getTargetActionId());
                     appendTextElement(document, block, "description", input.getTargetActionDesc());
+                    if (input.getCurrentStageDesc() != null && !input.getCurrentStageDesc().isBlank()) {
+                        appendTextElement(document, block, "current_stage_description", input.getCurrentStageDesc());
+                    }
                     return Unit.INSTANCE;
                 });
                 appendChildElement(document, root, "meta_action_info", element -> {

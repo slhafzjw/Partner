@@ -150,10 +150,13 @@ public class ActionEvaluator extends AbstractAgentModule.Sub<EvaluatorInput, Lis
             
             primaryActionChain：
             - 只在 ok=true 时填写。
-            - 每个元素包含 order 和 actionKeys。
-            - 不要写自然语言步骤。
+            - 每个元素包含 order、description 和 actionKeys。
+            - description 是该 stage 的具体执行目标，用一句短句说明本阶段要获得、检查、修改或触发什么；它不是用户回复文案，也不是完整推理过程。
             - 不要写伪代码。
-            - 若一个能力即可承接，使用单步链。
+            - 若 tendency 包含多个依赖步骤、需要先获取 A 再根据 A 决定 B、需要多次调用同一能力处理不同对象，或需要为后续汇报获取多类事实，应输出多 order 的 primaryActionChain。
+            - 不要为了减少步骤而把复杂诊断、查找、读取、分析全部压缩成单个 command::execute。
+            - 同一个 available_meta_action 可以在不同 order 中重复使用，只要每次对应的阶段目标、参数或对象不同。
+            - 对需要最终汇报的任务，行动链应负责获取支撑汇报所需的事实；最终自然语言汇报由 Communication 基于 action-finished state 完成，不需要把“汇报”本身作为一个 MetaAction。
             
             scheduleData：
             - 仅当 tendency 明确要求未来、周期、延迟、提醒、定时或计划安排时填写。

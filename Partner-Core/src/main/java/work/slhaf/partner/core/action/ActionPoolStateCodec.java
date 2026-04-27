@@ -76,6 +76,10 @@ final class ActionPoolStateCodec {
                 .<StateValue>map(entry -> {
                     Map<String, StateValue> stageMap = new LinkedHashMap<>();
                     stageMap.put("stage", StateValue.num(entry.getKey()));
+                    String stageDescription = action.getStageDescriptions().get(entry.getKey());
+                    if (stageDescription != null && !stageDescription.isBlank()) {
+                        stageMap.put("description", StateValue.str(stageDescription));
+                    }
                     stageMap.put("actions", StateValue.arr(entry.getValue().stream()
                             .map(metaAction -> (StateValue) encodeMetaAction(metaAction))
                             .toList()));
@@ -126,7 +130,11 @@ final class ActionPoolStateCodec {
             return null;
         }
 
-        Map<Integer, List<MetaAction>> restoredChain = decodeActionChain(actionObject.getJSONArray("action_chain"));
+        Map<Integer, String> restoredStageDescriptions = new LinkedHashMap<>();
+        Map<Integer, List<MetaAction>> restoredChain = decodeActionChain(
+                actionObject.getJSONArray("action_chain"),
+                restoredStageDescriptions
+        );
         ExecutableAction executableAction;
         if ("schedulable".equals(kind)) {
             String scheduleType = actionObject.getString("schedule_type");
@@ -173,11 +181,15 @@ final class ActionPoolStateCodec {
         if (result != null) {
             executableAction.setResult(result);
         }
+        executableAction.getStageDescriptions().putAll(restoredStageDescriptions);
         executableAction.getHistory().putAll(decodeHistory(actionObject.getJSONArray("history")));
         return executableAction;
     }
 
-    private static Map<Integer, List<MetaAction>> decodeActionChain(@Nullable JSONArray actionChainArray) {
+    private static Map<Integer, List<MetaAction>> decodeActionChain(
+            @Nullable JSONArray actionChainArray,
+            Map<Integer, String> stageDescriptions
+    ) {
         Map<Integer, List<MetaAction>> restored = new LinkedHashMap<>();
         if (actionChainArray == null) {
             return toMutableActionChain(restored);
@@ -188,9 +200,13 @@ final class ActionPoolStateCodec {
                 continue;
             }
             Integer stage = stageObject.getInteger("stage");
+            String description = stageObject.getString("description");
             JSONArray actions = stageObject.getJSONArray("actions");
             if (stage == null || actions == null) {
                 continue;
+            }
+            if (description != null && !description.isBlank()) {
+                stageDescriptions.put(stage, description);
             }
             List<MetaAction> metaActions = new ArrayList<>();
             for (int j = 0; j < actions.size(); j++) {
