@@ -140,7 +140,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
     }
 
     private void handleEvaluatorResults(List<EvaluatorResult> evaluatorResults, String source) {
-        boolean hasPassedAction = false;
         boolean hasPendingConfirmation = false;
         List<String> refusedTendencies = new ArrayList<>();
         for (EvaluatorResult evaluatorResult : evaluatorResults) {
@@ -153,7 +152,6 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             if (executableAction == null) {
                 continue;
             }
-            hasPassedAction = true;
             if (evaluatorResult.isNeedConfirm()) {
                 hasPendingConfirmation = true;
                 registerPendingContextBlock(executableAction, evaluatorResult);
