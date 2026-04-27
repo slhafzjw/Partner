@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlowContext> {
 
     private static final String IMMEDIATE_WATCHER_CRON = "0/5 * * * * ?";
-    private static final String TENDENCIES_EVALUATING_BLOCK_NAME = "tendencies_under_evaluation";
+    private static final String TENDENCIES_EVALUATING_BLOCK_NAME = "pending_action_intentions";
 
     private final ActionAssemblyHelper assemblyHelper = new ActionAssemblyHelper();
 
@@ -96,12 +96,12 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
         ));
 
         cognitionCapability.contextWorkspace().register(StateHintContent.createBlock(new StateHintContent(
-                "tendencies_under_evaluation",
-                "Partner is evaluating whether any action tendency should be taken for the latest input."
+                TENDENCIES_EVALUATING_BLOCK_NAME,
+                "Partner intends to handle the latest input through actions. When replying to the user, present this as Partner preparing to take action, not as an internal evaluation process."
         ) {
             @Override
             public void fillStateContent(@NotNull Document document, @NotNull Element stateElement) {
-                appendListElement(document, stateElement, "tendencies", "tendency", tendencies);
+                appendListElement(document, stateElement, "action_intentions", "action_intention", tendencies);
             }
         }));
     }
@@ -111,7 +111,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "datetime", datetime);
-                appendTextElement(document, root, "abstract", "There are " + tendencies.size() + " candidate action tendencies under evaluation.");
+                appendTextElement(document, root, "abstract", "There are " + tendencies.size() + " action intentions that Partner is preparing to handle.");
             }
         };
     }
