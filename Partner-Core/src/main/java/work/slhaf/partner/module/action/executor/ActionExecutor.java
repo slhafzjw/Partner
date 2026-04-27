@@ -155,7 +155,6 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
         actionCapability.putAction(executableAction);
 
         val actionChain = executableAction.getActionChain();
-        val phaser = new Phaser();
         if (!prepareExecutableAction(executableAction, actionChain)) {
             return;
         }
@@ -172,7 +171,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
             if (stageSelection.shouldStop()) {
                 break;
             }
-            val stageExecution = runCurrentStage(executableAction, phaser, stageCursor, stageSelection.metaActions());
+            val stageExecution = runCurrentStage(executableAction, stageCursor, stageSelection.metaActions());
             if (stageExecution.closed()) {
                 return;
             }
@@ -225,10 +224,10 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
 
     private StageExecution runCurrentStage(
             ExecutableAction executableAction,
-            Phaser phaser,
             StageCursor stageCursor,
             List<MetaAction> metaActions
     ) {
+        Phaser phaser = new Phaser();
         val recognizerRecord = startRecognizerIfNeeded(executableAction, phaser);
         val listeningRecord = executeAndListening(metaActions, phaser, executableAction);
         phaser.awaitAdvance(listeningRecord.phase());
@@ -775,6 +774,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                         .map(metaAction -> new CorrectorInput.ActionChainItem(
                                 metaAction.getKey(),
                                 resolveHistoryDescription(metaAction.getKey()),
+                                executableAction.getStageDescriptions().get(stage),
                                 metaAction.getResult().getStatus().name().toLowerCase(Locale.ROOT),
                                 metaAction.getResult().getData()
                         ))

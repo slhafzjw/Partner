@@ -279,7 +279,7 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
             if (actionChain == null) {
                 return null;
             }
-            return switch (evaluatorResult.getType()) {
+            ExecutableAction executableAction = switch (evaluatorResult.getType()) {
                 case PLANNING -> new SchedulableExecutableAction(
                         evaluatorResult.getTendency(),
                         actionChain,
@@ -297,6 +297,27 @@ public class ActionPlanner extends AbstractAgentModule.Running<PartnerRunningFlo
                         userId
                 );
             };
+            executableAction.getStageDescriptions().putAll(getStageDescriptions(evaluatorResult));
+            return executableAction;
+        }
+
+        private Map<Integer, String> getStageDescriptions(EvaluatorResult evaluatorResult) {
+            Map<Integer, String> descriptions = new HashMap<>();
+            List<EvaluatorResult.ChainElement> primaryActionChain = evaluatorResult.getPrimaryActionChain();
+            if (primaryActionChain == null || primaryActionChain.isEmpty()) {
+                return descriptions;
+            }
+            List<EvaluatorResult.ChainElement> orderedChain = new ArrayList<>(primaryActionChain);
+            orderedChain.sort(Comparator.comparing(EvaluatorResult.ChainElement::getOrder, Comparator.nullsLast(Integer::compareTo)));
+            int fixedOrder = 1;
+            for (EvaluatorResult.ChainElement chainElement : orderedChain) {
+                String description = chainElement.getDescription();
+                if (description != null && !description.isBlank()) {
+                    descriptions.put(fixedOrder, description);
+                }
+                fixedOrder++;
+            }
+            return descriptions;
         }
 
         private Map<Integer, List<MetaAction>> getActionChain(EvaluatorResult evaluatorResult) {

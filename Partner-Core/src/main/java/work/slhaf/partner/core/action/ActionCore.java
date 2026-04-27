@@ -229,13 +229,20 @@ public class ActionCore implements StateSerializable {
     }
 
     /**
-     * 在未进入执行阶段的行动单元组新增新的行动
+     * 在指定阶段之后追加新的行动单元组
      */
     private void handleAppend(ExecutableAction executableAction, int order, List<MetaAction> actions) {
-        if (order <= executableAction.getExecutingStage())
-            return;
+        Map<Integer, List<MetaAction>> actionChain = executableAction.getActionChain();
+        int targetOrder = nextAvailableOrder(actionChain, order + 1);
+        actionChain.put(targetOrder, actions);
+    }
 
-        executableAction.getActionChain().put(order, actions);
+    private int nextAvailableOrder(Map<Integer, List<MetaAction>> actionChain, int startOrder) {
+        int order = startOrder;
+        while (actionChain.containsKey(order)) {
+            order++;
+        }
+        return order;
     }
 
     /**

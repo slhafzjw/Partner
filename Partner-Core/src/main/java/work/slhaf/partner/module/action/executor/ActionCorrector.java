@@ -31,7 +31,7 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
             - 一条任务消息，其中包含：
               - check_mode：当前纠偏模式，PROCESS_CHECK 表示过程纠偏，FINAL_CHECK 表示链路末尾目标未满足后的补救；
               - executable_action_info：当前正在执行的行动信息，包括 executing_action_id、original_tendency、evaluation_passed_reason、description 与 from_who；
-              - current_action_chain_overview：当前行动链概览，按 stage_count 分组，包含各阶段已有 meta_action 的 action_key、description、status 与 result。
+              - current_action_chain_overview：当前行动链概览，按 stage_count 分组，包含各阶段已有 meta_action 的 action_key、description、stage_description、status 与 result；stage_description 是该阶段的具体执行目标，description 是 MetaAction 的通用能力说明。
               - available_meta_action：当前系统真实可用的 MetaAction 候选，包含 meta_action_key 与 meta_action_description。
             
             你的任务：
@@ -125,6 +125,9 @@ public class ActionCorrector extends AbstractAgentModule.Sub<CorrectorInput, Res
                     appendRepeatedElements(document, stageElement, "meta_action", stageData.getValue(), (metaActionElement, metaActionData) -> {
                         appendTextElement(document, metaActionElement, "action_key", metaActionData.getActionKey());
                         appendTextElement(document, metaActionElement, "description", metaActionData.getDescription());
+                        if (metaActionData.getStageDescription() != null && !metaActionData.getStageDescription().isBlank()) {
+                            appendTextElement(document, metaActionElement, "stage_description", metaActionData.getStageDescription());
+                        }
                         appendTextElement(document, metaActionElement, "status", metaActionData.getStatus());
                         appendTextElement(document, metaActionElement, "result", metaActionData.getResult());
                         return Unit.INSTANCE;

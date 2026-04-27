@@ -29,6 +29,7 @@ public class CorrectorInput {
     public static class ActionChainItem {
         private String actionKey;
         private String description;
+        private String stageDescription;
         private String status;
         private String result;
     }
