@@ -330,7 +330,7 @@ public class ActionExecutor extends AbstractAgentModule.Standalone {
                 executableAction.setExecutingStage(nextStage);
             }
             stageCursor.refresh();
-            return stageCursor.next();
+            return true;
         }
     }
 
