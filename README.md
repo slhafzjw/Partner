@@ -9,20 +9,19 @@ Agent 运行内核。
 
 ![Partner 架构总览](doc/assets/partner-overview.png)
 
+> 详细文档查看: [相关文档](#相关文档)
 ---
 
 ## 项目启动
 
-### 环境要求
+**环境要求**
 
 - JDK 21
 - Maven 3.x
 
-### 启动项目
+### 手动准备环境并启动
 
-#### 手动准备环境并启动
-
-##### 克隆项目并构建
+#### 克隆项目并构建
 
 ```bash
 git clone https://github.com/slhaf/Partner
@@ -39,7 +38,7 @@ mvn clean package -DskipTests
 Partner-Core/target/Partner-Core-0.5.0.jar
 ```
 
-##### 准备必需配置
+#### 准备必需配置
 
 Partner 默认从 `~/.partner` 读取运行时配置，也可以通过 `PARTNER_HOME` 指定其他目录：
 
@@ -93,9 +92,9 @@ export PARTNER_DEFAULT_MODEL="your-model-name"
 }
 ```
 
-> 其余详细配置信息参考 ![配置说明](doc/config/configuration.md)
+> 其余详细配置信息参考 [相关文档#配置说明](doc/config/configuration.md)
 
-##### 启动项目
+#### 启动
 
 ```
 java -jar Partner-Core/target/Partner-Core-0.5.0.jar
@@ -140,12 +139,12 @@ Partner/
 
 ### 待完成
 
-- ![整体架构与运行流](doc/architecture/overview.md)
-- ![ContextWorkspace](doc/context/context-workspace.md)
-- ![行动系统](doc/action/action.md)
-- ![记忆存储与组织](doc/memory/memory.md)
-- ![模型提供商](doc/model/providers.md)
-- ![配置说明](doc/config/configuration.md)
+- [整体架构与运行流](doc/architecture/overview.md)
+- [ContextWorkspace](doc/context/context-workspace.md)
+- [行动系统](doc/action/action.md)
+- [记忆存储与组织](doc/memory/memory.md)
+- [模型提供商](doc/model/providers.md)
+- [配置说明](doc/config/configuration.md)
 
 ---
 
