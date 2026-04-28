@@ -92,7 +92,7 @@ export PARTNER_DEFAULT_MODEL="your-model-name"
 }
 ```
 
-> 其余详细配置信息参考 [相关文档#配置说明](doc/config/configuration.md)
+> 其余详细配置信息参考 [配置项说明](doc/config/config-reference.md)
 
 #### 启动
 
@@ -138,6 +138,7 @@ Partner/
 ### 已完成
 
 - [整体架构与运行流](doc/architecture/overview.md)
+- [配置中心](doc/config/configuration.md)
 
 ### 待完成
 
@@ -145,7 +146,6 @@ Partner/
 - [行动系统](doc/action/action.md)
 - [记忆存储与组织](doc/memory/memory.md)
 - [模型提供商](doc/model/providers.md)
-- [配置说明](doc/config/configuration.md)
 
 ---
 
