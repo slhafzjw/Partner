@@ -139,13 +139,13 @@ Partner/
 
 - [整体架构与运行流](doc/architecture/overview.md)
 - [配置中心](doc/config/configuration.md)
+- [模型提供商](doc/model/providers.md)
 
 ### 待完成
 
 - [ContextWorkspace](doc/context/context-workspace.md)
 - [行动系统](doc/action/action.md)
 - [记忆存储与组织](doc/memory/memory.md)
-- [模型提供商](doc/model/providers.md)
 
 ---
 
