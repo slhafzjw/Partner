@@ -137,9 +137,10 @@ Partner/
 
 ### 已完成
 
+- [整体架构与运行流](doc/architecture/overview.md)
+
 ### 待完成
 
-- [整体架构与运行流](doc/architecture/overview.md)
 - [ContextWorkspace](doc/context/context-workspace.md)
 - [行动系统](doc/action/action.md)
 - [记忆存储与组织](doc/memory/memory.md)
