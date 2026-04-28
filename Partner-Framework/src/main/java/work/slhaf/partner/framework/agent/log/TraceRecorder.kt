@@ -27,11 +27,10 @@ object TraceSinkRegistry {
     private val closed = AtomicBoolean(false)
 
     init {
-        register(FileTraceSink)
+        FileTraceSink.register()
     }
 
-    @JvmStatic
-    fun register(sink: TraceSink) {
+    internal fun register(sink: TraceSink) {
         if (closed.get()) {
             log.warn("TraceSinkRegistry is closed, skip trace sink: {}", sink.javaClass.name)
             return
@@ -41,12 +40,10 @@ object TraceSinkRegistry {
         }
     }
 
-    @JvmStatic
-    fun unregister(sink: TraceSink) {
+    internal fun unregister(sink: TraceSink) {
         sinks.remove(sink)
     }
 
-    @JvmStatic
     fun publish(event: TraceEvent) {
         for (sink in sinks) {
             runCatching {
@@ -57,7 +54,6 @@ object TraceSinkRegistry {
         }
     }
 
-    @JvmStatic
     fun close() {
         if (!closed.compareAndSet(false, true)) {
             return
@@ -74,6 +70,16 @@ object TraceSinkRegistry {
 }
 
 interface TraceSink : AutoCloseable {
+
+    fun register() {
+        TraceSinkRegistry.register(this)
+    }
+
+    fun unregister() {
+        TraceSinkRegistry.unregister(this)
+    }
+
+
     fun consume(event: TraceEvent)
 
     override fun close() {

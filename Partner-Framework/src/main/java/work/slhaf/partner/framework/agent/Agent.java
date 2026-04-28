@@ -137,7 +137,7 @@ public final class Agent {
             AgentContext.INSTANCE.addPostShutdownHook(
                     "trace-sink-registry-close",
                     90,
-                    TraceSinkRegistry::close
+                    TraceSinkRegistry.INSTANCE::close
             );
             AgentContext.INSTANCE.addPostShutdownHook(
                     "config-center-close",
