@@ -12,8 +12,11 @@ Partner 是一个基于 Java/Kotlin 的模块化 AI Agent Runtime，目标是为
 - **动态上下文工作空间**：不同模块以 Context Block 形式发布状态，交流、记忆、行动等模块可按需读取上下文。
 - **行动链执行机制**：支持行动意图提取、评估、确认、执行与调度，并允许执行过程中的链路修正。
 - **记忆系统解耦**：区分记忆存储、组织、召回与上下文投影，支持后续替换不同记忆实现。
-- **OpenAI-compatible 模型接入**：通过 `ModelRuntimeRegistry` 管理默认 provider 与模块级 provider。
 - **配置与状态中心**：统一管理配置加载、热重载、状态持久化和运行时资源目录。
+
+## 架构总览
+
+Partner 分为 `Partner-Framework` 与 `Partner-Core` 两层。前者提供配置、注册、运行时调度、模型调用、Gateway、状态等基础设施；后者承载感知、记忆、行动、交流等实际模块。
 
 ![Partner 架构总览](doc/assets/partner-overview.png)
 
