@@ -1,13 +1,13 @@
 # Agent 注册链
 
-本文说明 `AgentRegisterFactory.launch(packageName)` 内部的注册链。注册链的职责是基于应用包与外部模块目录扫描结果，完成组件、模块、Capability、生命周期方法和关闭方法的注册。
+本文说明 `AgentRegisterFactory.launch(registerContext)` 内部的注册链。注册链的职责是基于启动层已经构建好的 `AgentRegisterContext`，完成组件、模块、Capability、生命周期方法和关闭方法的注册。
 
 `AgentRegisterContext` 是注册链上下文。它持有 `Reflections` 扫描器，以及供各阶段读写的 `ComponentFactoryContext`、`CapabilityFactoryContext` 和全局 `AgentContext`。
 
 ```mermaid
 flowchart TD
-    A["AgentRegisterFactory.launch(packageName)"] --> B["packageNameToURL(packageName)"]
-    B --> C["创建 AgentRegisterContext"]
+    A["AgentApp.launch()"] --> B["构建最终 AgentRegisterContext"]
+    B --> C["AgentRegisterFactory.launch(registerContext)"]
 
     subgraph CTX["AgentRegisterContext"]
         direction TB
