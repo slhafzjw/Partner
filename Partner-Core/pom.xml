@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>work.slhaf</groupId>
-        <artifactId>Partner</artifactId>
+        <groupId>work.slhaf.partner</groupId>
+        <artifactId>partner</artifactId>
         <version>0.5.0</version>
     </parent>
 
-    <artifactId>Partner-Core</artifactId>
+    <artifactId>partner-core</artifactId>
 
     <dependencies>
         <dependency>
@@ -18,8 +18,8 @@
             <version>1.6.0</version>
         </dependency>
         <dependency>
-            <groupId>work.slhaf</groupId>
-            <artifactId>Partner-Framework</artifactId>
+            <groupId>work.slhaf.partner</groupId>
+            <artifactId>partner-framework</artifactId>
             <version>0.5.0</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.nd4j/nd4j-api -->
@@ -43,12 +43,6 @@
             <groupId>io.modelcontextprotocol.sdk</groupId>
             <artifactId>mcp</artifactId>
             <version>0.17.0</version>
-        </dependency>
-        <dependency>
-            <groupId>work.slhaf</groupId>
-            <artifactId>Partner-Common</artifactId>
-            <version>0.5.0</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
