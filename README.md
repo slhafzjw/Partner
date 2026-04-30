@@ -142,9 +142,6 @@ Partner/
 - [模型提供商](doc/model/providers.md)
 - [ContextWorkspace](doc/context/context-workspace.md)
 - [行动系统](doc/action/action.md)
-
-### 待完成
-
 - [记忆存储与组织](doc/memory/memory.md)
 
 ---
