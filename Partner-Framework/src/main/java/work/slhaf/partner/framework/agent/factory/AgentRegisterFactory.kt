@@ -33,7 +33,11 @@ object AgentRegisterFactory {
     @JvmStatic
     fun launch(packageName: String) {
         urls.addAll(packageNameToURL(packageName))
-        val registerContext = AgentRegisterContext(urls)
+        launch(AgentRegisterContext(urls))
+    }
+
+    @JvmStatic
+    fun launch(registerContext: AgentRegisterContext) {
         // 1. 校验 Component 级别注解是否合规，避免注入到异常位置
         ComponentAnnotationValidatorFactory().execute(registerContext)
         // 2. 收集所有的 AgentComponent 实例
