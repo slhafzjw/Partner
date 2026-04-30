@@ -11,6 +11,7 @@
     <modules>
         <module>Partner-Core</module>
         <module>Partner-Framework</module>
+        <module>Partner-External-Modules</module>
     </modules>
 
     <properties>
