@@ -130,7 +130,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
 
     @Override
     public void onError(WebSocket webSocket, Exception e) {
-        log.error(e.getLocalizedMessage());
+        log.error("WebSocketGateway error", e);
     }
 
     @Override
