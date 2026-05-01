@@ -10,9 +10,6 @@ interface ResponseChannel {
 
     fun response(event: InteractionEvent)
 
-    fun register() {
-        AgentRuntime.registerResponseChannel(channelName, this)
-    }
 }
 
 object LogChannel : ResponseChannel {
@@ -21,10 +18,6 @@ object LogChannel : ResponseChannel {
 
     override val channelName: String
         get() = "log_channel"
-
-    init {
-        register()
-    }
 
     override fun response(event: InteractionEvent) {
         log.info(JSONObject.toJSONString(event))

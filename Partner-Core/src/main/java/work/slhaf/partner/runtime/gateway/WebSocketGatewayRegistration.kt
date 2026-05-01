@@ -3,7 +3,7 @@ package work.slhaf.partner.runtime.gateway
 import work.slhaf.partner.framework.agent.interaction.AgentGateway
 import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration
 
-object WebSocketGatewayRegistration : AgentGatewayRegistration {
+class WebSocketGatewayRegistration : AgentGatewayRegistration {
 
     override val channelName: String = "websocket_channel"
 

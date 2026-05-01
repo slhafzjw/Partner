@@ -12,7 +12,7 @@ public final class PartnerAgentBootstrap extends Agent.AgentBootstrap {
 
     @Override
     protected void bootstrap() {
-        addGatewayRegistration(WebSocketGatewayRegistration.INSTANCE);
+        addGatewayRegistration(new WebSocketGatewayRegistration());
         addConfigurable(new VectorClientRegistry());
     }
 }

@@ -7,13 +7,6 @@ public interface AgentGateway<I extends InputData, C extends RunningFlowContext>
 
     void launch();
 
-    AgentGatewayRegistration registration();
-
-    @Override
-    default void register() {
-        registration().register();
-    }
-
     default void receive(I inputData) {
         C parsedContext = parseRunningFlowContext(inputData);
         AgentRuntime.INSTANCE.submit(parsedContext);

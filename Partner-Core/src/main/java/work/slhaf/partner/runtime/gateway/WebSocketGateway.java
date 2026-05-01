@@ -10,7 +10,6 @@ import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.framework.agent.interaction.AgentGateway;
-import work.slhaf.partner.framework.agent.interaction.AgentGatewayRegistration;
 import work.slhaf.partner.framework.agent.interaction.data.InputData;
 import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
@@ -49,7 +48,6 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
         }
         this.start();
         startHeartbeatThread();
-        log.info("WebSocketGateway started");
     }
 
     @Override
@@ -138,11 +136,6 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
     @Override
     public void onStart() {
         log.info("WebSocketServer 已启动...");
-    }
-
-    @Override
-    public AgentGatewayRegistration registration() {
-        return WebSocketGatewayRegistration.INSTANCE;
     }
 
     @Override
