@@ -40,7 +40,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
         this.setReuseAddr(true);
         this.executor = Executors.newSingleThreadExecutor();
 
-        log.info("WebSocketGateway started on {}: {}", hostname, port);
+        log.info("WebSocketGateway will start on {}: {}", hostname, port);
     }
 
     public void launch() {
@@ -49,6 +49,7 @@ public class WebSocketGateway extends WebSocketServer implements AgentGateway<In
         }
         this.start();
         startHeartbeatThread();
+        log.info("WebSocketGateway started");
     }
 
     @Override
