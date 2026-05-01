@@ -5,15 +5,22 @@ import org.reflections.scanners.Scanners
 import org.reflections.util.ConfigurationBuilder
 import java.lang.reflect.Method
 import java.net.URL
+import java.net.URLClassLoader
 
 class AgentRegisterContext(urls: List<URL>) {
+
+    private val classLoader = URLClassLoader(
+        urls.toTypedArray(),
+        Thread.currentThread().contextClassLoader
+    )
+
     val reflections: Reflections = Reflections(
         ConfigurationBuilder().setScanners(
             Scanners.FieldsAnnotated,
             Scanners.SubTypes,
             Scanners.MethodsAnnotated,
             Scanners.TypesAnnotated
-        ).setUrls(urls)
+        ).setUrls(urls).addClassLoaders(classLoader)
     )
 
     val capabilityFactoryContext: CapabilityFactoryContext = CapabilityFactoryContext()
