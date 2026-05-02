@@ -9,7 +9,8 @@ import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.external.onebot.v11.*;
 import work.slhaf.partner.framework.agent.interaction.AgentGateway;
-import work.slhaf.partner.framework.agent.interaction.data.*;
+import work.slhaf.partner.framework.agent.interaction.data.InputData;
+import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.net.InetSocketAddress;
@@ -25,6 +26,7 @@ public class OnebotGateway extends WebSocketServer implements AgentGateway<Input
     private final String path;
     private final String accessToken;
     private final AtomicLong lastHeartbeatAt = new AtomicLong();
+    private final OneBotV11ResponseDispatcher responseDispatcher = new OneBotV11ResponseDispatcher();
 
     public OnebotGateway(int port, @NotNull String hostname, @NotNull String path, String accessToken) {
         super(new InetSocketAddress(hostname, port));
@@ -54,6 +56,7 @@ public class OnebotGateway extends WebSocketServer implements AgentGateway<Input
     @Override
     public void close() {
         try {
+            responseDispatcher.close();
             for (WebSocket webSocket : getConnections()) {
                 if (webSocket != null && webSocket.isOpen()) {
                     webSocket.close(1001, "Server shutting down");
@@ -78,34 +81,12 @@ public class OnebotGateway extends WebSocketServer implements AgentGateway<Input
 
     @Override
     public void response(@NotNull InteractionEvent event) {
-        String content = extractResponseContent(event);
-        if (content == null || content.isBlank()) {
-            return;
-        }
-
         WebSocket conn = activeConnection.get();
         if (conn == null || !conn.isOpen()) {
             log.warn("No active OneBot connection for response target: {}", event.getTarget());
             return;
         }
-
-        boolean sent = OneBotV11ActionExecutor.sendMessage(event.getTarget(), content);
-        if (!sent) {
-            log.warn("Unsupported OneBot response target: {}", event.getTarget());
-        }
-    }
-
-    private String extractResponseContent(InteractionEvent event) {
-        if (event instanceof ReplyEvent replyEvent) {
-            return replyEvent.getContent();
-        }
-        if (event instanceof ModuleEvent moduleEvent) {
-            return moduleEvent.getData().getContent();
-        }
-        if (event instanceof SystemEvent systemEvent) {
-            return systemEvent.getTitle() + "\n" + systemEvent.getContent();
-        }
-        return null;
+        responseDispatcher.accept(event);
     }
 
     @Override
