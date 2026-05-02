@@ -15,11 +15,12 @@ interface ActivateModel {
 
     fun streamChat(
         messages: List<Message>,
-        handler: StreamChatMessageConsumer
+        consumer: StreamChatMessageConsumer
     ): Result<Unit> {
         return ModelRuntimeRegistry.resolveProvider(modelKey())
-            .streamChat(mergeMessages(messages), handler)
-            .onFailure { ExceptionReporterHandler.report(it) }
+            .streamChat(mergeMessages(messages), consumer)
+            .onSuccess { consumer.onComplete() }
+            .onFailure { consumer.onError(it) }
     }
 
     fun <T : Any> formattedChat(messages: List<Message>, responseType: Class<T>): Result<T> {

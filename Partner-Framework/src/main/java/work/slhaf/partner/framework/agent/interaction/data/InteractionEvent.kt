@@ -49,8 +49,7 @@ data class ReplyEvent @JvmOverloads constructor(
     override val target: String,
     val content: String,
     val mode: ContentMode = ContentMode.REPLACE,
-    val seq: Long? = null,
-    val done: Boolean = false
+    val seq: Long? = null
 ) : InteractionEvent() {
     override val event = Event.REPLY
 

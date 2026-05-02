@@ -1,16 +1,16 @@
 package work.slhaf.partner.framework.agent.model;
 
-public abstract class StreamChatMessageConsumer {
-    private final StringBuilder responseText = new StringBuilder();
+import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 
-    public void onDelta(String delta) {
-        consumeDelta(delta);
-        responseText.append(delta);
+public interface StreamChatMessageConsumer {
+
+    void onDelta(String delta);
+
+    default void onComplete() {
     }
 
-    public String collectResponse() {
-        return responseText.toString();
+    default void onError(AgentRuntimeException exception) {
     }
 
-    protected abstract void consumeDelta(String delta);
+    String collectResponse();
 }
