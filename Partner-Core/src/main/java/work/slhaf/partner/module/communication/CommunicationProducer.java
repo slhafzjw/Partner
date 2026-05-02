@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRunningFlowContext> implements ActivateModel {
 
-    private static final String INTERRUPTED_MARKER = " [response interrupted due to internal exception]";
     private static final String NO_REPLY_MARKER = "NO_REPLY";
     private static final String AGENT_MARKER = "[[AGENT]: self]";
     private static final String NOT_REPLIED_PREFIX = "[NOT_REPLIED]";
@@ -95,8 +94,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
 
     private void executeChat(PartnerRunningFlowContext runningFlowContext) {
         StreamChatMessageConsumer consumer = ReplyDispatcher.INSTANCE.createConsumer(runningFlowContext.getTarget(), runningFlowContext.getResopnseChannel());
-        this.streamChat(buildChatMessages(runningFlowContext), consumer)
-                .onFailure(exception -> consumer.onDelta(INTERRUPTED_MARKER));
+        this.streamChat(buildChatMessages(runningFlowContext), consumer);
         updateChatMessages(runningFlowContext, consumer.collectResponse());
         cognitionCapability.refreshRecentChatMessagesContext();
     }
