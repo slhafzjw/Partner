@@ -68,7 +68,10 @@ object AgentGatewayRegistry : Configurable, ConfigRegistration<AgentGatewayRegis
         }
     }
 
-    override fun defaultConfig(): AgentGatewayRegistryConfig? = null
+    override fun defaultConfig(): AgentGatewayRegistryConfig = AgentGatewayRegistryConfig(
+        "websocket_channel",
+        listOf(AgentGatewayChannelConfig("websocket_channel", emptyMap()))
+    )
 
     override fun close() = registryLock.withLock {
         val currentChannels = runningChannels.keys.toList()
