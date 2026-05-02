@@ -30,7 +30,7 @@ object ReplyDispatcher {
                     } ?: break
 
                     if (nextChunk.isClosed) {
-                        flush(builder.toString(), firstChunk.target)
+                        flush(builder.toString(), firstChunk.target, firstChunk.responseChannel)
                         return@launch
                     }
 
@@ -43,7 +43,7 @@ object ReplyDispatcher {
                     }
                 }
 
-                flush(builder.toString(), firstChunk.target)
+                flush(builder.toString(), firstChunk.target, firstChunk.responseChannel)
             }
         }
     }
@@ -51,7 +51,7 @@ object ReplyDispatcher {
     /**
      * flush 将推送至 AgentRuntime 的默认通道。
      */
-    private fun flush(content: String, target: String) {
+    private fun flush(content: String, target: String, responseChannel: String?) {
         if (content.isEmpty()) {
             return
         }
@@ -62,22 +62,29 @@ object ReplyDispatcher {
             mode = ReplyEvent.ContentMode.APPEND,
             done = false
         )
-        AgentRuntime.response(event)
+        if (responseChannel == null) {
+            AgentRuntime.response(event)
+        }else{
+            AgentRuntime.response(event, responseChannel)
+        }
     }
 
-    fun createConsumer(target: String): StreamChatMessageConsumer = ReplyConsumer(
+    fun createConsumer(target: String, responseChannel: String?): StreamChatMessageConsumer = ReplyConsumer(
         collectorChannel = collectorChannel,
         target = target,
+        responseChannel = responseChannel
     )
 
     private data class ReplyChunk(
         val delta: String,
         val target: String,
+        val responseChannel: String?,
     )
 
     private class ReplyConsumer(
         private val collectorChannel: Channel<ReplyChunk>,
         private val target: String,
+        private val responseChannel: String?
     ) : StreamChatMessageConsumer() {
 
         private enum class VisibilityState {
@@ -156,7 +163,7 @@ object ReplyDispatcher {
         }
 
         private fun flushVisible(delta: String) {
-            collectorChannel.trySend(ReplyChunk(delta, target)).isSuccess
+            collectorChannel.trySend(ReplyChunk(delta, target, responseChannel)).isSuccess
         }
 
         override fun consumeDelta(delta: String?) {

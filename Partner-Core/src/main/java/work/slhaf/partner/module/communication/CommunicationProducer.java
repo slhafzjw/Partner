@@ -94,7 +94,7 @@ public class CommunicationProducer extends AbstractAgentModule.Running<PartnerRu
     }
 
     private void executeChat(PartnerRunningFlowContext runningFlowContext) {
-        StreamChatMessageConsumer consumer = ReplyDispatcher.INSTANCE.createConsumer(runningFlowContext.getTarget());
+        StreamChatMessageConsumer consumer = ReplyDispatcher.INSTANCE.createConsumer(runningFlowContext.getTarget(), runningFlowContext.getResopnseChannel());
         this.streamChat(buildChatMessages(runningFlowContext), consumer)
                 .onFailure(exception -> consumer.onDelta(INTERRUPTED_MARKER));
         updateChatMessages(runningFlowContext, consumer.collectResponse());

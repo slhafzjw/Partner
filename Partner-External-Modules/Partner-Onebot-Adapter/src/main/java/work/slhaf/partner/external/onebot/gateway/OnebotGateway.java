@@ -46,7 +46,7 @@ public class OnebotGateway extends WebSocketServer implements AgentGateway<Input
 
     @Override
     public PartnerRunningFlowContext parseRunningFlowContext(InputData inputData) {
-        PartnerRunningFlowContext context = PartnerRunningFlowContext.fromUser(inputData.getSource(), inputData.getContent());
+        PartnerRunningFlowContext context = PartnerRunningFlowContext.fromUser(inputData.getSource(), inputData.getContent(),System.currentTimeMillis(), getChannelName());
         inputData.getMeta().forEach(context::putUserInfo);
         return context;
     }

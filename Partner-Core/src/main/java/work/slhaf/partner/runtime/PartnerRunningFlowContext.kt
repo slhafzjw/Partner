@@ -8,8 +8,9 @@ import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
 class PartnerRunningFlowContext private constructor(
     override val source: String,
     inputs: List<InputEntry>,
-    firstInputEpochMillis: Long
-) : RunningFlowContext(inputs, firstInputEpochMillis) {
+    firstInputEpochMillis: Long,
+    responseChannel: String? = null
+) : RunningFlowContext(inputs, firstInputEpochMillis, responseChannel) {
 
     companion object {
 
@@ -32,12 +33,18 @@ class PartnerRunningFlowContext private constructor(
 
         @JvmStatic
         @JvmOverloads
-        fun fromUser(userId: String, input: String, receivedAtMillis: Long = System.currentTimeMillis()) =
+        fun fromUser(
+            userId: String,
+            input: String,
+            receivedAtMillis: Long = System.currentTimeMillis(),
+            responseChannel: String? = null
+        ) =
             PartnerRunningFlowContext(
                 SourceTag.buildUserSource(userId),
                 listOf(InputEntry(0L, input)),
-                receivedAtMillis
-            )
+                receivedAtMillis,
+                responseChannel
+            ).apply { this.target = userId }
 
         @JvmStatic
         @JvmOverloads
@@ -45,7 +52,8 @@ class PartnerRunningFlowContext private constructor(
             PartnerRunningFlowContext(
                 SourceTag.buildAgentSource(),
                 listOf(InputEntry(0L, input)),
-                receivedAtMillis
+                receivedAtMillis,
+                null
             ).apply {
                 putUserInfo(InfoKeys.PLATFORM, SOURCE_SELF_PLATFORM)
                 putUserInfo(InfoKeys.NICKNAME, SOURCE_SELF_NICKNAME)
@@ -56,7 +64,8 @@ class PartnerRunningFlowContext private constructor(
         return PartnerRunningFlowContext(
             source = source,
             inputs = inputs,
-            firstInputEpochMillis = System.currentTimeMillis()
+            firstInputEpochMillis = System.currentTimeMillis(),
+            resopnseChannel
         )
     }
 

@@ -12,7 +12,8 @@ import kotlin.math.min
  */
 abstract class RunningFlowContext protected constructor(
     inputs: List<InputEntry>,
-    private var firstInputEpochMillis: Long
+    private var firstInputEpochMillis: Long,
+    val resopnseChannel: String? = null
 ) {
     /**
      * 消息来源: 由谁发出
