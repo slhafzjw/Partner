@@ -1,11 +1,16 @@
 package work.slhaf.partner.ctl.ui
 
+import org.jline.builtins.Completers.DirectoriesCompleter
+import org.jline.builtins.Completers.FilesCompleter
 import org.jline.reader.EndOfFileException
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.UserInterruptException
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class Prompt private constructor(
     private val terminal: Terminal,
@@ -85,6 +90,52 @@ class Prompt private constructor(
                 "n", "no" -> return false
                 else -> error("Please answer yes or no.")
             }
+        }
+    }
+
+    fun askPath(
+        label: String,
+        defaultValue: Path? = null,
+        required: Boolean = true,
+        mustExist: Boolean = false,
+        directoryOnly: Boolean = false,
+        fileOnly: Boolean = false,
+        currentDir: Path = Paths.get(System.getProperty("user.dir") ?: "."),
+    ): Path {
+        require(!(directoryOnly && fileOnly)) { "directoryOnly and fileOnly cannot both be true" }
+
+        val normalizedCurrentDir = currentDir.toAbsolutePath().normalize()
+        val pathReader = LineReaderBuilder.builder()
+            .terminal(terminal)
+            .completer(
+                if (directoryOnly) {
+                    DirectoriesCompleter(normalizedCurrentDir)
+                } else {
+                    FilesCompleter(normalizedCurrentDir)
+                }
+            )
+            .build()
+        val suffix = defaultValue?.let { " [$it]" } ?: ""
+
+        while (true) {
+            val input = readLine(pathReader, "$label$suffix: ").trim()
+            val rawValue = when {
+                input.isNotEmpty() -> input
+                defaultValue != null -> defaultValue.toString()
+                !required -> ""
+                else -> {
+                    error("This value is required.")
+                    continue
+                }
+            }
+
+            if (rawValue.isBlank() && !required) {
+                return Paths.get("")
+            }
+
+            val path = expandPath(rawValue)
+            val validationError = validatePath(path, mustExist, directoryOnly, fileOnly) ?: return path
+            error(validationError)
         }
     }
 
@@ -373,12 +424,38 @@ class Prompt private constructor(
     }
 
     private fun readLine(prompt: String): String {
+        return readLine(reader, prompt)
+    }
+
+    private fun readLine(reader: LineReader, prompt: String): String {
         return try {
             reader.readLine(prompt)
         } catch (_: UserInterruptException) {
             throw PromptCancelledException()
         } catch (_: EndOfFileException) {
             throw PromptCancelledException()
+        }
+    }
+
+    private fun expandPath(value: String): Path {
+        return when {
+            value == "~" -> Paths.get(System.getProperty("user.home") ?: ".")
+            value.startsWith("~/") -> Paths.get(System.getProperty("user.home") ?: ".", value.substring(2))
+            else -> Paths.get(value)
+        }.toAbsolutePath().normalize()
+    }
+
+    private fun validatePath(
+        path: Path,
+        mustExist: Boolean,
+        directoryOnly: Boolean,
+        fileOnly: Boolean,
+    ): String? {
+        return when {
+            mustExist && !Files.exists(path) -> "Path does not exist: $path"
+            directoryOnly && Files.exists(path) && !Files.isDirectory(path) -> "Path is not a directory: $path"
+            fileOnly && Files.exists(path) && !Files.isRegularFile(path) -> "Path is not a regular file: $path"
+            else -> null
         }
     }
 

@@ -111,6 +111,12 @@ fun main() {
         )
         prompt.info("Selected modules = ${modules.joinToString()}")
 
+        prompt.section("Ask path")
+        val askPath = prompt.askPath(
+            label = "Ask path",
+        )
+        prompt.info("Ask path = $askPath")
+
         prompt.section("Done")
         prompt.success("Prompt demo completed.")
     } catch (_: work.slhaf.partner.ctl.ui.PromptCancelledException) {
