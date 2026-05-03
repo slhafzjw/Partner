@@ -1,6 +1,8 @@
 package work.slhaf.partner.ctl.commands
 
 import picocli.CommandLine
+import work.slhaf.partner.ctl.commands.init.buildFromSource
+import work.slhaf.partner.ctl.ui.Choice
 import work.slhaf.partner.ctl.ui.Prompt
 import java.nio.file.Files
 import java.nio.file.Path
@@ -67,7 +69,18 @@ class InitCommand : Runnable {
     }
 
     private fun installPartner(prompt: Prompt) {
-        TODO("Not yet implemented")
+
+        prompt.section("Install Partner")
+
+        val installChoice = prompt.select(
+            label = "Choose a installation method",
+            choices = listOf(Choice("Build Partner from source", InstallChoice.BUILD_FROM_SOURCE))
+        )
+
+        when (installChoice) {
+            InstallChoice.BUILD_FROM_SOURCE -> buildFromSource(home, prompt)
+        }
+
     }
 
     private fun configureGateway(prompt: Prompt) {
@@ -82,4 +95,7 @@ class InitCommand : Runnable {
         TODO("Not yet implemented")
     }
 
+    private enum class InstallChoice {
+        BUILD_FROM_SOURCE
+    }
 }
