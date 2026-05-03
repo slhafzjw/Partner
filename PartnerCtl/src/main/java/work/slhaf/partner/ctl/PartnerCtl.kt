@@ -3,6 +3,8 @@ package work.slhaf.partner.ctl
 import picocli.AutoComplete
 import picocli.CommandLine
 import work.slhaf.partner.ctl.commands.*
+import work.slhaf.partner.ctl.support.CommandInterrupted
+import work.slhaf.partner.ctl.ui.PromptCancelledException
 import kotlin.system.exitProcess
 
 @CommandLine.Command(
@@ -28,6 +30,30 @@ class PartnerCtl : Runnable {
 }
 
 fun main(args: Array<String>) {
-    val exitCode = CommandLine(PartnerCtl()).execute(*args)
-    exitProcess(exitCode)
+    val commandLine = CommandLine(PartnerCtl())
+    commandLine.executionExceptionHandler = CommandLine.IExecutionExceptionHandler { ex, _, _ ->
+        return@IExecutionExceptionHandler when (ex) {
+            is PromptCancelledException -> {
+                println()
+                println("[warn] Cancelled")
+                130
+            }
+
+            is CommandInterrupted -> {
+                println()
+                println("[error] ${ex.message}")
+                ex.exitCode
+            }
+
+            else -> {
+                System.err.println("[error] ${ex.message ?: "Unexpected error"}")
+                if (System.getenv("PARTNERCTL_DEBUG") == "1") {
+                    ex.printStackTrace(System.err)
+                }
+                1
+            }
+        }
+    }
+
+    exitProcess(commandLine.execute(*args))
 }
