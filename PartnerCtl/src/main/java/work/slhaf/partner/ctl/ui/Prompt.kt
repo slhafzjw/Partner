@@ -96,6 +96,63 @@ class Prompt private constructor(
         require(choices.isNotEmpty()) { "choices must not be empty" }
         require(defaultIndex in choices.indices) { "defaultIndex must be within choices indices" }
 
+        return if (terminal.type == "dumb") {
+            fallbackSelect(label, choices, defaultIndex)
+        } else {
+            try {
+                interactiveSelect(label, choices, defaultIndex)
+            } catch (e: PromptCancelledException) {
+                throw e
+            } catch (_: Throwable) {
+                fallbackSelect(label, choices, defaultIndex)
+            }
+        }
+    }
+
+    private fun <T> interactiveSelect(
+        label: String,
+        choices: List<Choice<T>>,
+        defaultIndex: Int,
+    ): T {
+        var cursor = when {
+            choices[defaultIndex].enabled -> defaultIndex
+            else -> choices.indexOfFirst { it.enabled }.takeIf { it >= 0 } ?: defaultIndex
+        }
+        var renderedLines = 0
+        val oldAttributes = terminal.enterRawMode()
+
+        try {
+            while (true) {
+                renderedLines = renderSelect(label, choices, cursor, renderedLines)
+
+                when (readKey()) {
+                    PromptKey.UP -> cursor = moveCursor(choices, cursor, -1)
+                    PromptKey.DOWN -> cursor = moveCursor(choices, cursor, 1)
+                    PromptKey.ENTER -> {
+                        val choice = choices[cursor]
+                        if (choice.enabled) {
+                            terminal.attributes = oldAttributes
+                            println()
+                            return choice.value
+                        }
+                        beep()
+                    }
+
+                    PromptKey.CANCEL -> throw PromptCancelledException()
+                    PromptKey.SPACE,
+                    PromptKey.OTHER -> Unit
+                }
+            }
+        } finally {
+            terminal.attributes = oldAttributes
+        }
+    }
+
+    private fun <T> fallbackSelect(
+        label: String,
+        choices: List<Choice<T>>,
+        defaultIndex: Int,
+    ): T {
         println(label)
         choices.forEachIndexed { index, choice ->
             val disabled = if (choice.enabled) "" else " (unavailable)"
@@ -116,6 +173,33 @@ class Prompt private constructor(
 
             error("Please enter a number between 1 and ${choices.size}.")
         }
+    }
+
+    private fun <T> renderSelect(
+        label: String,
+        choices: List<Choice<T>>,
+        cursor: Int,
+        previousLines: Int,
+    ): Int {
+        if (previousLines > 0) {
+            terminal.writer().print("\u001B[${previousLines}A")
+            terminal.writer().print("\u001B[J")
+        }
+
+        val lines = buildList {
+            add(label)
+            add("  ↑/↓ move, Enter confirm")
+            choices.forEachIndexed { index, choice ->
+                val pointer = if (index == cursor) "❯" else " "
+                val disabled = if (choice.enabled) "" else " (unavailable)"
+                val description = choice.description?.let { " - $it" } ?: ""
+                add("$pointer ${choice.label}$disabled$description")
+            }
+        }
+
+        lines.forEach { terminal.writer().println(it) }
+        terminal.writer().flush()
+        return lines.size
     }
 
     fun <T> multiSelect(
