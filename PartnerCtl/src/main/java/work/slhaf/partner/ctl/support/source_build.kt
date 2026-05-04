@@ -5,13 +5,34 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
+/**
+ * Runtime specification for building a JVM/Maven project from source and installing one built artifact.
+ *
+ * Path semantics:
+ * - [sourceDirName] is the child directory name created under a temporary build directory.
+ * - [artifactDirectory] is resolved relative to the cloned source root: tempDir/sourceDirName/artifactDirectory.
+ * - [installRelativePath] is resolved relative to Partner home: home/installRelativePath.
+ */
 data class SourceBuildInstallSpec(
+    /** Display name used in prompt messages. */
     val displayName: String,
+
+    /** Git repository URL used by `git clone --depth 1`. */
     val repoUrl: String,
+
+    /** Directory name for the cloned repository under the temporary build directory. */
     val sourceDirName: String,
+
+    /** Build command executed with the cloned source root as working directory. */
     val buildCommand: List<String>,
+
+    /** Directory containing build artifacts, relative to the cloned source root. */
     val artifactDirectory: Path,
+
+    /** Selects the artifact to install from the resolved artifact directory. */
     val artifactSelector: (Path) -> Path?,
+
+    /** Install target path, relative to Partner home. */
     val installRelativePath: Path,
 )
 
