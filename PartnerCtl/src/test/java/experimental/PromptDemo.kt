@@ -59,6 +59,13 @@ fun main() {
         }
         prompt.info("Port = $port")
 
+        prompt.details(
+            "Test Details", listOf(
+                "Tag A" to "Detail A",
+                "Tag B" to "Detail B"
+            )
+        )
+
         prompt.section("Confirm")
         val confirmed = prompt.confirm("Continue?", defaultValue = true)
         prompt.info("Continue = $confirmed")

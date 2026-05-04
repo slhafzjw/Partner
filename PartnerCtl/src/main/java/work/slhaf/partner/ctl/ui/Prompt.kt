@@ -49,6 +49,18 @@ class Prompt private constructor(
 
     fun info(message: String) = println("[info] $message")
 
+    fun details(title: String? = null, items: List<Pair<String, String>>) {
+        if (items.isEmpty()) return
+
+        if (!title.isNullOrBlank()) {
+            println(title)
+        }
+
+        items.forEach { (key, value) ->
+            println("  $key: $value")
+        }
+    }
+
     fun success(message: String) = println("[ok] $message")
 
     fun warn(message: String) = println("[warn] $message")
