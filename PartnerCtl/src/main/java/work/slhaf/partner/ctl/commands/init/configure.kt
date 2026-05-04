@@ -2,8 +2,11 @@ package work.slhaf.partner.ctl.commands.init
 
 import kotlinx.serialization.json.*
 import work.slhaf.partner.ctl.commands.data.GatewayConfig
+import work.slhaf.partner.ctl.commands.data.OpenAiCompatible
+import work.slhaf.partner.ctl.commands.data.ProviderConfig
 import work.slhaf.partner.ctl.support.*
 import work.slhaf.partner.ctl.ui.Prompt
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -146,5 +149,51 @@ private fun validateFieldValue(field: Field, value: String): String? {
         FieldType.RAW_JSON -> runCatching { Json.parseToJsonElement(value) }
             .exceptionOrNull()
             ?.let { "${field.label} only accepts valid JSON" }
+    }
+}
+
+fun configureOpenAiCompatible(prompt: Prompt, defaultAlreadySet: Boolean): ProviderConfig {
+    val name = if (defaultAlreadySet) {
+        prompt.ask("Provider name") {
+            if (it == "default") {
+                "Default provider cannot be duplicate"
+            } else {
+                null
+            }
+        }
+    } else {
+        "default"
+    }
+
+    val baseUrl = prompt.ask("Base url") { value ->
+        validateNetworkUrl(value)
+    }
+
+    val apikey = prompt.ask("Apikey")
+    val defaultModel = prompt.ask("Default model")
+    return OpenAiCompatible(
+        name = name,
+        baseUrl = baseUrl,
+        apiKey = apikey,
+        defaultModel = defaultModel
+    )
+}
+
+private fun validateNetworkUrl(value: String): String? {
+    val trimmed = value.trim()
+    if (trimmed.isEmpty()) {
+        return "Base url is required"
+    }
+
+    val uri = runCatching { URI(trimmed) }.getOrElse {
+        return "Base url must be a valid URL"
+    }
+
+    return when {
+        uri.scheme !in setOf("http", "https") -> "Base url must start with http:// or https://"
+        uri.host.isNullOrBlank() -> "Base url must include a valid host"
+        uri.rawUserInfo != null -> "Base url must not include user info"
+        uri.rawFragment != null -> "Base url must not include fragment"
+        else -> null
     }
 }

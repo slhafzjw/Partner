@@ -14,3 +14,20 @@ data class GatewayConfig(
         val params: JsonObject
     )
 }
+
+interface ProviderConfig {
+    val name: String
+    val type: String
+    val defaultModel: String
+}
+
+@Serializable
+data class OpenAiCompatible(
+    override val name: String,
+    override val defaultModel: String,
+
+    val baseUrl: String,
+    val apiKey: String,
+) : ProviderConfig {
+    override val type: String = "OPENAI_COMPATIBLE"
+}
