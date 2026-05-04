@@ -9,6 +9,8 @@ import work.slhaf.partner.ctl.commands.init.buildFromSource
 import work.slhaf.partner.ctl.commands.init.configureExternalGateway
 import work.slhaf.partner.ctl.commands.init.configureOpenAiCompatible
 import work.slhaf.partner.ctl.commands.init.configureWebSocketGateway
+import work.slhaf.partner.ctl.support.CommandInterrupted
+import work.slhaf.partner.ctl.support.inheritCommand
 import work.slhaf.partner.ctl.support.loadAvailableGateway
 import work.slhaf.partner.ctl.ui.Choice
 import work.slhaf.partner.ctl.ui.Prompt
@@ -226,7 +228,26 @@ class InitCommand : Runnable {
     }
 
     private fun finalize(prompt: Prompt) {
-        TODO("Not yet implemented")
+        prompt.section("Finish")
+
+        if (!prompt.confirm("Start Partner now?", false)) {
+            prompt.info("Initialization completed.")
+            return
+        }
+
+        val partnerJar = home.resolve("resource").resolve("partner-core.jar").toAbsolutePath().normalize()
+        if (!Files.exists(partnerJar)) {
+            throw CommandInterrupted("Partner runtime jar does not exist: $partnerJar")
+        }
+
+        prompt.info("Starting Partner...")
+        val exitCode = inheritCommand(
+            command = listOf("java", "-jar", partnerJar.toString()),
+            environment = mapOf("PARTNER_HOME" to home.toString()),
+        )
+        if (exitCode != 0) {
+            throw CommandInterrupted("Partner exited with code $exitCode", exitCode)
+        }
     }
 
     private fun Json.encodeProviderConfig(providerConfig: ProviderConfig): JsonElement {
