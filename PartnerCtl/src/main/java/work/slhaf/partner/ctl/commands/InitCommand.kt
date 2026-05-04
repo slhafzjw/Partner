@@ -1,9 +1,8 @@
 package work.slhaf.partner.ctl.commands
 
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import picocli.CommandLine
+import work.slhaf.partner.ctl.commands.data.GatewayConfig
 import work.slhaf.partner.ctl.commands.init.buildFromSource
 import work.slhaf.partner.ctl.commands.init.configureExternalGateway
 import work.slhaf.partner.ctl.commands.init.configureWebSocketGateway
@@ -164,16 +163,5 @@ class InitCommand : Runnable {
         BUILD_FROM_SOURCE
     }
 
-    @Serializable
-    data class GatewayConfig(
-        val defaultChannel: String,
-        val channels: List<ChannelConfig>
-    ) {
-        @Serializable
-        data class ChannelConfig(
-            val channelName: String,
-            val params: JsonObject
-        )
-    }
 
 }

@@ -1,7 +1,7 @@
 package work.slhaf.partner.ctl.commands.init
 
 import kotlinx.serialization.json.*
-import work.slhaf.partner.ctl.commands.InitCommand.GatewayConfig
+import work.slhaf.partner.ctl.commands.data.GatewayConfig
 import work.slhaf.partner.ctl.support.*
 import work.slhaf.partner.ctl.ui.Prompt
 import java.nio.file.Files
