@@ -1,9 +1,16 @@
 package work.slhaf.partner.ctl.commands
 
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import picocli.CommandLine
 import work.slhaf.partner.ctl.commands.init.buildFromSource
+import work.slhaf.partner.ctl.commands.init.configureExternalGateway
+import work.slhaf.partner.ctl.commands.init.configureWebSocketGateway
+import work.slhaf.partner.ctl.support.loadAvailableGateway
 import work.slhaf.partner.ctl.ui.Choice
 import work.slhaf.partner.ctl.ui.Prompt
+import work.slhaf.partner.ctl.ui.PromptCancelledException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -84,7 +91,65 @@ class InitCommand : Runnable {
     }
 
     private fun configureGateway(prompt: Prompt) {
-        TODO("Not yet implemented")
+        prompt.section("Configure Gateway")
+
+        val providedGateways = loadAvailableGateway()
+        val selectedGateways = prompt.multiSelect(
+            label = "Select gateway",
+            choices = listOf(Choice("WebSocket Gateway", "websocket_channel")) +
+                    providedGateways.map {
+                        Choice(it.name, it.id)
+                    }
+        )
+
+        val configuredChannels = selectedGateways.map { gateway ->
+            try {
+                if (gateway == "websocket_channel") {
+                    return@map configureWebSocketGateway(prompt)
+                } else {
+                    val manifest = providedGateways.find { it.id == gateway }
+                    if (manifest != null) {
+                        return@map configureExternalGateway(home, prompt, manifest)
+                    } else {
+                        prompt.warn("Could not find gateway with id $gateway")
+                        return@map null
+                    }
+                }
+            } catch (_: PromptCancelledException) {
+                prompt.warn("Gateway: $gateway configuration skipped")
+                return@map null
+            }
+        }.filterNotNull()
+
+        val defaultChannel = if (configuredChannels.isEmpty()) {
+            prompt.info("Skipped gateway configuration. Partner will use WebSocket as default gateway")
+            return
+        } else if (configuredChannels.size == 1) {
+            configuredChannels.first().channelName
+        } else {
+            prompt.select(
+                label = "Set default channel",
+                choices = configuredChannels.map { Choice(it.channelName, it.channelName) }
+            )
+        }
+
+        prompt.info("The default channel will be set to $defaultChannel")
+
+        val gatewayConfig = GatewayConfig(
+            defaultChannel = defaultChannel,
+            channels = configuredChannels
+        )
+
+        val json = Json {
+            prettyPrint = true
+            encodeDefaults = true
+        }
+
+        val gatewayStr = json.encodeToString(gatewayConfig)
+        val gatewayPath = home.resolve("config").resolve("gateway.json").toAbsolutePath().normalize()
+        Files.writeString(gatewayPath, gatewayStr)
+
+        prompt.success("Gateway config written to $gatewayPath")
     }
 
     private fun configureModel(prompt: Prompt) {
@@ -98,4 +163,17 @@ class InitCommand : Runnable {
     private enum class InstallChoice {
         BUILD_FROM_SOURCE
     }
+
+    @Serializable
+    data class GatewayConfig(
+        val defaultChannel: String,
+        val channels: List<ChannelConfig>
+    ) {
+        @Serializable
+        data class ChannelConfig(
+            val channelName: String,
+            val params: JsonObject
+        )
+    }
+
 }
