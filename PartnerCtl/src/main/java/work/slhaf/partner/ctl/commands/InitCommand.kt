@@ -9,6 +9,7 @@ import work.slhaf.partner.ctl.commands.init.buildFromSource
 import work.slhaf.partner.ctl.commands.init.configureExternalGateway
 import work.slhaf.partner.ctl.commands.init.configureOpenAiCompatible
 import work.slhaf.partner.ctl.commands.init.configureWebSocketGateway
+import work.slhaf.partner.ctl.i18n.I18n.text
 import work.slhaf.partner.ctl.support.CommandInterrupted
 import work.slhaf.partner.ctl.support.inheritCommand
 import work.slhaf.partner.ctl.support.loadAvailableGateway
@@ -52,7 +53,7 @@ class InitCommand : Runnable {
     }
 
     private fun initHome(prompt: Prompt) {
-        prompt.section("Initialize Partner Home")
+        prompt.section(text("init.home.section"))
 
         home = choosePartnerHome(prompt)
 
@@ -60,7 +61,7 @@ class InitCommand : Runnable {
         Files.createDirectories(home.resolve("resource"))
         Files.createDirectories(home.resolve("config"))
 
-        prompt.success("Partner Home initialized at $home")
+        prompt.success(text("init.home.success", home))
     }
 
     private fun choosePartnerHome(prompt: Prompt): Path {
@@ -68,7 +69,7 @@ class InitCommand : Runnable {
 
         while (true) {
             val selectedHome = prompt.askPath(
-                label = "Partner Home",
+                label = text("init.home.label"),
                 defaultValue = defaultHome,
                 required = true,
                 directoryOnly = true,
@@ -78,29 +79,29 @@ class InitCommand : Runnable {
                 return selectedHome
             }
 
-            prompt.warn("Partner Home already contains files: $selectedHome")
+            prompt.warn(text("init.home.duplicate.warning", selectedHome))
 
             when (prompt.select(
-                label = "Partner Home already contains files. Choose how to continue",
+                label = text("init.home.duplicate.choice.label"),
                 choices = listOf(
                     Choice(
-                        "Use another Partner Home",
+                        text("init.home.duplicate.choice.another"),
                         HomeDuplicateChoice.ANOTHER,
-                        "Choose a different directory",
+                        text("init.home.duplicate.choice.another.description"),
                     ),
                     Choice(
-                        "Overwrite current Partner Home",
+                        text("init.home.duplicate.choice.overwrite"),
                         HomeDuplicateChoice.OVERWRITE,
-                        "Delete existing contents and continue",
+                        text("init.home.duplicate.choice.overwrite.description"),
                     ),
-                    Choice("Cancel init", HomeDuplicateChoice.EXIT),
+                    Choice(text("init.home.duplicate.choice.exit"), HomeDuplicateChoice.EXIT),
                 ),
                 defaultIndex = 0,
             )) {
                 HomeDuplicateChoice.ANOTHER -> continue
                 HomeDuplicateChoice.OVERWRITE -> {
                     validateSafeHomeOverwrite(selectedHome)
-                    if (!prompt.confirm("Delete all files under $selectedHome?", false)) {
+                    if (!prompt.confirm(text("init.home.duplicate.confirmDelete", selectedHome), false)) {
                         continue
                     }
                     clearHomeDirectory(selectedHome)
@@ -134,7 +135,7 @@ class InitCommand : Runnable {
     private fun clearHomeDirectory(path: Path) {
         if (!Files.exists(path)) return
         if (!Files.isDirectory(path)) {
-            throw CommandInterrupted("Partner Home is not a directory: $path")
+            throw CommandInterrupted(text("init.home.notDirectory", path))
         }
 
         Files.walk(path).use { stream ->
@@ -150,25 +151,25 @@ class InitCommand : Runnable {
         val userHome = Paths.get(System.getProperty("user.home")).toAbsolutePath().normalize()
 
         if (normalized == normalized.root) {
-            throw CommandInterrupted("Refuse to overwrite filesystem root: $normalized")
+            throw CommandInterrupted(text("init.home.overwrite.refuseRoot", normalized))
         }
 
         if (normalized == userHome) {
-            throw CommandInterrupted("Refuse to overwrite user home directory: $normalized")
+            throw CommandInterrupted(text("init.home.overwrite.refuseUserHome", normalized))
         }
 
         if (normalized.nameCount < 2) {
-            throw CommandInterrupted("Refuse to overwrite suspiciously broad directory: $normalized")
+            throw CommandInterrupted(text("init.home.overwrite.refuseBroadDirectory", normalized))
         }
     }
 
     private fun installPartner(prompt: Prompt) {
 
-        prompt.section("Install Partner")
+        prompt.section(text("init.install.section"))
 
         val installChoice = prompt.select(
-            label = "Choose a installation method",
-            choices = listOf(Choice("Build Partner from source", InstallChoice.BUILD_FROM_SOURCE))
+            label = text("init.install.method.label"),
+            choices = listOf(Choice(text("init.install.method.buildFromSource"), InstallChoice.BUILD_FROM_SOURCE))
         )
 
         when (installChoice) {
@@ -178,12 +179,12 @@ class InitCommand : Runnable {
     }
 
     private fun configureGateway(prompt: Prompt) {
-        prompt.section("Configure Gateway")
+        prompt.section(text("init.gateway.section"))
 
         val providedGateways = loadAvailableGateway()
         val selectedGateways = prompt.multiSelect(
-            label = "Select gateway",
-            choices = listOf(Choice("WebSocket Gateway", "websocket_channel")) +
+            label = text("init.gateway.select.label"),
+            choices = listOf(Choice(text("init.gateway.websocket.choice"), "websocket_channel")) +
                     providedGateways.map {
                         Choice(it.name, it.id)
                     }
@@ -198,29 +199,29 @@ class InitCommand : Runnable {
                     if (manifest != null) {
                         return@map configureExternalGateway(home, prompt, manifest)
                     } else {
-                        prompt.warn("Could not find gateway with id $gateway")
+                        prompt.warn(text("init.gateway.warn.notFound", gateway))
                         return@map null
                     }
                 }
             } catch (_: PromptCancelledException) {
-                prompt.warn("Gateway: $gateway configuration skipped")
+                prompt.warn(text("init.gateway.warn.skipped", gateway))
                 return@map null
             }
         }.filterNotNull()
 
         val defaultChannel = if (configuredChannels.isEmpty()) {
-            prompt.info("Skipped gateway configuration. Partner will use WebSocket as default gateway")
+            prompt.info(text("init.gateway.info.skippedUseDefault"))
             return
         } else if (configuredChannels.size == 1) {
             configuredChannels.first().channelName
         } else {
             prompt.select(
-                label = "Set default channel",
+                label = text("init.gateway.defaultChannel.label"),
                 choices = configuredChannels.map { Choice(it.channelName, it.channelName) }
             )
         }
 
-        prompt.info("The default channel will be set to $defaultChannel")
+        prompt.info(text("init.gateway.info.defaultChannel", defaultChannel))
 
         val gatewayConfig = GatewayConfig(
             defaultChannel = defaultChannel,
@@ -236,11 +237,11 @@ class InitCommand : Runnable {
         val gatewayPath = home.resolve("config").resolve("gateway.json").toAbsolutePath().normalize()
         Files.writeString(gatewayPath, gatewayStr)
 
-        prompt.success("Gateway config written to $gatewayPath")
+        prompt.success(text("init.gateway.success.configWritten", gatewayPath))
     }
 
     private fun configureModel(prompt: Prompt) {
-        prompt.section("Configure Model")
+        prompt.section(text("init.model.section"))
 
         val modelChoices = ModelProviderChoice.entries.map { Choice(it.display, it) }
 
@@ -250,9 +251,9 @@ class InitCommand : Runnable {
         while (true) {
             val choice = prompt.select(
                 label = if (!defaultAlreadySet) {
-                    "Choose default model provider type"
+                    text("init.model.provider.default.label")
                 } else {
-                    "Choose model provider type"
+                    text("init.model.provider.label")
                 },
                 choices = modelChoices
             )
@@ -264,10 +265,9 @@ class InitCommand : Runnable {
                         break
                     } else {
                         prompt.warn(
-                            "No default model provider configured. Partner may not start normally unless model.json exists " +
-                                    "or PARTNER_DEFAULT_BASE_URL, PARTNER_DEFAULT_API_KEY, and PARTNER_DEFAULT_MODEL are provided at runtime."
+                            text("init.model.warn.noDefaultProvider")
                         )
-                        if (prompt.confirm("Skip model configuration?", false)) {
+                        if (prompt.confirm(text("init.model.confirm.skipConfiguration"), false)) {
                             break
                         } else {
                             null
@@ -280,7 +280,7 @@ class InitCommand : Runnable {
                 chosenModelProviders.add(it)
                 if (!defaultAlreadySet) {
                     defaultAlreadySet = true
-                    if (!prompt.confirm("Add additional model provider?", false)) {
+                    if (!prompt.confirm(text("init.model.confirm.addAdditionalProvider"), false)) {
                         break
                     }
                 }
@@ -306,15 +306,15 @@ class InitCommand : Runnable {
             val modelPath = home.resolve("config").resolve("model.json").toAbsolutePath().normalize()
             Files.writeString(modelPath, json.encodeToString(JsonObject.serializer(), jsonObject))
 
-            prompt.success("Model config written to $modelPath")
+            prompt.success(text("init.model.success.configWritten", modelPath))
         }
     }
 
     private fun finalize(prompt: Prompt) {
-        prompt.section("Finish")
+        prompt.section(text("init.finish.section"))
 
-        if (!prompt.confirm("Start Partner now?", false)) {
-            prompt.info("Initialization completed.")
+        if (!prompt.confirm(text("init.finish.confirm.startNow"), false)) {
+            prompt.info(text("init.finish.info.completed"))
             return
         }
 
@@ -323,7 +323,7 @@ class InitCommand : Runnable {
             throw CommandInterrupted("Partner runtime jar does not exist: $partnerJar")
         }
 
-        prompt.info("Starting Partner...")
+        prompt.info(text("init.finish.info.starting"))
         val exitCode = inheritCommand(
             command = listOf("java", "-jar", partnerJar.toString()),
             environment = mapOf("PARTNER_HOME" to home.toString()),

@@ -1,5 +1,6 @@
 package work.slhaf.partner.ctl.support
 
+import work.slhaf.partner.ctl.i18n.I18n.text
 import work.slhaf.partner.ctl.ui.Prompt
 import java.nio.file.Files
 import java.nio.file.Path
@@ -51,30 +52,30 @@ fun buildAndInstallFromSource(
     val targetPath = home.resolve(spec.installRelativePath)
 
     try {
-        prompt.info("Cloning ${spec.displayName} source from ${spec.repoUrl}")
+        prompt.info(text("sourceBuild.info.cloning", spec.displayName, spec.repoUrl))
         val cloneExitCode = inheritCommand(
             command = listOf("git", "clone", "--depth", "1", spec.repoUrl, sourceDir.toString()),
         )
         if (cloneExitCode != 0) {
-            throw CommandInterrupted("Failed to clone ${spec.displayName} source from ${spec.repoUrl}")
+            throw CommandInterrupted(text("sourceBuild.error.cloneFailed", spec.displayName, spec.repoUrl))
         }
 
-        prompt.info("Building ${spec.displayName}")
+        prompt.info(text("sourceBuild.info.building", spec.displayName))
         val buildExitCode = inheritCommand(
             command = spec.buildCommand,
             workingDirectory = sourceDir,
         )
         if (buildExitCode != 0) {
-            throw CommandInterrupted("Failed to build ${spec.displayName}.")
+            throw CommandInterrupted(text("sourceBuild.error.buildFailed", spec.displayName))
         }
 
         val artifactDir = sourceDir.resolve(spec.artifactDirectory)
         val artifact = spec.artifactSelector(artifactDir)
-            ?: throw CommandInterrupted("Could not find built ${spec.displayName} artifact in $artifactDir")
+            ?: throw CommandInterrupted(text("sourceBuild.error.artifactNotFound", spec.displayName, artifactDir))
 
         Files.createDirectories(targetPath.parent)
         Files.copy(artifact, targetPath, StandardCopyOption.REPLACE_EXISTING)
-        prompt.success("${spec.displayName} installed at $targetPath")
+        prompt.success(text("sourceBuild.success.installed", spec.displayName, targetPath))
     } finally {
         runCatching { tempDir.toFile().deleteRecursively() }
     }
@@ -83,31 +84,31 @@ fun buildAndInstallFromSource(
 private fun checkTool() {
     fun buildToolLackedMessage(lack: Map<String, String>): String {
         return buildString {
-            appendLine("Missing required build tools:")
+            appendLine(text("sourceBuild.tool.missing.header"))
             appendLine()
             lack.forEach { (tool, reason) ->
-                appendLine("$tool:")
-                appendLine("  $reason")
+                appendLine(text("sourceBuild.tool.missing.item", tool))
+                appendLine(text("sourceBuild.tool.missing.reason", reason))
             }
             appendLine()
-            appendLine("Install the missing tools, then rerun:")
+            appendLine(text("sourceBuild.tool.missing.footer"))
             appendLine("  partnerctl init")
         }.trimEnd()
     }
 
     val lack = mutableMapOf<String, String>()
     if (runCommand(listOf("java", "--version")).exitCode != 0) {
-        lack["java"] = "Required to run Maven. Command failed: java --version"
+        lack["java"] = text("sourceBuild.tool.java.reason")
     }
     if (runCommand(listOf("javac", "--version")).exitCode != 0) {
         lack["javac"] =
-            "Required to compile Partner from source. Install a JDK, not just a JRE. Command failed: javac --version"
+            text("sourceBuild.tool.javac.reason")
     }
     if (runCommand(listOf("git", "--version")).exitCode != 0) {
-        lack["git"] = "Required to clone Partner source. Command failed: git --version"
+        lack["git"] = text("sourceBuild.tool.git.reason")
     }
     if (runCommand(listOf("mvn", "--version")).exitCode != 0) {
-        lack["mvn"] = "Required to build Partner from source. Command failed: mvn --version"
+        lack["mvn"] = text("sourceBuild.tool.mvn.reason")
     }
     if (lack.isNotEmpty()) {
         throw CommandInterrupted(buildToolLackedMessage(lack))

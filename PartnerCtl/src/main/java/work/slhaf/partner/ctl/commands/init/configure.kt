@@ -4,6 +4,7 @@ import kotlinx.serialization.json.*
 import work.slhaf.partner.ctl.commands.data.GatewayConfig
 import work.slhaf.partner.ctl.commands.data.OpenAiCompatible
 import work.slhaf.partner.ctl.commands.data.ProviderConfig
+import work.slhaf.partner.ctl.i18n.I18n.text
 import work.slhaf.partner.ctl.support.*
 import work.slhaf.partner.ctl.ui.Prompt
 import java.net.URI
@@ -13,26 +14,26 @@ import java.nio.file.Paths
 import kotlin.io.path.isDirectory
 
 fun configureWebSocketGateway(prompt: Prompt): GatewayConfig.ChannelConfig {
-    prompt.section("Configure Gateway: WebSocket Gateway")
+    prompt.section(text("configure.gateway.websocket.section"))
 
-    val port = prompt.ask("port", "29600") {
-        val intValue = it.toIntOrNull() ?: return@ask "WebSocket port only accepts int value"
-        if (intValue !in 1..65565) "WebSocket port should be between 1 and 65565" else null
+    val port = prompt.ask(text("configure.gateway.websocket.port.label"), "29600") {
+        val intValue = it.toIntOrNull() ?: return@ask text("configure.gateway.websocket.port.error.int")
+        if (intValue !in 1..65565) text("configure.gateway.websocket.port.error.range") else null
     }.toInt()
 
-    val heartbeatInterval = prompt.ask("heartbeat interval", "10000") {
-        it.toLongOrNull() ?: return@ask "Heartbeat interval only accepts long value"
+    val heartbeatInterval = prompt.ask(text("configure.gateway.websocket.heartbeatInterval.label"), "10000") {
+        it.toLongOrNull() ?: return@ask text("configure.gateway.websocket.heartbeatInterval.error.long")
         return@ask null
     }.toLong()
 
-    val hostname = prompt.ask("Listening hostname", "127.0.0.1") {
+    val hostname = prompt.ask(text("configure.gateway.websocket.hostname.label"), "127.0.0.1") {
         val host = it.trim()
         return@ask when {
-            host.isEmpty() -> "Hostname is required"
-            host.contains(Regex("\\s")) -> "Hostname must not contain whitespace."
-            host.contains("://") -> "Do not include protocol. Use hostname only, for example: 127.0.0.1"
-            host.contains("/") -> "Do not include path. Use hostname only."
-            looksLikeHostWithPort(host) -> "Do not include port here. Port is configured separately."
+            host.isEmpty() -> text("configure.gateway.websocket.hostname.error.required")
+            host.contains(Regex("\\s")) -> text("configure.gateway.websocket.hostname.error.whitespace")
+            host.contains("://") -> text("configure.gateway.websocket.hostname.error.protocol")
+            host.contains("/") -> text("configure.gateway.websocket.hostname.error.path")
+            looksLikeHostWithPort(host) -> text("configure.gateway.websocket.hostname.error.port")
             else -> null
         }
     }
@@ -53,21 +54,21 @@ private fun looksLikeHostWithPort(value: String): Boolean {
 }
 
 fun configureExternalGateway(home: Path, prompt: Prompt, manifest: ModuleManifest): GatewayConfig.ChannelConfig? {
-    prompt.section("Configure Gateway: ${manifest.name}")
+    prompt.section(text("configure.gateway.external.section", manifest.name))
 
     prompt.details(
-        title = "Gateway module details",
+        title = text("configure.gateway.external.details.title"),
         items = listOf(
-            "Description" to manifest.description,
-            "Source" to manifest.source.url,
-            "Build command" to manifest.source.buildCommand.joinToString(" "),
-            "Artifact" to "${manifest.source.artifactDirectory}/${manifest.source.artifactPattern}",
-            "Install target" to manifest.install.target,
-            "Config target" to (manifest.config?.target ?: "No config"),
+            text("configure.gateway.external.details.description") to manifest.description,
+            text("configure.gateway.external.details.source") to manifest.source.url,
+            text("configure.gateway.external.details.buildCommand") to manifest.source.buildCommand.joinToString(" "),
+            text("configure.gateway.external.details.artifact") to "${manifest.source.artifactDirectory}/${manifest.source.artifactPattern}",
+            text("configure.gateway.external.details.installTarget") to manifest.install.target,
+            text("configure.gateway.external.details.configTarget") to (manifest.config?.target ?: text("configure.gateway.external.details.noConfig")),
         ),
     )
 
-    if (!prompt.confirm("Continue installation?", true)) {
+    if (!prompt.confirm(text("configure.gateway.external.confirmContinue"), true)) {
         return null
     }
 
@@ -143,20 +144,20 @@ private fun validateFieldValue(field: Field, value: String): String? {
 
     return when (field.type) {
         FieldType.STRING -> null
-        FieldType.INT -> value.toIntOrNull()?.let { null } ?: "${field.label} only accepts int value"
-        FieldType.NUMBER -> value.toDoubleOrNull()?.let { null } ?: "${field.label} only accepts number value"
-        FieldType.BOOLEAN -> value.toBooleanStrictOrNull()?.let { null } ?: "${field.label} only accepts true or false"
+        FieldType.INT -> value.toIntOrNull()?.let { null } ?: text("configure.field.error.int", field.label)
+        FieldType.NUMBER -> value.toDoubleOrNull()?.let { null } ?: text("configure.field.error.number", field.label)
+        FieldType.BOOLEAN -> value.toBooleanStrictOrNull()?.let { null } ?: text("configure.field.error.boolean", field.label)
         FieldType.RAW_JSON -> runCatching { Json.parseToJsonElement(value) }
             .exceptionOrNull()
-            ?.let { "${field.label} only accepts valid JSON" }
+            ?.let { text("configure.field.error.rawJson", field.label) }
     }
 }
 
 fun configureOpenAiCompatible(prompt: Prompt, defaultAlreadySet: Boolean): ProviderConfig {
     val name = if (defaultAlreadySet) {
-        prompt.ask("Provider name") {
+        prompt.ask(text("configure.model.openAiCompatible.providerName.label")) {
             if (it == "default") {
-                "Default provider cannot be duplicate"
+                text("configure.model.openAiCompatible.providerName.error.duplicateDefault")
             } else {
                 null
             }
@@ -165,12 +166,12 @@ fun configureOpenAiCompatible(prompt: Prompt, defaultAlreadySet: Boolean): Provi
         "default"
     }
 
-    val baseUrl = prompt.ask("Base url") { value ->
+    val baseUrl = prompt.ask(text("configure.model.openAiCompatible.baseUrl.label")) { value ->
         validateNetworkUrl(value)
     }
 
-    val apikey = prompt.ask("Apikey")
-    val defaultModel = prompt.ask("Default model")
+    val apikey = prompt.ask(text("configure.model.openAiCompatible.apiKey.label"))
+    val defaultModel = prompt.ask(text("configure.model.openAiCompatible.defaultModel.label"))
     return OpenAiCompatible(
         name = name,
         baseUrl = baseUrl,
@@ -182,18 +183,18 @@ fun configureOpenAiCompatible(prompt: Prompt, defaultAlreadySet: Boolean): Provi
 private fun validateNetworkUrl(value: String): String? {
     val trimmed = value.trim()
     if (trimmed.isEmpty()) {
-        return "Base url is required"
+        return text("configure.model.openAiCompatible.baseUrl.error.required")
     }
 
     val uri = runCatching { URI(trimmed) }.getOrElse {
-        return "Base url must be a valid URL"
+        return text("configure.model.openAiCompatible.baseUrl.error.validUrl")
     }
 
     return when {
-        uri.scheme !in setOf("http", "https") -> "Base url must start with http:// or https://"
-        uri.host.isNullOrBlank() -> "Base url must include a valid host"
-        uri.rawUserInfo != null -> "Base url must not include user info"
-        uri.rawFragment != null -> "Base url must not include fragment"
+        uri.scheme !in setOf("http", "https") -> text("configure.model.openAiCompatible.baseUrl.error.scheme")
+        uri.host.isNullOrBlank() -> text("configure.model.openAiCompatible.baseUrl.error.host")
+        uri.rawUserInfo != null -> text("configure.model.openAiCompatible.baseUrl.error.userInfo")
+        uri.rawFragment != null -> text("configure.model.openAiCompatible.baseUrl.error.fragment")
         else -> null
     }
 }
