@@ -20,7 +20,7 @@ fun configureWebSocketGateway(prompt: Prompt): GatewayConfig.ChannelConfig {
         if (intValue !in 1..65565) "WebSocket port should be between 1 and 65565" else null
     }.toInt()
 
-    val heartbeatInterval = prompt.ask("heartbeat interval", "10_000L") {
+    val heartbeatInterval = prompt.ask("heartbeat interval", "10000") {
         it.toLongOrNull() ?: return@ask "Heartbeat interval only accepts long value"
         return@ask null
     }.toLong()
