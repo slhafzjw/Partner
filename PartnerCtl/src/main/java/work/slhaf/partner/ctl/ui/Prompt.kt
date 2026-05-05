@@ -30,6 +30,36 @@ class Prompt private constructor(
         }
     }
 
+    private val colorEnabled: Boolean =
+        System.getenv("NO_COLOR") == null &&
+                !(System.getenv("TERM") ?: "").equals("dumb", ignoreCase = true)
+
+    private fun ansi(code: String, text: String): String {
+        val escape = 27.toChar()
+        return if (colorEnabled) "$escape[${code}m$text$escape[0m" else text
+    }
+
+    private fun bold(text: String) = ansi("1", text)
+
+    private fun dim(text: String) = ansi("2", text)
+
+    private fun cyan(text: String) = ansi("36", text)
+
+    private fun green(text: String) = ansi("32", text)
+
+    private fun yellow(text: String) = ansi("33", text)
+
+    private fun red(text: String) = ansi("31", text)
+
+    private fun blue(text: String) = ansi("34", text)
+
+    private fun questionPrefix() = cyan("?")
+
+    private fun promptLabel(label: String, defaultValue: String? = null): String {
+        val suffix = if (defaultValue != null) " ${dim("[$defaultValue]")}" else ""
+        return "${questionPrefix()} $label$suffix: "
+    }
+
     fun print(message: String) {
         terminal.writer().print(message)
         terminal.writer().flush()
@@ -44,28 +74,31 @@ class Prompt private constructor(
 
     fun section(title: String) {
         blank()
-        println("❯ $title")
+        println(cyan(bold("◆ $title")))
+        println(dim("─".repeat((title.length + 2).coerceAtLeast(12))))
+        blank()
     }
 
-    fun info(message: String) = println("[info] $message")
+    fun info(message: String) = println("${blue("ℹ")}  $message")
 
     fun details(title: String? = null, items: List<Pair<String, String>>) {
         if (items.isEmpty()) return
 
         if (!title.isNullOrBlank()) {
-            println(title)
+            println(bold(title))
         }
 
+        val width = items.maxOfOrNull { it.first.length } ?: 0
         items.forEach { (key, value) ->
-            println("  $key: $value")
+            println("  ${dim(key.padEnd(width))}  $value")
         }
     }
 
-    fun success(message: String) = println("[ok] $message")
+    fun success(message: String) = println("${green("✓")}  $message")
 
-    fun warn(message: String) = println("[warn] $message")
+    fun warn(message: String) = println("${yellow("⚠")}  $message")
 
-    fun error(message: String) = println("[error] $message")
+    fun error(message: String) = println("${red("✗")}  $message")
 
     fun ask(
         label: String,
@@ -73,10 +106,8 @@ class Prompt private constructor(
         required: Boolean = true,
         validator: ((String) -> String?)? = null,
     ): String {
-        val suffix = if (defaultValue != null) " [$defaultValue]" else ""
-
         while (true) {
-            val input = readLine("$label$suffix: ").trim()
+            val input = readLine(promptLabel(label, defaultValue)).trim()
             val value = when {
                 input.isNotEmpty() -> input
                 defaultValue != null -> defaultValue
@@ -93,10 +124,10 @@ class Prompt private constructor(
     }
 
     fun confirm(label: String, defaultValue: Boolean = true): Boolean {
-        val suffix = if (defaultValue) " [Y/n]" else " [y/N]"
+        val suffix = if (defaultValue) "[Y/n]" else "[y/N]"
 
         while (true) {
-            when (readLine("$label$suffix ").trim().lowercase()) {
+            when (readLine("${questionPrefix()} $label ${dim(suffix)} ").trim().lowercase()) {
                 "" -> return defaultValue
                 "y", "yes" -> return true
                 "n", "no" -> return false
@@ -127,10 +158,9 @@ class Prompt private constructor(
                 }
             )
             .build()
-        val suffix = defaultValue?.let { " [$it]" } ?: ""
 
         while (true) {
-            val input = readLine(pathReader, "$label$suffix: ").trim()
+            val input = readLine(pathReader, promptLabel(label, defaultValue?.toString())).trim()
             val rawValue = when {
                 input.isNotEmpty() -> input
                 defaultValue != null -> defaultValue.toString()
@@ -216,15 +246,16 @@ class Prompt private constructor(
         choices: List<Choice<T>>,
         defaultIndex: Int,
     ): T {
-        println(label)
+        println("${questionPrefix()} $label")
+        println()
         choices.forEachIndexed { index, choice ->
-            val disabled = if (choice.enabled) "" else " (unavailable)"
-            val description = choice.description?.let { " - $it" } ?: ""
+            val disabled = if (choice.enabled) "" else " ${dim("(unavailable)")}"
+            val description = choice.description?.let { dim(" - $it") } ?: ""
             println("  ${index + 1}. ${choice.label}$disabled$description")
         }
 
         while (true) {
-            val input = readLine("Choose [${defaultIndex + 1}]: ").trim()
+            val input = readLine(promptLabel("Choose", (defaultIndex + 1).toString())).trim()
             val selectedIndex = if (input.isEmpty()) defaultIndex else input.toIntOrNull()?.minus(1)
 
             if (selectedIndex != null && selectedIndex in choices.indices) {
@@ -250,13 +281,15 @@ class Prompt private constructor(
         }
 
         val lines = buildList {
-            add(label)
-            add("  ↑/↓ move, Enter confirm")
+            add("${questionPrefix()} $label")
+            add("  ${dim("↑/↓ move, Enter confirm")}")
+            add("")
             choices.forEachIndexed { index, choice ->
-                val pointer = if (index == cursor) "❯" else " "
-                val disabled = if (choice.enabled) "" else " (unavailable)"
-                val description = choice.description?.let { " - $it" } ?: ""
-                add("$pointer ${choice.label}$disabled$description")
+                val pointer = if (index == cursor) cyan("❯") else " "
+                val disabled = if (choice.enabled) "" else " ${dim("(unavailable)")}"
+                val description = choice.description?.let { dim(" - $it") } ?: ""
+                val line = "  $pointer ${choice.label}$disabled$description"
+                add(if (choice.enabled) line else dim(line))
             }
         }
 
@@ -333,17 +366,18 @@ class Prompt private constructor(
         choices: List<Choice<T>>,
         defaultSelected: Set<Int>,
     ): List<T> {
-        println(label)
+        println("${questionPrefix()} $label")
+        println()
         choices.forEachIndexed { index, choice ->
-            val selected = if (index in defaultSelected) "x" else " "
-            val disabled = if (choice.enabled) "" else " (unavailable)"
-            val description = choice.description?.let { " - $it" } ?: ""
-            println("  ${index + 1}. [$selected] ${choice.label}$disabled$description")
+            val selected = if (index in defaultSelected) green("[x]") else dim("[ ]")
+            val disabled = if (choice.enabled) "" else " ${dim("(unavailable)")}"
+            val description = choice.description?.let { dim(" - $it") } ?: ""
+            println("  ${index + 1}. $selected ${choice.label}$disabled$description")
         }
-        println("Enter numbers separated by comma. Leave empty to use defaults.")
+        println("  ${dim("Enter numbers separated by comma. Leave empty to use defaults.")}")
 
         while (true) {
-            val input = readLine("Select: ").trim()
+            val input = readLine(promptLabel("Select")).trim()
             val selectedIndices = if (input.isEmpty()) {
                 defaultSelected
             } else {
@@ -378,14 +412,16 @@ class Prompt private constructor(
         }
 
         val lines = buildList {
-            add(label)
-            add("  ↑/↓ move, Space toggle, Enter confirm")
+            add("${questionPrefix()} $label")
+            add("  ${dim("↑/↓ move, Space toggle, Enter confirm")}")
+            add("")
             choices.forEachIndexed { index, choice ->
-                val pointer = if (index == cursor) "❯" else " "
-                val checked = if (index in selected) "x" else " "
-                val disabled = if (choice.enabled) "" else " (unavailable)"
-                val description = choice.description?.let { " - $it" } ?: ""
-                add("$pointer [$checked] ${choice.label}$disabled$description")
+                val pointer = if (index == cursor) cyan("❯") else " "
+                val checked = if (index in selected) green("[x]") else dim("[ ]")
+                val disabled = if (choice.enabled) "" else " ${dim("(unavailable)")}"
+                val description = choice.description?.let { dim(" - $it") } ?: ""
+                val line = "  $pointer $checked ${choice.label}$disabled$description"
+                add(if (choice.enabled) line else dim(line))
             }
         }
 
