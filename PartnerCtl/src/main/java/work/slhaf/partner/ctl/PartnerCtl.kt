@@ -15,6 +15,7 @@ import kotlin.system.exitProcess
         InitCommand::class,
         RunCommand::class,
         ShutdownCommand::class,
+        LogCommand::class,
         ChatCommand::class,
         ConfigCommand::class,
         ModuleCommand::class,
