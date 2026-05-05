@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
     subcommands = [
         InitCommand::class,
         RunCommand::class,
+        ShutdownCommand::class,
         ChatCommand::class,
         ConfigCommand::class,
         ModuleCommand::class,

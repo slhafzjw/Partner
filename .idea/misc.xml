@@ -1,26 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
-    <list size="19">
+    <list size="20">
       <item index="0" class="java.lang.String" itemvalue="lombok.Data" />
       <item index="1" class="java.lang.String" itemvalue="net.bytebuddy.implementation.bind.annotation.RuntimeType" />
-      <item index="2" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.Capability" />
-      <item index="3" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore" />
-      <item index="4" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod" />
-      <item index="5" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.CoordinateManager" />
-      <item index="6" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.Coordinated" />
-      <item index="7" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.component.annotation.Init" />
-      <item index="8" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute" />
-      <item index="9" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule" />
-      <item index="10" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule" />
-      <item index="11" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute" />
-      <item index="12" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.Init" />
-      <item index="13" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CapabilityMethod" />
-      <item index="14" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CoordinateManager" />
-      <item index="15" class="java.lang.String" itemvalue="work.slhaf.partner.api.register.capability.annotation.Capability" />
-      <item index="16" class="java.lang.String" itemvalue="work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore" />
-      <item index="17" class="java.lang.String" itemvalue="work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod" />
-      <item index="18" class="java.lang.String" itemvalue="work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent" />
+      <item index="2" class="java.lang.String" itemvalue="picocli.CommandLine.Command" />
+      <item index="3" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.Capability" />
+      <item index="4" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityCore" />
+      <item index="5" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.CapabilityMethod" />
+      <item index="6" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.CoordinateManager" />
+      <item index="7" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.capability.annotation.Coordinated" />
+      <item index="8" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.component.annotation.Init" />
+      <item index="9" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AfterExecute" />
+      <item index="10" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AgentRunningModule" />
+      <item index="11" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.AgentSubModule" />
+      <item index="12" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.BeforeExecute" />
+      <item index="13" class="java.lang.String" itemvalue="work.slhaf.partner.api.agent.factory.module.annotation.Init" />
+      <item index="14" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CapabilityMethod" />
+      <item index="15" class="java.lang.String" itemvalue="work.slhaf.partner.api.capability.annotation.CoordinateManager" />
+      <item index="16" class="java.lang.String" itemvalue="work.slhaf.partner.api.register.capability.annotation.Capability" />
+      <item index="17" class="java.lang.String" itemvalue="work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore" />
+      <item index="18" class="java.lang.String" itemvalue="work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod" />
+      <item index="19" class="java.lang.String" itemvalue="work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent" />
     </list>
     <writeAnnotations>
       <writeAnnotation name="work.slhaf.partner.api.agent.factory.capability.annotation.InjectCapability" />
