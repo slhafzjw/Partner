@@ -52,31 +52,114 @@ class InitCommand : Runnable {
     }
 
     private fun initHome(prompt: Prompt) {
-
-        fun resolveDefaultHome(): Path {
-            val envHome = System.getenv("PARTNER_HOME")?.trim()
-            return if (!envHome.isNullOrEmpty()) {
-                Paths.get(envHome).toAbsolutePath().normalize()
-            } else {
-                Paths.get(System.getProperty("user.home"), ".partner").toAbsolutePath().normalize()
-            }
-        }
-
         prompt.section("Initialize Partner Home")
 
-        val defaultHome = resolveDefaultHome()
+        home = choosePartnerHome(prompt)
 
-        home = prompt.askPath(
-            label = "Partner Home",
-            defaultValue = defaultHome,
-            required = true,
-            directoryOnly = true,
-        )
         Files.createDirectories(home)
         Files.createDirectories(home.resolve("resource"))
         Files.createDirectories(home.resolve("config"))
 
         prompt.success("Partner Home initialized at $home")
+    }
+
+    private fun choosePartnerHome(prompt: Prompt): Path {
+        val defaultHome = resolveDefaultHome()
+
+        while (true) {
+            val selectedHome = prompt.askPath(
+                label = "Partner Home",
+                defaultValue = defaultHome,
+                required = true,
+                directoryOnly = true,
+            )
+
+            if (!hasHomeContent(selectedHome)) {
+                return selectedHome
+            }
+
+            prompt.warn("Partner Home already contains files: $selectedHome")
+
+            when (prompt.select(
+                label = "Partner Home already contains files. Choose how to continue",
+                choices = listOf(
+                    Choice(
+                        "Use another Partner Home",
+                        HomeDuplicateChoice.ANOTHER,
+                        "Choose a different directory",
+                    ),
+                    Choice(
+                        "Overwrite current Partner Home",
+                        HomeDuplicateChoice.OVERWRITE,
+                        "Delete existing contents and continue",
+                    ),
+                    Choice("Cancel init", HomeDuplicateChoice.EXIT),
+                ),
+                defaultIndex = 0,
+            )) {
+                HomeDuplicateChoice.ANOTHER -> continue
+                HomeDuplicateChoice.OVERWRITE -> {
+                    validateSafeHomeOverwrite(selectedHome)
+                    if (!prompt.confirm("Delete all files under $selectedHome?", false)) {
+                        continue
+                    }
+                    clearHomeDirectory(selectedHome)
+                    return selectedHome
+                }
+
+                HomeDuplicateChoice.EXIT -> throw PromptCancelledException()
+            }
+        }
+    }
+
+    private fun resolveDefaultHome(): Path {
+        val envHome = System.getenv("PARTNER_HOME")?.trim()
+        return if (!envHome.isNullOrEmpty()) {
+            Paths.get(envHome).toAbsolutePath().normalize()
+        } else {
+            Paths.get(System.getProperty("user.home"), ".partner").toAbsolutePath().normalize()
+        }
+    }
+
+    private fun hasHomeContent(path: Path): Boolean {
+        if (!Files.exists(path)) return false
+        if (Files.isRegularFile(path)) return true
+        if (!Files.isDirectory(path)) return false
+
+        return Files.walk(path).use { stream ->
+            stream.anyMatch { Files.isRegularFile(it) }
+        }
+    }
+
+    private fun clearHomeDirectory(path: Path) {
+        if (!Files.exists(path)) return
+        if (!Files.isDirectory(path)) {
+            throw CommandInterrupted("Partner Home is not a directory: $path")
+        }
+
+        Files.walk(path).use { stream ->
+            stream
+                .sorted(Comparator.reverseOrder())
+                .filter { it != path }
+                .forEach { Files.deleteIfExists(it) }
+        }
+    }
+
+    private fun validateSafeHomeOverwrite(path: Path) {
+        val normalized = path.toAbsolutePath().normalize()
+        val userHome = Paths.get(System.getProperty("user.home")).toAbsolutePath().normalize()
+
+        if (normalized == normalized.root) {
+            throw CommandInterrupted("Refuse to overwrite filesystem root: $normalized")
+        }
+
+        if (normalized == userHome) {
+            throw CommandInterrupted("Refuse to overwrite user home directory: $normalized")
+        }
+
+        if (normalized.nameCount < 2) {
+            throw CommandInterrupted("Refuse to overwrite suspiciously broad directory: $normalized")
+        }
     }
 
     private fun installPartner(prompt: Prompt) {
@@ -264,6 +347,12 @@ class InitCommand : Runnable {
     private enum class ModelProviderChoice(val display: String) {
         OPENAI_COMPATIBLE("OpenAI Compatible"),
         SKIP("Skip")
+    }
+
+    private enum class HomeDuplicateChoice {
+        ANOTHER,
+        OVERWRITE,
+        EXIT
     }
 
 }
