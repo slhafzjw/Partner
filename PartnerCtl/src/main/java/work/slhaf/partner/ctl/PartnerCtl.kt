@@ -19,8 +19,8 @@ import kotlin.system.exitProcess
         ShutdownCommand::class,
         LogCommand::class,
         ChatCommand::class,
-        ConfigCommand::class,
-        ModuleCommand::class,
+        //ConfigCommand::class,
+        //ModuleCommand::class,
         AutoComplete.GenerateCompletion::class
     ]
 )
