@@ -14,6 +14,9 @@ import picocli.CommandLine
 )
 class ChatCommand : Runnable {
 
+    @CommandLine.Mixin
+    lateinit var helpOptions: HelpOptions
+
     override fun run() {
         val terminal = createTerminal()
         val reader = LineReaderBuilder.builder()

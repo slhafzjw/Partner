@@ -12,6 +12,9 @@ import work.slhaf.partner.ctl.support.CommandInterrupted
 )
 class ShutdownCommand : Runnable {
 
+    @CommandLine.Mixin
+    lateinit var helpOptions: HelpOptions
+
     @CommandLine.Option(
         names = ["--timeout"],
         descriptionKey = "cli.shutdown.option.timeout.description"

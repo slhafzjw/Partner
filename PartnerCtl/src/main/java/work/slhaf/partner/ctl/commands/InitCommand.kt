@@ -27,6 +27,9 @@ import java.nio.file.Paths
 )
 class InitCommand : Runnable {
 
+    @CommandLine.Mixin
+    lateinit var helpOptions: HelpOptions
+
     lateinit var home: Path
 
     /**

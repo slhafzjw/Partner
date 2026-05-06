@@ -8,6 +8,10 @@ import picocli.CommandLine
     description = [$$"${bundle:cli.module.description}"],
 )
 class ModuleCommand : Runnable{
+
+    @CommandLine.Mixin
+    lateinit var helpOptions: HelpOptions
+
     override fun run() {
         TODO("Not yet implemented")
     }

@@ -17,6 +17,9 @@ import java.time.LocalDateTime
 )
 class RunCommand : Runnable {
 
+    @CommandLine.Mixin
+    lateinit var helpOptions: HelpOptions
+
     @CommandLine.Option(
         names = ["-d", "--background"],
         descriptionKey = "cli.run.option.background.description",

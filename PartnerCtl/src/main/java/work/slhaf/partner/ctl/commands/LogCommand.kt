@@ -14,6 +14,9 @@ import java.nio.file.Path
 )
 class LogCommand : Runnable {
 
+    @CommandLine.Mixin
+    lateinit var helpOptions: HelpOptions
+
     @CommandLine.Option(
         names = ["--tail"],
         descriptionKey = "cli.log.option.tail.description",
