@@ -9,6 +9,8 @@ import kotlin.system.exitProcess
 
 @CommandLine.Command(
     name = "partnerctl",
+    resourceBundle = "i18n.messages",
+    description = [$$"${bundle:cli.partnerctl.description}"],
     mixinStandardHelpOptions = true,
     version = ["partnerctl 0.1.0"],
     subcommands = [
@@ -20,8 +22,7 @@ import kotlin.system.exitProcess
         ConfigCommand::class,
         ModuleCommand::class,
         AutoComplete.GenerateCompletion::class
-    ],
-    description = ["Partner command line tool."]
+    ]
 )
 class PartnerCtl : Runnable {
 

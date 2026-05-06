@@ -7,13 +7,23 @@ import work.slhaf.partner.ctl.i18n.I18n.text
 import java.nio.file.Files
 import java.nio.file.Path
 
-@CommandLine.Command(name = "log", description = ["Show Partner logs."])
+@CommandLine.Command(
+    name = "log",
+    resourceBundle = "i18n.messages",
+    description = [$$"${bundle:cli.log.description}"],
+)
 class LogCommand : Runnable {
 
-    @CommandLine.Option(names = ["--tail"], description = ["Number of log lines to show before exiting or following."])
+    @CommandLine.Option(
+        names = ["--tail"],
+        descriptionKey = "cli.log.option.tail.description",
+    )
     var tailLines: Int = 200
 
-    @CommandLine.Option(names = ["-f", "--follow"], description = ["Follow appended log output."])
+    @CommandLine.Option(
+        names = ["-f", "--follow"],
+        descriptionKey = "cli.log.option.follow.description",
+    )
     var follow: Boolean = false
 
     override fun run() {

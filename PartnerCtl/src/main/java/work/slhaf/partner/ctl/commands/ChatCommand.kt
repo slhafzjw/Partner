@@ -9,7 +9,8 @@ import picocli.CommandLine
 
 @CommandLine.Command(
     name = "chat",
-    description = ["Start an interactive chat demo."]
+    resourceBundle = "i18n.messages",
+    description = [$$"${bundle:cli.chat.description}"],
 )
 class ChatCommand : Runnable {
 

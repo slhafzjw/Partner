@@ -20,7 +20,11 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
-@CommandLine.Command(name = "init", description = ["Initialize partner agent."])
+@CommandLine.Command(
+    name = "init",
+    resourceBundle = "i18n.messages",
+    description = [$$"${bundle:cli.init.description}"],
+)
 class InitCommand : Runnable {
 
     lateinit var home: Path

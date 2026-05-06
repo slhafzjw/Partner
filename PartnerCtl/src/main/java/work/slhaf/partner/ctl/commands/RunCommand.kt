@@ -10,10 +10,17 @@ import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.time.LocalDateTime
 
-@CommandLine.Command(name = "run", description = ["Start Partner agent."])
+@CommandLine.Command(
+    name = "run",
+    resourceBundle = "i18n.messages",
+    description = [$$"${bundle:cli.run.description}"],
+)
 class RunCommand : Runnable {
 
-    @CommandLine.Option(names = ["-d", "--background"], description = ["Run Partner in background."])
+    @CommandLine.Option(
+        names = ["-d", "--background"],
+        descriptionKey = "cli.run.option.background.description",
+    )
     var background: Boolean = false
 
     override fun run() {

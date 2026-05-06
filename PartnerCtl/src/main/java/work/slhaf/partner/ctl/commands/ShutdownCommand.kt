@@ -5,18 +5,22 @@ import work.slhaf.partner.ctl.commands.control.*
 import work.slhaf.partner.ctl.i18n.I18n
 import work.slhaf.partner.ctl.support.CommandInterrupted
 
-@CommandLine.Command(name = "shutdown", description = ["Shutdown Partner agent."])
+@CommandLine.Command(
+    name = "shutdown",
+    resourceBundle = "i18n.messages",
+    description = [$$"${bundle:cli.shutdown.description}"],
+)
 class ShutdownCommand : Runnable {
 
     @CommandLine.Option(
         names = ["--timeout"],
-        description = ["Seconds to wait after graceful termination before failing or forcing shutdown."]
+        descriptionKey = "cli.shutdown.option.timeout.description"
     )
     var timeoutSeconds: Long = 10
 
     @CommandLine.Option(
         names = ["-f", "--force"],
-        description = ["Forcefully kill matching Partner process if it does not exit before timeout."]
+        descriptionKey = "cli.shutdown.option.force.description"
     )
     var force: Boolean = false
 
