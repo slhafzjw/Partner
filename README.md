@@ -37,7 +37,7 @@ Partner 分为 `Partner-Framework` 与 `Partner-Core` 两层。前者提供配�
 ```bash
 git clone https://github.com/slhaf/Partner
 cd Partner
-mvn clean package -DskipTests
+mvn -pl Partner-Core -am clean package -DskipTests=true
 ```
 
 > 当前项目仍处在快速迭代阶段，部分测试依赖尚未稳定的运行时行为。若目标只是从源码构建可运行 jar，推荐先使用 `-DskipTests`
@@ -46,8 +46,10 @@ mvn clean package -DskipTests
 构建完成后，主程序 jar 位于：
 
 ```
-Partner-Core/target/Partner-Core-0.5.0.jar
+Partner-Core/target/partner-core-0.5.0.jar
 ```
+
+这里使用 `-pl Partner-Core -am` 只构建运行时主程序及其必要依赖模块，避免把 `PartnerCtl` 和外部模块一起打包。
 
 #### 准备必需配置
 
@@ -108,7 +110,7 @@ export PARTNER_DEFAULT_MODEL="your-model-name"
 #### 启动
 
 ```
-java -jar Partner-Core/target/Partner-Core-0.5.0.jar
+java -jar Partner-Core/target/partner-core-0.5.0.jar
 ```
 
 ---
