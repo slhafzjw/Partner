@@ -1,11 +1,11 @@
 package work.slhaf.partner.module.communication
 
 import kotlinx.coroutines.*
+import work.slhaf.partner.api.InteractionEvent.EventStatus
+import work.slhaf.partner.api.ReplyEvent
 import work.slhaf.partner.framework.agent.exception.AgentRuntimeException
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler
 import work.slhaf.partner.framework.agent.interaction.AgentRuntime
-import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent.EventStatus
-import work.slhaf.partner.framework.agent.interaction.data.ReplyEvent
 import work.slhaf.partner.framework.agent.model.StreamChatMessageConsumer
 import kotlin.time.Duration.Companion.milliseconds
 

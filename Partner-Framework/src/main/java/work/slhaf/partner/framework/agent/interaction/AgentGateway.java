@@ -1,6 +1,6 @@
 package work.slhaf.partner.framework.agent.interaction;
 
-import work.slhaf.partner.framework.agent.interaction.data.InputData;
+import work.slhaf.partner.api.InputData;
 import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext;
 
 public interface AgentGateway<I extends InputData, C extends RunningFlowContext> extends ResponseChannel, AutoCloseable {

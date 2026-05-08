@@ -4,6 +4,7 @@ import com.alibaba.fastjson2.JSONObject
 import com.alibaba.fastjson2.annotation.JSONField
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import work.slhaf.partner.api.InteractionEvent
 import work.slhaf.partner.framework.agent.config.Config
 import work.slhaf.partner.framework.agent.config.ConfigDoc
 import work.slhaf.partner.framework.agent.config.ConfigRegistration
@@ -12,7 +13,6 @@ import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler
 import work.slhaf.partner.framework.agent.factory.component.abstracts.AbstractAgentModule
 import work.slhaf.partner.framework.agent.factory.context.AgentContext
 import work.slhaf.partner.framework.agent.factory.context.ModuleContextData
-import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent
 import work.slhaf.partner.framework.agent.interaction.flow.RunningFlowContext
 import work.slhaf.partner.framework.agent.support.Result
 import java.nio.file.Path

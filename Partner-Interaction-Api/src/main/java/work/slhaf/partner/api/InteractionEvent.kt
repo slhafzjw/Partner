@@ -1,4 +1,4 @@
-package work.slhaf.partner.framework.agent.interaction.data
+package work.slhaf.partner.api
 
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter

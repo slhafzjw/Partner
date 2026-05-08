@@ -1,4 +1,4 @@
-package work.slhaf.partner.framework.agent.interaction.data
+package work.slhaf.partner.api
 
 open class InputData(
     val source: String,

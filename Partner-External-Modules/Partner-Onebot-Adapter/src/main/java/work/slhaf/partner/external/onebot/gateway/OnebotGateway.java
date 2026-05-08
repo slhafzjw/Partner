@@ -7,10 +7,10 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
+import work.slhaf.partner.api.InputData;
+import work.slhaf.partner.api.InteractionEvent;
 import work.slhaf.partner.external.onebot.v11.*;
 import work.slhaf.partner.framework.agent.interaction.AgentGateway;
-import work.slhaf.partner.framework.agent.interaction.data.InputData;
-import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.net.InetSocketAddress;

@@ -2,7 +2,7 @@ package work.slhaf.partner.external.onebot.v11
 
 import com.alibaba.fastjson2.JSONArray
 import com.alibaba.fastjson2.JSONObject
-import work.slhaf.partner.framework.agent.interaction.data.InputData
+import work.slhaf.partner.api.InputData
 
 object OneBotV11EventCodec {
 

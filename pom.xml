@@ -9,8 +9,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>Partner-Core</module>
+        <module>Partner-Interaction-Api</module>
         <module>Partner-Framework</module>
+        <module>Partner-Core</module>
         <module>Partner-External-Modules</module>
         <module>PartnerCtl</module>
     </modules>

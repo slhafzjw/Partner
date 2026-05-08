@@ -2,7 +2,7 @@ package work.slhaf.partner.framework.agent.interaction
 
 import com.alibaba.fastjson2.JSONObject
 import org.slf4j.LoggerFactory
-import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent
+import work.slhaf.partner.api.InteractionEvent
 
 interface ResponseChannel {
 

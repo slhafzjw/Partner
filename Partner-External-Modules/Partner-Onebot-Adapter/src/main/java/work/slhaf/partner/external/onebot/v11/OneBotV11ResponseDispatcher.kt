@@ -1,9 +1,9 @@
 package work.slhaf.partner.external.onebot.v11
 
-import work.slhaf.partner.framework.agent.interaction.data.InteractionEvent
-import work.slhaf.partner.framework.agent.interaction.data.ModuleEvent
-import work.slhaf.partner.framework.agent.interaction.data.ReplyEvent
-import work.slhaf.partner.framework.agent.interaction.data.SystemEvent
+import work.slhaf.partner.api.InteractionEvent
+import work.slhaf.partner.api.ModuleEvent
+import work.slhaf.partner.api.ReplyEvent
+import work.slhaf.partner.api.SystemEvent
 import java.util.concurrent.ConcurrentHashMap
 
 /**
