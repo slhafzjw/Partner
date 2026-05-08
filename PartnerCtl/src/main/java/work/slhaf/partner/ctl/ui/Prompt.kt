@@ -12,6 +12,22 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
+data class PromptPart(
+    val text: String,
+    val style: PromptStyle = PromptStyle.PLAIN,
+)
+
+enum class PromptStyle {
+    PLAIN,
+    DIM,
+    BOLD,
+    CYAN,
+    GREEN,
+    YELLOW,
+    RED,
+    BLUE,
+}
+
 class Prompt private constructor(
     private val terminal: Terminal,
     private val reader: LineReader,
@@ -56,8 +72,31 @@ class Prompt private constructor(
     private fun questionPrefix() = cyan("?")
 
     private fun promptLabel(label: String, defaultValue: String? = null): String {
-        val suffix = if (defaultValue != null) " ${dim("[$defaultValue]")}" else ""
-        return "${questionPrefix()} $label$suffix: "
+        return renderPrompt(
+            buildList {
+                add(PromptPart("?", PromptStyle.CYAN))
+                add(PromptPart(" $label", PromptStyle.PLAIN))
+                if (defaultValue != null) {
+                    add(PromptPart(" [$defaultValue]", PromptStyle.DIM))
+                }
+                add(PromptPart(": ", PromptStyle.PLAIN))
+            }
+        )
+    }
+
+    private fun renderPrompt(parts: List<PromptPart>): String {
+        return parts.joinToString(separator = "") { part ->
+            when (part.style) {
+                PromptStyle.PLAIN -> part.text
+                PromptStyle.DIM -> dim(part.text)
+                PromptStyle.BOLD -> bold(part.text)
+                PromptStyle.CYAN -> cyan(part.text)
+                PromptStyle.GREEN -> green(part.text)
+                PromptStyle.YELLOW -> yellow(part.text)
+                PromptStyle.RED -> red(part.text)
+                PromptStyle.BLUE -> blue(part.text)
+            }
+        }
     }
 
     fun print(message: String) {
@@ -469,6 +508,10 @@ class Prompt private constructor(
     private fun beep() {
         terminal.writer().print('\u0007')
         terminal.writer().flush()
+    }
+
+    fun readLine(parts: List<PromptPart>): String {
+        return readLine(renderPrompt(parts))
     }
 
     private fun readLine(prompt: String): String {

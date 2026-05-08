@@ -1,11 +1,9 @@
 package work.slhaf.partner.ctl.commands
 
-import org.jline.reader.EndOfFileException
-import org.jline.reader.LineReaderBuilder
-import org.jline.reader.UserInterruptException
-import org.jline.terminal.Terminal
-import org.jline.terminal.TerminalBuilder
 import picocli.CommandLine
+import work.slhaf.partner.api.InputData
+import work.slhaf.partner.ctl.commands.chat.ChatScreen
+import work.slhaf.partner.ctl.commands.chat.WebSocketClient
 
 @CommandLine.Command(
     name = "chat",
@@ -17,43 +15,33 @@ class ChatCommand : Runnable {
     @CommandLine.Mixin
     lateinit var helpOptions: HelpOptions
 
+    @CommandLine.Option(
+        names = ["--url"],
+        description = ["WebSocket gateway URL."],
+        defaultValue = DEFAULT_URL,
+    )
+    lateinit var url: String
+
+    @CommandLine.Option(
+        names = ["--source"],
+        description = ["Input source identity used by Partner runtime."],
+        defaultValue = DEFAULT_SOURCE,
+    )
+    lateinit var source: String
+
     override fun run() {
-        val terminal = createTerminal()
-        val reader = LineReaderBuilder.builder()
-            .terminal(terminal)
-            .build()
-
-        terminal.writer().println("Partner chat demo. Type /exit to quit.")
-        terminal.writer().flush()
-
-        while (true) {
-            val line = try {
-                reader.readLine("partner> ")
-            } catch (_: UserInterruptException) {
-                terminal.writer().println()
-                terminal.writer().flush()
-                continue
-            } catch (_: EndOfFileException) {
-                terminal.writer().println()
-                terminal.writer().flush()
-                break
-            }
-
-            when {
-                line == "/exit" -> break
-                line.isBlank() -> continue
-                else -> {
-                    terminal.writer().println("echo: $line")
-                    terminal.writer().flush()
-                }
+        val screen = ChatScreen()
+        WebSocketClient(url) { event ->
+            screen.postInteractionEvent(event)
+        }.use { client ->
+            screen.run { line ->
+                client.send(InputData(source, line))
             }
         }
     }
 
-    private fun createTerminal(): Terminal {
-        return TerminalBuilder.builder()
-            .system(true)
-            .dumb(true)
-            .build()
+    private companion object {
+        private const val DEFAULT_URL = "ws://127.0.0.1:29600"
+        private const val DEFAULT_SOURCE = "partnerctl"
     }
 }
