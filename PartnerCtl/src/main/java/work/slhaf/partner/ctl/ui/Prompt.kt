@@ -8,25 +8,12 @@ import org.jline.reader.LineReaderBuilder
 import org.jline.reader.UserInterruptException
 import org.jline.terminal.Terminal
 import org.jline.terminal.TerminalBuilder
+import work.slhaf.partner.ctl.support.PromptPart
+import work.slhaf.partner.ctl.support.PromptStyle
+import work.slhaf.partner.ctl.support.TerminalText
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-
-data class PromptPart(
-    val text: String,
-    val style: PromptStyle = PromptStyle.PLAIN,
-)
-
-enum class PromptStyle {
-    PLAIN,
-    DIM,
-    BOLD,
-    CYAN,
-    GREEN,
-    YELLOW,
-    RED,
-    BLUE,
-}
 
 class Prompt private constructor(
     private val terminal: Terminal,
@@ -46,28 +33,25 @@ class Prompt private constructor(
         }
     }
 
-    private val colorEnabled: Boolean =
-        System.getenv("NO_COLOR") == null &&
-                !(System.getenv("TERM") ?: "").equals("dumb", ignoreCase = true)
+    private val colorEnabled: Boolean = TerminalText.colorEnabled
 
     private fun ansi(code: String, text: String): String {
-        val escape = 27.toChar()
-        return if (colorEnabled) "$escape[${code}m$text$escape[0m" else text
+        return TerminalText.ansi(code, text, colorEnabled)
     }
 
-    private fun bold(text: String) = ansi("1", text)
+    private fun bold(text: String) = TerminalText.render(PromptPart(text, PromptStyle.BOLD), colorEnabled)
 
-    private fun dim(text: String) = ansi("2", text)
+    private fun dim(text: String) = TerminalText.render(PromptPart(text, PromptStyle.DIM), colorEnabled)
 
-    private fun cyan(text: String) = ansi("36", text)
+    private fun cyan(text: String) = TerminalText.render(PromptPart(text, PromptStyle.CYAN), colorEnabled)
 
-    private fun green(text: String) = ansi("32", text)
+    private fun green(text: String) = TerminalText.render(PromptPart(text, PromptStyle.GREEN), colorEnabled)
 
-    private fun yellow(text: String) = ansi("33", text)
+    private fun yellow(text: String) = TerminalText.render(PromptPart(text, PromptStyle.YELLOW), colorEnabled)
 
-    private fun red(text: String) = ansi("31", text)
+    private fun red(text: String) = TerminalText.render(PromptPart(text, PromptStyle.RED), colorEnabled)
 
-    private fun blue(text: String) = ansi("34", text)
+    private fun blue(text: String) = TerminalText.render(PromptPart(text, PromptStyle.BLUE), colorEnabled)
 
     private fun questionPrefix() = cyan("?")
 
@@ -85,18 +69,7 @@ class Prompt private constructor(
     }
 
     private fun renderPrompt(parts: List<PromptPart>): String {
-        return parts.joinToString(separator = "") { part ->
-            when (part.style) {
-                PromptStyle.PLAIN -> part.text
-                PromptStyle.DIM -> dim(part.text)
-                PromptStyle.BOLD -> bold(part.text)
-                PromptStyle.CYAN -> cyan(part.text)
-                PromptStyle.GREEN -> green(part.text)
-                PromptStyle.YELLOW -> yellow(part.text)
-                PromptStyle.RED -> red(part.text)
-                PromptStyle.BLUE -> blue(part.text)
-            }
-        }
+        return TerminalText.render(parts, colorEnabled)
     }
 
     fun print(message: String) {

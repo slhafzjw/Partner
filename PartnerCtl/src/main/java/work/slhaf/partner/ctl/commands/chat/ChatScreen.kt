@@ -5,6 +5,7 @@ import org.jline.terminal.TerminalBuilder
 import work.slhaf.partner.api.InteractionEvent
 import work.slhaf.partner.api.InteractionEvent.EventStatus
 import work.slhaf.partner.api.ReplyEvent
+import work.slhaf.partner.ctl.support.TerminalText
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.math.ceil
@@ -196,7 +197,7 @@ internal class ChatScreen(
 
     private fun measureDisplayRows(text: String): Int {
         val width = terminal.width.takeIf { it > 0 } ?: DEFAULT_TERMINAL_WIDTH
-        return text.split('\n').sumOf { line ->
+        return TerminalText.stripAnsi(text).split('\n').sumOf { line ->
             ceil(displayWidth(line).coerceAtLeast(1).toDouble() / width.toDouble())
                 .toInt()
                 .coerceAtLeast(1)
