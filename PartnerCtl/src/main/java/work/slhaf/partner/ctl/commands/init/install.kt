@@ -22,7 +22,7 @@ fun buildFromSource(home: Path, prompt: Prompt) {
             buildCommand = listOf("mvn", "-pl", "Partner-Core", "-am", "package", "-DskipTests=true"),
             artifactDirectory = Paths.get("Partner-Core", "target"),
             artifactSelector = ::findLargestJar,
-            installRelativePath = Paths.get("resource", "partner-core.jar"),
+            installRelativePath = Paths.get("resources", "partner-core.jar"),
         ),
     )
 }

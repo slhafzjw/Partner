@@ -17,7 +17,7 @@ fun resolvePartnerHome(): Path {
 }
 
 fun resolvePartnerJar(home: Path): Path {
-    return home.resolve("resource").resolve("partner-core.jar").toAbsolutePath().normalize()
+    return home.resolve("resources").resolve("partner-core.jar").toAbsolutePath().normalize()
 }
 
 fun resolvePidFile(home: Path): Path {

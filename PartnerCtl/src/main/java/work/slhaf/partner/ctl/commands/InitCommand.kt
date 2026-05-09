@@ -39,7 +39,7 @@ class InitCommand : Runnable {
      *    - 手动构建
      *      1) 检查所需工具链: java、javac、mvn、git
      *      2) 拉取 git 仓库至临时目录
-     *      3) 构建、并移动至 $PARTNER_HOME/resource/partner-core.jar
+     *      3) 构建、并移动至 $PARTNER_HOME/resources/partner-core.jar
      * 3. gateway 配置 -> $PARTNER_HOME/config/gateway.json:
      *    - WebSocket Gateway
      *    - OneBot Gateway
@@ -65,7 +65,7 @@ class InitCommand : Runnable {
         home = choosePartnerHome(prompt)
 
         Files.createDirectories(home)
-        Files.createDirectories(home.resolve("resource"))
+        Files.createDirectories(home.resolve("resources"))
         Files.createDirectories(home.resolve("config"))
 
         prompt.success(text("init.home.success", home))
@@ -325,7 +325,7 @@ class InitCommand : Runnable {
             return
         }
 
-        val partnerJar = home.resolve("resource").resolve("partner-core.jar").toAbsolutePath().normalize()
+        val partnerJar = home.resolve("resources").resolve("partner-core.jar").toAbsolutePath().normalize()
         if (!Files.exists(partnerJar)) {
             throw CommandInterrupted("Partner runtime jar does not exist: $partnerJar")
         }
