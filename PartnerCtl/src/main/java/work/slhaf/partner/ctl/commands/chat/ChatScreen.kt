@@ -11,6 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.math.ceil
 
 internal class ChatScreen(
+    val source: String,
     private val terminal: Terminal = TerminalBuilder.builder()
         .system(true)
         .dumb(true)
@@ -90,7 +91,7 @@ internal class ChatScreen(
         }
 
         commitDynamicArea()
-        printCommitted(renderer.renderCommittedUserInput(line))
+        printCommitted(renderer.renderCommittedUserInput(source,line))
         activeReply.setLength(0)
         repaintDynamicArea()
 
@@ -189,11 +190,12 @@ internal class ChatScreen(
                 append(renderer.renderActiveReply(activeReply.toString()))
                 append('\n')
             }
+            append('\n')
             append(inputPrompt())
         }
     }
 
-    private fun inputPrompt(): String = "partner> ${input}"
+    private fun inputPrompt(): String = "partner> $input"
 
     private fun measureDisplayRows(text: String): Int {
         val width = terminal.width.takeIf { it > 0 } ?: DEFAULT_TERMINAL_WIDTH

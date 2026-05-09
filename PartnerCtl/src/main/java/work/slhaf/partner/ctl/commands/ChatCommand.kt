@@ -25,12 +25,12 @@ class ChatCommand : Runnable {
     @CommandLine.Option(
         names = ["--source"],
         description = ["Input source identity used by Partner runtime."],
-        defaultValue = DEFAULT_SOURCE,
+        required = true
     )
     lateinit var source: String
 
     override fun run() {
-        val screen = ChatScreen()
+        val screen = ChatScreen(source)
         WebSocketClient(url) { event ->
             screen.postInteractionEvent(event)
         }.use { client ->
@@ -42,6 +42,5 @@ class ChatCommand : Runnable {
 
     private companion object {
         private const val DEFAULT_URL = "ws://127.0.0.1:29600"
-        private const val DEFAULT_SOURCE = "partnerctl"
     }
 }

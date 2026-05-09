@@ -9,11 +9,11 @@ import work.slhaf.partner.ctl.support.PromptStyle
 import work.slhaf.partner.ctl.support.TerminalText
 
 internal class ChatEventRenderer {
-    fun renderCommittedUserInput(content: String): String {
+    fun renderCommittedUserInput(source: String, content: String): String {
         return TerminalText.render(
             listOf(
-                PromptPart("you", PromptStyle.CYAN),
-                PromptPart(": "),
+                PromptPart("$source>", PromptStyle.CYAN),
+                PromptPart(" "),
                 PromptPart(content),
             )
         )
@@ -23,15 +23,15 @@ internal class ChatEventRenderer {
         return if (content.isBlank()) {
             TerminalText.render(
                 listOf(
-                    PromptPart("assistant", PromptStyle.GREEN),
-                    PromptPart(":"),
+                    PromptPart("assistant>", PromptStyle.GREEN),
+                    PromptPart(" "),
                 )
             )
         } else {
             TerminalText.render(
                 listOf(
-                    PromptPart("assistant", PromptStyle.GREEN),
-                    PromptPart(": "),
+                    PromptPart("assistant>", PromptStyle.GREEN),
+                    PromptPart(" "),
                     PromptPart(content),
                 )
             )
