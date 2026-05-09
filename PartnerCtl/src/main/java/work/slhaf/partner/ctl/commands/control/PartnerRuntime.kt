@@ -1,8 +1,14 @@
 package work.slhaf.partner.ctl.commands.control
 
+import picocli.CommandLine
+import work.slhaf.partner.ctl.i18n.I18n.text
+import work.slhaf.partner.ctl.support.CommandInterrupted
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
@@ -25,7 +31,8 @@ fun resolvePidFile(home: Path): Path {
 }
 
 fun resolveLogFile(home: Path): Path {
-    return home.resolve("state").resolve("trace").resolve("log").resolve("partner-core.log").toAbsolutePath().normalize()
+    return home.resolve("state").resolve("trace").resolve("log").resolve("partner-core.log").toAbsolutePath()
+        .normalize()
 }
 
 fun findPartnerProcesses(home: Path, partnerJar: Path): List<ProcessHandle> {
@@ -94,4 +101,116 @@ private fun isPartnerProcess(process: ProcessHandle, partnerJar: Path): Boolean 
     val commandLine = info.commandLine().orElse("") ?: ""
 
     return arguments.any { it == jarPath } || commandLine.contains(jarPath)
+}
+
+
+fun runInForeground(home: Path, partnerJar: Path, logLevel: LogLevel) {
+    val logFile = resolveLogFile(home)
+    Files.createDirectories(logFile.parent)
+
+    val process = createPartnerProcessBuilder(home, partnerJar, logLevel)
+        .inheritIO()
+        .start()
+
+    appendControlLog(logFile, text("control.run.log.foregroundStarting", process.pid(), partnerJar))
+
+    val shutdownHook = Thread {
+        if (process.isAlive) {
+            process.destroy()
+        }
+    }
+    Runtime.getRuntime().addShutdownHook(shutdownHook)
+
+    val exitCode = process.waitFor()
+    runCatching { Runtime.getRuntime().removeShutdownHook(shutdownHook) }
+    appendControlLog(logFile, text("control.run.log.exited", exitCode))
+
+    if (exitCode != 0) {
+        throw CommandInterrupted(text("control.run.error.exited", exitCode), exitCode)
+    }
+}
+
+fun runInBackground(home: Path, partnerJar: Path, logLevel: LogLevel) {
+    val pidFile = resolvePidFile(home)
+    val logFile = resolveLogFile(home)
+    val existingProcess = findPartnerProcesses(home, partnerJar).firstOrNull()
+
+    if (existingProcess != null) {
+        throw CommandInterrupted(text("control.run.error.alreadyRunning", existingProcess.pid()))
+    }
+
+    Files.createDirectories(pidFile.parent)
+    Files.createDirectories(logFile.parent)
+
+    val process = createPartnerProcessBuilder(home, partnerJar, logLevel)
+        .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+        .redirectError(ProcessBuilder.Redirect.DISCARD)
+        .start()
+
+    appendControlLog(logFile, text("control.run.log.backgroundStarting", process.pid(), partnerJar))
+
+    Thread.sleep(BACKGROUND_START_CHECK_MILLIS)
+    if (!process.isAlive) {
+        val exitCode = process.exitValue()
+        appendControlLog(logFile, text("control.run.log.exited", exitCode))
+        Files.deleteIfExists(pidFile)
+        throw CommandInterrupted(text("control.run.error.exited", exitCode), exitCode)
+    }
+
+    Files.writeString(
+        pidFile,
+        process.pid().toString(),
+        StandardOpenOption.CREATE,
+        StandardOpenOption.TRUNCATE_EXISTING,
+    )
+
+    println(text("control.run.success.backgroundStarted", process.pid()))
+    println(text("control.run.info.logFile", logFile))
+}
+
+private fun createPartnerProcessBuilder(home: Path, partnerJar: Path, logLevel: LogLevel): ProcessBuilder {
+    return ProcessBuilder(
+        "java",
+        "-Dpartner.log.level=${logLevel.name.uppercase()}",
+        "-DPARTNER_HOME=$home",
+        "-jar",
+        partnerJar.toString()
+    )
+        .apply {
+            environment()["PARTNER_HOME"] = home.toString()
+        }
+}
+
+private fun appendControlLog(logFile: Path, message: String) {
+    Files.createDirectories(logFile.parent)
+    Files.newOutputStream(
+        logFile,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.APPEND,
+    ).use { output ->
+        writeControlLog(output, message)
+    }
+}
+
+private fun writeControlLog(output: OutputStream, message: String) {
+    output.write("[partnerctl ${LocalDateTime.now()}] $message\n".toByteArray())
+    output.flush()
+}
+
+private const val BACKGROUND_START_CHECK_MILLIS = 500L
+
+enum class LogLevel {
+    TRACE, DEBUG, INFO, WARN, ERROR
+}
+
+class LogLevelConverter : CommandLine.ITypeConverter<LogLevel> {
+    override fun convert(value: String): LogLevel {
+        return LogLevel.entries.firstOrNull {
+            it.name.equals(value, ignoreCase = true)
+        } ?: throw CommandLine.TypeConversionException(
+            "invalid log level '$value'. Valid values: ${
+                LogLevel.entries.joinToString(", ") { it.name.lowercase() }
+            }"
+        )
+    }
 }
