@@ -1,7 +1,7 @@
 <configuration>
     <property name="PARTNER_HOME" value="${PARTNER_HOME:-${user.home}/.partner}"/>
     <property name="PARTNER_LOG_DIR" value="${PARTNER_HOME}/state/trace/log"/>
-    <property name="LOG_LEVEL" value="${PARTNER_LOG_LEVEL}:-${partner.log.level:-INFO}"/>
+    <property name="LOG_LEVEL" value="${PARTNER_LOG_LEVEL:-${partner.log.level:-INFO}}"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
