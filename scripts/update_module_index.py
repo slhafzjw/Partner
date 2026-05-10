@@ -34,7 +34,7 @@ def build_external_modules() -> list[dict]:
         version = manifest["version"]
         with_gateway = manifest.get("withGateway", False)
 
-        rel_path = manifest_path.relative_to(ROOT / "repository").as_posix()
+        rel_path = manifest_path.relative_to(ROOT / "registry").as_posix()
 
         entries.append(
             {
@@ -56,3 +56,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
