@@ -1,0 +1,38 @@
+name: update-module-index.yml
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "registry/modules/*.json"
+      - "registry/index.json"
+      - "scripts/update_module_index.py"
+      - "update-module-index.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  update-registry-index:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update module index
+        run: python3 scripts/update_module_index.py
+
+      - name: Commit updated index
+        run: |
+          if git diff --quiet registry/index.json; then
+            echo "No module index changes"
+            exit 0
+          fi
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add repository/index.json
+          git commit -m "chore: update registry index"
+          git push
