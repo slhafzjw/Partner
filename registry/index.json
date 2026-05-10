@@ -1,0 +1,13 @@
+{
+  "partner": {
+    "latestBuildable": {
+      "url": "https://github.com/slhaf/Partner.git",
+      "ref": "buildable/v0.5.0"
+    },
+    "latestRelease": {
+      "url": "url",
+      "version": "0.5.0"
+    }
+  },
+  "externalModules": []
+}
