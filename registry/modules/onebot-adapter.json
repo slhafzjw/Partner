@@ -1,0 +1,58 @@
+{
+    "id": "onebot_channel",
+    "name": "OneBot Adapter",
+    "version": "0.5.0",
+    "withGateway": true,
+    "description": "OneBot v11 reverse WebSocket gateway adapter for Partner. It accepts reverse WebSocket connections from a OneBot implementation and converts private message events into Partner input events.",
+    "source": {
+        "url": "https://github.com/slhaf/Partner.git",
+        "sourceDirName": "Partner",
+        "buildCommand": [
+            "mvn",
+            "-B",
+            "-DskipTests=true",
+            "-pl",
+            "Partner-External-Modules/Partner-Onebot-Adapter",
+            "-am",
+            "package"
+        ],
+        "artifactDirectory": "Partner-External-Modules/Partner-Onebot-Adapter/target",
+        "artifactPattern": "partner-onebot-adapter-*.jar"
+    },
+    "install": {
+        "target": "resources/module/partner-onebot-adapter.jar"
+    },
+    "config": {
+        "target": "config/gateway.json",
+        "fields": [
+            {
+                "name": "port",
+                "label": "OneBot reverse WebSocket server port",
+                "type": "INT",
+                "default": "29700",
+                "required": true
+            },
+            {
+                "name": "hostname",
+                "label": "OneBot reverse WebSocket server hostname",
+                "type": "STRING",
+                "default": "127.0.0.1",
+                "required": true
+            },
+            {
+                "name": "path",
+                "label": "OneBot reverse WebSocket path",
+                "type": "STRING",
+                "default": "/onebot/v11/ws",
+                "required": true
+            },
+            {
+                "name": "token",
+                "label": "OneBot access token",
+                "type": "STRING",
+                "default": "",
+                "required": false
+            }
+        ]
+    }
+}
