@@ -36,6 +36,7 @@ data class ModuleManifest(
     /** Human-readable module description shown before installation. */
     val description: String = "",
 
+    val version: String,
     val source: Source,
     val install: Install,
     val config: Config? = null,
