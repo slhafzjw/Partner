@@ -2,7 +2,7 @@
   "partner": {
     "latestBuildable": {
       "url": "https://github.com/slhaf/Partner.git",
-      "ref": "buildable/v0.5.0"
+      "ref": "buildable/0.5.0"
     },
     "latestRelease": {
       "url": "url",
