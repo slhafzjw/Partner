@@ -130,6 +130,11 @@ jobs:
           echo "Ctl release tag: ${TAG}"
           echo "Ctl release version: ${VERSION}"
 
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
       - name: Download release artifacts
         uses: actions/download-artifact@v4
         with:
