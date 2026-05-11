@@ -17,13 +17,10 @@ permissions:
   contents: read
 
 jobs:
-  test-native-build:
-    name: Test ${{ inputs.platform }}
-    runs-on: ${{
-      inputs.platform == 'windows-x64' && 'windows-latest' ||
-      inputs.platform == 'linux-arm64' && 'ubuntu-24.04-arm' ||
-      'ubuntu-latest'
-    }}
+  test-linux-x64:
+    name: Test linux-x64
+    if: ${{ inputs.platform == 'linux-x64' }}
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -40,7 +37,6 @@ jobs:
         run: mvn -B -DskipTests=true -pl PartnerCtl -am package native:compile
 
       - name: Check Linux output
-        if: ${{ inputs.platform == 'linux-x64' || inputs.platform == 'linux-arm64' }}
         shell: bash
         run: |
           if [ ! -f "PartnerCtl/target/partnerctl" ]; then
@@ -53,8 +49,74 @@ jobs:
           chmod +x PartnerCtl/target/partnerctl
           ./PartnerCtl/target/partnerctl --help
 
+      - name: Upload test artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: partnerctl-linux-x64-test
+          path: PartnerCtl/target/partnerctl
+          if-no-files-found: error
+          retention-days: 1
+
+  test-linux-arm64:
+    name: Test linux-arm64
+    if: ${{ inputs.platform == 'linux-arm64' }}
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up GraalVM 21
+        uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: graalvm-community
+          java-version: "21"
+          github-token: ${{ github.token }}
+
+      - name: Build partnerctl native image
+        run: mvn -B -DskipTests=true -pl PartnerCtl -am package native:compile
+
+      - name: Check Linux output
+        shell: bash
+        run: |
+          if [ ! -f "PartnerCtl/target/partnerctl" ]; then
+            echo "Expected native binary not found: PartnerCtl/target/partnerctl"
+            echo "Available PartnerCtl target files:"
+            find PartnerCtl/target -maxdepth 2 -type f -print
+            exit 1
+          fi
+
+          chmod +x PartnerCtl/target/partnerctl
+          ./PartnerCtl/target/partnerctl --help
+
+      - name: Upload test artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: partnerctl-linux-arm64-test
+          path: PartnerCtl/target/partnerctl
+          if-no-files-found: error
+          retention-days: 1
+
+  test-windows-x64:
+    name: Test windows-x64
+    if: ${{ inputs.platform == 'windows-x64' }}
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up GraalVM 21
+        uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: graalvm-community
+          java-version: "21"
+          github-token: ${{ github.token }}
+
+      - name: Build partnerctl native image
+        run: mvn -B -DskipTests=true -pl PartnerCtl -am package native:compile
+
       - name: Check Windows output
-        if: ${{ inputs.platform == 'windows-x64' }}
         shell: pwsh
         run: |
           if (!(Test-Path "PartnerCtl/target/partnerctl.exe")) {
@@ -69,9 +131,7 @@ jobs:
       - name: Upload test artifact
         uses: actions/upload-artifact@v4
         with:
-          name: partnerctl-${{ inputs.platform }}-test
-          path: |
-            PartnerCtl/target/partnerctl
-            PartnerCtl/target/partnerctl.exe
-          if-no-files-found: ignore
+          name: partnerctl-windows-x64-test
+          path: PartnerCtl/target/partnerctl.exe
+          if-no-files-found: error
           retention-days: 1
