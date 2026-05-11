@@ -1,0 +1,156 @@
+name: Release PartnerCtl
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Ctl release tag, for example release-ctl/0.5.0"
+        required: true
+        type: string
+  push:
+    tags:
+      - "release-ctl/*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x64
+            runner: ubuntu-latest
+            binaryPath: PartnerCtl/target/partnerctl
+            assetSuffix: linux-x64
+          - platform: linux-arm64
+            runner: ubuntu-24.04-arm
+            binaryPath: PartnerCtl/target/partnerctl
+            assetSuffix: linux-arm64
+          - platform: windows-x64
+            runner: windows-latest
+            binaryPath: PartnerCtl/target/partnerctl.exe
+            assetSuffix: windows-x64.exe
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Resolve release metadata
+        id: release
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+
+          VERSION="${TAG#release-ctl/}"
+          VERSION="${VERSION#v}"
+          ASSET_NAME="partnerctl-${VERSION}-${{ matrix.assetSuffix }}"
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "asset_name=${ASSET_NAME}" >> "$GITHUB_OUTPUT"
+
+          echo "Ctl release tag: ${TAG}"
+          echo "Ctl release version: ${VERSION}"
+          echo "Ctl release asset: ${ASSET_NAME}"
+
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Set up GraalVM 21
+        uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: graalvm-community
+          java-version: "21"
+          github-token: ${{ github.token }}
+
+      - name: Build partnerctl native image
+        run: mvn -B -DskipTests=true -pl PartnerCtl -am package native:compile
+
+      - name: Prepare release artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+
+          BINARY_PATH="${{ matrix.binaryPath }}"
+          ASSET_PATH="dist/${{ steps.release.outputs.asset_name }}"
+
+          if [ ! -f "$BINARY_PATH" ]; then
+            echo "Expected native binary not found: $BINARY_PATH"
+            echo "Available PartnerCtl target files:"
+            find PartnerCtl/target -maxdepth 2 -type f -print
+            exit 1
+          fi
+
+          cp "$BINARY_PATH" "$ASSET_PATH"
+
+          if [[ "${{ matrix.platform }}" == linux-* ]]; then
+            chmod +x "$ASSET_PATH"
+          fi
+
+          ls -lh dist
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.release.outputs.asset_name }}
+          path: dist/${{ steps.release.outputs.asset_name }}
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve release metadata
+        id: release
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+
+          VERSION="${TAG#release-ctl/}"
+          VERSION="${VERSION#v}"
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+          echo "Ctl release tag: ${TAG}"
+          echo "Ctl release version: ${VERSION}"
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Show release artifacts
+        run: |
+          ls -lh dist
+
+      - name: Create GitHub Release
+        shell: bash
+        run: |
+          if gh release view "${{ steps.release.outputs.tag }}" >/dev/null 2>&1; then
+            echo "Release ${{ steps.release.outputs.tag }} already exists."
+            exit 1
+          fi
+
+          gh release create "${{ steps.release.outputs.tag }}" \
+            dist/* \
+            --title "PartnerCtl ${{ steps.release.outputs.version }}" \
+            --notes "PartnerCtl ${{ steps.release.outputs.version }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
