@@ -1,4 +1,4 @@
-name: Update latest buildable
+name: Update Latest Buildable
 
 on:
   workflow_dispatch:

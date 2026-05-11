@@ -1,4 +1,4 @@
-name: update-module-index.yml
+name: Update Module Index
 on:
   push:
     branches:
