@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag, for example rel-v0.5.0"
+        description: "Core release tag, for example release-core/0.5.0"
         required: true
         type: string
   push:
     tags:
-      - "rel-v*"
+      - "release-core/*"
 
 permissions:
   contents: write
@@ -29,18 +29,20 @@ jobs:
             TAG="${GITHUB_REF_NAME}"
           fi
 
-          VERSION="${TAG#rel-v}"
+          VERSION="${TAG#release-core/}"
+          VERSION="${VERSION#v}"
+          ENCODED_TAG="${TAG//\//%2F}"
           ASSET_NAME="partner-core-${VERSION}.jar"
-          ASSET_URL="https://github.com/slhaf/Partner/releases/download/${TAG}/${ASSET_NAME}"
+          ASSET_URL="https://github.com/slhaf/Partner/releases/download/${ENCODED_TAG}/${ASSET_NAME}"
 
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "asset_name=${ASSET_NAME}" >> "$GITHUB_OUTPUT"
           echo "asset_url=${ASSET_URL}" >> "$GITHUB_OUTPUT"
 
-          echo "Release tag: ${TAG}"
-          echo "Release version: ${VERSION}"
-          echo "Release asset: ${ASSET_NAME}"
+          echo "Core release tag: ${TAG}"
+          echo "Core release version: ${VERSION}"
+          echo "Core release asset: ${ASSET_NAME}"
 
       - name: Checkout release source
         uses: actions/checkout@v4
@@ -84,7 +86,7 @@ jobs:
 
           gh release create "${{ steps.release.outputs.tag }}" \
             "dist/${{ steps.release.outputs.asset_name }}" \
-            --title "${{ steps.release.outputs.tag }}" \
+            --title "Partner Core ${{ steps.release.outputs.version }}" \
             --notes "Partner Core ${{ steps.release.outputs.version }}"
         env:
           GH_TOKEN: ${{ github.token }}
