@@ -9,7 +9,7 @@ import java.nio.file.Paths
 import kotlin.io.path.isDirectory
 import kotlin.io.path.name
 
-private const val PARTNER_REPO_URL = "https://gitea.slhaf.work/slhaf/Partner.git"
+private const val PARTNER_REPO_URL = "https://github.com/slhaf/Partner.git"
 
 fun buildFromSource(home: Path, prompt: Prompt) {
     buildAndInstallFromSource(

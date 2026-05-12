@@ -1,10 +1,20 @@
 package work.slhaf.partner.ctl.support
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
+private const val registryUrl = "https://raw.githubusercontent.com/slhaf/Partner/refs/heads/master/registry"
+private const val indexUrl = "$registryUrl/index.json"
+
+private val registryIndex = run {
+    Json.decodeFromString<RegistryIndex>(fetchText(indexUrl))
+}
 
 private fun loadModules(): Set<ModuleManifest> {
-    // TODO: 待实现具体加载逻辑
-    return emptySet()
+    return registryIndex.externalModules.map { indexItem ->
+        val manifestStr = fetchText("$registryUrl/${indexItem.registryRef}")
+        return@map Json.decodeFromString<ModuleManifest>(manifestStr)
+    }.toSet()
 }
 
 fun loadAvailableGateway(): Set<ModuleManifest> {
@@ -92,3 +102,35 @@ enum class FieldType {
     BOOLEAN,
     RAW_JSON,
 }
+
+@Serializable
+data class RegistryIndex(
+    val partner: PartnerIndex,
+    val externalModules: List<ModulesIndexItem>
+)
+
+@Serializable
+data class PartnerIndex(
+    val latestBuildable: Buildable,
+    val latestRelease: Release
+) {
+    @Serializable
+    data class Buildable(
+        val url: String,
+        val ref: String
+    )
+
+    @Serializable
+    data class Release(
+        val url: String,
+        val version: String
+    )
+}
+
+@Serializable
+data class ModulesIndexItem(
+    val name: String,
+    val version: String,
+    val withGateway: Boolean,
+    val registryRef: String
+)

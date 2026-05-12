@@ -64,7 +64,8 @@ fun configureExternalGateway(home: Path, prompt: Prompt, manifest: ModuleManifes
             text("configure.gateway.external.details.buildCommand") to manifest.source.buildCommand.joinToString(" "),
             text("configure.gateway.external.details.artifact") to "${manifest.source.artifactDirectory}/${manifest.source.artifactPattern}",
             text("configure.gateway.external.details.installTarget") to manifest.install.target,
-            text("configure.gateway.external.details.configTarget") to (manifest.config?.target ?: text("configure.gateway.external.details.noConfig")),
+            text("configure.gateway.external.details.configTarget") to (manifest.config?.target
+                ?: text("configure.gateway.external.details.noConfig")),
         ),
     )
 
@@ -138,18 +139,43 @@ private fun askField(prompt: Prompt, field: Field): JsonElement? {
     }
 }
 
-@Suppress("KotlinConstantConditions")
 private fun validateFieldValue(field: Field, value: String): String? {
     if (value.isBlank() && !field.required) return null
 
     return when (field.type) {
         FieldType.STRING -> null
-        FieldType.INT -> value.toIntOrNull()?.let { null } ?: text("configure.field.error.int", field.label)
-        FieldType.NUMBER -> value.toDoubleOrNull()?.let { null } ?: text("configure.field.error.number", field.label)
-        FieldType.BOOLEAN -> value.toBooleanStrictOrNull()?.let { null } ?: text("configure.field.error.boolean", field.label)
-        FieldType.RAW_JSON -> runCatching { Json.parseToJsonElement(value) }
-            .exceptionOrNull()
-            ?.let { text("configure.field.error.rawJson", field.label) }
+        FieldType.INT -> {
+            if (value.toIntOrNull() == null) {
+                text("configure.field.error.int", field.label)
+            } else {
+                null
+            }
+        }
+
+        FieldType.NUMBER -> {
+            if (value.toDoubleOrNull() == null) {
+                text("configure.field.error.number", field.label)
+            } else {
+                null
+            }
+        }
+
+        FieldType.BOOLEAN -> {
+            if (value.toBooleanStrictOrNull() == null) {
+                text("configure.field.error.boolean", field.label)
+            } else {
+                null
+            }
+        }
+
+        FieldType.RAW_JSON -> {
+            val result = runCatching { Json.parseToJsonElement(value) }.exceptionOrNull()
+            if (result == null) {
+                text("configure.field.error.rawJson", field.label)
+            } else {
+                null
+            }
+        }
     }
 }
 
