@@ -1,6 +1,8 @@
 package work.slhaf.partner.ctl.support
 
 import java.io.IOException
+import java.net.InetSocketAddress
+import java.net.ProxySelector
 import java.net.URI
 import java.net.http.*
 import java.time.Duration
@@ -8,7 +10,27 @@ import java.time.Duration
 private val httpClient: HttpClient = HttpClient.newBuilder()
     .connectTimeout(Duration.ofSeconds(20))
     .followRedirects(HttpClient.Redirect.NEVER)
+    .apply {
+        proxySelectorFromEnv()?.let(::proxy)
+    }
     .build()
+
+private fun proxySelectorFromEnv(): ProxySelector? {
+    val proxyText = System.getenv("HTTPS_PROXY")
+        ?: System.getenv("https_proxy")
+        ?: return null
+
+    val proxyUri = URI.create(proxyText)
+    val host = proxyUri.host
+        ?: throw IllegalArgumentException("Invalid HTTPS_PROXY host: $proxyText")
+
+    val port = proxyUri.port
+    if (port == -1) {
+        throw IllegalArgumentException("HTTPS_PROXY must include port: $proxyText")
+    }
+
+    return ProxySelector.of(InetSocketAddress(host, port))
+}
 
 fun fetchText(url: String): String {
     var lastError: Exception? = null
