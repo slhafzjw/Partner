@@ -12,7 +12,7 @@
   "externalModules": [
     {
       "name": "OneBot Adapter",
-      "version": "0.5.0",
+      "version": "1.0.0",
       "withGateway": true,
       "registryRef": "modules/onebot-adapter.json"
     }
