@@ -1,7 +1,7 @@
 {
     "id": "onebot_channel",
     "name": "OneBot Adapter",
-    "version": "0.5.0",
+    "version": "1.0.0",
     "withGateway": true,
     "description": "OneBot v11 reverse WebSocket gateway adapter for Partner. It accepts reverse WebSocket connections from a OneBot implementation and converts private message events into Partner input events.",
     "source": {
