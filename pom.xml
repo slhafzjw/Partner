@@ -5,7 +5,7 @@
 
     <groupId>work.slhaf.partner</groupId>
     <artifactId>partner</artifactId>
-    <version>0.5.0</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -26,6 +26,9 @@
 
         <!-- 推荐仓库默认不跳测试；本地需要时再 -DskipTests=true -->
         <skipTests>false</skipTests>
+
+        <partner.runtime.version>0.5.0</partner.runtime.version>
+        <partner.interaction-api.version>1.0.0</partner.interaction-api.version>
     </properties>
 
     <dependencies>
