@@ -123,6 +123,7 @@
                         <buildArg>-H:+ReportExceptionStackTraces</buildArg>
                         <buildArg>--initialize-at-build-time=kotlin.DeprecationLevel</buildArg>
                         <buildArg>-H:IncludeResourceBundles=i18n.messages</buildArg>
+                        <buildArg>-H:IncludeLocales=zh-CN</buildArg>
                     </buildArgs>
                 </configuration>
             </plugin>
