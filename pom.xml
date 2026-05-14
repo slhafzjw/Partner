@@ -27,7 +27,7 @@
         <!-- 推荐仓库默认不跳测试；本地需要时再 -DskipTests=true -->
         <skipTests>false</skipTests>
 
-        <partner.runtime.version>0.5.0</partner.runtime.version>
+        <partner.runtime.version>0.9.0-preview</partner.runtime.version>
         <partner.interaction-api.version>1.0.0</partner.interaction-api.version>
     </properties>
 
