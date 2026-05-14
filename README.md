@@ -25,12 +25,54 @@ Partner 分为 `Partner-Framework` 与 `Partner-Core` 两层。前者提供配�
 
 ## 项目启动
 
-**环境要求**
+### 环境要求
+
+**基础运行要求**
 
 - JDK 21
-- Maven 3.x
 
-### 手动准备环境并启动
+**仅在从源码构建 Partner Runtime 或外部模块时需要**
+
+- Maven 3.x
+- Git
+
+### 推荐方式：PartnerCtl
+
+`PartnerCtl` 用于完成 Partner 的首次初始化、运行时安装与启动管理。相比手动准备运行目录和配置文件，使用它可以更快完成最小可运行环境的搭建。
+
+#### 初始化
+
+```bash
+partnerctl init
+```
+
+初始化流程会引导完成：
+
+- 选择 `PARTNER_HOME`
+- 安装 Partner Runtime
+  - 从源码构建
+  - 下载发布版 jar
+- 配置 Gateway
+- 配置模型 Provider
+- 可选立即启动 Partner
+
+#### 启动
+
+如果初始化完成后未选择立即启动，可执行：
+
+```bash
+partnerctl run
+```
+
+如需后台运行：
+
+```bash
+partnerctl run -d
+```
+
+PartnerCtl 默认读取 `PARTNER_HOME` 指定的运行目录；若未设置，则使用 `~/.partner`。
+
+### 手动方式：从源码构建并启动
 
 #### 克隆项目并构建
 
@@ -162,4 +204,3 @@ Partner/
 ## License
 
 暂未指定。
-
