@@ -2,13 +2,12 @@ package work.slhaf.partner.ctl.commands
 
 import kotlinx.serialization.json.*
 import picocli.CommandLine
+import work.slhaf.partner.ctl.commands.InitCommand.InstallChoice.BUILD_FROM_SOURCE
+import work.slhaf.partner.ctl.commands.InitCommand.InstallChoice.DOWNLOAD_JAR
 import work.slhaf.partner.ctl.commands.data.GatewayConfig
 import work.slhaf.partner.ctl.commands.data.OpenAiCompatible
 import work.slhaf.partner.ctl.commands.data.ProviderConfig
-import work.slhaf.partner.ctl.commands.init.buildFromSource
-import work.slhaf.partner.ctl.commands.init.configureExternalGateway
-import work.slhaf.partner.ctl.commands.init.configureOpenAiCompatible
-import work.slhaf.partner.ctl.commands.init.configureWebSocketGateway
+import work.slhaf.partner.ctl.commands.init.*
 import work.slhaf.partner.ctl.i18n.I18n.text
 import work.slhaf.partner.ctl.support.CommandInterrupted
 import work.slhaf.partner.ctl.support.inheritCommand
@@ -176,11 +175,15 @@ class InitCommand : Runnable {
 
         val installChoice = prompt.select(
             label = text("init.install.method.label"),
-            choices = listOf(Choice(text("init.install.method.buildFromSource"), InstallChoice.BUILD_FROM_SOURCE))
+            choices = listOf(
+                Choice(text("init.install.method.buildFromSource"), BUILD_FROM_SOURCE),
+                Choice(text("init.install.method.downloadFromRelease"), DOWNLOAD_JAR)
+            )
         )
 
         when (installChoice) {
-            InstallChoice.BUILD_FROM_SOURCE -> buildFromSource(home, prompt)
+            BUILD_FROM_SOURCE -> buildFromSource(home, prompt)
+            DOWNLOAD_JAR -> downloadFromRelease(home, prompt)
         }
 
     }
@@ -348,7 +351,8 @@ class InitCommand : Runnable {
     }
 
     private enum class InstallChoice {
-        BUILD_FROM_SOURCE
+        BUILD_FROM_SOURCE,
+        DOWNLOAD_JAR
     }
 
     private enum class ModelProviderChoice(val display: String) {

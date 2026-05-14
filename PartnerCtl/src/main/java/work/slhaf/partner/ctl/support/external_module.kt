@@ -6,7 +6,7 @@ import kotlinx.serialization.json.Json
 private const val registryUrl = "https://raw.githubusercontent.com/slhaf/Partner/refs/heads/master/registry"
 private const val indexUrl = "$registryUrl/index.json"
 
-private val registryIndex = run {
+val registryIndex = run {
     Json.decodeFromString<RegistryIndex>(fetchText(indexUrl))
 }
 
