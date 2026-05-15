@@ -20,15 +20,15 @@ class CognitionCoreTest {
 
     @Test
     void shouldRenderRecentChatMessagesWithWrapperAndNotes() {
-        CognitionCore cognitionCore = new CognitionCore();
-        cognitionCore.getChatMessages().addAll(List.of(
+        ContextCore contextCore = new ContextCore();
+        contextCore.getChatMessages().addAll(List.of(
                 new Message(Message.Character.USER, "[[USER]: user-1]: hello"),
                 new Message(Message.Character.ASSISTANT, "[NOT_REPLIED]: wait"),
                 new Message(Message.Character.ASSISTANT, "latest message")
         ));
 
-        cognitionCore.refreshRecentChatMessagesContext();
-        String content = cognitionCore.contextWorkspace()
+        contextCore.refreshRecentChatMessagesContext();
+        String content = contextCore.contextWorkspace()
                 .resolve(List.of(ContextBlock.FocusedDomain.COMMUNICATION))
                 .encodeToMessage()
                 .getContent();

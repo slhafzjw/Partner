@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @Slf4j
 @CapabilityCore(value = "cognition")
-public class CognitionCore implements StateSerializable {
+public class ContextCore implements StateSerializable {
 
     private static final String RECENT_CHAT_MESSAGE_NOTES = """
             消息格式:
@@ -58,7 +58,7 @@ public class CognitionCore implements StateSerializable {
 
     private final ContextWorkspace contextWorkspace = new ContextWorkspace();
 
-    public CognitionCore() {
+    public ContextCore() {
         register();
     }
 
