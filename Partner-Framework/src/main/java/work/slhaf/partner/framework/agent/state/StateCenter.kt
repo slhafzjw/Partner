@@ -148,10 +148,130 @@ sealed interface StateValue {
         fun str(value: String) = Str(value)
 
         @JvmStatic
-        fun arr(value: List<StateValue>) = Arr(value)
+        fun arr(value: List<*>): Arr {
+            val visiting = java.util.IdentityHashMap<Any, Unit>()
+            return Arr(convertList(value, visiting))
+        }
 
         @JvmStatic
-        fun obj(value: Map<String, StateValue>) = Obj(value)
+        fun obj(value: Map<String, *>): Obj {
+            val visiting = java.util.IdentityHashMap<Any, Unit>()
+            return Obj(convertMap(value, visiting))
+        }
+
+        private fun convertValue(
+            value: Any?,
+            visiting: java.util.IdentityHashMap<Any, Unit>
+        ): StateValue {
+            return when (value) {
+                null -> error("StateValue does not support null")
+                is StateValue -> normalizeStateValue(value, visiting)
+                is String -> Str(value)
+                is Number -> Num(value)
+                is Boolean -> Bool(value)
+                is List<*> -> Arr(convertList(value, visiting))
+                is Map<*, *> -> Obj(convertGenericMap(value, visiting))
+                else -> error("Unsupported state value type: ${value::class.qualifiedName}")
+            }
+        }
+
+        private fun normalizeStateValue(
+            value: StateValue,
+            visiting: java.util.IdentityHashMap<Any, Unit>
+        ): StateValue {
+            return when (value) {
+                is Num -> value
+                is Bool -> value
+                is Str -> value
+                is Arr -> Arr(convertStateValueList(value.value, visiting))
+                is Obj -> Obj(convertStateValueMap(value.value, visiting))
+            }
+        }
+
+        private fun convertList(
+            value: List<*>,
+            visiting: java.util.IdentityHashMap<Any, Unit>
+        ): List<StateValue> {
+            enterContainer(value, visiting)
+            try {
+                return value.map { convertValue(it, visiting) }
+            } finally {
+                leaveContainer(value, visiting)
+            }
+        }
+
+        private fun convertMap(
+            value: Map<String, *>,
+            visiting: java.util.IdentityHashMap<Any, Unit>
+        ): Map<String, StateValue> {
+            enterContainer(value, visiting)
+            try {
+                return value.entries.associateTo(LinkedHashMap()) { (key, mapValue) ->
+                    key to convertValue(mapValue, visiting)
+                }
+            } finally {
+                leaveContainer(value, visiting)
+            }
+        }
+
+        private fun convertGenericMap(
+            value: Map<*, *>,
+            visiting: java.util.IdentityHashMap<Any, Unit>
+        ): Map<String, StateValue> {
+            enterContainer(value, visiting)
+            try {
+                return value.entries.associateTo(LinkedHashMap()) { (key, mapValue) ->
+                    check(key is String) {
+                        "StateValue object key must be String, but got: ${key?.let { it::class.qualifiedName }}"
+                    }
+                    key to convertValue(mapValue, visiting)
+                }
+            } finally {
+                leaveContainer(value, visiting)
+            }
+        }
+
+        private fun convertStateValueList(
+            value: List<StateValue>,
+            visiting: java.util.IdentityHashMap<Any, Unit>
+        ): List<StateValue> {
+            enterContainer(value, visiting)
+            try {
+                return value.map { normalizeStateValue(it, visiting) }
+            } finally {
+                leaveContainer(value, visiting)
+            }
+        }
+
+        private fun convertStateValueMap(
+            value: Map<String, StateValue>,
+            visiting: java.util.IdentityHashMap<Any, Unit>
+        ): Map<String, StateValue> {
+            enterContainer(value, visiting)
+            try {
+                return value.entries.associateTo(LinkedHashMap()) { (key, mapValue) ->
+                    key to normalizeStateValue(mapValue, visiting)
+                }
+            } finally {
+                leaveContainer(value, visiting)
+            }
+        }
+
+        private fun enterContainer(
+            container: Any,
+            visiting: java.util.IdentityHashMap<Any, Unit>
+        ) {
+            check(visiting.put(container, Unit) == null) {
+                "Circular reference detected while constructing StateValue"
+            }
+        }
+
+        private fun leaveContainer(
+            container: Any,
+            visiting: java.util.IdentityHashMap<Any, Unit>
+        ) {
+            visiting.remove(container)
+        }
     }
 }
 

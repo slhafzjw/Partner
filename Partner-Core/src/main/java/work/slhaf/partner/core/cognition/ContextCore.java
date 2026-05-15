@@ -200,13 +200,12 @@ public class ContextCore implements StateSerializable {
     public @NotNull State convert() {
         State state = new State();
 
-        List<StateValue.Obj> convertedMessageList = chatMessages.stream().map(message -> {
-            Map<String, StateValue> convertedMap = Map.of(
-                    "role", StateValue.str(message.roleValue()),
-                    "content", StateValue.str(message.getContent())
-            );
-            return StateValue.obj(convertedMap);
-        }).toList();
+        List<StateValue.Obj> convertedMessageList = chatMessages.stream()
+                .map(message -> StateValue.obj(Map.of(
+                        "role", message.roleValue(),
+                        "content", message.getContent()
+                )))
+                .toList();
         state.append("chat_messages", StateValue.arr(convertedMessageList));
 
         return state;

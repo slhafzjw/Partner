@@ -95,25 +95,23 @@ public class MemoryUnit implements StateSerializable {
         state.append("id", StateValue.str(id));
         state.append("update_timestamp", StateValue.num(timestamp));
 
-        List<StateValue.Obj> convertedMessageList = conversationMessages.stream().map(message -> {
-            Map<String, StateValue> convertedMap = Map.of(
-                    "role", StateValue.str(message.roleValue()),
-                    "content", StateValue.str(message.getContent())
-            );
-            return StateValue.obj(convertedMap);
-        }).toList();
+        List<StateValue.Obj> convertedMessageList = conversationMessages.stream()
+                .map(message -> StateValue.obj(Map.of(
+                        "role", message.roleValue(),
+                        "content", message.getContent()
+                )))
+                .toList();
         state.append("conversation_messages", StateValue.arr(convertedMessageList));
 
-        List<StateValue.Obj> convertedSliceList = slices.stream().map(slice -> {
-            Map<String, StateValue> convertedMap = Map.of(
-                    "id", StateValue.str(slice.getId()),
-                    "start_index", StateValue.num(slice.getStartIndex()),
-                    "end_index", StateValue.num(slice.getEndIndex()),
-                    "summary", StateValue.str(slice.getSummary()),
-                    "created_timestamp", StateValue.num(slice.getTimestamp())
-            );
-            return StateValue.obj(convertedMap);
-        }).toList();
+        List<StateValue.Obj> convertedSliceList = slices.stream()
+                .map(slice -> StateValue.obj(Map.of(
+                        "id", slice.getId(),
+                        "start_index", slice.getStartIndex(),
+                        "end_index", slice.getEndIndex(),
+                        "summary", slice.getSummary(),
+                        "created_timestamp", slice.getTimestamp()
+                )))
+                .toList();
         state.append("memory_slices", StateValue.arr(convertedSliceList));
         return state;
     }

@@ -69,8 +69,8 @@ final class MemoryRuntimeStateCodec {
         List<StateValue.Obj> dateIndexStates = dateIndex.entries().entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(entry -> StateValue.obj(Map.of(
-                        "date", StateValue.str(entry.getKey().toString()),
-                        "refs", StateValue.arr(encodeSliceRefs(entry.getValue()))
+                        "date", entry.getKey().toString(),
+                        "refs", encodeSliceRefs(entry.getValue())
                 )))
                 .toList();
         state.append("date_index", StateValue.arr(dateIndexStates));
@@ -82,8 +82,8 @@ final class MemoryRuntimeStateCodec {
                                     TopicMemoryIndex.TopicTreeNode topicNode,
                                     List<StateValue.Obj> topicStates) {
         topicStates.add(StateValue.obj(Map.of(
-                "topic_path", StateValue.str(path),
-                "bindings", StateValue.arr(encodeTopicBindings(topicNode.bindings()))
+                "topic_path", path,
+                "bindings", encodeTopicBindings(topicNode.bindings())
         )));
         for (Map.Entry<String, TopicMemoryIndex.TopicTreeNode> childEntry : topicNode.children().entrySet()) {
             collectTopicStates(path + "->" + childEntry.getKey(), childEntry.getValue(), topicStates);
@@ -93,18 +93,16 @@ final class MemoryRuntimeStateCodec {
     private List<StateValue> encodeTopicBindings(List<TopicMemoryIndex.TopicBinding> bindings) {
         return bindings.stream()
                 .map(binding -> (StateValue) StateValue.obj(Map.of(
-                        "unit_id", StateValue.str(binding.sliceRef().getUnitId()),
-                        "slice_id", StateValue.str(binding.sliceRef().getSliceId()),
-                        "timestamp", StateValue.num(binding.timestamp()),
+                        "unit_id", binding.sliceRef().getUnitId(),
+                        "slice_id", binding.sliceRef().getSliceId(),
+                        "timestamp", binding.timestamp(),
                         "activation_profile", StateValue.obj(Map.of(
-                                "activation_weight", StateValue.num(binding.activationProfile().getActivationWeight()),
-                                "diffusion_weight", StateValue.num(binding.activationProfile().getDiffusionWeight()),
+                                "activation_weight", binding.activationProfile().getActivationWeight(),
+                                "diffusion_weight", binding.activationProfile().getDiffusionWeight(),
                                 "context_independence_weight",
-                                StateValue.num(binding.activationProfile().getContextIndependenceWeight())
+                                binding.activationProfile().getContextIndependenceWeight()
                         )),
-                        "related_topic_paths", StateValue.arr(binding.relatedTopicPaths().stream()
-                                .map(StateValue::str)
-                                .toList())
+                        "related_topic_paths", binding.relatedTopicPaths()
                 )))
                 .toList();
     }
@@ -156,8 +154,8 @@ final class MemoryRuntimeStateCodec {
     private List<StateValue> encodeSliceRefs(List<SliceRef> refs) {
         return refs.stream()
                 .map(ref -> (StateValue) StateValue.obj(Map.of(
-                        "unit_id", StateValue.str(ref.getUnitId()),
-                        "slice_id", StateValue.str(ref.getSliceId())
+                        "unit_id", ref.getUnitId(),
+                        "slice_id", ref.getSliceId()
                 )))
                 .toList();
     }

@@ -175,8 +175,7 @@ public class MemoryCore implements StateSerializable {
         State state = new State();
         state.append("memory_session_id", StateValue.str(memorySessionId));
 
-        List<StateValue.Str> unitOverview = memoryUnits.keySet().stream()
-                .map(StateValue::str)
+        List<String> unitOverview = memoryUnits.keySet().stream()
                 .toList();
         state.append("memory_unit_uuid_set", StateValue.arr(unitOverview));
         return state;

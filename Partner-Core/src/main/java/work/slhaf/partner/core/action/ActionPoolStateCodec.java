@@ -50,70 +50,70 @@ final class ActionPoolStateCodec {
     }
 
     private static StateValue.Obj encodeExecutableAction(ExecutableAction action) {
-        Map<String, StateValue> actionMap = new LinkedHashMap<>();
-        actionMap.put("kind", StateValue.str(action instanceof SchedulableExecutableAction ? "schedulable" : "immediate"));
-        actionMap.put("uuid", StateValue.str(action.getUuid()));
-        actionMap.put("source", StateValue.str(action.getSource()));
-        actionMap.put("reason", StateValue.str(action.getReason()));
-        actionMap.put("description", StateValue.str(action.getDescription()));
-        actionMap.put("status", StateValue.str(action.getStatus().name()));
-        actionMap.put("tendency", StateValue.str(action.getTendency()));
-        actionMap.put("executing_stage", StateValue.num(action.getExecutingStage()));
+        Map<String, Object> actionMap = new LinkedHashMap<>();
+        actionMap.put("kind", action instanceof SchedulableExecutableAction ? "schedulable" : "immediate");
+        actionMap.put("uuid", action.getUuid());
+        actionMap.put("source", action.getSource());
+        actionMap.put("reason", action.getReason());
+        actionMap.put("description", action.getDescription());
+        actionMap.put("status", action.getStatus().name());
+        actionMap.put("tendency", action.getTendency());
+        actionMap.put("executing_stage", action.getExecutingStage());
 
         String result = resolveExecutableResult(action);
         if (result != null) {
-            actionMap.put("result", StateValue.str(result));
+            actionMap.put("result", result);
         }
         if (action instanceof SchedulableExecutableAction schedulableAction) {
-            actionMap.put("schedule_type", StateValue.str(schedulableAction.getScheduleType().name()));
-            actionMap.put("schedule_content", StateValue.str(schedulableAction.getScheduleContent()));
-            actionMap.put("enabled", StateValue.bool(schedulableAction.getEnabled()));
-            actionMap.put("schedule_histories", StateValue.arr(encodeScheduleHistories(schedulableAction)));
+            actionMap.put("schedule_type", schedulableAction.getScheduleType().name());
+            actionMap.put("schedule_content", schedulableAction.getScheduleContent());
+            actionMap.put("enabled", schedulableAction.getEnabled());
+            actionMap.put("schedule_histories", encodeScheduleHistories(schedulableAction));
         }
 
-        List<StateValue> chainStates = action.getActionChain().entrySet().stream()
+        List<StateValue.Obj> chainStates = action.getActionChain().entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .<StateValue>map(entry -> {
-                    Map<String, StateValue> stageMap = new LinkedHashMap<>();
-                    stageMap.put("stage", StateValue.num(entry.getKey()));
+                .map(entry -> {
+                    Map<String, Object> stageMap = new LinkedHashMap<>();
+                    stageMap.put("stage", entry.getKey());
                     String stageDescription = action.getStageDescriptions().get(entry.getKey());
                     if (stageDescription != null && !stageDescription.isBlank()) {
-                        stageMap.put("description", StateValue.str(stageDescription));
+                        stageMap.put("description", stageDescription);
                     }
-                    stageMap.put("actions", StateValue.arr(entry.getValue().stream()
-                            .map(metaAction -> (StateValue) encodeMetaAction(metaAction))
-                            .toList()));
+                    stageMap.put("actions", entry.getValue().stream()
+                            .map(ActionPoolStateCodec::encodeMetaAction)
+                            .toList());
                     return StateValue.obj(stageMap);
                 }).toList();
-        actionMap.put("action_chain", StateValue.arr(chainStates));
+        actionMap.put("action_chain", chainStates);
 
-        actionMap.put("history", StateValue.arr(encodeHistoryStages(action.getHistory())));
+        actionMap.put("history", encodeHistoryStages(action.getHistory()));
 
         return StateValue.obj(actionMap);
     }
 
     private static StateValue.Obj encodeMetaAction(MetaAction metaAction) {
-        Map<String, StateValue> metaMap = new LinkedHashMap<>();
-        metaMap.put("name", StateValue.str(metaAction.getName()));
-        metaMap.put("io", StateValue.bool(metaAction.getIo()));
+        Map<String, Object> metaMap = new LinkedHashMap<>();
+        metaMap.put("name", metaAction.getName());
+        metaMap.put("io", metaAction.getIo());
         if (metaAction.getLauncher() != null) {
-            metaMap.put("launcher", StateValue.str(metaAction.getLauncher()));
+            metaMap.put("launcher", metaAction.getLauncher());
         }
-        metaMap.put("type", StateValue.str(metaAction.getType().name()));
-        metaMap.put("location", StateValue.str(metaAction.getLocation()));
-        metaMap.put("params_json", StateValue.str(JSONObject.toJSONString(metaAction.getParams())));
-        metaMap.put("result_status", StateValue.str(metaAction.getResult().getStatus().name()));
+        metaMap.put("type", metaAction.getType().name());
+        metaMap.put("location", metaAction.getLocation());
+        metaMap.put("params_json", JSONObject.toJSONString(metaAction.getParams()));
+        metaMap.put("result_status", metaAction.getResult().getStatus().name());
         if (metaAction.getResult().getData() != null) {
-            metaMap.put("result_data", StateValue.str(metaAction.getResult().getData()));
+            metaMap.put("result_data", metaAction.getResult().getData());
         }
         return StateValue.obj(metaMap);
     }
 
     private static StateValue.Obj encodeHistoryAction(HistoryAction historyAction) {
-        Map<String, StateValue> historyMap = new LinkedHashMap<>();
-        historyMap.put("action_key", StateValue.str(historyAction.actionKey()));
-        historyMap.put("description", StateValue.str(historyAction.description()));
-        historyMap.put("result", StateValue.str(historyAction.result()));
+        Map<String, Object> historyMap = new LinkedHashMap<>();
+        historyMap.put("action_key", historyAction.actionKey());
+        historyMap.put("description", historyAction.description());
+        historyMap.put("result", historyAction.result());
         return StateValue.obj(historyMap);
     }
 
@@ -288,26 +288,26 @@ final class ActionPoolStateCodec {
         return restored;
     }
 
-    private static List<StateValue> encodeHistoryStages(Map<Integer, ? extends List<HistoryAction>> historyMap) {
+    private static List<StateValue.Obj> encodeHistoryStages(Map<Integer, ? extends List<HistoryAction>> historyMap) {
         return historyMap.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .<StateValue>map(entry -> {
-                    Map<String, StateValue> stageMap = new LinkedHashMap<>();
-                    stageMap.put("stage", StateValue.num(entry.getKey()));
-                    stageMap.put("actions", StateValue.arr(entry.getValue().stream()
-                            .map(historyAction -> (StateValue) encodeHistoryAction(historyAction))
-                            .toList()));
+                .map(entry -> {
+                    Map<String, Object> stageMap = new LinkedHashMap<>();
+                    stageMap.put("stage", entry.getKey());
+                    stageMap.put("actions", entry.getValue().stream()
+                            .map(ActionPoolStateCodec::encodeHistoryAction)
+                            .toList());
                     return StateValue.obj(stageMap);
                 }).toList();
     }
 
-    private static List<StateValue> encodeScheduleHistories(SchedulableExecutableAction schedulableAction) {
+    private static List<StateValue.Obj> encodeScheduleHistories(SchedulableExecutableAction schedulableAction) {
         return schedulableAction.getScheduleHistories().stream()
-                .<StateValue>map(scheduleHistory -> {
-                    Map<String, StateValue> historyMap = new LinkedHashMap<>();
-                    historyMap.put("end_time", StateValue.str(scheduleHistory.getEndTime().toString()));
-                    historyMap.put("result", StateValue.str(scheduleHistory.getResult()));
-                    historyMap.put("history", StateValue.arr(encodeHistoryStages(scheduleHistory.getHistory())));
+                .map(scheduleHistory -> {
+                    Map<String, Object> historyMap = new LinkedHashMap<>();
+                    historyMap.put("end_time", scheduleHistory.getEndTime().toString());
+                    historyMap.put("result", scheduleHistory.getResult());
+                    historyMap.put("history", encodeHistoryStages(scheduleHistory.getHistory()));
                     return StateValue.obj(historyMap);
                 })
                 .toList();
