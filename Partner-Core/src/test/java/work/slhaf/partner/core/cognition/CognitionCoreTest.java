@@ -3,6 +3,8 @@ package work.slhaf.partner.core.cognition;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import work.slhaf.partner.core.cognition.context.ContextBlock;
+import work.slhaf.partner.core.cognition.context.ContextCore;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 
 import java.nio.file.Path;

@@ -2,7 +2,7 @@ package work.slhaf.partner.module.action.planner.extractor;
 
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.cognition.CognitionCapability;
-import work.slhaf.partner.core.cognition.ContextBlock;
+import work.slhaf.partner.core.cognition.context.ContextBlock;
 import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.framework.agent.exception.ModuleExecutionException;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;

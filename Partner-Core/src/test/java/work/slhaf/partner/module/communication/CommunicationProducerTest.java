@@ -3,7 +3,7 @@ package work.slhaf.partner.module.communication;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Element;
 import work.slhaf.partner.core.cognition.CognitionCapability;
-import work.slhaf.partner.core.cognition.ContextWorkspace;
+import work.slhaf.partner.core.cognition.context.ContextWorkspace;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 

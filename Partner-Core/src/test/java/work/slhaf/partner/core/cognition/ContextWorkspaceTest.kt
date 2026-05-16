@@ -2,6 +2,9 @@ package work.slhaf.partner.core.cognition
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import work.slhaf.partner.core.cognition.context.BlockContent
+import work.slhaf.partner.core.cognition.context.ContextBlock
+import work.slhaf.partner.core.cognition.context.ContextWorkspace
 
 class ContextWorkspaceTest {
 

@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.cognition;
+package work.slhaf.partner.core.cognition.context;
 
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;

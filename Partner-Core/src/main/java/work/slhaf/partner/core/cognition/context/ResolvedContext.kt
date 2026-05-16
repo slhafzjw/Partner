@@ -1,4 +1,4 @@
-package work.slhaf.partner.core.cognition
+package work.slhaf.partner.core.cognition.context
 
 import org.w3c.dom.Document
 import work.slhaf.partner.framework.agent.model.pojo.Message

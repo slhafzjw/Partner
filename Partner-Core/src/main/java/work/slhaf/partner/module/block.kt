@@ -3,8 +3,8 @@ package work.slhaf.partner.module
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import work.slhaf.partner.common.base.Block
-import work.slhaf.partner.core.cognition.CommunicationBlockContent
-import work.slhaf.partner.core.cognition.ContextBlock
+import work.slhaf.partner.core.cognition.context.CommunicationBlockContent
+import work.slhaf.partner.core.cognition.context.ContextBlock
 import work.slhaf.partner.framework.agent.model.pojo.Message
 
 abstract class TaskBlock @JvmOverloads constructor(

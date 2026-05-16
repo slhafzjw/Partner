@@ -10,7 +10,7 @@ import work.slhaf.partner.core.action.ActionCore;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.runner.RunnerClient;
 import work.slhaf.partner.core.cognition.CognitionCapability;
-import work.slhaf.partner.core.cognition.ContextWorkspace;
+import work.slhaf.partner.core.cognition.context.ContextWorkspace;
 import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.action.executor.entity.ExtractorResult;
 import work.slhaf.partner.module.action.executor.entity.HistoryAction;

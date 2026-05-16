@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.w3c.dom.Element;
 import work.slhaf.partner.core.cognition.CognitionCapability;
+import work.slhaf.partner.core.cognition.context.ContextWorkspace;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
@@ -65,8 +66,8 @@ class MemoryRuntimeTest {
             }
 
             @Override
-            public work.slhaf.partner.core.cognition.ContextWorkspace contextWorkspace() {
-                return new work.slhaf.partner.core.cognition.ContextWorkspace();
+            public ContextWorkspace contextWorkspace() {
+                return new ContextWorkspace();
             }
 
             @Override

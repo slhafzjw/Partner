@@ -6,9 +6,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import work.slhaf.partner.core.action.entity.*;
 import work.slhaf.partner.core.action.entity.intervention.MetaIntervention;
-import work.slhaf.partner.core.cognition.BlockContent;
-import work.slhaf.partner.core.cognition.ContextBlock;
-import work.slhaf.partner.core.cognition.ContextWorkspace;
+import work.slhaf.partner.core.cognition.context.BlockContent;
+import work.slhaf.partner.core.cognition.context.ContextBlock;
+import work.slhaf.partner.core.cognition.context.ContextWorkspace;
 import work.slhaf.partner.module.StateHintContent;
 import work.slhaf.partner.module.action.executor.entity.HistoryAction;
 

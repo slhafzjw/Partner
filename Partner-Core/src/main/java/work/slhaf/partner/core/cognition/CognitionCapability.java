@@ -1,6 +1,7 @@
 package work.slhaf.partner.core.cognition;
 
 import org.w3c.dom.Element;
+import work.slhaf.partner.core.cognition.context.ContextWorkspace;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 
