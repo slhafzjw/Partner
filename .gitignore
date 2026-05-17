@@ -61,3 +61,4 @@ build/
 
 # Maven / build outputs
 dependency-reduced-pom.xml
+/.backup/
