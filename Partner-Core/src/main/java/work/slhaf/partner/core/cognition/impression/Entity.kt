@@ -8,11 +8,13 @@ import kotlin.concurrent.withLock
 class Entity @JvmOverloads constructor(
     val uuid: String = UUID.randomUUID().toString(),
     private val relations: MutableMap<String, MutableMap<String, Double>> = mutableMapOf(),
-    private val impressions: MutableMap<String, ImpressionData> = mutableMapOf()
+    private val impressions: MutableMap<String, IndexableData> = mutableMapOf(),
+    private val features: MutableMap<String, IndexableData> = mutableMapOf()
 ) {
 
     private val impressionLock = ReentrantLock()
     private val relationLock = ReentrantLock()
+    private val featureLock = ReentrantLock()
 
     @JvmOverloads
     fun updateRelation(
@@ -27,17 +29,37 @@ class Entity @JvmOverloads constructor(
     fun updateImpression(
         impression: String,
         newImpression: String? = null,
-        strength: Double = 1.0
-    ): ImpressionData = impressionLock.withLock {
+        confidence: Double = 1.0
+    ): IndexableData = impressionLock.withLock {
         if (newImpression == null) {
-            impressions.computeIfAbsent(impression) { ImpressionData(strength) }
-                .also { it.confidence = strength }
+            impressions.computeIfAbsent(impression) { IndexableData(confidence) }
+                .also { it.confidence = confidence }
         } else {
             impressions.remove(impression)
-            ImpressionData(strength).also {
+            IndexableData(confidence).also {
                 impressions[newImpression] = it
             }
+        }.also {
+            if (it.confidence >= 0.9) {
+                featureLock.withLock { features[impression] = it }
+            }
         }
+    }
+
+    fun updateFeature(feature: String, newFeature: String? = null, confidence: Double = 1.0) = featureLock.withLock {
+        if (newFeature == null) {
+            features.computeIfAbsent(feature){ IndexableData(confidence) }
+                .also { it.confidence = confidence }
+        }else{
+            features.remove(feature)
+            IndexableData(confidence).also {
+                features[newFeature] = it
+            }
+        }
+    }
+
+    fun removeFeature(feature: String) = featureLock.withLock {
+        features.remove(feature)
     }
 
     fun removeImpression(impression: String) = impressionLock.withLock {
@@ -78,7 +100,7 @@ class Entity @JvmOverloads constructor(
         }.toSet()
     }
 
-    data class ImpressionData(
+    data class IndexableData(
         var confidence: Double
     ) {
         private val vectors: ConcurrentHashMap<String, DoubleArray> = ConcurrentHashMap()
