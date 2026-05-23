@@ -33,24 +33,28 @@ class Entity @JvmOverloads constructor(
     ): IndexableData = impressionLock.withLock {
         if (newImpression == null) {
             impressions.computeIfAbsent(impression) { IndexableData(confidence) }
-                .also { it.confidence = confidence }
+                .also {
+                    it.confidence = confidence
+                    if (it.confidence >= 0.9) {
+                        featureLock.withLock { features[impression] = it }
+                    }
+                }
         } else {
             impressions.remove(impression)
             IndexableData(confidence).also {
                 impressions[newImpression] = it
-            }
-        }.also {
-            if (it.confidence >= 0.9) {
-                featureLock.withLock { features[impression] = it }
+                if (it.confidence >= 0.9) {
+                    featureLock.withLock { features[newImpression] = it }
+                }
             }
         }
     }
 
     fun updateFeature(feature: String, newFeature: String? = null, confidence: Double = 1.0) = featureLock.withLock {
         if (newFeature == null) {
-            features.computeIfAbsent(feature){ IndexableData(confidence) }
+            features.computeIfAbsent(feature) { IndexableData(confidence) }
                 .also { it.confidence = confidence }
-        }else{
+        } else {
             features.remove(feature)
             IndexableData(confidence).also {
                 features[newFeature] = it
