@@ -7,6 +7,7 @@ import kotlin.concurrent.withLock
 
 class Entity @JvmOverloads constructor(
     val uuid: String = UUID.randomUUID().toString(),
+    private val subject: String,
     private val relations: MutableMap<String, MutableMap<String, Double>> = mutableMapOf(),
     private val impressions: MutableMap<String, IndexableData> = mutableMapOf(),
     private val features: MutableMap<String, IndexableData> = mutableMapOf()
