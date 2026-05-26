@@ -1,5 +1,9 @@
 package work.slhaf.partner.core.cognition.impression
 
+import com.alibaba.fastjson2.JSONObject
+import work.slhaf.partner.framework.agent.state.State
+import work.slhaf.partner.framework.agent.state.StateSerializable
+import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantLock
@@ -11,7 +15,7 @@ class Entity @JvmOverloads constructor(
     private val relations: MutableMap<String, MutableMap<String, Double>> = mutableMapOf(),
     private val impressions: MutableMap<String, IndexableData> = mutableMapOf(),
     private val features: MutableMap<String, IndexableData> = mutableMapOf()
-) {
+) : StateSerializable {
 
     private val impressionLock = ReentrantLock()
     private val relationLock = ReentrantLock()
@@ -114,6 +118,18 @@ class Entity @JvmOverloads constructor(
             )
         }.toSet()
     }
+
+    override fun statePath(): Path = Path.of("core", "impression", "entity-$uuid.json")
+
+    override fun load(state: JSONObject) {
+        TODO("Not yet implemented")
+    }
+
+    override fun convert(): State {
+        TODO("Not yet implemented")
+    }
+
+    override fun autoLoadOnRegister(): Boolean = false
 
     data class IndexableData(
         var confidence: Double
