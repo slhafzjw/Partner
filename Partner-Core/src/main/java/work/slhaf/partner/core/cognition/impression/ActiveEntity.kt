@@ -9,16 +9,19 @@ class ActiveEntity @JvmOverloads constructor(
     timestamp: Long = System.currentTimeMillis(),
     private val _evidences: MutableList<String> = mutableListOf(),
 ) : BlockContent("active_entity_$timestamp", "impression") {
-    val evidences: List<String> get() = _evidences
+    val evidences: List<String>
+        get() = synchronized(_evidences) { _evidences.toList() }
 
     private val _subject = AtomicReference("UNKNOWN")
     val subject: String get() = _subject.get()
 
     private val _projectedFeatures: MutableMap<String, Double> = mutableMapOf()
-    val projectedFeatures: Map<String, Double> get() = _projectedFeatures
+    val projectedFeatures: Map<String, Double>
+        get() = synchronized(_projectedFeatures) { _projectedFeatures.toMap() }
 
     private val _projectedImpressions: MutableMap<String, Double> = mutableMapOf()
-    val projectedImpressions: Map<String, Double> get() = _projectedImpressions
+    val projectedImpressions: Map<String, Double>
+        get() = synchronized(_projectedImpressions) { _projectedImpressions.toMap() }
 
     fun addEvidence(evidence: String) = synchronized(_evidences) {
         _evidences.add(evidence)

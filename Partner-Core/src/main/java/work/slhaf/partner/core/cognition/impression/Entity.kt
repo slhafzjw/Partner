@@ -7,7 +7,7 @@ import kotlin.concurrent.withLock
 
 class Entity @JvmOverloads constructor(
     val uuid: String = UUID.randomUUID().toString(),
-    private val subject: String,
+    val subject: String,
     private val relations: MutableMap<String, MutableMap<String, Double>> = mutableMapOf(),
     private val impressions: MutableMap<String, IndexableData> = mutableMapOf(),
     private val features: MutableMap<String, IndexableData> = mutableMapOf()
@@ -105,6 +105,16 @@ class Entity @JvmOverloads constructor(
         }.toSet()
     }
 
+
+    fun showFeatures(): Set<FeatureView> = featureLock.withLock {
+        features.map {
+            FeatureView(
+                it.key,
+                it.value.confidence
+            )
+        }.toSet()
+    }
+
     data class IndexableData(
         var confidence: Double
     ) {
@@ -125,6 +135,11 @@ class Entity @JvmOverloads constructor(
     data class RelationView(
         val target: String,
         val relations: Map<String, Double>
+    )
+
+    data class FeatureView(
+        val feature: String,
+        val confidence: Double
     )
 
     @Suppress("ArrayInDataClass")
