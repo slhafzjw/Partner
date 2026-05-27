@@ -22,6 +22,7 @@ public class ImpressionCore implements StateSerializable {
      * Keyed by entity uuid. Subject can be revised or merged later, so it should not be used as the stable key.
      */
     private final ConcurrentHashMap<String, Entity> knownEntitiesByUuid = new ConcurrentHashMap<>();
+    private final ImpressionVectorIndex vectorIndex = new ImpressionVectorIndex();
 
     @CapabilityMethod
     public void updateRelation() {
@@ -66,6 +67,7 @@ public class ImpressionCore implements StateSerializable {
 
             Entity entity = new Entity(uuid, subject);
             entity.load();
+            vectorIndex.sync(entity);
             knownEntitiesByUuid.put(uuid, entity);
         }
     }
