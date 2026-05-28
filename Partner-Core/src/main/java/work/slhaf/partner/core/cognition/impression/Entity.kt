@@ -1,5 +1,6 @@
 package work.slhaf.partner.core.cognition.impression
 
+import com.alibaba.fastjson2.JSONArray
 import com.alibaba.fastjson2.JSONObject
 import work.slhaf.partner.framework.agent.state.State
 import work.slhaf.partner.framework.agent.state.StateSerializable
@@ -110,7 +111,6 @@ class Entity @JvmOverloads constructor(
         }.toSet()
     }
 
-
     fun showFeatures(): Set<FeatureView> = featureLock.withLock {
         features.map {
             FeatureView(
@@ -118,6 +118,14 @@ class Entity @JvmOverloads constructor(
                 it.value.confidence
             )
         }.toSet()
+    }
+
+    fun snapshotImpressions(): Map<String, IndexableData> = impressionLock.withLock {
+        impressions.toMap()
+    }
+
+    fun snapshotFeatures(): Map<String, IndexableData> = featureLock.withLock {
+        features.toMap()
     }
 
     override fun statePath(): Path = Path.of("core", "impression", "entity-$uuid.json")
@@ -182,17 +190,35 @@ class Entity @JvmOverloads constructor(
     private fun loadIndexableDataMap(state: JSONObject): Map<String, IndexableData> {
         val loaded = mutableMapOf<String, IndexableData>()
         state.forEach { (key, value) ->
-            val confidence = when (value) {
-                is JSONObject -> value.getDouble("confidence")?.toDouble() ?: 1.0
-                else -> numberValue(value) ?: return@forEach
+            val data = when (value) {
+                is JSONObject -> loadIndexableData(value)
+                else -> IndexableData(numberValue(value) ?: return@forEach)
             }
-            loaded[key] = IndexableData(confidence)
+            loaded[key] = data
         }
         return loaded
     }
 
-    private fun indexableDataState(source: Map<String, IndexableData>): Map<String, Map<String, Double>> =
-        source.mapValues { (_, data) -> mapOf("confidence" to data.confidence) }
+    private fun loadIndexableData(state: JSONObject): IndexableData {
+        val data = IndexableData(state.getDouble("confidence")?.toDouble() ?: 1.0)
+        state.getJSONObject("vectors")?.forEach { (embeddingModel, vectorValue) ->
+            val vectorArray = vectorValue as? JSONArray ?: return@forEach
+            val vector = DoubleArray(vectorArray.size)
+            for (index in 0 until vectorArray.size) {
+                vector[index] = numberValue(vectorArray[index]) ?: return@forEach
+            }
+            data.updateVector(embeddingModel, vector)
+        }
+        return data
+    }
+
+    private fun indexableDataState(source: Map<String, IndexableData>): Map<String, Map<String, Any>> =
+        source.mapValues { (_, data) ->
+            mapOf(
+                "confidence" to data.confidence,
+                "vectors" to data.snapshotVectors().mapValues { (_, vector) -> vector.toList() }
+            )
+        }
 
     private fun numberValue(value: Any?): Double? = when (value) {
         is Number -> value.toDouble()
@@ -209,11 +235,15 @@ class Entity @JvmOverloads constructor(
             embeddingModel: String,
             vector: DoubleArray
         ) {
-            vectors[embeddingModel] = vector
+            vectors[embeddingModel] = vector.copyOf()
         }
 
         fun getVector(embeddingModel: String): DoubleArray? {
             return vectors[embeddingModel]?.copyOf()
+        }
+
+        fun snapshotVectors(): Map<String, DoubleArray> {
+            return vectors.mapValues { (_, vector) -> vector.copyOf() }
         }
     }
 
