@@ -12,6 +12,7 @@ public abstract class VectorClient {
 
     public static boolean status = false;
     public static VectorClient INSTANCE;
+    public static String VECTOR_MODEL_ID;
 
     public static void startClient(VectorConfig config) {
         try {
@@ -23,6 +24,7 @@ public abstract class VectorClient {
                 return;
             }
             status = true;
+            VECTOR_MODEL_ID = config.modelId;
         } catch (VectorClientStartupException e) {
             throw e;
         } catch (VectorClientExecutionException e) {

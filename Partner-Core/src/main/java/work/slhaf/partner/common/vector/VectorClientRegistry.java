@@ -39,7 +39,7 @@ public class VectorClientRegistry implements Configurable, ConfigRegistration<Ve
     @Nullable
     @Override
     public VectorConfig defaultConfig() {
-        return new VectorConfig(false, null);
+        return new VectorConfig(false, null, null);
     }
 
     @Override
