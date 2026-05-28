@@ -200,7 +200,7 @@ class Entity @JvmOverloads constructor(
     }
 
     private fun loadIndexableData(state: JSONObject): IndexableData {
-        val data = IndexableData(state.getDouble("confidence")?.toDouble() ?: 1.0)
+        val data = IndexableData(state.getDouble("confidence") ?: 1.0)
         state.getJSONObject("vectors")?.forEach { (embeddingModel, vectorValue) ->
             val vectorArray = vectorValue as? JSONArray ?: return@forEach
             val vector = DoubleArray(vectorArray.size)
