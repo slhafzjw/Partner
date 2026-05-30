@@ -22,7 +22,7 @@ public class ImpressionVectorIndex {
     }
 
     public void upsert(String text, Entity.IndexableData indexableData){
-        if (VectorClient.status){
+        if (!VectorClient.status){
             return;
         }
         String modelId = VectorClient.VECTOR_MODEL_ID;
