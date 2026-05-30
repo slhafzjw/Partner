@@ -7,9 +7,9 @@ import java.util.concurrent.atomic.AtomicReference
 
 class ActiveEntity @JvmOverloads constructor(
     timestamp: Long = System.currentTimeMillis(),
-    private val _evidences: MutableList<String> = mutableListOf(),
+    private val _evidences: MutableList<EntityEvidence> = mutableListOf(),
 ) : BlockContent("active_entity_$timestamp", "impression") {
-    val evidences: List<String>
+    val evidences: List<EntityEvidence>
         get() = synchronized(_evidences) { _evidences.toList() }
 
     private val _subject = AtomicReference("UNKNOWN")
@@ -23,7 +23,15 @@ class ActiveEntity @JvmOverloads constructor(
     val projectedImpressions: Map<String, Double>
         get() = synchronized(_projectedImpressions) { _projectedImpressions.toMap() }
 
-    fun addEvidence(evidence: String) = synchronized(_evidences) {
+    @JvmOverloads
+    fun addEvidence(
+        content: String,
+        associationConfidence: Double = 1.0,
+        source: EntityEvidence.Source = EntityEvidence.Source.USER_INPUT,
+        timestamp: Long = System.currentTimeMillis(),
+    ) = addEvidence(EntityEvidence(content, associationConfidence, source, timestamp))
+
+    fun addEvidence(evidence: EntityEvidence) = synchronized(_evidences) {
         _evidences.add(evidence)
     }
 
@@ -46,7 +54,14 @@ class ActiveEntity @JvmOverloads constructor(
             "evidences",
             "evidence",
             synchronized(_evidences) { _evidences.toList() }
-        )
+        ) { evidence ->
+            setAttribute("association_confidence", evidence.associationConfidence.toString())
+            setAttribute("source", evidence.source.name)
+            setAttribute("timestamp", evidence.timestamp.toString())
+            setAttribute("truncated", evidence.isContentTruncated().toString())
+            setAttribute("original_length", evidence.content.length.toString())
+            textContent = evidence.contentForContext()
+        }
 
         appendListElement(
             document,
