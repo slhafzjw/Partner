@@ -3,17 +3,29 @@ package work.slhaf.partner.core.cognition.impression
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import work.slhaf.partner.core.cognition.context.BlockContent
+import java.time.Instant
+import java.time.ZoneId
+import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 
 class ActiveEntity @JvmOverloads constructor(
-    timestamp: Long = System.currentTimeMillis(),
+    val runtimeId: String = newActiveEntityRuntimeId(),
+    val createdAt: Instant = Instant.now(),
+    boundEntityUuid: String? = null,
     private val _evidences: MutableList<EntityEvidence> = mutableListOf(),
-) : BlockContent("active_entity_$timestamp", "impression") {
+) : BlockContent("active_entity_$runtimeId", "impression") {
     val evidences: List<EntityEvidence>
         get() = synchronized(_evidences) { _evidences.toList() }
 
+    @Volatile
+    var lastMentionedAt: Instant = createdAt
+        private set
+
     private val _subject = AtomicReference("UNKNOWN")
     val subject: String get() = _subject.get()
+
+    private val _boundEntityUuid = AtomicReference<String?>(boundEntityUuid)
+    val boundEntityUuid: String? get() = _boundEntityUuid.get()
 
     private val _projectedFeatures: MutableMap<String, Double> = mutableMapOf()
     val projectedFeatures: Map<String, Double>
@@ -33,9 +45,16 @@ class ActiveEntity @JvmOverloads constructor(
 
     fun addEvidence(evidence: EntityEvidence) = synchronized(_evidences) {
         _evidences.add(evidence)
+        touch(Instant.ofEpochMilli(evidence.timestamp))
     }
 
     fun updateSubject(subject: String) = _subject.set(subject)
+
+    fun bindEntity(uuid: String?) = _boundEntityUuid.set(uuid)
+
+    fun touch(time: Instant = Instant.now()) {
+        lastMentionedAt = time
+    }
 
     fun addProjectedFeatures(vararg features: Pair<String, Double>) = synchronized(_projectedFeatures) {
         features.forEach { _projectedFeatures[it.first] = it.second }
@@ -46,6 +65,11 @@ class ActiveEntity @JvmOverloads constructor(
     }
 
     override fun fillXml(document: Document, root: Element) {
+        root.setAttribute("runtime_id", runtimeId)
+        boundEntityUuid?.let { root.setAttribute("bound_entity_uuid", it) }
+        root.setAttribute("created_at", modelTime(createdAt))
+        root.setAttribute("last_mentioned_at", modelTime(lastMentionedAt))
+
         appendTextElement(document, root, "subject", subject)
 
         appendListElement(
@@ -85,4 +109,10 @@ class ActiveEntity @JvmOverloads constructor(
             textContent = entry.key
         }
     }
+
+    private fun modelTime(time: Instant): String =
+        time.atZone(ZoneId.systemDefault()).toString()
 }
+
+private fun newActiveEntityRuntimeId(): String =
+    UUID.randomUUID().toString().replace("-", "").take(12)
