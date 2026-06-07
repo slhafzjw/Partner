@@ -31,18 +31,6 @@ public class ImpressionCore implements StateSerializable {
     private static final double SUPPORTING_HIT_FACTOR = 0.3;
     private static final double ASSOCIATION_CONFIDENCE_DIVISOR = 5.0;
 
-    @CapabilityMethod
-    public void updateRelation() {
-    }
-
-    @CapabilityMethod
-    public void updateImpression() {
-    }
-
-    @CapabilityMethod
-    public void showImpressions() {
-    }
-
     /**
      * 根据新的 Input 召回相关的实体，如果实体已重复，则将输入追加到 ActiveEntity 的证据中。
      *
