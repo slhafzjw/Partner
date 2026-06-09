@@ -112,6 +112,16 @@ class ActiveEntity @JvmOverloads constructor(
 
     private fun modelTime(time: Instant): String =
         time.atZone(ZoneId.systemDefault()).toString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ActiveEntity) return false
+        return runtimeId == other.runtimeId
+    }
+
+    override fun hashCode(): Int {
+        return runtimeId.hashCode()
+    }
 }
 
 private fun newActiveEntityRuntimeId(): String =
