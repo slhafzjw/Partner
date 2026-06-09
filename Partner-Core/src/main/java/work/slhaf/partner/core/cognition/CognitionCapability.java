@@ -2,10 +2,12 @@ package work.slhaf.partner.core.cognition;
 
 import org.w3c.dom.Element;
 import work.slhaf.partner.core.cognition.context.ContextWorkspace;
+import work.slhaf.partner.core.cognition.impression.ActiveEntity;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.Capability;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
 @Capability("cognition")
@@ -26,5 +28,7 @@ public interface CognitionCapability {
     Element messageNotesElement();
 
     Lock getMessageLock();
+
+    Set<ActiveEntity> projectEntity(String input);
 
 }
