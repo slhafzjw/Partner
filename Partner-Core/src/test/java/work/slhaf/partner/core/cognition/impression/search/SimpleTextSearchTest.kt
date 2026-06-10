@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import work.slhaf.partner.core.cognition.impression.ActiveEntity
+import work.slhaf.partner.core.cognition.impression.Entity
 
 class SimpleTextSearchTest {
 
@@ -117,6 +118,21 @@ class SimpleTextSearchTest {
     }
 
     @Test
+    fun `search recalls known entity by alias documents`() {
+        val search = SimpleTextSearch(TestTokenizer())
+        val entity = Entity("entity-1", "Partner")
+        entity.addAlias("智能体项目")
+
+        search.rebuild(ImpressionSearchDocuments.fromEntity(entity))
+
+        val hits = search.search("智能体项目", limit = 10)
+
+        assertFalse(hits.isEmpty())
+        assertEquals(ImpressionSearchTarget.Type.ENTITY, hits.first().document.target.type)
+        assertEquals("entity-1", hits.first().document.target.id)
+    }
+
+    @Test
     fun `upsert replaces previous index terms for the same document id`() {
         val search = SimpleTextSearch(TestTokenizer())
         val target = activeTarget("entity")
@@ -207,7 +223,8 @@ class SimpleTextSearchTest {
         private val dictionary = listOf(
             "城南", "旧书店", "老板", "推荐", "工程", "教材", "水利", "熟悉", "旧书",
             "java", "kotlin", "jieba", "分词", "simpletextsearch", "倒排", "索引", "检索", "测试", "召回",
-            "vivado", "实验报告", "实验", "报告", "模板", "docx", "室友", "整理", "文件"
+            "vivado", "实验报告", "实验", "报告", "模板", "docx", "室友", "整理", "文件",
+            "智能体", "项目", "智能体项目"
         )
         private val alphaNumericRegex = Regex("[a-z0-9]+(?:[-_./][a-z0-9]+)*")
 

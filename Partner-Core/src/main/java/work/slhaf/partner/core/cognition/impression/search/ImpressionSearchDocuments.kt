@@ -84,6 +84,18 @@ object ImpressionSearchDocuments {
                 )
             )
 
+            entity.showAliases(includeDeprecated = true).forEachIndexed { index, alias ->
+                add(
+                    ImpressionSearchDocument(
+                        id = "entity:${entity.uuid}:alias:$index",
+                        target = target,
+                        field = ImpressionSearchField.SUBJECT,
+                        text = alias.alias,
+                        weight = SUBJECT_WEIGHT * ALIAS_WEIGHT_FACTOR,
+                    )
+                )
+            }
+
             entity.snapshotFeatures().keys.forEachIndexed { index, feature ->
                 add(
                     ImpressionSearchDocument(
@@ -131,6 +143,7 @@ object ImpressionSearchDocuments {
     }
 
     private const val SUBJECT_WEIGHT = 1.0
+    private const val ALIAS_WEIGHT_FACTOR = 0.9
     private const val FEATURE_WEIGHT = 0.85
     private const val IMPRESSION_WEIGHT = 0.75
     private const val RELATION_WEIGHT = 0.65
