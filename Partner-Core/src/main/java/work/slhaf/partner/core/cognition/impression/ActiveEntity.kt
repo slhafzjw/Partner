@@ -64,6 +64,23 @@ class ActiveEntity @JvmOverloads constructor(
         impressions.forEach { _projectedImpressions[it.first] = it.second }
     }
 
+    /**
+     * Creates a detached runtime snapshot for external inspection without exposing mutable internal collections.
+     */
+    fun snapshot(): ActiveEntity {
+        val copied = ActiveEntity(
+            runtimeId = runtimeId,
+            createdAt = createdAt,
+            boundEntityUuid = boundEntityUuid,
+            _evidences = synchronized(_evidences) { _evidences.toMutableList() },
+        )
+        copied.updateSubject(subject)
+        copied.touch(lastMentionedAt)
+        copied.addProjectedFeatures(*projectedFeatures.entries.map { it.key to it.value }.toTypedArray())
+        copied.addProjectedImpressions(*projectedImpressions.entries.map { it.key to it.value }.toTypedArray())
+        return copied
+    }
+
     override fun fillXml(document: Document, root: Element) {
         root.setAttribute("runtime_id", runtimeId)
         boundEntityUuid?.let { root.setAttribute("bound_entity_uuid", it) }

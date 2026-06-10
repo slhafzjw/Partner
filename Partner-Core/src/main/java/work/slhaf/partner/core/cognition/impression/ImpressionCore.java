@@ -69,6 +69,170 @@ public class ImpressionCore implements StateSerializable {
         return projected;
     }
 
+    /**
+     * 列出当前已存在的 ActiveEntity 以及对应的 Entity。ActiveEntity 返回快照，Entity 返回当前已知实体引用。
+     *
+     * 注意：外部模块不要直接修改返回的 Entity，否则文本索引 / 向量索引不会刷新。
+     * Impression 更新应走 updateEntity* 系列接口。
+     *
+     * @return ActiveEntity 快照与已绑定 Entity 的映射
+     */
+    @CapabilityMethod
+    public Map<ActiveEntity, Entity> showEntities() {
+        Map<ActiveEntity, Entity> result = new LinkedHashMap<>();
+        List<ActiveEntity> entities;
+        synchronized (activeEntities) {
+            entities = activeEntities.stream()
+                    .sorted(Comparator
+                            .comparing(ActiveEntity::getLastMentionedAt)
+                            .reversed()
+                            .thenComparing(ActiveEntity::getRuntimeId))
+                    .toList();
+        }
+
+        for (ActiveEntity activeEntity : entities) {
+            Entity boundEntity = Optional.ofNullable(activeEntity.getBoundEntityUuid())
+                    .map(knownEntitiesByUuid::get)
+                    .orElse(null);
+            result.put(activeEntity.snapshot(), boundEntity);
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
+    /**
+     * Create a new known entity and make it visible to recall/update indexes immediately.
+     */
+    @CapabilityMethod
+    public Entity createEntity(String subject) {
+        if (subject == null || subject.isBlank()) {
+            throw new IllegalArgumentException("subject must not be blank");
+        }
+
+        Entity entity = new Entity(UUID.randomUUID().toString(), subject.trim());
+        entity.register();
+        knownEntitiesByUuid.put(entity.getUuid(), entity);
+        refreshKnownEntityIndexes(entity);
+        return entity;
+    }
+
+    /**
+     * Look up a known entity by stable uuid.
+     */
+    @CapabilityMethod
+    public Entity getEntity(String uuid) {
+        if (uuid == null || uuid.isBlank()) {
+            return null;
+        }
+        return knownEntitiesByUuid.get(uuid);
+    }
+
+    /**
+     * Bind a runtime active entity to a known entity.
+     * This keeps the active entity in current context while giving later updates a stable storage target.
+     */
+    @CapabilityMethod
+    public boolean bindActiveEntity(String runtimeId, String entityUuid) {
+        if (runtimeId == null || runtimeId.isBlank() || entityUuid == null || entityUuid.isBlank()) {
+            return false;
+        }
+
+        Entity entity = knownEntitiesByUuid.get(entityUuid);
+        if (entity == null) {
+            return false;
+        }
+
+        Optional<ActiveEntity> activeEntity = findActiveEntityByRuntimeId(runtimeId);
+        if (activeEntity.isEmpty()) {
+            return false;
+        }
+
+        ActiveEntity active = activeEntity.get();
+        active.bindEntity(entityUuid);
+        active.updateSubject(entity.getSubject());
+        refreshActiveEntityTextSearch(active);
+        return true;
+    }
+
+    /**
+     * Update a known entity impression through the core so text/vector indexes stay consistent.
+     * newImpression can be null or blank to update the existing impression in place.
+     */
+    @CapabilityMethod
+    public boolean updateEntityImpression(
+            String entityUuid,
+            String impression,
+            String newImpression,
+            double confidence
+    ) {
+        Entity entity = knownEntitiesByUuid.get(entityUuid);
+        if (entity == null || impression == null || impression.isBlank()) {
+            return false;
+        }
+
+        entity.updateImpression(
+                impression.trim(),
+                normalizeNullableText(newImpression),
+                confidence
+        );
+        refreshKnownEntityIndexes(entity);
+        return true;
+    }
+
+    /**
+     * Update a known entity feature through the core so text/vector indexes stay consistent.
+     * newFeature can be null or blank to update the existing feature in place.
+     */
+    @CapabilityMethod
+    public boolean updateEntityFeature(
+            String entityUuid,
+            String feature,
+            String newFeature,
+            double confidence
+    ) {
+        Entity entity = knownEntitiesByUuid.get(entityUuid);
+        if (entity == null || feature == null || feature.isBlank()) {
+            return false;
+        }
+
+        entity.updateFeature(
+                feature.trim(),
+                normalizeNullableText(newFeature),
+                confidence
+        );
+        refreshKnownEntityIndexes(entity);
+        return true;
+    }
+
+    /**
+     * Update a known entity relation through the core so search documents reflect the changed relation.
+     */
+    @CapabilityMethod
+    public boolean updateEntityRelation(
+            String entityUuid,
+            String target,
+            String relation,
+            double strength
+    ) {
+        Entity entity = knownEntitiesByUuid.get(entityUuid);
+        if (entity == null || target == null || target.isBlank() || relation == null || relation.isBlank()) {
+            return false;
+        }
+
+        entity.updateRelation(target.trim(), relation.trim(), strength);
+        refreshKnownEntityIndexes(entity);
+        return true;
+    }
+
+    /**
+     * Normalize optional replacement text used by update methods.
+     */
+    private String normalizeNullableText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
     private List<EntityAssociationMatch> aggregateMatches(
             List<ImpressionSearchHit> hits,
             int limit
@@ -183,6 +347,28 @@ public class ImpressionCore implements StateSerializable {
         }
     }
 
+    /**
+     * Refresh every index derived from a known entity after mutation.
+     */
+    private void refreshKnownEntityIndexes(Entity entity) {
+        vectorIndex.sync(entity);
+        refreshKnownEntityTextSearch(entity);
+    }
+
+    /**
+     * Replace text-search documents for one known entity.
+     */
+    private void refreshKnownEntityTextSearch(Entity entity) {
+        ImpressionSearchTarget target = new ImpressionSearchTarget(
+                ImpressionSearchTarget.Type.ENTITY,
+                entity.getUuid()
+        );
+        textSearch.removeByTarget(target);
+        for (ImpressionSearchDocument document : ImpressionSearchDocuments.INSTANCE.fromEntity(entity)) {
+            textSearch.upsert(document);
+        }
+    }
+
     private void rebuildTextSearch() {
         List<ImpressionSearchDocument> documents = new ArrayList<>();
         knownEntitiesByUuid.values().forEach(entity ->
@@ -222,6 +408,7 @@ public class ImpressionCore implements StateSerializable {
             }
 
             Entity entity = new Entity(uuid, subject);
+            entity.register();
             entity.load();
             vectorIndex.sync(entity);
             knownEntitiesByUuid.put(uuid, entity);

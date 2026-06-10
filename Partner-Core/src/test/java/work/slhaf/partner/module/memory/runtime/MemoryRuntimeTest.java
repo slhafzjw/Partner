@@ -98,6 +98,49 @@ class MemoryRuntimeTest {
             public Lock getMessageLock() {
                 return lock;
             }
+
+            @Override
+            public java.util.Set<work.slhaf.partner.core.cognition.impression.ActiveEntity> projectEntity(String input) {
+                return java.util.Set.of();
+            }
+
+            @Override
+            public java.util.Map<
+                    work.slhaf.partner.core.cognition.impression.ActiveEntity,
+                    work.slhaf.partner.core.cognition.impression.Entity
+                    > showEntities() {
+                return java.util.Map.of();
+            }
+
+            @Override
+            public work.slhaf.partner.core.cognition.impression.Entity createEntity(String subject) {
+                return null;
+            }
+
+            @Override
+            public work.slhaf.partner.core.cognition.impression.Entity getEntity(String uuid) {
+                return null;
+            }
+
+            @Override
+            public boolean bindActiveEntity(String runtimeId, String entityUuid) {
+                return false;
+            }
+
+            @Override
+            public boolean updateEntityImpression(String entityUuid, String impression, String newImpression, double confidence) {
+                return false;
+            }
+
+            @Override
+            public boolean updateEntityFeature(String entityUuid, String feature, String newFeature, double confidence) {
+                return false;
+            }
+
+            @Override
+            public boolean updateEntityRelation(String entityUuid, String target, String relation, double strength) {
+                return false;
+            }
         };
     }
 
