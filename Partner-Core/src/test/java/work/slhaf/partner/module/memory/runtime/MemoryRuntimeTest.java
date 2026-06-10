@@ -128,6 +128,16 @@ class MemoryRuntimeTest {
             }
 
             @Override
+            public boolean renameEntitySubject(String entityUuid, String newSubject) {
+                return false;
+            }
+
+            @Override
+            public boolean addEntityAlias(String entityUuid, String alias, boolean deprecated) {
+                return false;
+            }
+
+            @Override
             public boolean updateEntityImpression(String entityUuid, String impression, String newImpression, double confidence) {
                 return false;
             }

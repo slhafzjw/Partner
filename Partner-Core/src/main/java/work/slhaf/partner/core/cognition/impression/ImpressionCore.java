@@ -154,6 +154,45 @@ public class ImpressionCore implements StateSerializable {
     }
 
     /**
+     * Rename the canonical subject of a known entity and keep its previous subject as a historical alias.
+     */
+    @CapabilityMethod
+    public boolean renameEntitySubject(String entityUuid, String newSubject) {
+        Entity entity = knownEntitiesByUuid.get(entityUuid);
+        if (entity == null || newSubject == null || newSubject.isBlank()) {
+            return false;
+        }
+
+        boolean renamed = entity.renameSubject(newSubject.trim());
+        if (!renamed) {
+            return false;
+        }
+
+        refreshKnownEntityIndexes(entity);
+        syncBoundActiveEntitySubjects(entity);
+        return true;
+    }
+
+    /**
+     * Add an alias or mention form for a known entity and refresh search indexes.
+     */
+    @CapabilityMethod
+    public boolean addEntityAlias(String entityUuid, String alias, boolean deprecated) {
+        Entity entity = knownEntitiesByUuid.get(entityUuid);
+        if (entity == null || alias == null || alias.isBlank()) {
+            return false;
+        }
+
+        boolean added = entity.addAlias(alias.trim(), deprecated);
+        if (!added) {
+            return false;
+        }
+
+        refreshKnownEntityIndexes(entity);
+        return true;
+    }
+
+    /**
      * Update a known entity impression through the core so text/vector indexes stay consistent.
      * newImpression can be null or blank to update the existing impression in place.
      */
@@ -353,6 +392,20 @@ public class ImpressionCore implements StateSerializable {
     private void refreshKnownEntityIndexes(Entity entity) {
         vectorIndex.sync(entity);
         refreshKnownEntityTextSearch(entity);
+    }
+
+    private void syncBoundActiveEntitySubjects(Entity entity) {
+        List<ActiveEntity> boundEntities;
+        synchronized (activeEntities) {
+            boundEntities = activeEntities.stream()
+                    .filter(activeEntity -> entity.getUuid().equals(activeEntity.getBoundEntityUuid()))
+                    .toList();
+        }
+
+        boundEntities.forEach(activeEntity -> {
+            activeEntity.updateSubject(entity.getSubject());
+            refreshActiveEntityTextSearch(activeEntity);
+        });
     }
 
     /**

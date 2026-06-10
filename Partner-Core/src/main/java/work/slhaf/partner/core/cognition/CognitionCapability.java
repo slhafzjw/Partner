@@ -58,6 +58,16 @@ public interface CognitionCapability {
     boolean bindActiveEntity(String runtimeId, String entityUuid);
 
     /**
+     * Rename the canonical subject of a known entity and refresh entity/active-entity indexes.
+     */
+    boolean renameEntitySubject(String entityUuid, String newSubject);
+
+    /**
+     * Add an alias or mention form for a known entity and refresh entity indexes.
+     */
+    boolean addEntityAlias(String entityUuid, String alias, boolean deprecated);
+
+    /**
      * Add or replace an impression on a known entity and refresh all entity indexes.
      */
     boolean updateEntityImpression(String entityUuid, String impression, String newImpression, double confidence);
