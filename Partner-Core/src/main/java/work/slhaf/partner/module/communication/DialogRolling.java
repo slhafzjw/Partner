@@ -13,8 +13,8 @@ import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.context.BlockContent;
 import work.slhaf.partner.core.cognition.context.ContextBlock;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.core.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.core.memory.pojo.MemorySliceSnapshot;
+import work.slhaf.partner.core.memory.pojo.MemoryUnitSnapshot;
 import work.slhaf.partner.core.perceive.PerceiveCapability;
 import work.slhaf.partner.framework.agent.exception.AgentRuntimeException;
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
@@ -31,6 +31,7 @@ import work.slhaf.partner.runtime.PartnerRunningFlowContext;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -140,7 +141,7 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
         if (memoryId.isBlank()) {
             return fullChatSnapshot;
         }
-        MemoryUnit existingUnit = memoryCapability.getMemoryUnit(memoryId);
+        MemoryUnitSnapshot existingUnit = memoryCapability.getMemoryUnit(memoryId);
         if (existingUnit.getConversationMessages().isEmpty()) {
             return fullChatSnapshot;
         }
@@ -158,8 +159,9 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
 
     @NotNull
     RollingResult buildRollingResult(List<Message> chatSnapshot, int rollingSize, int retainDivisor) {
-        messageCompressor.execute(chatSnapshot);
-        Result<String> summaryResult = messageSummarizer.execute(chatSnapshot);
+        List<Message> rollingMessages = new ArrayList<>(chatSnapshot);
+        messageCompressor.execute(rollingMessages);
+        Result<String> summaryResult = messageSummarizer.execute(rollingMessages);
         String summary = summaryResult.fold(
                 value -> value,
                 exp -> "no summary, due to exception"
@@ -167,20 +169,20 @@ public class DialogRolling extends AbstractAgentModule.Running<PartnerRunningFlo
         if (summary.isBlank()) {
             summary = "no summary, due to empty summarize result";
         }
-        MemoryUnit memoryUnit = memoryCapability.updateMemoryUnit(chatSnapshot, summary);
-        MemorySlice newSlice = memoryUnit.getSlices().getLast();
-        return new RollingResult(memoryUnit, newSlice, List.copyOf(chatSnapshot), newSlice.getSummary(), rollingSize, retainDivisor);
+        MemoryUnitSnapshot memoryUnit = memoryCapability.updateMemoryUnit(rollingMessages, summary);
+        MemorySliceSnapshot newSlice = memoryUnit.getSlices().getLast();
+        return new RollingResult(memoryUnit, newSlice, rollingSize, retainDivisor);
     }
 
     private void applyRolling(RollingResult result) {
         cognitionCapability.contextWorkspace().register(new ContextBlock(
-                buildDialogAbstractBlock(result.summary(), result.memoryUnit().getId(), result.memorySlice().getId()),
+                buildDialogAbstractBlock(result.getSummary(), result.getMemoryUnit().getId(), result.getMemorySlice().getId()),
                 Set.of(ContextBlock.FocusedDomain.MEMORY, ContextBlock.FocusedDomain.COMMUNICATION),
                 20,
                 5,
                 10
         ));
-        cognitionCapability.rollChatMessagesWithSnapshot(result.rollingSize(), result.retainDivisor());
+        cognitionCapability.rollChatMessagesWithSnapshot(result.getRollingSize(), result.getRetainDivisor());
     }
 
     private @NotNull BlockContent buildDialogAbstractBlock(String summary, String unitId, String sliceId) {

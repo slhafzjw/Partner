@@ -6,7 +6,9 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.memory.pojo.MemorySliceSnapshot;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.core.memory.pojo.MemoryUnitSnapshot;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.communication.summarizer.MessageCompressor;
@@ -63,19 +65,19 @@ class DialogRollingTest {
                 message(Message.Character.ASSISTANT, "new-assistant")
         ), 4, 6);
 
-        MemoryUnit merged = memoryCapability.getMemoryUnit(sessionId);
+        MemoryUnitSnapshot merged = memoryCapability.getMemoryUnit(sessionId);
         assertEquals(List.of("old-user", "old-assistant", "new-user", "new-assistant"),
                 merged.getConversationMessages().stream().map(Message::getContent).toList());
         assertEquals(2, merged.getSlices().size());
 
-        MemorySlice appendedSlice = merged.getSlices().getLast();
+        MemorySliceSnapshot appendedSlice = merged.getSlices().getLast();
         assertNotNull(appendedSlice.getId());
         assertEquals(2, appendedSlice.getStartIndex());
         assertEquals(4, appendedSlice.getEndIndex());
         assertEquals("new-summary", appendedSlice.getSummary());
-        assertEquals(sessionId, rollingResult.memoryUnit().getId());
-        assertEquals(appendedSlice.getId(), rollingResult.memorySlice().getId());
-        assertEquals("new-summary", rollingResult.summary());
+        assertEquals(sessionId, rollingResult.getMemoryUnit().getId());
+        assertEquals(appendedSlice.getId(), rollingResult.getMemorySlice().getId());
+        assertEquals("new-summary", rollingResult.getSummary());
     }
 
     @Test
@@ -96,7 +98,7 @@ class DialogRollingTest {
                 message(Message.Character.ASSISTANT, "second")
         ), 2, 6);
 
-        MemoryUnit created = memoryCapability.getMemoryUnit(sessionId);
+        MemoryUnitSnapshot created = memoryCapability.getMemoryUnit(sessionId);
         assertNotNull(created);
         assertEquals(List.of("first", "second"),
                 created.getConversationMessages().stream().map(Message::getContent).toList());
@@ -104,7 +106,7 @@ class DialogRollingTest {
         assertEquals(0, created.getSlices().getFirst().getStartIndex());
         assertEquals(2, created.getSlices().getFirst().getEndIndex());
         assertEquals("fresh-summary", created.getSlices().getFirst().getSummary());
-        assertEquals(created, rollingResult.memoryUnit());
+        assertEquals(created, rollingResult.getMemoryUnit());
     }
 
     @Test
@@ -151,8 +153,8 @@ class DialogRollingTest {
                 message(Message.Character.ASSISTANT, "a1")
         ), 2, 6);
 
-        assertEquals(sessionId, rollingResult.memoryUnit().getId());
-        assertEquals("no summary, due to empty summarize result", rollingResult.summary());
+        assertEquals(sessionId, rollingResult.getMemoryUnit().getId());
+        assertEquals("no summary, due to empty summarize result", rollingResult.getSummary());
     }
 
     private static final class StubMemoryCapability implements MemoryCapability {
@@ -172,28 +174,29 @@ class DialogRollingTest {
         }
 
         @Override
-        public MemoryUnit getMemoryUnit(String unitId) {
-            return units.get(unitId);
+        public MemoryUnitSnapshot getMemoryUnit(String unitId) {
+            MemoryUnit unit = units.get(unitId);
+            return unit == null ? null : unit.snapshot();
         }
 
         @Override
-        public work.slhaf.partner.framework.agent.support.Result<MemorySlice> getMemorySlice(String unitId, String sliceId) {
+        public work.slhaf.partner.framework.agent.support.Result<MemorySliceSnapshot> getMemorySlice(String unitId, String sliceId) {
             return null;
         }
 
         @Override
-        public MemoryUnit updateMemoryUnit(List<Message> chatMessages, String summary) {
+        public MemoryUnitSnapshot updateMemoryUnit(List<Message> chatMessages, String summary) {
             MemoryUnit unit = units.computeIfAbsent(sessionId, MemoryUnit::new);
             unit.updateTimestamp();
             int startIndex = unit.getConversationMessages().size();
             unit.getConversationMessages().addAll(chatMessages);
             unit.getSlices().add(new MemorySlice(startIndex, startIndex + chatMessages.size(), summary));
-            return unit;
+            return unit.snapshot();
         }
 
         @Override
-        public Collection<MemoryUnit> listMemoryUnits() {
-            return units.values();
+        public Collection<MemoryUnitSnapshot> listMemoryUnits() {
+            return units.values().stream().map(MemoryUnit::snapshot).toList();
         }
 
         @Override

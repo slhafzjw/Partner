@@ -11,7 +11,9 @@ import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.context.ContextWorkspace;
 import work.slhaf.partner.core.memory.MemoryCapability;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.memory.pojo.MemorySliceSnapshot;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.core.memory.pojo.MemoryUnitSnapshot;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 import work.slhaf.partner.framework.agent.support.Result;
 import work.slhaf.partner.module.memory.pojo.ActivationProfile;
@@ -19,7 +21,6 @@ import work.slhaf.partner.module.memory.runtime.exception.MemoryLookupException;
 import work.slhaf.partner.module.memory.selector.ActivatedMemorySlice;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -41,11 +42,8 @@ class MemoryRuntimeTest {
         System.setProperty("user.home", tempDir.toAbsolutePath().toString());
     }
 
-    @SuppressWarnings("unchecked")
-    private static List<Message> invokeSliceMessages(MemoryRuntime runtime, MemoryUnit unit, MemorySlice slice) throws Exception {
-        Method method = MemoryRuntime.class.getDeclaredMethod("sliceMessages", MemoryUnit.class, MemorySlice.class);
-        method.setAccessible(true);
-        return (List<Message>) method.invoke(runtime, unit, slice);
+    private static List<Message> invokeSliceMessages(MemoryRuntime runtime, MemoryUnit unit, MemorySlice slice) {
+        return unit.snapshot().messagesOf(slice.snapshot());
     }
 
     private static void setField(Object target, String fieldName, Object value) throws Exception {
@@ -200,7 +198,7 @@ class MemoryRuntimeTest {
         unit.getSlices().addAll(List.of(firstSlice, secondSlice));
         memoryCapability.remember(unit);
 
-        runtime.recordMemory(unit, "topic/main", List.of("topic/related"), DEFAULT_PROFILE);
+        runtime.recordMemory(unit.snapshot(), "topic/main", List.of("topic/related"), DEFAULT_PROFILE);
 
         List<ActivatedMemorySlice> topicResult = runtime.queryActivatedMemoryByTopicPath("topic/main");
         assertEquals(List.of("slice-2"), topicResult.stream().map(ActivatedMemorySlice::getSliceId).toList());
@@ -240,8 +238,8 @@ class MemoryRuntimeTest {
         relatedUnit.getSlices().add(relatedSlice);
         memoryCapability.remember(relatedUnit);
 
-        runtime.recordMemory(mainUnit, "topic/main", List.of("topic/related"), DEFAULT_PROFILE);
-        runtime.recordMemory(relatedUnit, "topic/related", List.of(), DEFAULT_PROFILE);
+        runtime.recordMemory(mainUnit.snapshot(), "topic/main", List.of("topic/related"), DEFAULT_PROFILE);
+        runtime.recordMemory(relatedUnit.snapshot(), "topic/related", List.of(), DEFAULT_PROFILE);
 
         List<ActivatedMemorySlice> topicResult = runtime.queryActivatedMemoryByTopicPath("topic/main");
         assertEquals(List.of("slice-main", "slice-related"),
@@ -260,7 +258,7 @@ class MemoryRuntimeTest {
         MemorySlice firstSlice = MemorySlice.restore("slice-1", 0, 1, "first", 86_400_000L);
         firstUnitSnapshot.getSlices().add(firstSlice);
         memoryCapability.remember(firstUnitSnapshot);
-        runtime.recordMemory(firstUnitSnapshot, "topic/main", List.of(), DEFAULT_PROFILE);
+        runtime.recordMemory(firstUnitSnapshot.snapshot(), "topic/main", List.of(), DEFAULT_PROFILE);
 
         firstUnitSnapshot.getConversationMessages().clear();
         firstUnitSnapshot.getConversationMessages().addAll(List.of(message("m2"), message("m3")));
@@ -268,7 +266,7 @@ class MemoryRuntimeTest {
         firstUnitSnapshot.getSlices().clear();
         firstUnitSnapshot.getSlices().add(secondSlice);
         memoryCapability.remember(firstUnitSnapshot);
-        runtime.recordMemory(firstUnitSnapshot, "topic/main", List.of(), DEFAULT_PROFILE);
+        runtime.recordMemory(firstUnitSnapshot.snapshot(), "topic/main", List.of(), DEFAULT_PROFILE);
 
         JSONObject state = JSONObject.parseObject(runtime.convert().toString());
         JSONArray dateIndex = state.getJSONArray("date_index");
@@ -306,14 +304,14 @@ class MemoryRuntimeTest {
         MemorySlice secondSlice = MemorySlice.restore("slice-2", 2, 4, "second", 172_800_000L);
         mainUnit.getSlices().addAll(List.of(firstSlice, secondSlice));
         memoryCapability.remember(mainUnit);
-        runtime.recordMemory(mainUnit, "topic/main", List.of("topic/related"), DEFAULT_PROFILE);
+        runtime.recordMemory(mainUnit.snapshot(), "topic/main", List.of("topic/related"), DEFAULT_PROFILE);
 
         MemoryUnit relatedUnit = new MemoryUnit("unit-201");
         relatedUnit.getConversationMessages().addAll(List.of(message("r0"), message("r1")));
         MemorySlice relatedSlice = MemorySlice.restore("slice-3", 0, 2, "related", 259_200_000L);
         relatedUnit.getSlices().add(relatedSlice);
         memoryCapability.remember(relatedUnit);
-        runtime.recordMemory(relatedUnit, "topic/related", List.of(), DEFAULT_PROFILE);
+        runtime.recordMemory(relatedUnit.snapshot(), "topic/related", List.of(), DEFAULT_PROFILE);
 
         JSONObject state = JSONObject.parseObject(runtime.convert().toString());
         JSONArray topicSlices = state.getJSONArray("topic_slices");
@@ -380,21 +378,21 @@ class MemoryRuntimeTest {
         MemorySlice primarySlice = MemorySlice.restore("slice-primary", 0, 2, "primary", System.currentTimeMillis());
         primaryUnit.getSlices().add(primarySlice);
         memoryCapability.remember(primaryUnit);
-        runtime.recordMemory(primaryUnit, "topic->main", List.of("topic->related"), new ActivationProfile(0.9f, 0.1f, 0.9f));
+        runtime.recordMemory(primaryUnit.snapshot(), "topic->main", List.of("topic->related"), new ActivationProfile(0.9f, 0.1f, 0.9f));
 
         MemoryUnit relatedUnit = new MemoryUnit("unit-related-rank");
         relatedUnit.getConversationMessages().addAll(List.of(message("r0"), message("r1")));
         MemorySlice relatedSlice = MemorySlice.restore("slice-related-rank", 0, 2, "related", System.currentTimeMillis());
         relatedUnit.getSlices().add(relatedSlice);
         memoryCapability.remember(relatedUnit);
-        runtime.recordMemory(relatedUnit, "topic->related", List.of(), new ActivationProfile(1.0f, 1.0f, 1.0f));
+        runtime.recordMemory(relatedUnit.snapshot(), "topic->related", List.of(), new ActivationProfile(1.0f, 1.0f, 1.0f));
 
         MemoryUnit parentUnit = new MemoryUnit("unit-parent");
         parentUnit.getConversationMessages().addAll(List.of(message("x0"), message("x1")));
         MemorySlice parentSlice = MemorySlice.restore("slice-parent", 0, 2, "parent", System.currentTimeMillis());
         parentUnit.getSlices().add(parentSlice);
         memoryCapability.remember(parentUnit);
-        runtime.recordMemory(parentUnit, "topic", List.of(), new ActivationProfile(1.0f, 1.0f, 1.0f));
+        runtime.recordMemory(parentUnit.snapshot(), "topic", List.of(), new ActivationProfile(1.0f, 1.0f, 1.0f));
 
         List<ActivatedMemorySlice> topicResult = runtime.queryActivatedMemoryByTopicPath("topic->main");
         assertEquals(List.of("slice-primary", "slice-related-rank", "slice-parent"),
@@ -414,7 +412,7 @@ class MemoryRuntimeTest {
         primaryUnit.getSlices().add(primarySlice);
         memoryCapability.remember(primaryUnit);
         runtime.recordMemory(
-                primaryUnit,
+                primaryUnit.snapshot(),
                 "topic->main",
                 List.of("topic->related"),
                 new ActivationProfile(0.8f, 0.0f, 0.8f)
@@ -425,7 +423,7 @@ class MemoryRuntimeTest {
         MemorySlice relatedSlice = MemorySlice.restore("slice-related-zero", 0, 2, "related", System.currentTimeMillis());
         relatedUnit.getSlices().add(relatedSlice);
         memoryCapability.remember(relatedUnit);
-        runtime.recordMemory(relatedUnit, "topic->related", List.of(), new ActivationProfile(1.0f, 1.0f, 1.0f));
+        runtime.recordMemory(relatedUnit.snapshot(), "topic->related", List.of(), new ActivationProfile(1.0f, 1.0f, 1.0f));
 
         List<ActivatedMemorySlice> topicResult = runtime.queryActivatedMemoryByTopicPath("topic->main");
         assertEquals(List.of("slice-primary-zero"), topicResult.stream().map(ActivatedMemorySlice::getSliceId).toList());
@@ -444,10 +442,10 @@ class MemoryRuntimeTest {
         unit.getSlices().add(slice);
         memoryCapability.remember(unit);
 
-        runtime.recordMemory(unit, "topic->main", List.of("topic->related"), new ActivationProfile(0.2f, 0.1f, 0.2f));
+        runtime.recordMemory(unit.snapshot(), "topic->main", List.of("topic->related"), new ActivationProfile(0.2f, 0.1f, 0.2f));
         unit.getSlices().clear();
         unit.getSlices().add(MemorySlice.restore("slice-refresh", 0, 2, "summary", 172_800_000L));
-        runtime.recordMemory(unit, "topic->main", List.of("topic->related-2"), new ActivationProfile(0.9f, 0.8f, 0.7f));
+        runtime.recordMemory(unit.snapshot(), "topic->main", List.of("topic->related-2"), new ActivationProfile(0.9f, 0.8f, 0.7f));
 
         JSONObject state = JSONObject.parseObject(runtime.convert().toString());
         JSONObject mainTopic = state.getJSONArray("topic_slices").stream()
@@ -481,12 +479,13 @@ class MemoryRuntimeTest {
         }
 
         @Override
-        public MemoryUnit getMemoryUnit(String unitId) {
-            return units.get(unitId);
+        public MemoryUnitSnapshot getMemoryUnit(String unitId) {
+            MemoryUnit unit = units.get(unitId);
+            return unit == null ? null : unit.snapshot();
         }
 
         @Override
-        public Result<MemorySlice> getMemorySlice(String unitId, String sliceId) {
+        public Result<MemorySliceSnapshot> getMemorySlice(String unitId, String sliceId) {
             MemoryUnit unit = units.get(unitId);
             if (unit == null || unit.getSlices() == null) {
                 return Result.failure(new MemoryLookupException(
@@ -498,7 +497,7 @@ class MemoryRuntimeTest {
             return unit.getSlices().stream()
                     .filter(slice -> sliceId.equals(slice.getId()))
                     .findFirst()
-                    .map(Result::success)
+                    .map(slice -> Result.success(slice.snapshot()))
                     .orElseGet(() -> Result.failure(new MemoryLookupException(
                             "Memory slice not found: " + unitId + ":" + sliceId,
                             unitId + ":" + sliceId,
@@ -507,13 +506,13 @@ class MemoryRuntimeTest {
         }
 
         @Override
-        public MemoryUnit updateMemoryUnit(List<Message> chatMessages, String summary) {
+        public MemoryUnitSnapshot updateMemoryUnit(List<Message> chatMessages, String summary) {
             return null;
         }
 
         @Override
-        public Collection<MemoryUnit> listMemoryUnits() {
-            return units.values();
+        public Collection<MemoryUnitSnapshot> listMemoryUnits() {
+            return units.values().stream().map(MemoryUnit::snapshot).toList();
         }
 
         @Override

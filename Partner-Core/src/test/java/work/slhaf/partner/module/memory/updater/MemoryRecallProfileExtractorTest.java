@@ -79,13 +79,10 @@ class MemoryRecallProfileExtractorTest {
         MemorySlice slice = new MemorySlice(2, 4, "slice-summary");
         unit.getSlices().add(slice);
 
-        updater.consume(new RollingResult(unit, slice, List.of(
-                message(Message.Character.USER, "new"),
-                message(Message.Character.ASSISTANT, "new-reply")
-        ), "slice-summary", 4, 6));
+        updater.consume(new RollingResult(unit.snapshot(), slice.snapshot(), 4, 6));
 
         verify(memoryRuntime).recordMemory(
-                eq(unit),
+                eq(unit.snapshot()),
                 eq("root->branch"),
                 eq(List.of("root->related")),
                 argThat(profile -> profile != null
@@ -113,10 +110,10 @@ class MemoryRecallProfileExtractorTest {
         MemorySlice slice = new MemorySlice(0, 2, "slice-summary");
         unit.getSlices().add(slice);
 
-        updater.consume(new RollingResult(unit, slice, unit.getConversationMessages(), "slice-summary", 2, 6));
+        updater.consume(new RollingResult(unit.snapshot(), slice.snapshot(), 2, 6));
 
         verify(memoryRuntime).recordMemory(
-                eq(unit),
+                eq(unit.snapshot()),
                 eq(null),
                 eq(List.of()),
                 argThat(profile -> profile != null
@@ -147,10 +144,10 @@ class MemoryRecallProfileExtractorTest {
         MemorySlice slice = new MemorySlice(0, 1, "slice-summary");
         unit.getSlices().add(slice);
 
-        updater.consume(new RollingResult(unit, slice, unit.getConversationMessages(), "slice-summary", 1, 6));
+        updater.consume(new RollingResult(unit.snapshot(), slice.snapshot(), 1, 6));
 
         verify(memoryRuntime).recordMemory(
-                eq(unit),
+                eq(unit.snapshot()),
                 eq("root->branch"),
                 eq(List.of()),
                 argThat(profile -> profile != null

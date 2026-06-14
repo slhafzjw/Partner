@@ -4,8 +4,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import work.slhaf.partner.core.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.core.memory.pojo.MemorySliceSnapshot;
+import work.slhaf.partner.core.memory.pojo.MemoryUnitSnapshot;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
 
 import java.nio.file.Path;
@@ -32,7 +32,7 @@ class MemoryCoreTest {
     void shouldCreateFirstSliceFromChatMessages() {
         String sessionId = memoryCore.getMemorySessionId();
 
-        MemoryUnit updatedUnit = memoryCore.updateMemoryUnit(List.of(
+        MemoryUnitSnapshot updatedUnit = memoryCore.updateMemoryUnit(List.of(
                 new Message(Message.Character.USER, "m0"),
                 new Message(Message.Character.USER, "m1"),
                 new Message(Message.Character.USER, "m2")
@@ -43,7 +43,7 @@ class MemoryCoreTest {
                 updatedUnit.getConversationMessages().stream().map(Message::getContent).toList());
         assertEquals(1, updatedUnit.getSlices().size());
 
-        MemorySlice firstSlice = updatedUnit.getSlices().getFirst();
+        MemorySliceSnapshot firstSlice = updatedUnit.getSlices().getFirst();
         assertNotNull(firstSlice.getId());
         assertEquals(0, firstSlice.getStartIndex());
         assertEquals(3, firstSlice.getEndIndex());
@@ -60,7 +60,7 @@ class MemoryCoreTest {
                 new Message(Message.Character.USER, "m0")
         ), "first-summary");
 
-        MemoryUnit updatedUnit = memoryCore.updateMemoryUnit(List.of(
+        MemoryUnitSnapshot updatedUnit = memoryCore.updateMemoryUnit(List.of(
                 new Message(Message.Character.ASSISTANT, "m1"),
                 new Message(Message.Character.USER, "m2")
         ), "second-summary");
@@ -70,14 +70,14 @@ class MemoryCoreTest {
                 updatedUnit.getConversationMessages().stream().map(Message::getContent).toList());
         assertEquals(2, updatedUnit.getSlices().size());
 
-        MemorySlice appendedSlice = updatedUnit.getSlices().getLast();
+        MemorySliceSnapshot appendedSlice = updatedUnit.getSlices().getLast();
         assertNotNull(appendedSlice.getId());
         assertEquals(1, appendedSlice.getStartIndex());
         assertEquals(3, appendedSlice.getEndIndex());
         assertEquals("second-summary", appendedSlice.getSummary());
         assertTrue(appendedSlice.getTimestamp() > 0);
 
-        MemorySlice loadedSlice = memoryCore.getMemorySlice(sessionId, appendedSlice.getId()).getOrThrow();
+        MemorySliceSnapshot loadedSlice = memoryCore.getMemorySlice(sessionId, appendedSlice.getId()).getOrThrow();
         assertNotNull(loadedSlice);
         assertEquals(1, loadedSlice.getStartIndex());
         assertEquals(3, loadedSlice.getEndIndex());

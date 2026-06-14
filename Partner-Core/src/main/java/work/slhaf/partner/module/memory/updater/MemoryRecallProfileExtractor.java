@@ -149,7 +149,7 @@ public class MemoryRecallProfileExtractor extends AbstractAgentModule.Standalone
 
     @Override
     public void consume(RollingResult result) {
-        List<Message> slicedMessages = sliceMessages(result);
+        List<Message> slicedMessages = result.incrementMessages();
         if (slicedMessages.isEmpty()) {
             return;
         }
@@ -169,23 +169,13 @@ public class MemoryRecallProfileExtractor extends AbstractAgentModule.Standalone
                     relatedTopicPaths,
                     slicedMessages
             );
-            memoryRuntime.recordMemory(result.memoryUnit(), topicPath, relatedTopicPaths, activationProfile);
+            memoryRuntime.recordMemory(result.getMemoryUnit(), topicPath, relatedTopicPaths, activationProfile);
         }).onFailure(exp -> memoryRuntime.recordMemory(
-                result.memoryUnit(),
+                result.getMemoryUnit(),
                 null,
                 List.of(),
                 defaultActivationProfile()
         ));
-    }
-
-    private List<Message> sliceMessages(RollingResult result) {
-        int size = result.memoryUnit().getConversationMessages().size();
-        int start = Math.clamp(result.memorySlice().getStartIndex(), 0, size);
-        int end = Math.clamp(result.memorySlice().getEndIndex(), start, size);
-        if (start >= end) {
-            return List.of();
-        }
-        return result.memoryUnit().getConversationMessages().subList(start, end);
     }
 
     private Message resolveTopicTaskMessage(RollingResult result, List<Message> slicedMessages) {
@@ -193,7 +183,7 @@ public class MemoryRecallProfileExtractor extends AbstractAgentModule.Standalone
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 appendTextElement(document, root, "current_topic_tree", memoryRuntime.getTopicTree());
-                appendTextElement(document, root, "slice_summary", result.summary());
+                appendTextElement(document, root, "slice_summary", result.getSummary());
                 appendRepeatedElements(document, root, "message", slicedMessages, (messageElement, message) -> {
                     messageElement.setAttribute("role", message.roleValue());
                     messageElement.setTextContent(message.getContent());

@@ -4,8 +4,8 @@ import com.alibaba.fastjson2.JSONObject;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.core.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.core.memory.pojo.MemorySliceSnapshot;
+import work.slhaf.partner.core.memory.pojo.MemoryUnitSnapshot;
 import work.slhaf.partner.core.memory.pojo.SliceRef;
 import work.slhaf.partner.framework.agent.exception.ExceptionReporterHandler;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
@@ -52,11 +52,11 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
         }
     }
 
-    public void recordMemory(MemoryUnit memoryUnit,
+    public void recordMemory(MemoryUnitSnapshot memoryUnit,
                              String topicPath,
                              List<String> relatedTopicPaths,
                              ActivationProfile activationProfile) {
-        MemorySlice memorySlice = memoryUnit.getSlices().getLast();
+        MemorySliceSnapshot memorySlice = memoryUnit.getSlices().getLast();
         SliceRef sliceRef = new SliceRef(memoryUnit.getId(), memorySlice.getId());
         LocalDate date = toLocalDate(memorySlice.getTimestamp());
         runtimeLock.lock();
@@ -159,13 +159,13 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
     }
 
     private ActivatedMemorySlice buildActivatedMemorySlice(SliceRef ref) {
-        MemoryUnit memoryUnit = memoryCapability.getMemoryUnit(ref.getUnitId());
-        Result<MemorySlice> memorySliceResult = memoryCapability.getMemorySlice(ref.getUnitId(), ref.getSliceId());
+        MemoryUnitSnapshot memoryUnit = memoryCapability.getMemoryUnit(ref.getUnitId());
+        Result<MemorySliceSnapshot> memorySliceResult = memoryCapability.getMemorySlice(ref.getUnitId(), ref.getSliceId());
         if (memoryUnit == null || memorySliceResult.exceptionOrNull() != null) {
             return null;
         }
-        MemorySlice memorySlice = memorySliceResult.getOrThrow();
-        List<Message> messages = sliceMessages(memoryUnit, memorySlice);
+        MemorySliceSnapshot memorySlice = memorySliceResult.getOrThrow();
+        List<Message> messages = memoryUnit.messagesOf(memorySlice);
         LocalDate date = toLocalDate(memorySlice.getTimestamp());
         return ActivatedMemorySlice.builder()
                 .unitId(ref.getUnitId())
@@ -177,19 +177,6 @@ public class MemoryRuntime extends AbstractAgentModule.Standalone implements Sta
                 .build();
     }
 
-    private List<Message> sliceMessages(MemoryUnit memoryUnit, MemorySlice memorySlice) {
-        List<Message> conversationMessages = memoryUnit.getConversationMessages();
-        if (conversationMessages.isEmpty()) {
-            return List.of();
-        }
-        int size = conversationMessages.size();
-        int start = Math.clamp(memorySlice.getStartIndex(), 0, size);
-        int end = Math.clamp(memorySlice.getEndIndex(), start, size);
-        if (start >= end) {
-            return List.of();
-        }
-        return new ArrayList<>(conversationMessages.subList(start, end));
-    }
 
     private LocalDate toLocalDate(Long timestamp) {
         return Instant.ofEpochMilli(timestamp)

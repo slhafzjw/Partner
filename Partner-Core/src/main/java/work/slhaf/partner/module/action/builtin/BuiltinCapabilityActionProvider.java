@@ -10,8 +10,8 @@ import work.slhaf.partner.core.cognition.CognitionCapability;
 import work.slhaf.partner.core.cognition.context.BlockContent;
 import work.slhaf.partner.core.cognition.context.ContextBlock;
 import work.slhaf.partner.core.memory.MemoryCapability;
-import work.slhaf.partner.core.memory.pojo.MemorySlice;
-import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.core.memory.pojo.MemorySliceSnapshot;
+import work.slhaf.partner.core.memory.pojo.MemoryUnitSnapshot;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.InjectCapability;
 import work.slhaf.partner.framework.agent.factory.component.annotation.AgentComponent;
 import work.slhaf.partner.framework.agent.factory.component.annotation.Init;
@@ -75,16 +75,16 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
         Function<Map<String, Object>, String> invoker = params -> {
             String unitId = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "unit_id");
             String sliceId = BuiltinActionRegistry.BuiltinActionDefinition.requireString(params, "slice_id");
-            Result<MemorySlice> sliceResult = memoryCapability.getMemorySlice(unitId, sliceId);
+            Result<MemorySliceSnapshot> sliceResult = memoryCapability.getMemorySlice(unitId, sliceId);
             if (sliceResult.exceptionOrNull() != null) {
                 return JSONObject.of(
                         "ok", false,
                         "message", sliceResult.exceptionOrNull().getLocalizedMessage()
                 ).toJSONString();
             }
-            MemorySlice slice = sliceResult.getOrThrow();
+            MemorySliceSnapshot slice = sliceResult.getOrThrow();
 
-            MemoryUnit unit = memoryCapability.getMemoryUnit(unitId);
+            MemoryUnitSnapshot unit = memoryCapability.getMemoryUnit(unitId);
             cognitionCapability.contextWorkspace().register(new ContextBlock(
                     buildMemoryRecallFullBlock(unit, slice),
                     Set.of(ContextBlock.FocusedDomain.MEMORY),
@@ -105,13 +105,13 @@ class BuiltinCapabilityActionProvider implements BuiltinActionProvider {
         );
     }
 
-    private @NotNull BlockContent buildMemoryRecallFullBlock(MemoryUnit unit, MemorySlice slice) {
+    private @NotNull BlockContent buildMemoryRecallFullBlock(MemoryUnitSnapshot unit, MemorySliceSnapshot slice) {
         return new BlockContent("memory_recall", "memory_capability") {
             @Override
             protected void fillXml(@NotNull Document document, @NotNull Element root) {
                 root.setAttribute("unit_id", unit.getId());
                 root.setAttribute("slice_id", slice.getId());
-                appendRepeatedElements(document, root, "message", unit.getConversationMessages().subList(slice.getStartIndex(), slice.getEndIndex()), (messageElement, message) -> {
+                appendRepeatedElements(document, root, "message", unit.messagesOf(slice), (messageElement, message) -> {
                     messageElement.setAttribute("role", message.getRole().name().toLowerCase(Locale.ROOT));
                     messageElement.setTextContent(message.getContent());
                     return Unit.INSTANCE;

@@ -33,6 +33,16 @@ public class MemorySlice implements Comparable<MemorySlice> {
         return new MemorySlice(id, startIndex, endIndex, summary, timestamp);
     }
 
+    public MemorySliceSnapshot snapshot() {
+        return new MemorySliceSnapshot(
+                id,
+                startIndex == null ? 0 : startIndex,
+                endIndex == null ? 0 : endIndex,
+                summary,
+                timestamp == null ? 0L : timestamp
+        );
+    }
+
     @Override
     public int compareTo(MemorySlice memorySlice) {
         if (memorySlice.getTimestamp() > this.getTimestamp()) {

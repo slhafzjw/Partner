@@ -31,6 +31,15 @@ public class MemoryUnit implements StateSerializable {
         timestamp = System.currentTimeMillis();
     }
 
+    public MemoryUnitSnapshot snapshot() {
+        return new MemoryUnitSnapshot(
+                id,
+                List.copyOf(conversationMessages),
+                timestamp == null ? 0L : timestamp,
+                slices.stream().map(MemorySlice::snapshot).toList()
+        );
+    }
+
     @Override
     public @NotNull Path statePath() {
         return Path.of("core", "memory", "memory-unit" + id + ".json");

@@ -5,7 +5,9 @@ import com.alibaba.fastjson2.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import work.slhaf.partner.core.memory.pojo.MemorySlice;
+import work.slhaf.partner.core.memory.pojo.MemorySliceSnapshot;
 import work.slhaf.partner.core.memory.pojo.MemoryUnit;
+import work.slhaf.partner.core.memory.pojo.MemoryUnitSnapshot;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityCore;
 import work.slhaf.partner.framework.agent.factory.capability.annotation.CapabilityMethod;
 import work.slhaf.partner.framework.agent.model.pojo.Message;
@@ -36,10 +38,10 @@ public class MemoryCore implements StateSerializable {
     }
 
     @CapabilityMethod
-    public MemoryUnit updateMemoryUnit(List<Message> chatMessages, String summary) {
+    public MemoryUnitSnapshot updateMemoryUnit(List<Message> chatMessages, String summary) {
         memoryLock.lock();
         try {
-            MemoryUnit unit = getMemoryUnit(memorySessionId);
+            MemoryUnit unit = getOrLoadMemoryUnit(memorySessionId);
             unit.updateTimestamp();
 
             List<Message> conversationMessages = unit.getConversationMessages();
@@ -55,14 +57,60 @@ public class MemoryCore implements StateSerializable {
 
             unit.getSlices().add(memorySlice);
             normalizeMemoryUnit(unit);
-            return unit;
+            return unit.snapshot();
         } finally {
             memoryLock.unlock();
         }
     }
 
     @CapabilityMethod
-    public MemoryUnit getMemoryUnit(String unitId) {
+    public MemoryUnitSnapshot getMemoryUnit(String unitId) {
+        memoryLock.lock();
+        try {
+            MemoryUnit unit = getOrLoadMemoryUnit(unitId);
+            normalizeMemoryUnit(unit);
+            return unit.snapshot();
+        } finally {
+            memoryLock.unlock();
+        }
+    }
+
+    @CapabilityMethod
+    public Result<MemorySliceSnapshot> getMemorySlice(String unitId, String sliceId) {
+        memoryLock.lock();
+        try {
+            MemoryUnit memoryUnit = memoryUnits.get(unitId);
+            if (memoryUnit == null) {
+                return memorySliceNotFound(unitId, sliceId);
+            }
+            memoryUnit.load();
+            normalizeMemoryUnit(memoryUnit);
+            for (MemorySlice slice : memoryUnit.getSlices()) {
+                if (sliceId.equals(slice.getId())) {
+                    return Result.success(slice.snapshot());
+                }
+            }
+            return memorySliceNotFound(unitId, sliceId);
+        } finally {
+            memoryLock.unlock();
+        }
+    }
+
+    @CapabilityMethod
+    public Collection<MemoryUnitSnapshot> listMemoryUnits() {
+        memoryLock.lock();
+        try {
+            return memoryUnits.values().stream()
+                    .peek(MemoryUnit::load)
+                    .peek(this::normalizeMemoryUnit)
+                    .map(MemoryUnit::snapshot)
+                    .toList();
+        } finally {
+            memoryLock.unlock();
+        }
+    }
+
+    private MemoryUnit getOrLoadMemoryUnit(String unitId) {
         MemoryUnit unit = memoryUnits.computeIfAbsent(unitId, id -> {
             MemoryUnit newUnit = new MemoryUnit(id);
             newUnit.register();
@@ -72,31 +120,12 @@ public class MemoryCore implements StateSerializable {
         return unit;
     }
 
-    @CapabilityMethod
-    public Result<MemorySlice> getMemorySlice(String unitId, String sliceId) {
-        MemoryUnit memoryUnit = memoryUnits.get(unitId);
-        if (memoryUnit == null) {
-            return Result.failure(new MemoryLookupException(
-                    "Memory slice not found: " + unitId + ":" + sliceId,
-                    unitId + ":" + sliceId,
-                    "MEMORY_SLICE"
-            ));
-        }
-        for (MemorySlice slice : memoryUnit.getSlices()) {
-            if (sliceId.equals(slice.getId())) {
-                return Result.success(slice);
-            }
-        }
+    private Result<MemorySliceSnapshot> memorySliceNotFound(String unitId, String sliceId) {
         return Result.failure(new MemoryLookupException(
                 "Memory slice not found: " + unitId + ":" + sliceId,
                 unitId + ":" + sliceId,
                 "MEMORY_SLICE"
         ));
-    }
-
-    @CapabilityMethod
-    public Collection<MemoryUnit> listMemoryUnits() {
-        return new ArrayList<>(memoryUnits.values());
     }
 
     @CapabilityMethod
