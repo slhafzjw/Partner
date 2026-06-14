@@ -60,7 +60,7 @@ public interface CognitionCapability {
     /**
      * Rename the canonical subject of a known entity and refresh entity/active-entity indexes.
      */
-    boolean renameEntitySubject(String entityUuid, String newSubject);
+    boolean renameEntitySubject(String entityUuid, String newSubject, boolean keepOldSubjectAsAlias);
 
     /**
      * Add an alias or mention form for a known entity and refresh entity indexes.

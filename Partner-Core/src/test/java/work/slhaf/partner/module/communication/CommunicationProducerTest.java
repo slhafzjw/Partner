@@ -175,7 +175,7 @@ class CommunicationProducerTest {
         }
 
         @Override
-        public boolean renameEntitySubject(String entityUuid, String newSubject) {
+        public boolean renameEntitySubject(String entityUuid, String newSubject, boolean keepOldSubjectAsAlias) {
             return false;
         }
 

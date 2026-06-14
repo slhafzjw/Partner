@@ -154,16 +154,16 @@ public class ImpressionCore implements StateSerializable {
     }
 
     /**
-     * Rename the canonical subject of a known entity and keep its previous subject as a historical alias.
+     * Rename the canonical subject of a known entity and optionally keep its previous subject as a historical alias.
      */
     @CapabilityMethod
-    public boolean renameEntitySubject(String entityUuid, String newSubject) {
+    public boolean renameEntitySubject(String entityUuid, String newSubject, boolean keepOldSubjectAsAlias) {
         Entity entity = knownEntitiesByUuid.get(entityUuid);
         if (entity == null || newSubject == null || newSubject.isBlank()) {
             return false;
         }
 
-        boolean renamed = entity.renameSubject(newSubject.trim());
+        boolean renamed = entity.renameSubject(newSubject.trim(), keepOldSubjectAsAlias);
         if (!renamed) {
             return false;
         }
