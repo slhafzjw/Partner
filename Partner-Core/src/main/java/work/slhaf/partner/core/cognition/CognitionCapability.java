@@ -45,12 +45,17 @@ public interface CognitionCapability {
     /**
      * Create and register a new known entity by subject, then refresh search indexes for it.
      */
-    Entity createEntity(String subject);
+    String createEntity(String subject);
 
     /**
      * Return a known entity by uuid, or null when it does not exist.
      */
     Entity getEntity(String uuid);
+
+    /**
+     * Activate a known entity into the runtime context and return a detached active-entity snapshot.
+     */
+    ActiveEntity activateKnownEntity(String entityUuid);
 
     /**
      * Bind an active runtime entity to a known entity and refresh the active-entity search document.

@@ -111,12 +111,17 @@ class MemoryRuntimeTest {
             }
 
             @Override
-            public work.slhaf.partner.core.cognition.impression.Entity createEntity(String subject) {
+            public String createEntity(String subject) {
                 return null;
             }
 
             @Override
             public work.slhaf.partner.core.cognition.impression.Entity getEntity(String uuid) {
+                return null;
+            }
+
+            @Override
+            public work.slhaf.partner.core.cognition.impression.ActiveEntity activateKnownEntity(String entityUuid) {
                 return null;
             }
 

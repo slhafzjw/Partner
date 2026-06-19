@@ -103,7 +103,7 @@ public class ImpressionCore implements StateSerializable {
      * Create a new known entity and make it visible to recall/update indexes immediately.
      */
     @CapabilityMethod
-    public Entity createEntity(String subject) {
+    public String createEntity(String subject) {
         if (subject == null || subject.isBlank()) {
             throw new IllegalArgumentException("subject must not be blank");
         }
@@ -112,7 +112,7 @@ public class ImpressionCore implements StateSerializable {
         entity.register();
         knownEntitiesByUuid.put(entity.getUuid(), entity);
         refreshKnownEntityIndexes(entity);
-        return entity;
+        return entity.getUuid();
     }
 
     /**
@@ -124,6 +124,16 @@ public class ImpressionCore implements StateSerializable {
             return null;
         }
         return knownEntitiesByUuid.get(uuid);
+    }
+
+    /**
+     * Activate a known entity and return a detached snapshot for external consumers.
+     */
+    @CapabilityMethod
+    public ActiveEntity activateKnownEntity(String entityUuid) {
+        return activateKnownEntityLive(entityUuid)
+                .map(ActiveEntity::snapshot)
+                .orElse(null);
     }
 
     /**
@@ -328,7 +338,7 @@ public class ImpressionCore implements StateSerializable {
     private Optional<ActiveEntity> resolveActiveEntity(ImpressionSearchTarget target) {
         return switch (target.getType()) {
             case ACTIVE_ENTITY -> findActiveEntityByRuntimeId(target.getId());
-            case ENTITY -> activateKnownEntity(target.getId());
+            case ENTITY -> activateKnownEntityLive(target.getId());
         };
     }
 
@@ -348,7 +358,7 @@ public class ImpressionCore implements StateSerializable {
         }
     }
 
-    private Optional<ActiveEntity> activateKnownEntity(String uuid) {
+    private Optional<ActiveEntity> activateKnownEntityLive(String uuid) {
         Entity knownEntity = knownEntitiesByUuid.get(uuid);
         if (knownEntity == null) {
             return Optional.empty();
