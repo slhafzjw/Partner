@@ -199,6 +199,12 @@ Partner/
 - [行动系统](doc/action/action.md)
 - [记忆存储与组织](doc/memory/memory.md)
 
+### 设计草案与后续方向
+
+- [初见模块](doc/design/first-encounter-module.md)
+- [印象模块更新管线](doc/design/impression-update-observation-pipeline.md)
+- [印象模块向量融合扩展](doc/design/impression-vector-fusion.md)
+
 ---
 
 ## License
