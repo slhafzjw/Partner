@@ -1,4 +1,4 @@
-# Impression Update Observation Pipeline / 印象更新观察管线设计草案
+# Impression Update Observation Pipeline
 
 ## 背景
 
@@ -12,336 +12,298 @@ RollingResult
   -> ImpressionUpdatePlanApplier
 ```
 
-这一版验证了 rolling 后自动更新 Impression 的主链路是可行的：Planner 生成计划，Validator 做基础校验，Applier 只接受 `CONFIRMED` 计划并通过 `CognitionCapability` mutation API 落地。
+这一版验证了 rolling 后自动更新长期印象的主链路是可行的：Planner 生成更新计划，Validator 做安全校验，Applier 只执行 `CONFIRMED` 计划并通过 `CognitionCapability` mutation API 落地。
 
-但当前 Planner 直接输出最终 mutation plan：
+但当前 Planner 直接输出最终 `ImpressionUpdatePlan`，这会让 LLM 过早承担稳定身份和写入决策：
+
+* 它既要从 rolling 证据中判断“观察到了什么”；
+* 又要判断“应该更新哪个 known entity / 是否创建新 entity”；
+* 还要直接产出 mutation patch。
+
+其中后两者更适合由代码侧的聚合、实体解析、上下文补充和校验流程处理，不应该完全交给最初的 observation planner。
+
+## 核心边界
+
+新的设计目标是将“观察”和“更新”拆开：
 
 ```text
-UpdateExistingStep(entityUuid, patch)
-CreateEntityStep(subject, patches...)
+ObservationPlanner 负责从证据中抽取观察。
+Aggregator 负责合并重复观察。
+Resolver 负责将合并观察解析为针对具体 Entity 的更新计划。
+Validator 负责安全确认。
+Applier 负责落库。
 ```
 
-这会让 LLM 过早承担稳定身份决策：它既要判断“这次 rolling 里出现了什么实体观察”，又要判断“该更新哪个 known entity / 是否创建新 entity”。后者更适合由代码侧 identity resolver 和 validator 处理，不应该完全交给模型。
+也就是说，Observation 层不是“去掉 uuid 的 ImpressionUpdatePlan”。
 
-## 核心问题
-
-当前方案主要有三个隐患。
-
-### 1. Planner 不应直接决定 known entity uuid
-
-模型可以从证据中抽取实体观察，但它不适合直接决定稳定存储层 uuid。
-
-即使 prompt 给了候选 entity，模型仍可能：
-
-- 编造不存在的 uuid；
-- 选择错误的 uuid；
-- 把同一个实体拆成多个新实体；
-- 对 subject / alias 相近的实体做过早合并。
-
-因此，Planner 的输出应从“最终更新计划”降级为“初始观察计划”。
-
-### 2. KnownEntities 不宜提前整体塞给 Planner
-
-全量 known entity 可能随长期使用不断增长。若每次 rolling 后把所有 known entity 的 subject、alias、impression、feature 都塞给 Planner，会导致：
-
-- 上下文压力随实体数量增长；
-- 无关实体污染判断；
-- 成本和延迟不稳定；
-- 模型在大量候选中发生错误关联。
-
-但是，完全只看少数候选也可能漏掉“其实应更新某个已知实体”的场景。
-
-因此，较合适的边界是：
-
-> Planner 不看全量 known entities；后续 resolver 可以使用轻量的 known entity identity index。
-
-这里的 identity index 只包含确定性身份信息，例如 uuid、subject、alias，而不包含完整 impressions/features/relations。
-
-### 3. 单批 max candidates 不应变成语义丢弃
-
-简单地设置 `maxKnownCandidates` 后截断，会让维护语义变成“只维护前 N 个实体”。
-
-这不适合 Impression 这类长期维护模块。更合理的是：
+Observation 层只表达：
 
 ```text
-batch size 是模型上下文预算，不是语义覆盖上限。
+从 rolling 证据和 active entity 中，观察到了某个实体相关的信息。
 ```
 
-也就是说，可以把 active entities 分批交给 Planner 提取观察，但最后应聚合所有 batch 的观察，再统一决定更新或创建。
-
-## 目标形态
-
-目标是把 ImpressionUpdater 拆成“观察抽取”和“身份决策/落库”两层：
+它不表达：
 
 ```text
-RollingResult
-  -> ActiveEntity batches
-  -> Observation Planner per batch
-  -> Observation Aggregate
-  -> Identity Resolver
-  -> Final Plan Builder
-  -> Context-aware Validator
-  -> Applier
+应该更新哪个长期实体；
+应该创建哪个实体；
+应该写入哪些 mutation patch。
+```
+
+`ImpressionPatch`、`FeaturePatch`、`RelationPatch`、`UpdateExistingStep`、`CreateEntityStep` 只应出现在 Resolver 之后产生的 `ImpressionUpdatePlan` 中。
+
+## 目标流程
+
+目标管线如下：
+
+```text
+RollingResult + ActiveEntityBatch
+  -> ImpressionObservationPlanner
+  -> ImpressionEntityObservation collection
+
+All Observations + KnownEntityIdentity index
+  -> ImpressionObservationAggregator
+  -> Merged ImpressionEntityObservation collection
+
+Merged Observations + related Entity snapshots
+  -> ImpressionObservationResolver
+  -> ImpressionUpdatePlan fragments
+
+All ImpressionUpdatePlan fragments
+  -> ImpressionUpdatePlanValidator
+  -> ImpressionUpdatePlanApplier
 ```
 
 其中：
 
-- Planner 只负责提取观察，不直接输出最终 mutation；
-- Aggregate 汇总、去重、合并不同 batch 的观察；
-- Resolver 使用 known entity identity index 决定 update existing 还是 create entity；
-- FinalPlanBuilder 生成现有 `ImpressionUpdatePlan`；
-- Validator 做全局安全校验；
-- Applier 继续负责 confirmed plan 落地。
+* `ImpressionObservationPlanner` 只从 rolling evidence 和 active entity batch 中抽取观察；
+* `ImpressionObservationAggregator` 结合轻量 known identity index 合并重复观察、归并 evidence、过滤弱观察；
+* `ImpressionObservationResolver` 接收合并后的观察与相关完整 Entity snapshot，产出针对该 Entity 的 `ImpressionUpdatePlan` fragment；
+* `ImpressionUpdatePlanValidator` 对所有 fragments 合并后的最终计划做全局校验；
+* `ImpressionUpdatePlanApplier` 继续复用现有落库逻辑。
 
-## 数据模型建议
+## Observation 模型
 
-### ImpressionObservationPlan
-
-Planner 输出不再是 `ImpressionUpdatePlan`，而是观察层计划：
+第一阶段只需要两个核心模型。
 
 ```kotlin
-data class ImpressionObservationPlan(
-    val observations: List<ImpressionEntityObservation>,
-    val status: ObservationPlanStatus = ObservationPlanStatus.PREPARED,
-    val reason: String? = null,
-)
-
-enum class ObservationPlanStatus {
-    PREPARED,
-    REJECTED,
-}
-```
-
-### ImpressionEntityObservation
-
-实体观察不绑定 known entity uuid，只表达“从证据中看到了什么”：
-
-```kotlin
-data class ImpressionEntityObservation(
+data class ImpressionEntityObservation @JvmOverloads constructor(
     val proposedSubject: String,
     val aliases: List<String> = emptyList(),
-    val impressions: List<ImpressionPatch> = emptyList(),
-    val features: List<FeaturePatch> = emptyList(),
-    val relations: List<RelationPatch> = emptyList(),
+    val impressions: Map<String, Int> = emptyMap(),
+    val features: Map<String, Int> = emptyMap(),
+    val relations: Map<String, Map<String, Int>> = emptyMap(),
     val sourceActiveRuntimeIds: List<String> = emptyList(),
     val evidenceSnippets: List<String> = emptyList(),
-    val confidence: Double = 1.0,
     val reason: String? = null,
 )
 ```
 
-设计重点：
+字段语义：
 
-- `proposedSubject` 是观察层身份名，不一定是最终 canonical subject；
-- `sourceActiveRuntimeIds` 记录观察来自哪些 active entity；
-- `evidenceSnippets` 保存可审计证据片段；
-- `confidence` 表示观察可靠度，不是最终落库许可；
-- 观察层允许重复，后续 Aggregate 负责合并。
-
-### KnownEntityIdentity
-
-Resolver 使用轻量身份索引，而不是完整实体上下文：
+* `proposedSubject`：观察层实体名，不是最终 canonical subject；
+* `aliases`：证据中出现的别名或称呼；
+* `impressions`：观察到的长期印象文本，`Int` 表示观察权重或聚合计数；
+* `features`：观察到的特征文本，`Int` 表示观察权重或聚合计数；
+* `relations`：`target -> relation text -> weight/count`；
+* `sourceActiveRuntimeIds`：观察来自哪些 active runtime entity；
+* `evidenceSnippets`：支持该观察的证据片段；
+* `reason`：Planner 或聚合阶段给出的简短理由，仅用于审计，不作为执行许可。
 
 ```kotlin
-data class KnownEntityIdentity(
+data class KnownEntityIdentity @JvmOverloads constructor(
     val entityUuid: String,
     val subject: String,
     val aliases: List<String> = emptyList(),
 )
 ```
 
-后续可能需要在 `CognitionCapability` 增加只读 API：
+`KnownEntityIdentity` 是轻量身份索引，只包含稳定身份字段，不携带 impressions、features、relations 等完整语义内容。
 
-```java
-List<KnownEntityIdentity> showKnownEntityIdentities();
-```
+它主要用于 Aggregator 判断不同 observation 是否可能指向同一 known entity，避免仅靠 `proposedSubject` 做粗糙合并。
 
-这个 API 不暴露 impressions/features/relations，也不允许外部直接修改 entity，只用于 deterministic identity resolution。
+真正生成 patch 时，需要在聚合完成后取得相关完整 Entity snapshot，再由 Resolver 结合 Entity 当前状态制定更新计划。
 
-## 执行流程
+## Batch 语义
 
-### 1. 构建 active entity batches
-
-从 `cognitionCapability.showEntities()` 获取当前 active entities 及其 bound known entity。
-
-按照 `lastMentionedAt` 或 runtime 顺序划分 batch：
-
-```text
-activeEntities
-  -> batch 1
-  -> batch 2
-  -> batch 3
-```
-
-这里的 batch size 只是上下文预算，例如每批 8 或 12 个 active entity。它不表示只处理前 N 个，而是所有 active entity 都会被覆盖。
-
-每个 batch 与同一份 `RollingResult` 组成 observation context：
+Active entities 可以按上下文预算分批交给 ObservationPlanner：
 
 ```text
 RollingResult + ActiveEntityBatch
-  -> ImpressionObservationPlanner
+  -> ImpressionEntityObservation collection
 ```
 
-### 2. Planner 只产初始观察
+这里的 batch size 只是上下文预算，不是语义覆盖上限。
 
-Planner 的职责变成：
+所有 batch 的 observations 必须先聚合，再进入 Resolver 阶段。
 
-> 根据本次 rolling 证据和当前 batch 的 active entities，提取可能需要进入长期印象系统的实体观察。
-
-Planner 不允许：
-
-- 输出 known entity uuid；
-- 直接决定 update existing / create entity；
-- 做实体合并；
-- 访问或推断全量 known entity 状态。
-
-它只输出 `ImpressionObservationPlan`。
-
-### 3. Aggregate 汇总所有 batch observation
-
-Aggregate 收集所有 batch 的观察：
+不允许：
 
 ```text
-ObservationPlan(batch1)
-ObservationPlan(batch2)
-ObservationPlan(batch3)
-  -> ImpressionObservationAggregate
+batch observation -> batch update plan -> batch apply
 ```
 
-Aggregate 负责：
+因为这样会让更新顺序影响长期状态，并且难以做全局冲突校验。
 
-- 丢弃 `REJECTED` 或空 observation；
-- normalize subject / alias；
-- 合并相同 normalized subject 的观察；
-- 合并 alias 重叠的观察；
-- 合并 evidenceHash 或 sourceActiveRuntimeIds 高度重合的观察；
-- 去掉低置信、无证据、模板化、过长的 patch；
-- 生成去重后的独立实体观察集合。
-
-这一阶段仍不落库。
-
-### 4. Identity Resolver 决定更新还是创建
-
-Resolver 使用 `KnownEntityIdentityIndex`，只根据 subject / alias 做轻量身份匹配。
-
-规则第一版可以保守：
+允许：
 
 ```text
-exact normalized subject match
-  -> update existing
+observation batch 1 -> observations
+observation batch 2 -> observations
+observation batch 3 -> observations
 
-exact normalized alias match
-  -> update existing
-
-multiple matched entities
-  -> ambiguous, reject / postpone
-
-no match + observation evidence sufficient
-  -> create entity
-
-no match + evidence weak
-  -> reject / postpone
+all observations -> aggregate -> resolve -> plan fragments
+all plan fragments -> global validation -> apply
 ```
 
-Resolver 不做复杂语义合并，不调用 LLM，不根据 impression 内容强行判断两个实体是否相同。
+Resolver 阶段如果上下文较大，也可以按合并后的 observation / related entity 分批产出 `ImpressionUpdatePlan` fragments。
 
-### 5. FinalPlanBuilder 生成现有 mutation plan
+但所有 fragments 仍应统一汇总后再由 Validator 校验和确认，不应分批直接落库。
 
-Identity resolution 完成后，才生成真正的 `ImpressionUpdatePlan`：
+## Aggregator
+
+Aggregator 的输入是所有 ObservationPlanner 产出的 `ImpressionEntityObservation`，以及轻量 `KnownEntityIdentity` index。
+
+Aggregator 负责：
+
+* 丢弃空 observation；
+* normalize subject / alias；
+* 合并明显重复的 observation；
+* 合并同一 active runtime entity 来源的重复观察；
+* 借助 known subject / alias 合并指向同一 known entity 的观察；
+* 合并 impression / feature / relation 的计数；
+* 合并 evidence snippets 与 source active runtime ids；
+* 过滤无证据、过弱、模板化或过长的观察。
+
+Aggregator 不生成 `ImpressionUpdatePlan`，也不落库。
+
+它的输出仍然是合并后的 observation collection。
+
+## Resolver
+
+Resolver 的输入是：
 
 ```text
-ResolvedObservation(update entityUuid)
-  -> UpdateExistingStep(entityUuid, patch)
-
-ResolvedObservation(create subject)
-  -> CreateEntityStep(subject, patches...)
+Merged ImpressionEntityObservation
+  + related Entity snapshots
 ```
 
-这样可以复用现有 `ImpressionUpdatePlanApplier`，不需要把落库 API 全部推翻。
+Resolver 的职责是将合并后的观察解析成针对具体 Entity 的更新计划。
 
-### 6. Validator 做全局校验
+它可以根据完整 Entity 当前状态判断：
 
-Validator 应从基础语法校验升级为 context-aware / identity-aware 校验：
+* 观察到的 impression 是否已经存在；
+* 观察到的 feature 是否重复或需要更新；
+* 观察到的 relation target 是否能解析；
+* 观察是否足够强，可以创建新 entity；
+* 观察是否 ambiguous，需要 reject / postpone；
+* 观察是否只适合保留为 evidence，不进入 mutation plan。
 
-- `UpdateExistingStep.entityUuid` 必须存在；
-- `CreateEntityStep.subject` 不能与 known subject / alias 重复；
-- `RelationPatch.target` 必须能解析到已知 entity 或本批即将创建的 entity；
-- patch 文本必须非空且长度有限；
-- `confidence` / `strength` 必须是有限数值并落在合法范围；
-- ambiguous resolution 不允许落库；
-- final plan 不允许空 step。
+Resolver 输出的是 `ImpressionUpdatePlan` fragment，状态应保持为 `PREPARED`。
 
-### 7. Applier 执行 confirmed plan
+Resolver 不直接确认计划，不直接落库。
 
-Applier 仍只接受 `CONFIRMED` 的 `ImpressionUpdatePlan`，并通过 `CognitionCapability` mutation API 执行。
+## UpdatePlan 复用
 
-如果 final plan 较大，应用阶段可以分批执行，但这只是资源与事务层面的 batch，不再影响身份决策。
+新管线继续复用现有 mutation plan：
 
-也就是说：
+* `ImpressionUpdatePlan`
+* `UpdateExistingStep`
+* `CreateEntityStep`
+* `ImpressionPatch`
+* `FeaturePatch`
+* `AliasPatch`
+* `SubjectPatch`
+* `RelationPatch`
+* `ImpressionUpdatePlanValidator`
+* `ImpressionUpdatePlanApplier`
+
+也就是说，新管线不推翻现有 `ImpressionUpdatePlan`，而是在它前面增加 observation / aggregation / resolution 层。
+
+旧链路的问题不是 `ImpressionUpdatePlan` 本身，而是 Planner 太早产出了它。
+
+新的边界是：
 
 ```text
-可以 batch apply finalized steps。
-不可以 batch planner -> batch apply。
+ObservationPlanner 不产 UpdatePlan。
+Resolver 才产 UpdatePlan。
+Validator 才确认 UpdatePlan。
+Applier 才执行 UpdatePlan。
 ```
 
-## 与当前实现的关系
+## Validator
 
-当前代码中的 `ImpressionUpdatePlan`、`ImpressionUpdatePlanApplier` 可以保留。
+Validator 从基础结构校验升级为 context-aware 校验。
 
-需要调整的是 Planner 前后链路：
+它接收所有 Resolver 产出的 plan fragments 汇总后的最终 `ImpressionUpdatePlan`，并做全局校验：
 
-```text
-当前：
-ImpressionUpdatePlanner -> ImpressionUpdatePlan -> Validator -> Applier
+* `UpdateExistingStep.entityUuid` 必须存在；
+* `CreateEntityStep.subject` 不应与 known subject / alias 冲突；
+* relation target 必须能解析到已知实体或本批新建实体；
+* patch 文本必须非空且长度有限；
+* ambiguous / postponed observation 不允许进入落库计划；
+* final plan 不允许空 step；
+* LLM / Resolver 只能产 `PREPARED`，不能直接产 `CONFIRMED`。
 
-目标：
-ImpressionObservationPlanner -> ImpressionObservationPlan
-  -> ImpressionObservationAggregator
-  -> ImpressionIdentityResolver
-  -> ImpressionUpdatePlanBuilder
-  -> ImpressionUpdatePlanValidator
-  -> ImpressionUpdatePlanApplier
-```
+Validator 通过后，由代码侧构造 `CONFIRMED` plan，再交给 Applier。
 
-第一阶段可以不删除当前 Planner，而是先新增 observation pipeline，再逐步迁移 `ImpressionUpdater.consume()`。
+## Applier
 
-## 分阶段落地建议
+Applier 继续只执行 `CONFIRMED` 的 `ImpressionUpdatePlan`。
 
-### Phase 1：写入观察模型与文档
+落库仍通过 `CognitionCapability` mutation API 执行，不绕过 `ImpressionCore`。
 
-- 新增 `ImpressionObservationPlan`；
-- 新增 `ImpressionEntityObservation`；
-- 新增 `KnownEntityIdentity`；
-- 保留现有 update plan 和 applier；
-- 不改主链路。
+如果最终计划较大，可以在 Applier 内部按资源或事务边界分批执行；但这只是执行层 batch，不应影响前面的 observation、aggregation、resolution 和 validation 语义。
 
-### Phase 2：ObservationPlanner 替代直接 update planner
+## 分阶段落地
 
-- 新增 `ImpressionObservationPlanner`；
-- 每批 active entity + rolling result 生成 observation plan；
-- Planner prompt 明确不输出 uuid、不决定 update/create。
+### Phase 1：观察模型
 
-### Phase 3：Aggregate / Resolver / PlanBuilder
+* 新增 `ImpressionEntityObservation`；
+* 新增 `KnownEntityIdentity`；
+* 保留现有 `ImpressionUpdatePlan` / Patch / Applier；
+* 不改主链路。
 
-- 聚合所有 batch observations；
-- 使用 known identity index 做 subject / alias 级 resolution；
-- 转成最终 `ImpressionUpdatePlan`。
+### Phase 2：ObservationPlanner
 
-### Phase 4：Validator 升级
+* 新增 `ImpressionObservationPlanner`；
+* 输入为 `RollingResult + ActiveEntityBatch`；
+* 输出 `ImpressionEntityObservation` collection；
+* Planner 不输出 known entity uuid；
+* Planner 不决定 update/create；
+* Planner 不输出 mutation patch。
 
-- Validator 改为接收 final plan + resolution context；
-- 增加 uuid、重复 subject/alias、relation target、patch 边界检查。
+### Phase 3：Aggregator
 
-### Phase 5：替换 `ImpressionUpdater.consume()` 主流程
+* 聚合所有 batch observations；
+* 使用 `KnownEntityIdentity` 辅助 subject / alias 归并；
+* 输出合并后的 observation collection；
+* 不生成 `ImpressionUpdatePlan`。
 
-将主流程改为：
+### Phase 4：Resolver
+
+* 根据合并后的 observation 找到相关 Entity snapshot；
+* 结合 Entity 当前状态生成 `ImpressionUpdatePlan` fragments；
+* fragment 状态保持 `PREPARED`；
+* 不确认、不落库。
+
+### Phase 5：Validator 升级
+
+* 汇总所有 plan fragments；
+* 做 context-aware / entity-aware / relation-aware 校验；
+* 校验通过后由代码侧构造 `CONFIRMED` final plan。
+
+### Phase 6：替换主流程
+
+最终将 `ImpressionUpdater.consume()` 改为：
 
 ```text
 buildObservationContexts(result)
-  -> planner per batch
-  -> aggregate
-  -> resolve
-  -> build final plan
+  -> planner per active entity batch
+  -> aggregate observations
+  -> load related entity snapshots
+  -> resolve to update plan fragments
+  -> merge fragments
   -> validate
   -> confirm
   -> apply
@@ -351,25 +313,25 @@ buildObservationContexts(result)
 
 第一版不做：
 
-- 向量召回；
-- 全库 impressions/features 语义扫描；
-- LLM 实体合并；
-- 多实体复杂冲突解决；
-- 自动删除或降权旧 impression；
-- 基于弱证据的大规模新实体创建。
+* 向量召回；
+* 全库 impressions / features 语义扫描；
+* LLM 实体合并；
+* 多实体复杂冲突解决；
+* 自动删除或降权旧 impression；
+* 基于弱证据的大规模新实体创建；
+* batch 级直接 apply。
 
 这些应在 observation pipeline 稳定后单独设计。
 
 ## 当前结论
 
-本设计的核心边界是：
+本设计的核心是：
 
 ```text
-Planner 负责观察。
-Aggregate 负责去重与合并。
-Resolver 负责身份决策。
-Validator 负责安全确认。
-Applier 负责落库。
+Observation 不是 UpdatePlan。
+Observation 只记录证据化观察。
+UpdatePlan 在合并观察并取得相关 Entity 后生成。
+Applier 只执行经过 Validator 确认的最终计划。
 ```
 
-这样可以保留 LLM 对自然语言证据的抽取能力，同时避免让它直接承担稳定实体身份和数据库 mutation 决策。
+这样可以保留 LLM 对自然语言证据的抽取能力，同时避免让最初的 Planner 直接承担长期实体身份和数据库 mutation 决策。
